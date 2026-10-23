@@ -1,0 +1,68 @@
+Subject: Welcome to The Pretzel Cup — your store is live
+Preheader: Your portal access, delivery schedule, and what to expect in week one.
+
+---
+
+Hey {{ManagerFirstName}},
+
+Welcome to The Pretzel Cup. Your store, {{StoreName}}, is officially on our
+route starting {{StartDate}}. Every day going forward, fresh Philly Pretzel
+Factory pretzels show up at your door, bagged and ready to sell. You only
+pay for what you move.
+
+Everything you need is below. Give it a read, and I'll see you on day one.
+
+
+YOUR CLIENT PORTAL
+------------------
+Portal:        {{PortalURL}}
+Username:      {{PortalUsername}}
+Temp password: {{PortalTempPassword}}
+
+You'll be asked to set your own password on first sign-in.
+
+
+DELIVERY
+--------
+Route:     {{Route}}
+Days:      {{DeliveryDays}}
+Cutoff:    {{OrderCutoff}} the day prior
+Min order: 10 units
+
+
+YOUR DRIVER
+-----------
+{{DriverName}} — punctual, reliable, friendly. Delivers between
+{{DeliveryWindow}}. No need to coordinate with him directly — all comms
+run through me via the portal.
+
+
+WHAT ARRIVES ON DAY ONE
+-----------------------
+- Wicker basket + display stand with Pretzel + Coffee card
+- Counter price card and laminated UPC sticker sheet
+- Window cling for the front door
+- UPC card for programming your register
+- Your first batch of fresh pretzels, in branded bags
+
+
+2-MINUTE PORTAL WALKTHROUGH
+---------------------------
+{{WalkthroughVideoURL}}
+
+
+One rule to make this easy on both of us: all communication runs through
+the portal. Message me there and I'll see it right away.
+
+Really glad to have you on. Let's sell some pretzels.
+
+Chris
+Christopher Aumuller
+Owner, The Pretzel Cup
+the-pretzel-cup.vercel.app
+
+---
+
+You're receiving this because your store joined The Pretzel Cup delivery
+program. Questions about this email? Reply directly or message Chris from
+your portal.

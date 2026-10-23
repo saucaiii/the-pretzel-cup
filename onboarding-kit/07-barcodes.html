@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Barcode Strips &mdash; The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<style>
+  @page { size: 7in 3.4in; margin: 0; }
+  html, body { margin: 0; padding: 0; background: white; }
+  body { width: 7in; height: 3.4in; }
+
+  .sheet {
+    width: 7in;
+    height: 3.4in;
+    background: white;
+    padding: 0.1in;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1in;
+  }
+
+  /* One cuttable strip: label | barcode | PPF logo | label | barcode */
+  .strip {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1.1in 1fr;
+    align-items: center;
+    gap: 0.08in;
+    border: 1px dashed #999;
+    border-radius: 4px;
+    padding: 0.06in 0.14in;
+    background: white;
+  }
+  @media print {
+    .strip { border: 1px dashed #777; }
+  }
+
+  .sku {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .sku-label {
+    font-family: 'Archivo Black', Impact, sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: #000;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .sku svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .middle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .middle img {
+    width: 0.9in;
+    height: 0.9in;
+    display: block;
+    object-fit: contain;
+  }
+  .middle .tag {
+    font-family: 'Archivo Black', Impact, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    color: #000;
+  }
+
+  .cut-hint {
+    position: absolute;
+    top: 0.02in;
+    right: 0.14in;
+    font-family: 'Archivo Black', Impact, sans-serif;
+    font-size: 7px;
+    letter-spacing: 0.14em;
+    color: #999;
+    text-transform: uppercase;
+  }
+  @media print { .cut-hint { color: #777; } }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <!-- Strip 1 -->
+  <div class="strip" style="position:relative;">
+    <span class="cut-hint">cut along dashed line &nbsp;&#9986;</span>
+    <div class="sku">
+      <div class="sku-label">Single Twist</div>
+      <svg class="bc" data-value="6816509204993"></svg>
+    </div>
+    <div class="middle">
+      <img src="assets/ppf-logo.png" alt="Philly Pretzel Factory" />
+      <div class="tag">Made to Crave&trade;</div>
+    </div>
+    <div class="sku">
+      <div class="sku-label">Double Twist</div>
+      <svg class="bc" data-value="7252883302907"></svg>
+    </div>
+  </div>
+
+  <!-- Strip 2 -->
+  <div class="strip" style="position:relative;">
+    <span class="cut-hint">cut along dashed line &nbsp;&#9986;</span>
+    <div class="sku">
+      <div class="sku-label">Single Twist</div>
+      <svg class="bc" data-value="6816509204993"></svg>
+    </div>
+    <div class="middle">
+      <img src="assets/ppf-logo.png" alt="Philly Pretzel Factory" />
+      <div class="tag">Made to Crave&trade;</div>
+    </div>
+    <div class="sku">
+      <div class="sku-label">Double Twist</div>
+      <svg class="bc" data-value="7252883302907"></svg>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Render each barcode once the library has loaded.
+(function () {
+  function render() {
+    if (!window.JsBarcode) { setTimeout(render, 50); return; }
+    document.querySelectorAll('svg.bc').forEach(function (svg) {
+      JsBarcode(svg, svg.dataset.value, {
+        format: 'EAN13',
+        width: 1.6,
+        height: 46,
+        displayValue: true,
+        fontSize: 11,
+        margin: 0,
+        marginTop: 2,
+        background: 'transparent',
+        lineColor: '#000',
+      });
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Primary Driver per Route — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.ops-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.ops-header-bar .brand { font-family: var(--display); font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); }
+.ops-header-bar .brand a { color: inherit; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+
+.page { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 10px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 60ch; margin: 0 0 36px; line-height: 1.5; }
+
+.route-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  align-items: center;
+}
+@media (max-width: 600px) { .route-card { grid-template-columns: 1fr; } }
+.route-head { display: flex; flex-direction: column; gap: 4px; }
+.route-key {
+  font-family: var(--display); font-size: 28px; letter-spacing: 0.04em;
+  color: var(--accent); text-transform: uppercase; line-height: 1;
+}
+.route-label { font-size: 13px; color: var(--ink-2); }
+.route-stats { font-size: 11px; color: var(--ink-3); margin-top: 10px; font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+.route-stats b { color: var(--ink-2); font-weight: 500; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-family: var(--display); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); }
+.field select {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 500;
+}
+.field select:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
+.save-row { display: flex; justify-content: flex-end; margin-top: 10px; gap: 8px; align-items: center; }
+.status-msg { font-size: 11px; font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+.status-msg.ok { color: #5fd58c; }
+.status-msg.err { color: #f47572; }
+.btn {
+  background: var(--accent); color: var(--ppf-black); border: 0;
+  padding: 10px 18px; border-radius: 999px; cursor: pointer;
+  font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.btn:hover { background: var(--accent-2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.empty { padding: 56px 24px; text-align: center; color: var(--ink-3); border: 1px dashed var(--line); border-radius: var(--radius-md); }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+
+<div class="ops-banner">
+  Operator Mode
+  <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+</div>
+
+<div class="ops-header-bar">
+  <div class="brand"><a href="/ops">◂ Ops Hub</a></div>
+  <div class="header-right">
+    <nav class="ops-site-nav">
+      <a href="/ops/plan" class="nav-link">Plan</a>
+      <a href="/ops/stops" class="nav-link">Stops</a>
+      <a href="/ops/people" class="nav-link">People</a>
+      <a href="/ops/invite" class="nav-link">Invites</a>
+      <a href="/ops/print-kits" class="nav-link">Print Kits</a>
+      <a href="/ops/driver-routes" class="nav-link is-active">Drivers</a>
+    </nav>
+    <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="page-eyebrow">Driver personalization</div>
+  <h1 class="page-title">Primary driver<br>per route</h1>
+  <p class="page-sub">Pick one driver per route. Their name, tenure (years with you), and lifetime pretzels delivered populate the Driver card in every store's print bundle on that route. Stats are computed live from your <code style="background:var(--bg);color:var(--accent);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:13px;">returns</code> data in Supabase &mdash; the first delivery date they submitted and their running total.</p>
+
+  <div id="routes-list"></div>
+</main>
+</div><!-- /#app -->
+
+<script>
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') {
+      location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : me.role === 'store' ? '/store' : '/signin');
+      return;
+    }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    document.getElementById('user-tag').textContent = me.name || 'operator';
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch {}
+      location.replace('/signin');
+    });
+    initApp();
+  } catch { location.replace('/signin?next=' + next); }
+}
+boot();
+
+let routes = [];
+let drivers = [];
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function initApp() {
+  try {
+    const [rr, pr] = await Promise.all([
+      fetch('/api/schedule?resource=routes', { credentials: 'same-origin', cache: 'no-store' }),
+      fetch('/api/schedule?resource=people', { credentials: 'same-origin', cache: 'no-store' }),
+    ]);
+    if (!rr.ok || !pr.ok) throw new Error('load failed');
+    const [{ routes: rData }, { people }] = await Promise.all([rr.json(), pr.json()]);
+    routes = rData || [];
+    drivers = (people || []).filter(p => p.role === 'driver');
+    render();
+  } catch (err) {
+    document.getElementById('routes-list').innerHTML =
+      `<div class="empty">Could not load: ${esc(err.message)}</div>`;
+  }
+}
+
+function render() {
+  const list = document.getElementById('routes-list');
+  if (!routes.length) { list.innerHTML = `<div class="empty">No routes configured.</div>`; return; }
+  const options = drivers.map(d => `<option value="${esc(d.id)}">${esc(d.name)}</option>`).join('');
+  list.innerHTML = routes.map(r => `
+    <div class="route-card" data-key="${esc(r.key)}">
+      <div class="route-head">
+        <div class="route-key">${esc(r.key)}</div>
+        <div class="route-label">${esc(r.label || r.key + ' route')}</div>
+        <div class="route-stats" id="stats-${esc(r.key)}">
+          ${r.primary_driver_name ? `Current: <b>${esc(r.primary_driver_name)}</b>` : 'No primary driver set'}
+        </div>
+      </div>
+      <div class="field">
+        <label>Primary driver</label>
+        <select class="js-driver" data-key="${esc(r.key)}">
+          <option value="">— None —</option>
+          ${options.replace(new RegExp(`value="${r.primary_driver_id || ''}"`), `value="${r.primary_driver_id || ''}" selected`)}
+        </select>
+        <div class="save-row">
+          <span class="status-msg" id="status-${esc(r.key)}"></span>
+          <button type="button" class="btn js-save" data-key="${esc(r.key)}">Save</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.js-save').forEach(b => {
+    b.addEventListener('click', () => savePrimary(b.dataset.key));
+  });
+}
+
+async function savePrimary(key) {
+  const btn   = document.querySelector(`.js-save[data-key="${key}"]`);
+  const sel   = document.querySelector(`.js-driver[data-key="${key}"]`);
+  const status = document.getElementById('status-' + key);
+  const driverId = sel.value || null;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  status.className = 'status-msg';
+  status.textContent = '';
+  try {
+    const r = await fetch('/api/schedule?resource=routes&key=' + encodeURIComponent(key), {
+      method: 'PATCH', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ primary_driver_id: driverId }),
+    });
+    if (!r.ok) {
+      const b = await r.json().catch(() => ({}));
+      throw new Error(b.error || `HTTP ${r.status}`);
+    }
+    // Update local state so next render reflects it
+    const idx = routes.findIndex(x => x.key === key);
+    if (idx !== -1) {
+      const driverName = driverId ? (drivers.find(d => d.id === driverId) || {}).name || null : null;
+      routes[idx].primary_driver_id = driverId;
+      routes[idx].primary_driver_name = driverName;
+      const statsEl = document.getElementById('stats-' + key);
+      if (statsEl) statsEl.innerHTML = driverName ? `Current: <b>${esc(driverName)}</b>` : 'No primary driver set';
+    }
+    status.className = 'status-msg ok';
+    status.textContent = 'Saved ✓';
+  } catch (err) {
+    status.className = 'status-msg err';
+    status.textContent = err.message || 'Save failed';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+</script>
+</body>
+</html>

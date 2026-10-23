@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Request a drop change · Store Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--green:#0D5237;--gold:#D4B662;--gold-2:#F2E7A4;--ink:#fff;--ink-2:rgba(255,255,255,.78);--ink-3:rgba(255,255,255,.55);
+--bg-2:#083521;--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.22);--danger:#f47572;--good:#7ad692;
+--display:'Anton','Impact',sans-serif;--body:'Inter',system-ui,sans-serif;color-scheme:dark;}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:var(--green);color:var(--ink);font-family:var(--body);min-height:100dvh;padding:16px 14px 48px}
+.wrap{max-width:560px;margin:0 auto}
+#curtain{position:fixed;inset:0;background:var(--green);z-index:9999;display:grid;place-items:center;color:var(--ink-3);font:400 13px var(--display);letter-spacing:.14em;text-transform:uppercase}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:10px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.back{color:var(--ink-2);text-decoration:none;font:400 11px var(--display);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line-2);padding:8px 12px;border-radius:999px}
+.back:hover{color:var(--ink);border-color:var(--gold)}
+h1{font-family:var(--display);font-weight:400;font-size:26px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 2px}
+.sub{color:var(--ink-3);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:16px}
+.card{background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0}
+label{display:block;font:700 11px var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 6px}
+label:first-child{margin-top:0}
+.radios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.radios input{position:absolute;opacity:0;pointer-events:none}
+.radios label.r{display:block;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid var(--line-2);color:var(--ink);
+  font:600 13px var(--body);padding:12px;border-radius:10px;text-align:center;letter-spacing:0;text-transform:none;margin:0}
+.radios input:checked+label.r{background:var(--gold);color:#000;border-color:var(--gold)}
+input[type="date"],input[type="number"],textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--line-2);color:var(--ink);
+  border-radius:8px;padding:10px;font:400 15px var(--body);color-scheme:dark;font-family:inherit}
+textarea{resize:vertical;min-height:80px}
+.deltas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{color:var(--ink-3);font-size:12px;margin-top:6px}
+.err{color:var(--danger);font-size:13px;min-height:20px;margin:10px 0}
+.ok{color:var(--good);font-size:13px;min-height:20px;margin:10px 0}
+button.submit{width:100%;background:var(--gold);color:#000;border:1px solid var(--gold);border-radius:10px;padding:14px;
+  font:700 14px var(--body);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;margin-top:12px}
+button.submit:hover{background:var(--gold-2)}
+button.submit:disabled{background:rgba(255,255,255,.08);color:var(--ink-3);border-color:var(--line-2);cursor:not-allowed}
+.custom-only{display:none}
+.custom-only.show{display:block}
+</style>
+</head>
+<body>
+<div id="curtain">Loading…</div>
+<div class="wrap" id="app" style="display:none">
+  <header class="top">
+    <a class="back" href="/store">← Back</a>
+  </header>
+  <h1>Request a change</h1>
+  <div class="sub" id="store-sub">—</div>
+
+  <form class="card" id="req-form">
+    <label>What's the change?</label>
+    <div class="radios" id="kind-radios">
+      <input type="radio" name="kind" id="k-dbl"    value="double" required><label class="r" for="k-dbl">Double drop</label>
+      <input type="radio" name="kind" id="k-skip"   value="skip"><label class="r" for="k-skip">Skip drop</label>
+      <input type="radio" name="kind" id="k-custom" value="custom"><label class="r" for="k-custom">Custom</label>
+    </div>
+
+    <label for="effective_date">For which day?</label>
+    <input type="date" id="effective_date" name="effective_date" required>
+    <div class="hint">Must be today or later.</div>
+
+    <div class="custom-only" id="custom-fields">
+      <label>Adjustment (± from standard)</label>
+      <div class="deltas">
+        <div><input type="number" id="singles_delta" name="singles_delta" placeholder="± singles" step="1"></div>
+        <div><input type="number" id="doubles_delta" name="doubles_delta" placeholder="± doubles" step="1"></div>
+      </div>
+      <div class="hint">Positive adds to the standard drop, negative subtracts. e.g. <b>+5</b> singles means 5 more than usual.</div>
+    </div>
+
+    <label for="note">Note (optional)</label>
+    <textarea id="note" name="note" maxlength="500" placeholder="Context, if useful…"></textarea>
+
+    <p class="err" id="err">&nbsp;</p>
+    <p class="ok" id="ok">&nbsp;</p>
+    <button type="submit" class="submit" id="go">Send request</button>
+  </form>
+</div>
+
+<script>
+const toIso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+async function me(){
+  const r=await fetch('/api/store?resource=me',{credentials:'same-origin',cache:'no-store'});
+  if(r.status===401){location.href='/store/signin';return null}
+  return r.ok?r.json():null;
+}
+
+(async()=>{
+  const m=await me();if(!m)return;
+  document.getElementById('store-sub').textContent=m.display_name;
+  const tmr=new Date();tmr.setDate(tmr.getDate()+1);
+  const el=document.getElementById('effective_date');
+  el.min=toIso(new Date());
+  el.value=toIso(tmr);
+  document.getElementById('curtain').style.display='none';
+  document.getElementById('app').style.display='';
+})();
+
+document.getElementById('kind-radios').addEventListener('change',e=>{
+  const kind=e.target.value;
+  document.getElementById('custom-fields').classList.toggle('show',kind==='custom');
+});
+
+document.getElementById('req-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const err=document.getElementById('err');const ok=document.getElementById('ok');
+  err.textContent=' ';ok.textContent=' ';
+  const go=document.getElementById('go');go.disabled=true;
+  const fd=new FormData(e.target);
+  const kind=fd.get('kind');
+  const payload={
+    kind,
+    effective_date:fd.get('effective_date'),
+    note:(fd.get('note')||'').trim()||null,
+  };
+  if(kind==='custom'){
+    const s=fd.get('singles_delta');const d=fd.get('doubles_delta');
+    if(s!=='' && s!=null) payload.singles_delta=parseInt(s,10);
+    if(d!=='' && d!=null) payload.doubles_delta=parseInt(d,10);
+    if(payload.singles_delta==null && payload.doubles_delta==null){
+      err.textContent='For a custom change, enter at least one adjustment.';go.disabled=false;return;
+    }
+  }
+  if(!payload.kind || !payload.effective_date){
+    err.textContent='Pick a change type and date.';go.disabled=false;return;
+  }
+  try{
+    const r=await fetch('/api/store?resource=change-request',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),credentials:'same-origin'});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){err.textContent=j.error||'send failed';go.disabled=false;return}
+    ok.textContent='Sent — pending approval. Redirecting…';
+    setTimeout(()=>{location.href='/store'},1200);
+  }catch{err.textContent='network error';go.disabled=false}
+});
+</script>
+</body>
+</html>

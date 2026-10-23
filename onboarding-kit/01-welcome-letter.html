@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Welcome Letter — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  body { width: 8.5in; height: 11in; }
+  .letter {
+    width: 8.5in; height: 11in;
+    background: var(--ppf-cream);
+    color: var(--ppf-ink);
+    padding: 0;
+    display: flex; flex-direction: column;
+  }
+  .letter-head-wrap {
+    background: var(--ppf-green);
+  }
+  .letter-head {
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    padding: 28px 72px 36px;
+    display: flex; align-items: center; gap: 28px;
+  }
+  .letter-head .logo-badge {
+    width: 92px; height: 92px; flex-shrink: 0;
+  }
+  .letter-head .headline {
+    font-family: 'Archivo Black', sans-serif;
+    font-weight: 700;
+    font-size: 48px;
+    line-height: 0.95;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .letter-head .script {
+    font-size: 42px;
+    margin-top: 4px;
+    display: block;
+  }
+  .letter-body {
+    padding: 48px 72px 28px;
+    font-size: 15px;
+    line-height: 1.55;
+    flex: 1;
+  }
+  .letter-body p { margin: 0 0 14px; }
+  .letter-body strong { color: var(--ppf-green); }
+  .checklist {
+    margin: 24px 0;
+    padding: 20px 24px;
+    background: var(--ppf-white);
+    border-left: 4px solid var(--ppf-gold);
+    border-radius: 2px;
+  }
+  .checklist h3 {
+    margin: 0 0 10px;
+    font-family: 'Archivo Black', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ppf-green);
+    font-size: 14px;
+  }
+  .checklist ul {
+    margin: 0; padding: 0 0 0 18px;
+    font-size: 13px; line-height: 1.6;
+  }
+  .signature {
+    margin-top: 28px;
+    font-family: 'Caveat', cursive;
+    font-size: 44px;
+    color: var(--ppf-green);
+    line-height: 1;
+  }
+  .sign-off {
+    font-size: 13px;
+    color: var(--ppf-ink);
+    margin-top: 4px;
+  }
+  .sign-off strong { display: block; font-size: 14px; }
+  .letter-footer {
+    background: var(--ppf-green-deep);
+    color: var(--ppf-white);
+    padding: 18px 72px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .letter-footer .gold { color: var(--ppf-gold); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="letter">
+  <div class="letter-head-wrap">
+    <div class="plate-strip"></div>
+    <div class="letter-head">
+      <span class="logo-badge"></span>
+      <div>
+        <div class="eyebrow" style="color: var(--ppf-gold);">The Pretzel Cup · Welcome aboard</div>
+        <h1 class="headline">Fresh pretzels<br/><span class="script">at your store</span></h1>
+        <div class="tagline" style="text-align:left; margin-top: 10px;">MADE TO CRAVE<sup>®</sup></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="letter-body">
+    <p>Hey — welcome to The Pretzel Cup family.</p>
+
+    <p>Starting this week, your store is on our delivery route. Every day, hot and fresh Philly Pretzel Factory pretzels show up at your door, bagged and ready to sell. You only pay for what you move. Anything left over goes back on the truck. No contracts, no refrigeration, no fuss.</p>
+
+    <p>Everything you need to run the pretzel program at your store is in this kit. The display stand goes on your counter, the window cling goes on your door, and the UPC card goes to whoever programs your register. Your driver takes care of the rest.</p>
+
+    <div class="checklist">
+      <h3>In this kit</h3>
+      <ul>
+        <li>Counter display stand with pricing card</li>
+        <li>Window cling for the front door</li>
+        <li>UPC codes for your register</li>
+        <li>Your driver's info card</li>
+        <li>How to reach me if anything comes up</li>
+      </ul>
+    </div>
+
+    <p><strong>Signing in the first time:</strong> scan the QR code on the contact card to open your portal, then enter PIN <strong>0000</strong>. The app will prompt you to set your own 4-digit PIN right away — pick anything you'll remember.</p>
+
+    <p><strong>One thing to know:</strong> all communication runs through the client portal. If you ever need to adjust your order, flag an issue, or just reach me directly, that's the fastest way.</p>
+
+    <p>I'm genuinely glad to have you on. Let's sell some pretzels.</p>
+
+    <div class="signature">Chris</div>
+    <div class="sign-off">
+      <strong>Christopher Aumuller</strong>
+      Owner, The Pretzel Cup
+    </div>
+  </div>
+
+  <div class="letter-footer">
+    <span>The Pretzel Cup · Long Island, NY</span>
+    <span class="gold">the-pretzel-cup.vercel.app</span>
+  </div>
+</div>
+</body>
+</html>

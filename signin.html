@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Sign in — PPF Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  --green:#0D5237; --green-deep:#083521; --green-light:#126b48;
+  --gold:#D4B662; --gold-2:#F2E7A4; --gold-deep:#B2872F;
+  --ink:#FFFFFF; --ink-2:rgba(255,255,255,0.78); --ink-3:rgba(255,255,255,0.55);
+  --bg-2:#083521; --line:rgba(255,255,255,0.12); --line-2:rgba(255,255,255,0.22);
+  --danger:#f47572;
+  --display: 'Anton', 'Impact', sans-serif;
+  --body: 'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+/* Mobile tap baseline for every non-keypad control on this page too. */
+button, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  background: var(--green);
+  color: var(--ink);
+  font-family: var(--body);
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  overflow-x: hidden;
+}
+
+/* Diamond-plate strip at top, matching brand chrome */
+.diamond-strip {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 48px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 64' width='80' height='64'><g fill='%23ffffff' opacity='0.26'><path d='M5 4 L18 0 L13 12 L0 16 Z'/><path d='M25 4 L38 0 L33 12 L20 16 Z'/><path d='M45 4 L58 0 L53 12 L40 16 Z'/><path d='M65 4 L78 0 L73 12 L60 16 Z'/><path d='M5 24 L18 20 L13 32 L0 36 Z'/><path d='M25 24 L38 20 L33 32 L20 36 Z'/><path d='M45 24 L58 20 L53 32 L40 36 Z'/><path d='M65 24 L78 20 L73 32 L60 36 Z'/></g></svg>");
+  background-repeat: repeat-x;
+  background-size: 80px 64px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px 24px 28px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 2;
+}
+.logo {
+  display: block; margin: 0 auto 16px;
+  width: 72px; height: 64px; border-radius: 6px;
+}
+.eyebrow {
+  font-family: var(--display);
+  font-size: 11px; letter-spacing: 0.22em;
+  color: var(--gold); text-align: center;
+  margin-bottom: 6px; text-transform: uppercase;
+}
+h1 {
+  font-family: var(--display); font-weight: 400;
+  font-size: 32px; letter-spacing: 0.02em;
+  text-align: center; margin: 0 0 24px;
+  text-transform: uppercase; line-height: 1;
+}
+
+/* Step 1: name picker — one tap per person. Scales down to 2 cols on phones. */
+.step { display: none; }
+.step.is-active { display: block; }
+.names {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.name-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 16px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  min-height: 56px;
+  transition: background 120ms ease, border-color 120ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.name-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--gold); }
+.name-btn:active { background: rgba(0,0,0,0.2); }
+.role-chip {
+  display: block; font-family: var(--body); font-size: 10px;
+  letter-spacing: 0.14em; color: var(--ink-3); margin-top: 2px;
+  text-transform: uppercase; font-weight: 600;
+}
+
+/* Step 2: PIN entry — big numeric keypad for phones */
+.who-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; padding: 10px 14px;
+  background: rgba(0,0,0,0.2); border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.who-row .who {
+  display: flex; flex-direction: column; line-height: 1.1;
+}
+.who-row .who .n { font-family: var(--display); font-size: 20px; letter-spacing: 0.03em; text-transform: uppercase; }
+.who-row .who .r { font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); margin-top: 3px; text-transform: uppercase; font-weight: 600; font-family: var(--body); }
+.who-row button {
+  background: transparent; border: 1px solid var(--line-2); color: var(--ink-2);
+  font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
+  transition: transform 80ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.who-row button:hover { color: var(--ink); border-color: var(--gold); }
+.who-row button:active { transform: scale(0.96); background: rgba(0,0,0,0.2); }
+
+.pin-display {
+  display: flex; justify-content: center; gap: 10px;
+  margin: 14px 0 18px;
+}
+.pin-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: transparent; border: 2px solid var(--line-2);
+  transition: background 100ms ease, border-color 100ms ease, transform 100ms ease;
+}
+.pin-dot.is-filled {
+  background: var(--gold); border-color: var(--gold);
+  transform: scale(1.08);
+}
+
+.err {
+  text-align: center; font-size: 13px; font-weight: 600;
+  color: var(--danger); min-height: 20px; margin: 0 0 10px;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.key {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 26px; letter-spacing: 0.02em;
+  padding: 18px 0; border-radius: 12px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  min-height: 64px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.key:hover { background: rgba(255,255,255,0.1); border-color: var(--gold); }
+.key:active { background: rgba(0,0,0,0.3); transform: scale(0.98); }
+.key.action { font-size: 13px; letter-spacing: 0.12em; font-family: var(--body); font-weight: 700; }
+.key.action.submit { background: var(--gold); color: #000; border-color: var(--gold); }
+.key.action.submit:hover { background: var(--gold-2); }
+.key.action.submit:disabled { background: rgba(255,255,255,0.08); color: var(--ink-3); border-color: var(--line-2); cursor: not-allowed; }
+
+/* "Forgot PIN?" link + inline hint box. Native <dialog> so the ESC key,
+   screen readers, and focus-trap come free. */
+.foot { text-align: center; margin-top: 18px; }
+.hint-link {
+  background: transparent; border: 0;
+  color: var(--ink-3); font-family: var(--display);
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 6px 10px; cursor: pointer;
+}
+.hint-link:hover { color: var(--gold); }
+.hint-link:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+/* Walkthrough link, same understated style as the hint link */
+.footlink {
+  display: inline-block; margin-top: 2px;
+  color: var(--ink-3); font-family: var(--display); text-decoration: none;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 6px 10px;
+}
+.footlink:hover { color: var(--gold); }
+.footlink:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+dialog.hint {
+  background: var(--bg-2); color: var(--ink);
+  border: 1px solid var(--gold);
+  border-radius: 14px;
+  padding: 24px 24px 20px;
+  width: min(360px, calc(100vw - 32px));
+  box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6);
+  font-family: var(--body);
+}
+dialog.hint::backdrop { background: rgba(0,0,0,0.45); }
+.hint-eyebrow {
+  font-family: var(--display); font-size: 11px; letter-spacing: 0.22em;
+  color: var(--gold); text-transform: uppercase; margin: 0 0 8px;
+}
+.hint-body { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink); }
+.hint-body strong { color: var(--gold); }
+.hint-close {
+  margin-top: 18px; width: 100%;
+  background: var(--gold); color: #000; border: 0;
+  padding: 12px 16px; border-radius: 10px;
+  font-family: var(--display); font-size: 14px;
+  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+  transition: transform 80ms ease, background 120ms ease;
+}
+.hint-close:hover { background: var(--gold-2); }
+.hint-close:active { transform: scale(0.98); background: var(--gold-2); }
+</style>
+</head>
+<body>
+<div class="diamond-strip" aria-hidden="true"></div>
+
+<main class="card" role="main" aria-labelledby="h">
+  <img src="/ppf-logo.jpg" alt="Philly Pretzel Factory" class="logo" width="72" height="64">
+  <div class="eyebrow">PPF Ops</div>
+  <h1 id="h">Sign In</h1>
+
+  <!-- Step 1: pick your name -->
+  <section id="step-name" class="step is-active" aria-labelledby="pick-h">
+    <h2 id="pick-h" style="position:absolute;left:-9999px;">Pick your name</h2>
+    <div class="names" id="names"></div>
+  </section>
+
+  <!-- Step 2: enter PIN -->
+  <section id="step-pin" class="step" aria-labelledby="pin-h">
+    <h2 id="pin-h" style="position:absolute;left:-9999px;">Enter your PIN</h2>
+    <div class="who-row">
+      <div class="who">
+        <span class="n" id="who-name">—</span>
+        <span class="r" id="who-role">—</span>
+      </div>
+      <button type="button" id="change-user">Not you?</button>
+    </div>
+    <div class="pin-display" id="pin-display" aria-label="PIN entered"></div>
+    <p class="err" id="err" aria-live="polite">&nbsp;</p>
+    <div class="keypad" id="keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key action" data-k="clear" type="button">Clear</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key action submit" data-k="go" type="button" id="go" disabled>Enter</button>
+    </div>
+  </section>
+
+  <!-- Step 3: set a new PIN (shown after first-time 0000 login) -->
+  <section id="step-set" class="step" aria-labelledby="set-h">
+    <h2 id="set-h" style="font-family:var(--display);font-size:18px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);text-align:center;margin:0 0 10px;">Set your PIN</h2>
+    <p style="text-align:center;font-size:13px;color:var(--ink-2);margin:0 0 18px;line-height:1.45;">
+      Welcome, <strong id="set-name">—</strong>. Use the <strong>last 4 digits of your phone number</strong> as your new PIN.<br>
+      <span id="set-sub">Enter it now.</span>
+    </p>
+    <div class="pin-display" id="set-display" aria-label="New PIN"></div>
+    <p class="err" id="set-err" aria-live="polite">&nbsp;</p>
+    <div class="keypad" id="set-keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key action" data-k="clear" type="button">Clear</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key action submit" data-k="go" type="button" id="set-go" disabled>Save</button>
+    </div>
+  </section>
+
+  <p class="foot">
+    <button class="hint-link" type="button" id="forgot-pin">Forgot PIN?</button>
+    <br>
+    <a href="/videos/driver.mp4" target="_blank" rel="noopener" class="footlink">First time? Watch the 2-minute walkthrough &rarr;</a>
+    <br>
+    <a href="/videos/baker.mp4" target="_blank" rel="noopener" class="footlink">Bakers &rarr; Watch the 90-second walkthrough &rarr;</a>
+  </p>
+</main>
+
+<dialog class="hint" id="pin-hint" aria-labelledby="hint-title">
+  <p class="hint-eyebrow" id="hint-title">PIN hint</p>
+  <p class="hint-body">
+    Your PIN is the <strong>last 4 digits of your phone number</strong>.
+    If that doesn't work, ask Mike to reset it.
+  </p>
+  <button class="hint-close" type="button" id="hint-close">Got it</button>
+</dialog>
+
+<script>
+/* The staff roster. Keep in sync with the people table — same seed we
+   loaded into Supabase in P0. Order controls the on-screen layout. */
+const PEOPLE = [
+  { name: 'Mike',     role: 'operator' },
+  { name: 'Vic',      role: 'baker' },
+  { name: 'Marcos',   role: 'baker' },
+  { name: 'Tony',     role: 'baker' },
+  { name: 'Eric',     role: 'driver' },
+  { name: 'Gary',     role: 'driver' },
+  { name: 'Reetu',    role: 'driver' },
+  { name: 'Julianna', role: 'driver' },
+  { name: 'Brandon',  role: 'driver' },
+];
+
+const PIN_LEN = 4;
+let picked = null;
+let pin = '';
+
+const $ = s => document.querySelector(s);
+const names = $('#names');
+const whoName = $('#who-name');
+const whoRole = $('#who-role');
+const errEl = $('#err');
+const pinDisplay = $('#pin-display');
+const goBtn = $('#go');
+
+function renderNames() {
+  names.innerHTML = PEOPLE.map(p => `
+    <button class="name-btn" type="button" data-name="${p.name}" data-role="${p.role}">
+      ${p.name}<span class="role-chip">${p.role}</span>
+    </button>`).join('');
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.toggle('is-active', s.id === id));
+}
+
+function renderPinDisplay() {
+  pinDisplay.innerHTML = Array.from({ length: PIN_LEN }, (_, i) =>
+    `<span class="pin-dot${i < pin.length ? ' is-filled' : ''}" aria-hidden="true"></span>`
+  ).join('');
+  goBtn.disabled = pin.length < PIN_LEN;
+}
+
+function resetPin() {
+  pin = '';
+  renderPinDisplay();
+  errEl.textContent = ' ';
+}
+
+names.addEventListener('click', e => {
+  const b = e.target.closest('.name-btn');
+  if (!b) return;
+  picked = { name: b.dataset.name, role: b.dataset.role };
+  whoName.textContent = picked.name;
+  whoRole.textContent = picked.role;
+  resetPin();
+  showStep('step-pin');
+});
+
+$('#change-user').addEventListener('click', () => {
+  picked = null;
+  resetPin();
+  showStep('step-name');
+});
+
+function handleSigninKey(b) {
+  const k = b.dataset.k;
+  if (k === 'clear') return resetPin();
+  if (k === 'go')    return submit();
+  if (pin.length >= PIN_LEN) return; // ignore digits past the limit
+  if (/^\d$/.test(k)) {
+    pin += k;
+    renderPinDisplay();
+    if (pin.length === PIN_LEN) submit(); // auto-submit when full
+  }
+}
+// pointerdown fires immediately on touch (no 300ms delay, no double-tap-zoom
+// race since preventDefault suppresses the compat click). Rapid-tapping 0000
+// used to zoom the page on iOS Safari — this is the fix.
+$('#keypad').addEventListener('pointerdown', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  handleSigninKey(b);
+});
+// Keyboard activation (Enter/Space on a focused button) still goes through
+// click with detail=0. Pointer-initiated clicks have detail>=1 and are
+// already handled above, so we skip them here to avoid a double-fire.
+$('#keypad').addEventListener('click', e => {
+  if (e.detail !== 0) return;
+  const b = e.target.closest('button');
+  if (b) handleSigninKey(b);
+});
+
+/* Keyboard support for operators on a laptop */
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('step-pin').classList.contains('is-active')) return;
+  if (e.key >= '0' && e.key <= '9' && pin.length < PIN_LEN) {
+    pin += e.key; renderPinDisplay();
+    if (pin.length === PIN_LEN) submit();
+    e.preventDefault();
+  } else if (e.key === 'Backspace') {
+    pin = pin.slice(0, -1); renderPinDisplay(); errEl.textContent = ' ';
+    e.preventDefault();
+  } else if (e.key === 'Enter' && pin.length === PIN_LEN) {
+    submit(); e.preventDefault();
+  }
+});
+
+// Signed-in profile (set after signin). Carries role for routing + name
+// for the Set-PIN welcome line.
+let _me = null;
+
+async function submit() {
+  if (pin.length < PIN_LEN || !picked) return;
+  goBtn.disabled = true;
+  errEl.textContent = ' ';
+  try {
+    const r = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: picked.name, pin }),
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      errEl.textContent = j.error || 'wrong PIN';
+      pin = ''; renderPinDisplay();
+      return;
+    }
+    _me = { name: j.name, role: j.role };
+    // First-login path: starter 0000 — redirect to the Set-PIN step
+    // instead of the role landing. Session cookie is already set, so
+    // the change-pin endpoint has a valid session to work from.
+    if (j.mustChangePin) {
+      enterSetStep();
+      return;
+    }
+    routeHome(j.role);
+  } catch (e) {
+    errEl.textContent = 'network error, try again';
+    goBtn.disabled = false;
+  }
+}
+
+function routeHome(role) {
+  const params = new URLSearchParams(location.search);
+  const nxt = params.get('next');
+  const defaults = { operator: '/ops', baker: '/baker', driver: '/driver' };
+  const home = defaults[role] || '/';
+  const allowed = nxt && allowedFor(role, nxt);
+  location.href = allowed || home;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Set-PIN step. Two-pass: enter new PIN, confirm, then save.
+   ───────────────────────────────────────────────────────────── */
+const SET_PIN_LEN = 4;
+let setPin = '';     // digits being typed right now
+let firstPin = '';   // captured after the first full entry
+let setPhase = 'enter'; // 'enter' | 'confirm'
+
+const setDisplay = $('#set-display');
+const setErr = $('#set-err');
+const setGo = $('#set-go');
+const setSub = $('#set-sub');
+
+function enterSetStep() {
+  $('#set-name').textContent = _me.name;
+  setPhase = 'enter'; setPin = ''; firstPin = '';
+  setSub.textContent = 'Enter it now.';
+  renderSetDisplay();
+  showStep('step-set');
+}
+
+function renderSetDisplay() {
+  setDisplay.innerHTML = Array.from({ length: SET_PIN_LEN }, (_, i) =>
+    `<span class="pin-dot${i < setPin.length ? ' is-filled' : ''}" aria-hidden="true"></span>`
+  ).join('');
+  setGo.disabled = setPin.length < SET_PIN_LEN;
+}
+
+function handleSetKey(b) {
+  const k = b.dataset.k;
+  if (k === 'clear') { setPin = ''; setErr.textContent = ' '; renderSetDisplay(); return; }
+  if (k === 'go')    return commitSetStep();
+  if (setPin.length >= SET_PIN_LEN) return;
+  if (/^\d$/.test(k)) {
+    setPin += k; renderSetDisplay();
+    if (setPin.length === SET_PIN_LEN) commitSetStep();
+  }
+}
+$('#set-keypad').addEventListener('pointerdown', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  handleSetKey(b);
+});
+$('#set-keypad').addEventListener('click', e => {
+  if (e.detail !== 0) return;
+  const b = e.target.closest('button');
+  if (b) handleSetKey(b);
+});
+
+async function commitSetStep() {
+  if (setPin.length < SET_PIN_LEN) return;
+  setGo.disabled = true;
+  setErr.textContent = ' ';
+
+  if (setPhase === 'enter') {
+    if (setPin === '0000') {
+      setErr.textContent = 'Cannot be 0000. Pick a new PIN.';
+      setPin = ''; renderSetDisplay();
+      return;
+    }
+    firstPin = setPin;
+    setPin = '';
+    setPhase = 'confirm';
+    setSub.textContent = 'Enter it again to confirm.';
+    renderSetDisplay();
+    return;
+  }
+
+  // Confirm phase — must match the first entry
+  if (setPin !== firstPin) {
+    setErr.textContent = 'PINs didn’t match. Try again.';
+    setPhase = 'enter'; setPin = ''; firstPin = '';
+    setSub.textContent = 'Enter it now.';
+    renderSetDisplay();
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/auth/change-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPin: setPin }),
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      setErr.textContent = j.error || 'could not save, try again';
+      setPhase = 'enter'; setPin = ''; firstPin = '';
+      setSub.textContent = 'Enter it now.';
+      renderSetDisplay();
+      return;
+    }
+    routeHome(_me.role);
+  } catch (e) {
+    setErr.textContent = 'network error, try again';
+    setGo.disabled = false;
+  }
+}
+
+/* Only honor ?next= paths that start with the role's own section so a
+   baker can't be bounced to /ops and get kicked right back out. */
+function allowedFor(role, path) {
+  if (!path.startsWith('/')) return null;
+  if (role === 'operator') return path;
+  if (role === 'baker'    && (path === '/baker'  || path.startsWith('/baker/')))  return path;
+  if (role === 'driver'   && (path === '/driver' || path.startsWith('/driver/'))) return path;
+  return null;
+}
+
+/* Forgot-PIN hint dialog */
+const hintDlg = document.getElementById('pin-hint');
+document.getElementById('forgot-pin').addEventListener('click', () => hintDlg.showModal());
+document.getElementById('hint-close').addEventListener('click', () => hintDlg.close());
+// Clicking the backdrop (outside the dialog box) also closes it.
+hintDlg.addEventListener('click', e => { if (e.target === hintDlg) hintDlg.close(); });
+
+renderNames();
+renderPinDisplay();
+</script>
+</body>
+</html>

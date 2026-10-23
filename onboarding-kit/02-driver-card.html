@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Driver Info Card — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 5in 7in; margin: 0; }
+  body { width: 5in; height: 7in; }
+  .card { width: 5in; height: 7in; }
+  .driver-head {
+    padding: 32px 32px 20px;
+    text-align: center;
+  }
+  .eyebrow { color: var(--ppf-gold); }
+  .driver-head h1 {
+    font-family: 'Archivo Black', sans-serif;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 0.95;
+    text-transform: uppercase;
+    margin: 10px 0 4px;
+  }
+  .driver-head .script {
+    font-size: 32px;
+    display: block;
+  }
+  .driver-name-block {
+    text-align: center;
+    padding: 20px 32px 12px;
+  }
+  .driver-name-block .label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ppf-muted);
+    margin-bottom: 6px;
+  }
+  .driver-name {
+    font-family: 'Archivo Black', sans-serif;
+    font-weight: 700;
+    font-size: 54px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--ppf-white);
+  }
+  .stats {
+    margin: 20px 24px;
+    padding: 20px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(212, 162, 74, 0.4);
+    border-radius: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat .num {
+    font-family: 'Archivo Black', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--ppf-gold-bright);
+    line-height: 1;
+  }
+  .stat .lbl {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ppf-muted);
+    margin-top: 4px;
+  }
+  .traits {
+    padding: 0 32px 20px;
+    text-align: center;
+  }
+  .trait {
+    display: inline-block;
+    background: var(--ppf-gold);
+    color: var(--ppf-green-deep);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 999px;
+    margin: 3px;
+  }
+  .note {
+    padding: 14px 32px 20px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--ppf-muted);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin-top: auto;
+  }
+  .note strong { color: var(--ppf-white); display: block; margin-bottom: 2px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="plate-strip"></div>
+  <div class="driver-head">
+    <div class="eyebrow">Meet your driver</div>
+    <h1>Your pretzels<br/><span class="script">come from</span></h1>
+  </div>
+
+  <div class="driver-name-block">
+    <div class="label">Driver</div>
+    <div class="driver-name" id="d-name">YOUR DRIVER</div>
+  </div>
+
+  <div class="stats" id="d-stats">
+    <div class="stat" id="d-tenure-wrap">
+      <div class="num" id="d-tenure">—</div>
+      <div class="lbl">With The Pretzel Cup</div>
+    </div>
+    <div class="stat">
+      <div class="num" id="d-route">—</div>
+      <div class="lbl">Route</div>
+    </div>
+    <div class="stat" style="grid-column: 1 / -1;" id="d-delivered-wrap">
+      <div class="num" id="d-delivered">—</div>
+      <div class="lbl">Pretzels delivered</div>
+    </div>
+  </div>
+
+  <div class="traits">
+    <span class="trait">Punctual</span>
+    <span class="trait">Reliable</span>
+    <span class="trait">Friendly</span>
+  </div>
+
+  <div class="note">
+    <strong>A quick note on how we work</strong>
+    All communication — orders, questions, issues — runs through your client portal, straight to Chris. Your driver's job is simple: fresh pretzels, on time, every day.
+  </div>
+  <div class="tagline" style="padding: 12px 20px 16px; color: var(--ppf-gold);">MADE TO CRAVE<sup>®</sup></div>
+</div>
+
+<script>
+// Per-store driver card: pulls driver + route + stats from the URL.
+// print-store.html bakes these in when it fetches the primary driver
+// for each store's route. Falls back to a generic card when params are
+// absent (useful for standalone previews).
+(function () {
+  const params = new URLSearchParams(location.search);
+  const name     = (params.get('driver') || '').trim();
+  const route    = (params.get('route')  || '').trim().toUpperCase();
+  const years    = parseFloat(params.get('years')) || 0;
+  const delivered = parseInt(params.get('delivered') || '0', 10) || 0;
+
+  const nameEl = document.getElementById('d-name');
+  const routeEl = document.getElementById('d-route');
+  const tenureEl = document.getElementById('d-tenure');
+  const tenureWrap = document.getElementById('d-tenure-wrap');
+  const deliveredEl = document.getElementById('d-delivered');
+  const deliveredWrap = document.getElementById('d-delivered-wrap');
+
+  if (name) nameEl.textContent = name.toUpperCase();
+  if (route) routeEl.textContent = route;
+
+  // Tenure: show "<N> YRS" if >= 1, else "<N> MOS" if measurable, else hide block.
+  if (years >= 1) {
+    tenureEl.textContent = years.toFixed(years >= 10 ? 0 : 1).replace(/\.0$/, '') + ' YRS';
+  } else if (years > 0) {
+    const months = Math.max(1, Math.round(years * 12));
+    tenureEl.textContent = months + ' MOS';
+  } else {
+    tenureWrap.style.display = 'none';
+  }
+
+  // Pretzels delivered: show "X,XXX+" if >= 100, else hide the whole row.
+  if (delivered >= 100) {
+    // Round down to a nice-looking number: nearest 100 under 10k, nearest 1k otherwise.
+    const rounded = delivered < 10000
+      ? Math.floor(delivered / 100) * 100
+      : Math.floor(delivered / 1000) * 1000;
+    deliveredEl.textContent = rounded.toLocaleString('en-US') + '+';
+  } else {
+    deliveredWrap.style.display = 'none';
+  }
+})();
+</script>
+</body>
+</html>

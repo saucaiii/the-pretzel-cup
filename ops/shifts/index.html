@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Shifts — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 56px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 72ch; margin: 0 0 32px; line-height: 1.5; }
+
+.sect { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 32px 0 10px; }
+.sect:first-of-type { margin-top: 0; }
+
+.card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+.card + .card { margin-top: 14px; }
+.card-head { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: rgba(0,0,0,0.1); }
+.card-title { font-family: var(--display); font-size: 16px; letter-spacing: 0.02em; color: var(--ink); text-transform: uppercase; margin: 0; }
+.card-sub { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+
+.row { display: grid; grid-template-columns: 160px 220px 160px 1fr auto; gap: 10px; align-items: center; padding: 10px 20px; border-top: 1px solid var(--line); font-size: 14px; }
+.row:first-child { border-top: 0; }
+.row.header { background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--line); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; padding: 10px 20px; }
+.row .who { font-weight: 700; }
+.row .who .role-chip { display: inline-block; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; margin-left: 8px; font-weight: 400; }
+
+.row select, .row input[type="text"] { background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 7px 10px; color: var(--ink); font-family: var(--body); font-size: 14px; width: 100%; }
+.row select:focus-visible, .row input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+
+.day-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.day-chip { font-family: var(--display); font-size: 11px; letter-spacing: 0.1em; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line-2); color: var(--ink-3); background: transparent; cursor: pointer; text-transform: uppercase; min-width: 42px; text-align: center; }
+.day-chip[aria-pressed="true"] { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); font-weight: 700; }
+
+.row-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.btn-sm { background: var(--accent); color: var(--ppf-black); border: 0; border-radius: 6px; padding: 6px 12px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.btn-sm.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); }
+.btn-sm.ghost:hover { color: var(--ink); border-color: var(--ink); }
+.btn-sm.danger { color: #f47572; background: transparent; border: 1px solid rgba(244,117,114,0.4); }
+.btn-sm.danger:hover { color: var(--ppf-black); background: #f47572; border-color: #f47572; }
+.btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+.chip { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.chip.ok   { color: #5fd58c; border: 1px solid rgba(95,213,140,0.4); background: rgba(95,213,140,0.08); }
+.chip.fail { color: #f47572; border: 1px solid rgba(244,117,114,0.4); background: rgba(244,117,114,0.08); }
+
+/* Add-shift form */
+.add-form { background: rgba(212,182,98,0.04); border: 1px dashed rgba(212,182,98,0.3); border-radius: var(--radius-md); padding: 20px; margin-top: 32px; }
+.add-form .add-head { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; margin: 0 0 12px; }
+.add-row { display: grid; grid-template-columns: 160px 220px 160px 1fr auto; gap: 10px; align-items: center; }
+@media (max-width: 980px) {
+  .row, .add-row { grid-template-columns: 1fr; }
+  .row-actions { justify-content: flex-start; }
+}
+
+.empty { padding: 32px; text-align: center; color: var(--ink-3); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/updates" class="nav-link">Updates</a>
+          <a href="/ops/time-off" class="nav-link">Time Off</a>
+          <a href="/ops/stops" class="nav-link">Stops</a>
+          <a href="/ops/store" class="nav-link">Store</a>
+          <a href="/ops/shifts" class="nav-link is-active">Shifts</a>
+          <a href="/ops/people" class="nav-link">People</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+          <a href="/ops/standings" class="nav-link">Standings</a>
+        </nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Operational</div>
+    <h1 class="page-title">Shifts</h1>
+    <p class="page-sub">Who works what days. One row per person-per-location — a single person can appear in more than one row if they split a week between bakeries or routes (e.g. Vic bakes Lynbrook Mon–Fri and Franklin Square on weekends). Changes propagate immediately to the schedule grid, driver and baker apps.</p>
+
+    <div id="sections"></div>
+
+    <div class="add-form">
+      <h2 class="add-head">Add shift</h2>
+      <div class="add-row">
+        <select id="a-person">
+          <option value="">Person…</option>
+        </select>
+        <select id="a-location">
+          <option value="">Location…</option>
+        </select>
+        <select id="a-route">
+          <option value="">— no route —</option>
+          <option value="FSQ">FSQ · Franklin Square</option>
+          <option value="LYN">LYN · Lynbrook</option>
+          <option value="FBW">FBW · Freeport/Baldwin</option>
+        </select>
+        <div class="day-row" id="a-days"></div>
+        <div class="row-actions">
+          <button type="button" class="btn-sm" id="a-save">Add</button>
+          <span class="chip" id="a-status" hidden></span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:10px;">Pick a person, their location (bakery name for bakers, route name for drivers), optional route key (drivers only), and tap the days of the week they work.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const KNOWN_LOCATIONS = [
+  'Franklin Square bakery', 'Lynbrook bakery',
+  'Franklin Square route', 'Lynbrook route', 'Freeport/Baldwin route',
+];
+
+let _shifts = [];
+let _people = [];
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') { location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin'); return; }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    $('#user-tag').textContent = me.name;
+    initApp();
+  } catch (e) { location.replace('/signin?next=' + next); }
+}
+boot();
+
+function initApp() {
+  $('#logout-btn').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  renderAddDays();
+  loadAll();
+}
+
+async function loadAll() {
+  try {
+    const [shR, scR] = await Promise.all([
+      fetch('/api/schedule?resource=shifts', { credentials: 'same-origin', cache: 'no-store' }),
+      fetch('/api/schedule?week=0',          { credentials: 'same-origin', cache: 'no-store' }),
+    ]);
+    if (!shR.ok) throw new Error('shifts ' + shR.status);
+    if (!scR.ok) throw new Error('schedule ' + scR.status);
+    _shifts = (await shR.json()).shifts || [];
+    _people = (await scR.json()).people || [];
+    renderSections();
+    renderAddForm();
+  } catch (e) {
+    $('#sections').innerHTML = `<div class="empty">Could not load — ${esc(e.message)}</div>`;
+  }
+}
+
+function renderSections() {
+  const container = $('#sections');
+  if (!_shifts.length) { container.innerHTML = '<div class="empty">No shifts yet. Add one below.</div>'; return; }
+  const groups = { baker: [], driver: [], operator: [] };
+  _shifts.forEach(s => { (groups[s.role] || groups.driver).push(s); });
+  const html = ['baker','driver','operator'].filter(r => groups[r].length).map(role => `
+    <h2 class="sect">${role === 'baker' ? 'Bakers' : role === 'driver' ? 'Drivers' : 'Operators'}</h2>
+    <div class="card">
+      <div class="row header">
+        <div>Person</div>
+        <div>Location</div>
+        <div>Route</div>
+        <div>Days of week</div>
+        <div></div>
+      </div>
+      ${groups[role].map(shiftRow).join('')}
+    </div>
+  `).join('');
+  container.innerHTML = html;
+  container.querySelectorAll('[data-shift]').forEach(bindRow);
+}
+
+function shiftRow(s) {
+  return `<div class="row" data-shift="${esc(s.id)}">
+    <div class="who">${esc(s.people?.name || '—')}<span class="role-chip">${esc(s.role)}</span></div>
+    <div>
+      <select data-k="location">
+        ${KNOWN_LOCATIONS.map(l => `<option value="${esc(l)}" ${l === s.location ? 'selected' : ''}>${esc(l)}</option>`).join('')}
+        ${KNOWN_LOCATIONS.includes(s.location) ? '' : `<option value="${esc(s.location)}" selected>${esc(s.location)}</option>`}
+      </select>
+    </div>
+    <div>
+      <select data-k="route">
+        <option value="" ${!s.route_key ? 'selected' : ''}>—</option>
+        <option value="FSQ" ${s.route_key === 'FSQ' ? 'selected' : ''}>FSQ</option>
+        <option value="LYN" ${s.route_key === 'LYN' ? 'selected' : ''}>LYN</option>
+        <option value="FBW" ${s.route_key === 'FBW' ? 'selected' : ''}>FBW</option>
+      </select>
+    </div>
+    <div class="day-row" data-k="days">
+      ${DOW.map((d, i) => `<button type="button" class="day-chip" data-d="${i}" aria-pressed="${s.days.includes(i) ? 'true' : 'false'}">${d}</button>`).join('')}
+    </div>
+    <div class="row-actions">
+      <span class="chip" data-k="chip" hidden></span>
+      <button type="button" class="btn-sm ghost" data-k="reset" disabled>Reset</button>
+      <button type="button" class="btn-sm" data-k="save" disabled>Save</button>
+      <button type="button" class="btn-sm danger" data-k="del">Delete</button>
+    </div>
+  </div>`;
+}
+
+function readRow(row) {
+  return {
+    location: row.querySelector('[data-k="location"]').value,
+    route_key: row.querySelector('[data-k="route"]').value || null,
+    days: [...row.querySelectorAll('[data-k="days"] .day-chip')]
+      .filter(b => b.getAttribute('aria-pressed') === 'true')
+      .map(b => +b.dataset.d),
+  };
+}
+
+function bindRow(row) {
+  const id = row.dataset.shift;
+  const orig = _shifts.find(s => s.id === id);
+  const chip = row.querySelector('[data-k="chip"]');
+  const saveBtn = row.querySelector('[data-k="save"]');
+  const resetBtn = row.querySelector('[data-k="reset"]');
+
+  const dirty = () => {
+    const cur = readRow(row);
+    const changed =
+      cur.location !== orig.location ||
+      (cur.route_key || null) !== (orig.route_key || null) ||
+      cur.days.join(',') !== orig.days.slice().sort((a,b)=>a-b).join(',');
+    saveBtn.disabled = !changed;
+    resetBtn.disabled = !changed;
+    chip.hidden = true;
+  };
+
+  row.querySelectorAll('select').forEach(el => el.addEventListener('change', dirty));
+  row.querySelectorAll('.day-chip').forEach(b => b.onclick = () => {
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    dirty();
+  });
+
+  resetBtn.onclick = () => {
+    row.querySelector('[data-k="location"]').value = orig.location;
+    row.querySelector('[data-k="route"]').value = orig.route_key || '';
+    row.querySelectorAll('[data-k="days"] .day-chip').forEach(b => {
+      b.setAttribute('aria-pressed', orig.days.includes(+b.dataset.d) ? 'true' : 'false');
+    });
+    dirty();
+  };
+
+  saveBtn.onclick = async () => {
+    const cur = readRow(row);
+    if (!cur.days.length) { chip.hidden = false; chip.className = 'chip fail'; chip.textContent = 'pick ≥ 1 day'; return; }
+    saveBtn.disabled = true; chip.hidden = true;
+    try {
+      const r = await fetch(`/api/schedule?resource=shifts&id=${encodeURIComponent(id)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify(cur),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || r.status);
+      Object.assign(orig, cur, { days: cur.days.slice().sort((a,b)=>a-b) });
+      chip.hidden = false; chip.className = 'chip ok'; chip.textContent = 'Saved';
+      dirty();
+      setTimeout(() => { chip.hidden = true; }, 1600);
+    } catch (e) {
+      chip.hidden = false; chip.className = 'chip fail'; chip.textContent = (e.message || 'error').slice(0, 40);
+      saveBtn.disabled = false;
+    }
+  };
+
+  row.querySelector('[data-k="del"]').onclick = async () => {
+    if (!confirm(`Delete this shift for ${orig.people?.name || '—'} at ${orig.location}?`)) return;
+    try {
+      const r = await fetch(`/api/schedule?resource=shifts&id=${encodeURIComponent(id)}`, {
+        method: 'DELETE', credentials: 'same-origin',
+      });
+      if (!r.ok) throw new Error((await r.json().catch(()=>({}))).error || r.status);
+      loadAll();
+    } catch (e) {
+      alert('Delete failed — ' + (e.message || ''));
+    }
+  };
+}
+
+/* ─── Add shift ─── */
+function renderAddForm() {
+  const sel = $('#a-person');
+  sel.innerHTML = '<option value="">Person…</option>' + _people.map(p => `<option value="${esc(p.id)}" data-role="${esc(p.role)}">${esc(p.name)} (${esc(p.role)})</option>`).join('');
+  const locSel = $('#a-location');
+  locSel.innerHTML = '<option value="">Location…</option>' + KNOWN_LOCATIONS.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+  $('#a-save').onclick = onAddSave;
+}
+
+function renderAddDays() {
+  $('#a-days').innerHTML = DOW.map((d, i) => `<button type="button" class="day-chip" data-d="${i}" aria-pressed="false">${d}</button>`).join('');
+  $('#a-days').querySelectorAll('.day-chip').forEach(b => b.onclick = () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
+}
+
+async function onAddSave() {
+  const sel = $('#a-person');
+  const personId = sel.value;
+  const role = sel.selectedOptions[0] && sel.selectedOptions[0].dataset.role;
+  const location = $('#a-location').value;
+  const route_key = $('#a-route').value || null;
+  const days = [...$('#a-days').querySelectorAll('.day-chip[aria-pressed="true"]')].map(b => +b.dataset.d);
+  const chip = $('#a-status');
+  const show = (msg, kind) => { chip.hidden = false; chip.className = 'chip ' + kind; chip.textContent = msg; };
+  if (!personId) return show('pick a person', 'fail');
+  if (!location) return show('pick a location', 'fail');
+  if (!days.length) return show('pick ≥ 1 day', 'fail');
+  $('#a-save').disabled = true;
+  try {
+    const r = await fetch('/api/schedule?resource=shifts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ person_id: personId, role, location, route_key, days }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.status);
+    show('Added', 'ok');
+    // Reset the form
+    sel.value = ''; $('#a-location').value = ''; $('#a-route').value = '';
+    $('#a-days').querySelectorAll('.day-chip').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    loadAll();
+    setTimeout(() => { chip.hidden = true; }, 1600);
+  } catch (e) {
+    show((e.message || 'error').slice(0, 60), 'fail');
+  } finally {
+    $('#a-save').disabled = false;
+  }
+}
+</script>
+</body>
+</html>

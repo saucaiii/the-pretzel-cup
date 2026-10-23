@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Delivery history · Store Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--green:#0D5237;--gold:#D4B662;--ink:#fff;--ink-2:rgba(255,255,255,.78);--ink-3:rgba(255,255,255,.55);
+--bg-2:#083521;--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.22);
+--display:'Anton','Impact',sans-serif;--body:'Inter',system-ui,sans-serif;color-scheme:dark;}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:var(--green);color:var(--ink);font-family:var(--body);min-height:100dvh;padding:max(16px,env(safe-area-inset-top)) 14px max(48px,env(safe-area-inset-bottom))}
+button, [role="button"], input[type="button"], input[type="submit"], a.back {
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.wrap{max-width:720px;margin:0 auto}
+#curtain{position:fixed;inset:0;background:var(--green);z-index:9999;display:grid;place-items:center;color:var(--ink-3);font:400 13px var(--display);letter-spacing:.14em;text-transform:uppercase}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:10px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.back{color:var(--ink-2);text-decoration:none;font:400 11px var(--display);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line-2);padding:8px 12px;border-radius:999px}
+.back:hover{color:var(--ink);border-color:var(--gold)}
+h1{font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 2px}
+.sub{color:var(--ink-3);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.card{background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px 0}
+.range{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.range label{display:block;font:700 10px var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.range input{background:rgba(0,0,0,.3);border:1px solid var(--line-2);color:var(--ink);border-radius:8px;padding:10px;font:600 14px var(--body);width:100%;color-scheme:dark}
+.range button{background:var(--gold);color:#000;border:1px solid var(--gold);border-radius:10px;padding:10px 14px;font:700 12px var(--body);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font:700 10px var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);color:var(--ink-2);font-variant-numeric:tabular-nums}
+td.date{color:var(--ink);font-weight:600}
+td.cents{color:var(--gold);font-weight:700}
+.sum{font:700 14px var(--body);color:var(--gold);text-align:right;margin-top:10px;font-variant-numeric:tabular-nums}
+.empty{color:var(--ink-3);text-align:center;padding:16px}
+</style>
+</head>
+<body>
+<div id="curtain">Loading…</div>
+<div class="wrap" id="app" style="display:none">
+  <header class="top">
+    <a class="back" href="/store">← Back</a>
+    <a class="back" href="/store/invoice" id="invoice-link">Invoice ▸</a>
+  </header>
+  <h1>Delivery history</h1>
+  <div class="sub" id="store-sub">—</div>
+
+  <section class="card">
+    <form class="range" id="range-form">
+      <div><label for="from">From</label><input type="date" id="from" required></div>
+      <div><label for="to">To</label><input type="date" id="to" required></div>
+      <button type="submit">Load</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <table id="hist-table" style="display:none">
+      <thead><tr><th>Date</th><th>Dropped</th><th>Sold</th><th>$</th><th>Driver</th></tr></thead>
+      <tbody id="hist-body"></tbody>
+    </table>
+    <div class="empty" id="hist-empty">No deliveries in this range.</div>
+    <div class="sum" id="sum"></div>
+  </section>
+</div>
+
+<script>
+const money=c=>'$'+((c||0)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate=iso=>{if(!iso)return'—';const[y,m,d]=iso.split('-').map(n=>parseInt(n,10));return new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})};
+const toIso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+async function me(){
+  const r=await fetch('/api/store?resource=me',{credentials:'same-origin',cache:'no-store'});
+  if(r.status===401){location.href='/store/signin';return null}
+  return r.ok?r.json():null;
+}
+
+async function load(from,to){
+  const r=await fetch(`/api/store?resource=history&from=${from}&to=${to}`,{credentials:'same-origin',cache:'no-store'});
+  if(r.status===401){location.href='/store/signin';return}
+  const j=await r.json();
+  if(!r.ok){document.getElementById('curtain').textContent=j.error||'load failed';return}
+  render(j.rows||[]);
+}
+
+function render(rows){
+  const tbody=document.getElementById('hist-body');
+  const table=document.getElementById('hist-table');
+  const empty=document.getElementById('hist-empty');
+  const sum=document.getElementById('sum');
+  if(!rows.length){table.style.display='none';empty.style.display='';sum.textContent='';return}
+  table.style.display='';empty.style.display='none';
+  tbody.innerHTML=rows.map(r=>`
+    <tr><td class="date">${esc(fmtDate(r.for_date))}</td>
+    <td>${r.singles_drop??'—'} / ${r.doubles_drop??'—'}</td>
+    <td>${r.sold_singles??'—'} / ${r.sold_doubles??'—'}</td>
+    <td class="cents">${r.sold_cents!=null?money(r.sold_cents):'—'}</td>
+    <td>${esc(r.submitted_by_name||'—')}</td></tr>`).join('');
+  const total=rows.reduce((a,r)=>a+(r.sold_cents||0),0);
+  sum.textContent=`${rows.length} ${rows.length===1?'delivery':'deliveries'} · ${money(total)}`;
+}
+
+(async()=>{
+  const m=await me();if(!m)return;
+  document.getElementById('store-sub').textContent=m.display_name;
+  const today=new Date();const back=new Date(today);back.setDate(back.getDate()-60);
+  document.getElementById('from').value=toIso(back);
+  document.getElementById('to').value=toIso(today);
+  const yyyyMm=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('invoice-link').href=`/store/invoice?month=${yyyyMm}`;
+  await load(document.getElementById('from').value,document.getElementById('to').value);
+  document.getElementById('curtain').style.display='none';
+  document.getElementById('app').style.display='';
+})();
+document.getElementById('range-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const from=document.getElementById('from').value;const to=document.getElementById('to').value;
+  if(!from||!to)return;await load(from,to);
+});
+</script>
+</body>
+</html>

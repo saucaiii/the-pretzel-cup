@@ -1,0 +1,123 @@
+/* The Pretzel Cup — new store onboarding kit
+   Shared visual language, aligned to Philly Pretzel Factory brand guide.
+   Each piece is its own HTML with its own @page size. */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Caveat:wght@500;600;700&display=swap');
+
+:root {
+  /* Primary brand green — exact hex from PPF brand guide */
+  --ppf-green: #0D5237;
+  --ppf-green-deep: #072A1D;
+
+  /* Secondary gold palette */
+  --ppf-gold: #D4B662;
+  --ppf-gold-deep: #B2872F;
+  --ppf-gold-pale: #F2E7A4;
+
+  /* Supporting */
+  --ppf-cream: #F8F3E7;
+  --ppf-white: #FFFFFF;
+  --ppf-black: #000000;
+  --ppf-cool-gray: #6D6E71;
+  --ppf-ink: #072A1D;
+  --ppf-muted: rgba(255, 255, 255, 0.72);
+
+  /* Fonts — FatFrank → Archivo Black, Gotham → Montserrat, SantElia → Caveat */
+  --font-display: 'Archivo Black', 'Arial Black', Impact, sans-serif;
+  --font-body: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --font-script: 'Caveat', 'Brush Script MT', cursive;
+
+  /* Diamond-plate pattern — white rhombuses at 75% opacity, repeating.
+     Per guide: default white at 75% opacity, 3 rows at top of asset. */
+  --diamond-pattern: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'><g fill='white' fill-opacity='0.75'><polygon points='2,10 18,5 22,8 6,13'/><polygon points='26,18 42,13 46,16 30,21'/></g></svg>");
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  color: var(--ppf-ink);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.card {
+  background: var(--ppf-green);
+  color: var(--ppf-white);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card--cream { background: var(--ppf-cream); color: var(--ppf-ink); }
+
+/* Diamond plate strip, per brand guide: 3 rows of white diamonds at top of asset */
+.plate-strip {
+  height: 36px;
+  background-color: var(--ppf-green);
+  background-image: var(--diamond-pattern);
+  background-repeat: repeat;
+  background-size: 48px 24px;
+  flex-shrink: 0;
+}
+
+.plate-strip--thin { height: 24px; }
+
+/* Display type */
+.display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.005em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.script {
+  font-family: var(--font-script);
+  color: var(--ppf-gold);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ppf-gold);
+  font-family: var(--font-body);
+}
+
+.rule {
+  height: 3px;
+  background: var(--ppf-gold);
+  width: 48px;
+  border: 0;
+  margin: 10px 0;
+}
+
+.tagline {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ppf-white);
+  text-align: center;
+}
+.tagline sup { font-size: 7px; vertical-align: super; margin-left: 1px; }
+
+/* Shared PPF logo spot */
+.logo-badge {
+  background: url('ppf-logo.png') no-repeat center / contain;
+  display: inline-block;
+}
+
+/* Print niceties */
+@media print {
+  body { background: transparent; }
+}

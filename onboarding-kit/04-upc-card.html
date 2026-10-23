@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>UPC Card — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 5in 3.5in; margin: 0; }
+  body { width: 5in; height: 3.5in; }
+  .card { width: 5in; height: 3.5in; }
+  .head {
+    padding: 16px 20px 10px;
+    text-align: center;
+  }
+  .eyebrow { color: var(--ppf-gold); }
+  .head h1 {
+    font-family: 'Archivo Black', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 0.95;
+    text-transform: uppercase;
+    margin: 6px 0 0;
+  }
+  .head .script {
+    font-size: 20px;
+    display: block;
+    line-height: 1;
+  }
+  .skus {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 0 16px 10px;
+  }
+  .sku {
+    background: var(--ppf-white);
+    color: var(--ppf-ink);
+    border-radius: 4px;
+    padding: 10px 8px;
+    text-align: center;
+    margin: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid var(--ppf-gold);
+  }
+  .sku-name {
+    font-family: 'Archivo Black', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ppf-green);
+  }
+  .sku-upc {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    margin: 6px 0 4px;
+    color: var(--ppf-ink);
+  }
+  .sku-price {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ppf-green);
+  }
+  .foot {
+    background: var(--ppf-green-deep);
+    color: var(--ppf-muted);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 7px 12px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="plate-strip plate-strip--thin"></div>
+  <div class="head">
+    <div class="eyebrow">For your register</div>
+    <h1>Program these UPCs<br/><span class="script">into your POS</span></h1>
+  </div>
+
+  <div class="skus">
+    <div class="sku">
+      <div class="sku-name">Single Twist</div>
+      <div class="sku-upc">6 816509 204993</div>
+      <div class="sku-price">$4.00</div>
+    </div>
+    <div class="sku">
+      <div class="sku-name">Double Twist</div>
+      <div class="sku-upc">7 252883 302907</div>
+      <div class="sku-price">$6.00</div>
+    </div>
+  </div>
+
+  <div class="foot">Scannable sticker codes are on your laminated barcode sheet</div>
+</div>
+</body>
+</html>

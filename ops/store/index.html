@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Store Portal — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+
+.page { max-width: 1080px; margin: 0 auto; padding: 56px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 60ch; margin: 0 0 32px; line-height: 1.5; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tab { font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2);
+  background: transparent; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); }
+.tab .n { background: rgba(0,0,0,.2); color: inherit; padding: 1px 7px; border-radius: 999px; margin-left: 6px; font-size: 11px; }
+.tab[aria-selected="true"] .n { background: rgba(0,0,0,.15); }
+
+.pane { display: none; }
+.pane.is-active { display: block; }
+
+.sect { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 24px 0 10px; }
+.row { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md);
+  padding: 16px 20px; margin-bottom: 10px; }
+.row.open     { border-left: 3px solid #f47572; }
+.row.ack      { border-left: 3px solid var(--accent); }
+.row.pending  { border-left: 3px solid var(--accent); }
+.row.approved { border-left: 3px solid #5fd58c; }
+.row.denied   { border-left: 3px solid #f47572; }
+.row.applied  { border-left: 3px solid #5fd58c; }
+.row.resolved { border-left: 3px solid #5fd58c; opacity: .75; }
+
+.row-head { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: baseline; }
+.row-title { font-family: var(--display); font-size: 18px; letter-spacing: 0.03em; text-transform: uppercase; }
+.row-chip { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.row-chip.open     { color: #f47572; border-color: #f47572; }
+.row-chip.pending  { color: var(--accent); border-color: var(--accent); }
+.row-chip.approved,.row-chip.applied,.row-chip.resolved { color: #5fd58c; border-color: #5fd58c; }
+.row-chip.denied   { color: #f47572; border-color: #f47572; }
+.row-note { color: var(--ink-2); font-size: 14px; margin: 10px 0 0; line-height: 1.5; white-space: pre-wrap; }
+.row-meta { font-family: var(--display); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-top: 10px; }
+.row-meta b { color: var(--ink-2); font-weight: 500; }
+.row-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  background: var(--accent); color: var(--ppf-black); border: 0;
+  padding: 10px 14px; border-radius: 999px; cursor: pointer;
+  font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.btn:hover { background: var(--accent-2); }
+.btn.alt { background: transparent; color: var(--ink-2); border: 1px solid var(--line-2); }
+.btn.alt:hover { color: var(--ink); border-color: var(--accent); }
+.btn.danger { background: #f47572; color: #fff; }
+.btn.danger:hover { background: #ea5f5c; }
+
+.empty { padding: 32px 10px; text-align: center; color: var(--ink-3); font-size: 14px;
+  border: 1px dashed var(--line); border-radius: var(--radius-md); }
+
+/* PINs tab */
+.pin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pin-table th { text-align: left; font: 700 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); padding: 10px 10px; border-bottom: 1px solid var(--line); }
+.pin-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.pin-input { background: var(--bg); border: 1px solid var(--line-2); color: var(--ink);
+  border-radius: 6px; padding: 7px 9px; font: 600 14px var(--body); width: 110px; font-variant-numeric: tabular-nums; }
+.pin-input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+.has-pin { color: #5fd58c; font-weight: 600; }
+.no-pin  { color: var(--ink-3); }
+.route-pill { display: inline-block; font: 700 10px var(--body); letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.status-msg { font-size: 12px; min-height: 16px; }
+.status-msg.ok { color: #5fd58c; }
+.status-msg.fail { color: #f47572; }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/updates" class="nav-link">Updates</a>
+          <a href="/ops/time-off" class="nav-link">Time Off</a>
+          <a href="/ops/stops" class="nav-link">Stops</a>
+          <a href="/ops/store" class="nav-link is-active">Store</a>
+          <a href="/ops/shifts" class="nav-link">Shifts</a>
+          <a href="/ops/people" class="nav-link">People</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+          <a href="/ops/standings" class="nav-link">Standings</a>
+        </nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Store portal · Operator view</div>
+    <h1 class="page-title">Store Comms</h1>
+    <p class="page-sub">What stores are telling us — issues on their deliveries, drop-change requests for upcoming days, and their sign-in PINs.</p>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true"  data-pane="issues">Open issues <span class="n" id="n-issues">0</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-pane="reqs">Pending requests <span class="n" id="n-reqs">0</span></button>
+      <button class="tab" role="tab" aria-selected="false" data-pane="pins">Store PINs</button>
+    </div>
+
+    <div class="pane is-active" id="pane-issues">
+      <div id="issues-list"></div>
+      <div id="issues-empty" class="empty" hidden>No open issues. 🥨</div>
+    </div>
+    <div class="pane" id="pane-reqs">
+      <div id="reqs-list"></div>
+      <div id="reqs-empty" class="empty" hidden>No pending requests.</div>
+    </div>
+    <div class="pane" id="pane-pins">
+      <p style="color:var(--ink-3);font-size:13px;margin:0 0 14px;max-width:68ch;line-height:1.5;">
+        Set each store's code (e.g. <code style="color:var(--accent)">711 SRRVC</code>). That becomes its sign-in URL — <code style="color:var(--accent)">/store/711SRRVC</code> — case-insensitive, spaces ignored. Then set a 4-8 digit PIN and share both with the store manager.
+      </p>
+      <table class="pin-table" id="pin-table">
+        <thead>
+          <tr><th>Store</th><th>Route</th><th>Code</th><th>URL</th><th>PIN</th><th>New PIN</th><th>Save</th><th></th></tr>
+        </thead>
+        <tbody id="pin-body"></tbody>
+      </table>
+      <div id="pins-empty" class="empty" hidden>No active stops.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+const fmtWhen = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+const kindLabel = k => ({
+  short_count: 'Short count', long_count: 'Long count', missed: 'Missed drop',
+  damage: 'Damage', other: 'Other',
+  double: 'Double drop', skip: 'Skip', custom: 'Custom',
+}[k] || k);
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') { location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin'); return; }
+    $('#boot').style.display = 'none';
+    $('#app').hidden = false;
+    $('#user-tag').textContent = me.name;
+    initApp();
+  } catch (e) { location.replace('/signin?next=' + next); }
+}
+boot();
+
+function initApp() {
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+    document.querySelectorAll('.pane').forEach(p => p.classList.toggle('is-active', p.id === 'pane-' + t.dataset.pane));
+  });
+  $('#logout-btn').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch {}
+    location.replace('/signin');
+  };
+  refreshAll();
+}
+
+async function refreshAll() {
+  await Promise.all([loadIssues(), loadRequests(), loadPins()]);
+}
+
+async function loadIssues() {
+  try {
+    const r = await fetch('/api/schedule?resource=store-issues&status=open', { credentials: 'same-origin', cache: 'no-store' });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || '');
+    renderIssues(j.issues || []);
+  } catch (e) { console.error(e); }
+}
+function renderIssues(rows) {
+  $('#n-issues').textContent = rows.length;
+  const list = $('#issues-list'); const empty = $('#issues-empty');
+  if (!rows.length) { list.innerHTML = ''; empty.hidden = false; return; }
+  empty.hidden = true;
+  list.innerHTML = rows.map(i => `
+    <div class="row ${esc(i.status)}" data-id="${esc(i.id)}">
+      <div class="row-head">
+        <div class="row-title">${esc(kindLabel(i.kind))} · ${esc(i.stop_label)}</div>
+        <span class="row-chip ${esc(i.status)}">${esc(i.status)}</span>
+      </div>
+      <p class="row-note">${esc(i.note)}</p>
+      <div class="row-meta">
+        ${i.for_date ? `<b>Drop:</b> ${esc(fmtDate(i.for_date))} &middot; ` : ''}
+        <b>Filed:</b> ${esc(fmtWhen(i.created_at))}
+      </div>
+      <div class="row-actions">
+        ${i.status === 'open' ? `<button class="btn alt" data-act="ack" data-id="${esc(i.id)}">Acknowledge</button>` : ''}
+        ${i.status !== 'resolved' ? `<button class="btn" data-act="resolve" data-id="${esc(i.id)}">Resolve</button>` : ''}
+      </div>
+    </div>`).join('');
+  list.querySelectorAll('button[data-act]').forEach(b => b.onclick = () => patchIssue(b.dataset.id, b.dataset.act === 'ack' ? 'acknowledged' : 'resolved'));
+}
+async function patchIssue(id, status) {
+  try {
+    const r = await fetch(`/api/schedule?resource=store-issues&id=${encodeURIComponent(id)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }), credentials: 'same-origin',
+    });
+    if (!r.ok) throw new Error('patch failed');
+    loadIssues();
+  } catch (e) { alert('Could not update: ' + (e.message || e)); }
+}
+
+async function loadRequests() {
+  try {
+    const r = await fetch('/api/schedule?resource=store-requests&status=pending', { credentials: 'same-origin', cache: 'no-store' });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || '');
+    renderRequests(j.requests || []);
+  } catch (e) { console.error(e); }
+}
+function renderRequests(rows) {
+  $('#n-reqs').textContent = rows.length;
+  const list = $('#reqs-list'); const empty = $('#reqs-empty');
+  if (!rows.length) { list.innerHTML = ''; empty.hidden = false; return; }
+  empty.hidden = true;
+  list.innerHTML = rows.map(r => {
+    const detail = r.kind === 'custom'
+      ? `Δsingles ${r.singles_delta ?? 0}, Δdoubles ${r.doubles_delta ?? 0}`
+      : '';
+    return `
+    <div class="row ${esc(r.status)}" data-id="${esc(r.id)}">
+      <div class="row-head">
+        <div class="row-title">${esc(kindLabel(r.kind))} · ${esc(fmtDate(r.effective_date))} · ${esc(r.stop_label)}</div>
+        <span class="row-chip ${esc(r.status)}">${esc(r.status)}</span>
+      </div>
+      ${detail ? `<p class="row-note">${esc(detail)}</p>` : ''}
+      ${r.note ? `<p class="row-note">${esc(r.note)}</p>` : ''}
+      <div class="row-meta"><b>Filed:</b> ${esc(fmtWhen(r.created_at))}</div>
+      <div class="row-actions">
+        <button class="btn"       data-act="approved" data-id="${esc(r.id)}">Approve</button>
+        <button class="btn alt"   data-act="applied"  data-id="${esc(r.id)}">Mark applied</button>
+        <button class="btn danger" data-act="denied"  data-id="${esc(r.id)}">Deny</button>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('button[data-act]').forEach(b => b.onclick = () => patchRequest(b.dataset.id, b.dataset.act));
+}
+async function patchRequest(id, status) {
+  try {
+    const r = await fetch(`/api/schedule?resource=store-requests&id=${encodeURIComponent(id)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }), credentials: 'same-origin',
+    });
+    if (!r.ok) throw new Error('patch failed');
+    loadRequests();
+  } catch (e) { alert('Could not update: ' + (e.message || e)); }
+}
+
+async function loadPins() {
+  try {
+    const r = await fetch('/api/schedule?resource=stops', { credentials: 'same-origin', cache: 'no-store' });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || '');
+    renderPins(j.stops || [], j.routes || []);
+  } catch (e) { console.error(e); }
+}
+function renderPins(stops, routes) {
+  const routeLabel = Object.fromEntries(routes.map(r => [r.key, r.label]));
+  const active = stops.filter(s => s.active);
+  const body = $('#pin-body'); const empty = $('#pins-empty');
+  if (!active.length) { body.innerHTML = ''; empty.hidden = false; return; }
+  empty.hidden = true;
+  body.innerHTML = active.map(s => {
+    const name = s.store_display_name || `${s.name} — ${s.town}`;
+    const hasPin = !!s.store_pin_hash;
+    const fallback = `${(s.route_key || '').toUpperCase()}${String(s.stop_order ?? '').padStart(2,'0')}`;
+    const code = s.store_code || '';
+    const codeNorm = (s.store_code_norm || '').toUpperCase() || fallback;
+    const url = `${location.origin}/store/${codeNorm}`;
+    return `
+      <tr data-id="${esc(s.id)}">
+        <td>${esc(name)}</td>
+        <td><span class="route-pill">${esc(routeLabel[s.route_key] || s.route_key)}</span></td>
+        <td><input type="text" class="pin-input code-input" style="width:150px;font-family:var(--body);" placeholder="e.g. 711 SRRVC" value="${esc(code)}" maxlength="32"></td>
+        <td>
+          <code style="font-family:var(--display);letter-spacing:.08em;color:var(--accent);">/store/${esc(codeNorm)}</code>
+          <button type="button" class="btn alt" data-copy="${esc(url)}" style="margin-left:6px;padding:4px 10px;font-size:10px;">Copy</button>
+        </td>
+        <td class="${hasPin ? 'has-pin' : 'no-pin'}">${hasPin ? '✓ Set' : '— None'}</td>
+        <td><input type="password" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" class="pin-input" placeholder="4–8 digits"></td>
+        <td>
+          <button class="btn" data-act="save">Save</button>
+          ${hasPin ? ` <button class="btn danger" data-act="clear-pin" title="Lock out this store">Clear PIN</button>` : ''}
+        </td>
+        <td><span class="status-msg"></span></td>
+      </tr>`;
+  }).join('');
+  body.querySelectorAll('button[data-copy]').forEach(b => b.onclick = async () => {
+    const url = b.dataset.copy;
+    try { await navigator.clipboard.writeText(url); b.textContent = 'Copied!'; setTimeout(() => { b.textContent = 'Copy'; }, 1200); }
+    catch { prompt('Copy this URL:', url); }
+  });
+  body.querySelectorAll('button[data-act]').forEach(b => b.onclick = () => onPinAction(b));
+}
+async function onPinAction(btn) {
+  const tr = btn.closest('tr'); const id = tr.dataset.id;
+  const codeInput = tr.querySelector('.code-input');
+  const pinInput  = tr.querySelector('input[type="password"]');
+  const msg = tr.querySelector('.status-msg');
+  msg.className = 'status-msg'; msg.textContent = '';
+  const payload = {};
+
+  if (btn.dataset.act === 'clear-pin') {
+    payload.pin = null;
+  } else {
+    // Save path: send whichever fields changed/have content.
+    const codeVal = (codeInput.value || '').trim();
+    payload.code = codeVal || null;  // explicit null if cleared
+    const pinVal = (pinInput.value || '').trim();
+    if (pinVal) {
+      if (!/^\d{4,8}$/.test(pinVal)) { msg.className = 'status-msg fail'; msg.textContent = 'PIN must be 4–8 digits'; return; }
+      payload.pin = pinVal;
+    }
+    if (payload.pin === undefined && payload.code === null && codeInput.defaultValue === '') {
+      msg.className = 'status-msg fail'; msg.textContent = 'Nothing to save';
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/schedule?resource=store-pins&id=${encodeURIComponent(id)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload), credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { msg.className = 'status-msg fail'; msg.textContent = j.error || 'save failed'; return; }
+    msg.className = 'status-msg ok';
+    msg.textContent = btn.dataset.act === 'clear-pin' ? 'PIN cleared' : 'Saved';
+    if (pinInput) pinInput.value = '';
+    loadPins();
+  } catch (e) {
+    msg.className = 'status-msg fail'; msg.textContent = 'network error';
+  } finally { btn.disabled = false; }
+}
+</script>
+</body>
+</html>

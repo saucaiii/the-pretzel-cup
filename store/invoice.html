@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Monthly invoice · Store Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<style>
+:root{--green:#0D5237;--gold:#D4B662;--ink:#fff;--ink-2:rgba(255,255,255,.78);--ink-3:rgba(255,255,255,.55);
+--bg-2:#083521;--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.22);
+--display:'Anton','Impact',sans-serif;--body:'Inter',system-ui,sans-serif;color-scheme:dark;}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:var(--green);color:var(--ink);font-family:var(--body);min-height:100dvh;padding:16px 14px 48px}
+.wrap{max-width:720px;margin:0 auto}
+#curtain{position:fixed;inset:0;background:var(--green);z-index:9999;display:grid;place-items:center;color:var(--ink-3);font:400 13px var(--display);letter-spacing:.14em;text-transform:uppercase}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:10px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.back{color:var(--ink-2);text-decoration:none;font:400 11px var(--display);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line-2);padding:8px 12px;border-radius:999px}
+.back:hover{color:var(--ink);border-color:var(--gold)}
+.btn{background:var(--gold);color:#000;border:1px solid var(--gold);border-radius:999px;padding:8px 14px;font:700 11px var(--display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.month-picker{display:flex;gap:8px;align-items:center;margin:0 0 16px}
+.month-picker input,.month-picker select{background:rgba(0,0,0,.3);border:1px solid var(--line-2);color:var(--ink);border-radius:8px;padding:8px 10px;font:600 14px var(--body);color-scheme:dark;appearance:menulist}
+h1{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 2px}
+.sub{color:var(--ink-3);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.sheet{background:#fff;color:#111;border-radius:14px;padding:28px 28px 24px;margin:14px 0;box-shadow:0 24px 64px -24px rgba(0,0,0,.4)}
+.sheet .head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.sheet .head .l{font-family:var(--display);font-size:28px;letter-spacing:.03em;text-transform:uppercase;color:var(--green)}
+.sheet .head .meta{text-align:right;font-size:12px;color:#555}
+.sheet h2{font-family:var(--display);font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#555;margin:18px 0 8px}
+.sheet table{width:100%;border-collapse:collapse;font-size:13px}
+.sheet th{text-align:left;font:700 10px var(--body);letter-spacing:.14em;text-transform:uppercase;color:#666;padding:6px 8px;border-bottom:1px solid #ccc}
+.sheet td{padding:7px 8px;border-bottom:1px solid #eee;font-variant-numeric:tabular-nums}
+.sheet .r{text-align:right}
+.sheet .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;font-variant-numeric:tabular-nums}
+.sheet .totals .k{background:#f6f1dd;border:1px solid #e3d9a9;border-radius:8px;padding:10px 12px}
+.sheet .totals .lab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#777;font-weight:700}
+.sheet .totals .v{font-family:var(--display);font-size:22px;color:var(--green);margin-top:4px}
+.sheet .foot{margin-top:18px;font-size:11px;color:#777}
+.empty{color:#999;text-align:center;padding:24px}
+@media print{
+  body{background:#fff;padding:0;color:#111}
+  header.top,.month-picker,#noprint{display:none !important}
+  #curtain{display:none !important}
+  .sheet{box-shadow:none;border-radius:0;margin:0;padding:24px}
+  .wrap{max-width:100%}
+}
+</style>
+</head>
+<body>
+<div id="curtain">Loading…</div>
+<div class="wrap" id="app" style="display:none">
+  <header class="top" id="noprint">
+    <a class="back" href="/store">← Back</a>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" type="button" id="xlsx">Export .xlsx</button>
+      <button class="btn" type="button" id="print">Save as PDF / Print</button>
+    </div>
+  </header>
+
+  <div class="month-picker" id="noprint-picker">
+    <label style="color:var(--ink-3);font:700 10px var(--body);letter-spacing:.14em;text-transform:uppercase" for="month">Month</label>
+    <select id="month"></select>
+  </div>
+
+  <section class="sheet">
+    <div class="head">
+      <div>
+        <div class="l">PPF Pretzel Cup</div>
+        <div style="font-size:12px;color:#666">Delivery statement</div>
+      </div>
+      <div class="meta">
+        <div><strong id="store-name">—</strong></div>
+        <div id="store-addr">—</div>
+        <div id="month-label" style="margin-top:4px">—</div>
+      </div>
+    </div>
+
+    <h2>Deliveries</h2>
+    <table id="rows-table" style="display:none">
+      <thead><tr><th>Date</th><th class="r">Singles</th><th class="r">Doubles</th><th class="r">Subtotal</th></tr></thead>
+      <tbody id="rows-body"></tbody>
+    </table>
+    <div class="empty" id="rows-empty">No deliveries in this month.</div>
+
+    <div class="totals">
+      <div class="k"><div class="lab">Singles sold</div><div class="v" id="t-singles">0</div></div>
+      <div class="k"><div class="lab">Doubles sold</div><div class="v" id="t-doubles">0</div></div>
+      <div class="k"><div class="lab">Deliveries</div><div class="v" id="t-deliv">0</div></div>
+      <div class="k"><div class="lab">Total</div><div class="v" id="t-total">$0</div></div>
+    </div>
+
+    <div class="foot">Reference only. Not an invoice for payment. Questions: call us.</div>
+  </section>
+</div>
+
+<script>
+const money=c=>'$'+((c||0)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate=iso=>{if(!iso)return'—';const[y,m,d]=iso.split('-').map(n=>parseInt(n,10));return new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})};
+const monthLabel=yyyymm=>{const[y,m]=yyyymm.split('-').map(n=>parseInt(n,10));return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'})};
+
+function currentMonth(){const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`}
+
+async function load(month){
+  const r=await fetch(`/api/store?resource=invoice&month=${month}`,{credentials:'same-origin',cache:'no-store'});
+  if(r.status===401){location.href='/store/signin';return}
+  const j=await r.json();
+  if(!r.ok){document.getElementById('curtain').textContent=j.error||'load failed';return}
+  render(j);
+  document.getElementById('curtain').style.display='none';
+  document.getElementById('app').style.display='';
+}
+
+let _lastData=null;
+function render(d){
+  _lastData=d;
+  document.getElementById('store-name').textContent=d.stop.display_name;
+  document.getElementById('store-addr').textContent=d.stop.address||'';
+  document.getElementById('month-label').textContent=monthLabel(d.month);
+  const rows=d.rows||[];const sp=d.pricing.single_cents;const dp=d.pricing.double_cents;
+  const tbody=document.getElementById('rows-body');const table=document.getElementById('rows-table');const empty=document.getElementById('rows-empty');
+  if(rows.length){
+    tbody.innerHTML=rows.map(r=>{
+      const s=r.sold_singles||0,db=r.sold_doubles||0;
+      const sub=(r.sold_cents!=null)?r.sold_cents:(s*sp + db*dp);
+      return `<tr><td>${esc(fmtDate(r.for_date))}</td><td class="r">${s}</td><td class="r">${db}</td><td class="r">${money(sub)}</td></tr>`;
+    }).join('');
+    table.style.display='';empty.style.display='none';
+  } else {
+    table.style.display='none';empty.style.display='';
+  }
+  const T=d.totals||{};
+  document.getElementById('t-singles').textContent=T.singles_sold||0;
+  document.getElementById('t-doubles').textContent=T.doubles_sold||0;
+  document.getElementById('t-deliv').textContent=T.deliveries||0;
+  document.getElementById('t-total').textContent=money(T.gross_cents);
+}
+
+function exportXlsx(){
+  if(!_lastData){alert('Load a month first.');return;}
+  if(typeof XLSX==='undefined'){alert('Spreadsheet library still loading — try again in a sec.');return;}
+  const d=_lastData;
+  const sp=d.pricing.single_cents;const dp=d.pricing.double_cents;
+  const dollars=c=>Math.round(c)/100;
+  // Header block.
+  const rows=[
+    ['PPF Pretzel Cup — Delivery statement'],
+    ['Store', d.stop.display_name],
+    ['Address', d.stop.address||''],
+    ['Month', monthLabel(d.month)],
+    ['Generated', new Date().toLocaleString('en-US')],
+    [],
+    ['Date','Singles sold','Doubles sold','Subtotal ($)'],
+  ];
+  // Data rows.
+  for(const r of (d.rows||[])){
+    const s=r.sold_singles||0,db=r.sold_doubles||0;
+    const sub=(r.sold_cents!=null)?r.sold_cents:(s*sp + db*dp);
+    rows.push([r.for_date, s, db, dollars(sub)]);
+  }
+  // Totals block.
+  const T=d.totals||{};
+  rows.push([]);
+  rows.push(['Totals', T.singles_sold||0, T.doubles_sold||0, dollars(T.gross_cents||0)]);
+  rows.push(['Deliveries', T.deliveries||0]);
+  rows.push([]);
+  rows.push(['Single price', dollars(sp)]);
+  rows.push(['Double price', dollars(dp)]);
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  // Column widths.
+  ws['!cols']=[{wch:16},{wch:14},{wch:14},{wch:14}];
+  // Currency format on column D for data rows + totals row.
+  const dataStart=7, dataEnd=dataStart+(d.rows||[]).length-1;
+  for(let r=dataStart;r<=dataEnd;r++){
+    const cell=ws[XLSX.utils.encode_cell({r:r,c:3})];
+    if(cell){cell.z='$#,##0.00';}
+  }
+  const totalsRow=dataEnd+2;
+  const tc=ws[XLSX.utils.encode_cell({r:totalsRow,c:3})];
+  if(tc){tc.z='$#,##0.00';}
+  for(const r of [totalsRow+5,totalsRow+6]){
+    const cell=ws[XLSX.utils.encode_cell({r:r,c:1})];
+    if(cell){cell.z='$#,##0.00';}
+  }
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, d.month);
+  const slug=(d.stop.display_name||'store').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  XLSX.writeFile(wb, `pretzel-cup_${slug}_${d.month}.xlsx`);
+}
+
+function populateMonths(selected){
+  // Range: Jan 2025 → current month (matches the backfilled history).
+  const now=new Date();
+  const start={y:2025,m:1};
+  const end={y:now.getFullYear(),m:now.getMonth()+1};
+  const opts=[];
+  let y=start.y,m=start.m;
+  while(y<end.y || (y===end.y && m<=end.m)){
+    opts.push(`${y}-${String(m).padStart(2,'0')}`);
+    m++;if(m>12){m=1;y++;}
+  }
+  const sel=document.getElementById('month');
+  sel.innerHTML=opts.reverse().map(mm=>`<option value="${mm}">${monthLabel(mm)}</option>`).join('');
+  sel.value=selected;
+}
+
+(async()=>{
+  const q=new URLSearchParams(location.search);
+  const month=/^\d{4}-\d{2}$/.test(q.get('month')||'')?q.get('month'):currentMonth();
+  populateMonths(month);
+  await load(month);
+})();
+
+document.getElementById('month').addEventListener('change',e=>{
+  const month=e.target.value;
+  if(!/^\d{4}-\d{2}$/.test(month)) return;
+  const url=new URL(location.href);url.searchParams.set('month',month);history.replaceState(null,'',url);
+  document.getElementById('curtain').textContent='Loading…';
+  document.getElementById('curtain').style.display='';
+  document.getElementById('app').style.display='none';
+  load(month);
+});
+
+document.getElementById('print').addEventListener('click',()=>window.print());
+document.getElementById('xlsx').addEventListener('click',exportXlsx);
+</script>
+</body>
+</html>

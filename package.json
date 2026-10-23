@@ -1,0 +1,12 @@
+{
+  "name": "the-pretzel-cup",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The Pretzel Cup — PPF brand site + ops dashboard. Serverless functions live under /api/.",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@upstash/redis": "^1.34.0",
+    "googleapis": "^186.0.0",
+    "jose": "^5.9.0"
+  }
+}

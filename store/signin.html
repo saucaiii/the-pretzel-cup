@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Store Portal — Sign in · PPF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  --green:#0D5237; --green-deep:#083521;
+  --gold:#D4B662; --gold-2:#F2E7A4;
+  --ink:#FFFFFF; --ink-2:rgba(255,255,255,0.78); --ink-3:rgba(255,255,255,0.55);
+  --bg-2:#083521; --line:rgba(255,255,255,0.12); --line-2:rgba(255,255,255,0.22);
+  --danger:#f47572;
+  --display: 'Anton', 'Impact', sans-serif;
+  --body: 'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+/* Mobile tap baseline — kills 300ms double-tap-zoom race on controls while
+   leaving pinch-zoom on page content intact. */
+button, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  background: var(--green); color: var(--ink); font-family: var(--body);
+  min-height: 100dvh; display: grid; place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+}
+.card {
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px;
+  padding: 32px 24px 28px; width: 100%; max-width: 440px;
+  box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5);
+}
+.logo { display: block; margin: 0 auto 16px; width: 72px; height: 64px; border-radius: 6px; }
+.eyebrow { font-family: var(--display); font-size: 11px; letter-spacing: 0.22em;
+  color: var(--gold); text-align: center; margin-bottom: 6px; text-transform: uppercase; }
+h1 { font-family: var(--display); font-weight: 400; font-size: 32px; letter-spacing: 0.02em;
+  text-align: center; margin: 0 0 24px; text-transform: uppercase; line-height: 1; }
+h2 { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); margin: 18px 0 8px; }
+
+.step { display: none; }
+.step.is-active { display: block; }
+
+.route-group { margin-bottom: 12px; }
+.stops { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.stop-btn {
+  background: rgba(255,255,255,0.04); border: 1px solid var(--line-2); color: var(--ink);
+  font: 600 14px/1.3 var(--body); text-align: left; padding: 12px 14px; border-radius: 10px;
+  cursor: pointer; min-height: 48px;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+.stop-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--gold); }
+.stop-btn:active { background: rgba(0,0,0,0.25); transform: scale(0.99); }
+.stop-btn .sub { display: block; color: var(--ink-3); font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; font-weight: 700; margin-top: 2px; }
+
+.who-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; padding: 10px 14px;
+  background: rgba(0,0,0,0.2); border: 1px solid var(--line); border-radius: 10px;
+}
+.who-row .n { font-family: var(--display); font-size: 18px; letter-spacing: 0.03em; text-transform: uppercase; }
+.who-row button {
+  background: transparent; border: 1px solid var(--line-2); color: var(--ink-2);
+  font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
+  transition: transform 80ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.who-row button:hover { color: var(--ink); border-color: var(--gold); }
+.who-row button:active { transform: scale(0.96); background: rgba(0,0,0,0.2); }
+
+.pin-display { display: flex; justify-content: center; gap: 10px; margin: 14px 0 18px; }
+.pin-dot { width: 16px; height: 16px; border-radius: 50%; background: transparent;
+  border: 2px solid var(--line-2); transition: background 100ms ease, border-color 100ms ease, transform 100ms ease; }
+.pin-dot.is-filled { background: var(--gold); border-color: var(--gold); transform: scale(1.08); }
+
+.err { text-align: center; font-size: 13px; font-weight: 600; color: var(--danger); min-height: 20px; margin: 0 0 10px; }
+
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.key { background: rgba(255,255,255,0.05); border: 1px solid var(--line-2); color: var(--ink);
+  font-family: var(--display); font-size: 26px; padding: 18px 0; border-radius: 12px;
+  cursor: pointer; font-variant-numeric: tabular-nums; min-height: 64px;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none; }
+.key:hover { background: rgba(255,255,255,0.1); border-color: var(--gold); }
+.key:active { background: rgba(0,0,0,0.3); transform: scale(0.98); }
+.key.action { font-size: 13px; letter-spacing: 0.12em; font-family: var(--body); font-weight: 700; }
+.key.action.submit { background: var(--gold); color: #000; border-color: var(--gold); }
+.key.action.submit:hover { background: var(--gold-2); }
+.key.action.submit:disabled { background: rgba(255,255,255,0.08); color: var(--ink-3);
+  border-color: var(--line-2); cursor: not-allowed; }
+
+.foot { text-align: center; margin-top: 18px; color: var(--ink-3); font-size: 12px; }
+.foot a { color: var(--gold); text-decoration: none; }
+
+.loading { text-align: center; color: var(--ink-3); padding: 24px 0; }
+</style>
+</head>
+<body>
+
+<main class="card" role="main" aria-labelledby="h">
+  <img src="/ppf-logo.jpg" alt="Philly Pretzel Factory" class="logo" width="72" height="64">
+  <div class="eyebrow">PPF · Store Portal</div>
+  <h1 id="h">Sign In</h1>
+
+  <!-- Step 1: pick your store -->
+  <section id="step-stop" class="step is-active">
+    <div id="loading" class="loading">Loading stores&hellip;</div>
+    <div id="route-groups"></div>
+  </section>
+
+  <!-- Step 2: enter PIN -->
+  <section id="step-pin" class="step">
+    <div class="who-row">
+      <span class="n" id="who-name">—</span>
+      <button type="button" id="change-user">Not you?</button>
+    </div>
+    <div class="pin-display" id="pin-display"></div>
+    <p class="err" id="err" aria-live="polite">&nbsp;</p>
+    <div class="keypad" id="keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key action" data-k="clear" type="button">Clear</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key action submit" data-k="go" type="button" id="go" disabled>Enter</button>
+    </div>
+  </section>
+
+  <!-- Step 3: set your own PIN (first-login path after signing in with 0000) -->
+  <section id="step-set" class="step" aria-labelledby="set-h">
+    <h2 id="set-h" style="font-family:var(--display);font-size:18px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);text-align:center;margin:0 0 10px;">Set your PIN</h2>
+    <p style="text-align:center;font-size:13px;color:var(--ink-2);margin:0 0 18px;line-height:1.45;">
+      Welcome to <strong id="set-store">—</strong>. Pick a 4-digit PIN you'll remember &mdash; something not <code>0000</code>.<br>
+      <span id="set-sub">Enter it now.</span>
+    </p>
+    <div class="pin-display" id="set-display" aria-label="New PIN"></div>
+    <p class="err" id="set-err" aria-live="polite">&nbsp;</p>
+    <div class="keypad" id="set-keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key action" data-k="clear" type="button">Clear</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key action submit" data-k="go" type="button" id="set-go" disabled>Save</button>
+    </div>
+  </section>
+
+  <p class="foot">
+    Don't have a PIN yet? <a href="tel:+16466681882">Call us</a> and we'll set one up on your next delivery.
+  </p>
+</main>
+
+<script>
+const PIN_LEN = 4;
+const ROUTE_LABELS = { FSQ: 'Franklin Square', LYN: 'Lynbrook', FBW: 'Freeport / Baldwin' };
+let picked = null;
+let pin = '';
+
+const $ = s => document.querySelector(s);
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.toggle('is-active', s.id === id));
+}
+
+// If URL carries ?slug=FSQ01 or /store/711SRRVC, skip the picker and
+// go straight to the PIN pad.
+function normCode(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function slugFromUrl() {
+  const q = new URLSearchParams(location.search).get('slug') || '';
+  return normCode(q);
+}
+
+async function loadStops() {
+  try {
+    const r = await fetch('/api/store?resource=stops', { cache: 'no-store' });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'load failed');
+    const stops = j.stops || [];
+    const slug = slugFromUrl();
+    if (slug) {
+      const hit = stops.find(s => normCode(s.slug) === slug);
+      if (hit) {
+        picked = { id: hit.id, name: hit.display_name, slug: hit.slug };
+        $('#who-name').textContent = hit.display_name;
+        resetPin();
+        showStep('step-pin');
+        $('#loading').style.display = 'none';
+        return;
+      }
+      // Slug didn't match an active store with a PIN — fall back to picker.
+    }
+    renderStops(stops);
+  } catch (e) {
+    $('#loading').textContent = 'Could not load stores. Reload the page.';
+  }
+}
+
+function renderStops(stops) {
+  $('#loading').style.display = 'none';
+  const byRoute = stops.reduce((m, s) => { (m[s.route_key] ||= []).push(s); return m; }, {});
+  const order = ['FSQ','LYN','FBW'];
+  const container = $('#route-groups');
+  container.innerHTML = order.filter(k => byRoute[k]).map(k => `
+    <div class="route-group">
+      <h2>${ROUTE_LABELS[k] || k}</h2>
+      <div class="stops">
+        ${byRoute[k].map(s => `
+          <button class="stop-btn" type="button" data-id="${s.id}" data-name="${s.display_name.replace(/"/g,'&quot;')}">
+            ${escapeHtml(s.display_name)}
+          </button>
+        `).join('')}
+      </div>
+    </div>`).join('');
+  if (!container.innerHTML) container.innerHTML = '<p class="foot" style="margin-top:0">No stores set up yet. Call us.</p>';
+  container.addEventListener('click', onPickStop);
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function onPickStop(e) {
+  const b = e.target.closest('.stop-btn');
+  if (!b) return;
+  picked = { id: b.dataset.id, name: b.dataset.name };
+  $('#who-name').textContent = picked.name;
+  resetPin();
+  showStep('step-pin');
+}
+
+function renderPinDisplay() {
+  $('#pin-display').innerHTML = Array.from({ length: PIN_LEN }, (_, i) =>
+    `<span class="pin-dot${i < pin.length ? ' is-filled' : ''}"></span>`).join('');
+  $('#go').disabled = pin.length < PIN_LEN;
+}
+function resetPin() { pin = ''; renderPinDisplay(); $('#err').textContent = ' '; }
+
+$('#change-user').addEventListener('click', () => {
+  picked = null; resetPin();
+  // If the URL has a slug we need to clear it so the picker shows up.
+  if (slugFromUrl()) { location.href = '/store/signin'; return; }
+  showStep('step-stop');
+});
+
+function handleSigninKey(b) {
+  const k = b.dataset.k;
+  if (k === 'clear') return resetPin();
+  if (k === 'go')    return submit();
+  if (pin.length >= PIN_LEN) return;
+  if (/^\d$/.test(k)) { pin += k; renderPinDisplay(); if (pin.length === PIN_LEN) submit(); }
+}
+// pointerdown fires immediately on touch — no 300ms delay, no double-tap-zoom.
+$('#keypad').addEventListener('pointerdown', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  handleSigninKey(b);
+});
+// Keyboard activation (Enter/Space on focused button) fires click with detail=0.
+$('#keypad').addEventListener('click', e => {
+  if (e.detail !== 0) return;
+  const b = e.target.closest('button'); if (b) handleSigninKey(b);
+});
+
+document.addEventListener('keydown', e => {
+  if (!$('#step-pin').classList.contains('is-active')) return;
+  if (e.key >= '0' && e.key <= '9' && pin.length < PIN_LEN) {
+    pin += e.key; renderPinDisplay();
+    if (pin.length === PIN_LEN) submit();
+    e.preventDefault();
+  } else if (e.key === 'Backspace') {
+    pin = pin.slice(0, -1); renderPinDisplay(); $('#err').textContent = ' ';
+    e.preventDefault();
+  } else if (e.key === 'Enter' && pin.length === PIN_LEN) {
+    submit(); e.preventDefault();
+  }
+});
+
+async function submit() {
+  if (pin.length < PIN_LEN || !picked) return;
+  $('#go').disabled = true; $('#err').textContent = ' ';
+  try {
+    const payload = picked.id ? { stop_id: picked.id, pin } : { slug: picked.slug, pin };
+    const r = await fetch('/api/store?resource=signin', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload), credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      $('#err').textContent = j.error || 'wrong PIN';
+      pin = ''; renderPinDisplay();
+      return;
+    }
+    // First-login path: starter 0000 — redirect to the Set-PIN step
+    // instead of the dashboard. Session cookie is already set, so the
+    // change-pin endpoint has a valid session to work from.
+    if (j.mustChangePin) {
+      enterSetStep();
+      return;
+    }
+    location.href = '/store';
+  } catch {
+    $('#err').textContent = 'network error, try again';
+    $('#go').disabled = false;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Set-PIN step. Two-pass: enter new PIN, confirm, then save.
+   Mirrors the pattern in /signin.html for drivers/bakers.
+   ───────────────────────────────────────────────────────────── */
+const SET_PIN_LEN = 4;
+let setPin = '';     // digits being typed right now
+let firstPin = '';   // captured after the first full entry
+let setPhase = 'enter'; // 'enter' | 'confirm'
+
+const setDisplay = $('#set-display');
+const setErr = $('#set-err');
+const setGo = $('#set-go');
+const setSub = $('#set-sub');
+
+function enterSetStep() {
+  if (picked && picked.name) $('#set-store').textContent = picked.name;
+  setPhase = 'enter'; setPin = ''; firstPin = '';
+  setSub.textContent = 'Enter it now.';
+  renderSetDisplay();
+  showStep('step-set');
+}
+
+function renderSetDisplay() {
+  setDisplay.innerHTML = Array.from({ length: SET_PIN_LEN }, (_, i) =>
+    `<span class="pin-dot${i < setPin.length ? ' is-filled' : ''}" aria-hidden="true"></span>`
+  ).join('');
+  setGo.disabled = setPin.length < SET_PIN_LEN;
+}
+
+function handleSetKey(b) {
+  const k = b.dataset.k;
+  if (k === 'clear') { setPin = ''; setErr.textContent = ' '; renderSetDisplay(); return; }
+  if (k === 'go')    return commitSetStep();
+  if (setPin.length >= SET_PIN_LEN) return;
+  if (/^\d$/.test(k)) {
+    setPin += k; renderSetDisplay();
+    if (setPin.length === SET_PIN_LEN) commitSetStep();
+  }
+}
+$('#set-keypad').addEventListener('pointerdown', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  handleSetKey(b);
+});
+$('#set-keypad').addEventListener('click', e => {
+  if (e.detail !== 0) return;
+  const b = e.target.closest('button'); if (b) handleSetKey(b);
+});
+
+document.addEventListener('keydown', e => {
+  if (!$('#step-set').classList.contains('is-active')) return;
+  if (e.key >= '0' && e.key <= '9' && setPin.length < SET_PIN_LEN) {
+    setPin += e.key; renderSetDisplay();
+    if (setPin.length === SET_PIN_LEN) commitSetStep();
+    e.preventDefault();
+  } else if (e.key === 'Backspace') {
+    setPin = setPin.slice(0, -1); renderSetDisplay(); setErr.textContent = ' ';
+    e.preventDefault();
+  } else if (e.key === 'Enter' && setPin.length === SET_PIN_LEN) {
+    commitSetStep(); e.preventDefault();
+  }
+});
+
+async function commitSetStep() {
+  if (setPin.length < SET_PIN_LEN) return;
+  setGo.disabled = true;
+  setErr.textContent = ' ';
+
+  if (setPhase === 'enter') {
+    if (setPin === '0000') {
+      setErr.textContent = 'Cannot be 0000. Pick a different PIN.';
+      setPin = ''; renderSetDisplay();
+      return;
+    }
+    firstPin = setPin;
+    setPin = '';
+    setPhase = 'confirm';
+    setSub.textContent = 'Enter it again to confirm.';
+    renderSetDisplay();
+    return;
+  }
+
+  // Confirm phase — must match the first entry
+  if (setPin !== firstPin) {
+    setErr.textContent = 'PINs didn’t match. Try again.';
+    setPhase = 'enter'; setPin = ''; firstPin = '';
+    setSub.textContent = 'Enter it now.';
+    renderSetDisplay();
+    return;
+  }
+
+  try {
+    const r = await fetch('/api/store?resource=change-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current: '0000', next: setPin }),
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      setErr.textContent = j.error || 'could not save, try again';
+      setPhase = 'enter'; setPin = ''; firstPin = '';
+      setSub.textContent = 'Enter it now.';
+      renderSetDisplay();
+      return;
+    }
+    // PIN saved — on to the dashboard.
+    location.href = '/store';
+  } catch {
+    setErr.textContent = 'network error, try again';
+    setPhase = 'enter'; setPin = ''; firstPin = '';
+    setSub.textContent = 'Enter it now.';
+    renderSetDisplay();
+  }
+}
+
+loadStops();
+</script>
+</body>
+</html>

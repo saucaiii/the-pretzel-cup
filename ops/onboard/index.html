@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Onboard a Store — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+/* ─── OPS CHROME (shared with other /ops pages) ───────────────── */
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+
+.ops-header-bar { display:flex; justify-content:space-between; align-items:center; padding:14px 24px; gap:16px; flex-wrap:wrap; border-bottom:1px solid var(--line); background: var(--bg-2); }
+.ops-header-bar .brand { font-family: var(--display); font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); }
+.ops-header-bar .brand a { color: inherit; }
+
+/* ─── PAGE SHELL ──────────────────────────────────────────────── */
+.page { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 10px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 60ch; margin: 0 0 36px; line-height: 1.5; }
+
+/* ─── WIZARD LAYOUT ───────────────────────────────────────────── */
+.wizard {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 820px) { .wizard { grid-template-columns: 1fr; } }
+
+.steplist {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  position: sticky;
+  top: 24px;
+}
+.steplist-head {
+  padding: 10px 14px 14px;
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+  display: flex; justify-content: space-between;
+}
+.steplist-head .count { color: var(--accent); }
+.step-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.3;
+  transition: background 120ms ease;
+  align-items: flex-start;
+}
+.step-item:hover { background: rgba(0,0,0,0.18); color: var(--ink); }
+.step-item.is-active { background: var(--accent); color: var(--ppf-black); }
+.step-item.is-active .step-num { background: var(--ppf-black); color: var(--accent); }
+.step-item.is-active .step-sub { color: rgba(0,0,0,0.65); }
+.step-num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.step-item.is-done .step-num { background: #5fd58c; color: var(--ppf-black); border-color: #5fd58c; }
+.step-item.is-done:not(.is-active) { color: var(--ink); }
+.step-label { font-weight: 600; }
+.step-sub { font-size: 11px; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--display); margin-top: 2px; }
+
+/* ─── MAIN PANE ───────────────────────────────────────────────── */
+.pane {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 36px 36px 24px;
+  min-height: 480px;
+  display: flex; flex-direction: column;
+}
+@media (max-width: 540px) { .pane { padding: 24px 20px; } }
+
+.pane-progress {
+  height: 4px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: -12px 0 24px;
+}
+.pane-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 240ms ease;
+  width: 0%;
+}
+
+.step-pane { display: none; }
+.step-pane.is-active { display: block; animation: fade-in 180ms ease; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.step-eyebrow { font-family: var(--display); font-size: 11px; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+.step-title { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0 0 8px; line-height: 1; text-transform: uppercase; letter-spacing: 0.01em; }
+.step-help { color: var(--ink-2); font-size: 14px; line-height: 1.55; margin: 0 0 26px; max-width: 56ch; }
+
+/* ─── FORM ────────────────────────────────────────────────────── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+.form-grid .full { grid-column: 1 / -1; }
+@media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-family: var(--display);
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.field input, .field select, .field textarea {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 500;
+  width: 100%;
+}
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.field .hint { font-size: 11px; color: var(--ink-3); font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+
+/* Day toggles */
+.days { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.day {
+  flex: 1 1 0;
+  min-width: 40px;
+  text-align: center;
+  padding: 10px 6px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+  cursor: pointer;
+}
+.day.is-on { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); }
+
+/* Route radio */
+.routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 2px; }
+.route-tile {
+  padding: 16px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+}
+.route-tile.is-on { border-color: var(--accent); background: rgba(212,182,98,0.08); }
+.route-tile .r-code {
+  font-family: var(--display); font-size: 22px; letter-spacing: 0.04em; color: var(--accent);
+  text-transform: uppercase;
+}
+.route-tile .r-name { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.route-tile.is-on .r-code { color: var(--ppf-black); background: var(--accent); display: inline-block; padding: 2px 10px; border-radius: 4px; }
+
+/* Standing order */
+.order-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.order-item {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+.order-item h4 {
+  font-family: var(--display); font-size: 14px; letter-spacing: 0.14em;
+  text-transform: uppercase; margin: 0 0 12px; color: var(--accent);
+}
+.counter { display: flex; align-items: center; gap: 10px; }
+.counter button {
+  width: 36px; height: 36px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  font-family: var(--display); font-size: 20px;
+  border-radius: 50%; cursor: pointer;
+}
+.counter button:hover { border-color: var(--accent); color: var(--accent); }
+.counter .n {
+  flex: 1; text-align: center;
+  font-family: var(--display); font-size: 42px; color: var(--ink);
+  min-width: 60px;
+  font-variant-numeric: tabular-nums;
+}
+.order-item .u { font-size: 12px; color: var(--ink-3); font-family: var(--display); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 10px; }
+.order-sum {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.order-sum b { color: var(--ink); font-family: var(--display); letter-spacing: 0.04em; font-weight: 400; }
+
+/* PIN gen */
+.pin-box {
+  display: flex; align-items: center; gap: 20px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 22px 24px;
+}
+.pin-display {
+  font-family: var(--display);
+  font-size: 46px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  padding-right: 20px;
+  border-right: 1px solid var(--line);
+}
+.pin-actions { display: flex; flex-direction: column; gap: 6px; }
+.pin-actions .btn-regen {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  cursor: pointer;
+}
+.pin-actions .btn-regen:hover { border-color: var(--accent); color: var(--accent); }
+.pin-note { font-size: 12px; color: var(--ink-3); margin-top: 12px; font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* Checklist */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+}
+.check-item:hover { border-color: var(--line-2); }
+.check-item input { margin-top: 3px; accent-color: var(--accent); flex-shrink: 0; }
+.check-item .l-title { font-weight: 600; font-size: 15px; color: var(--ink); }
+.check-item .l-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.check-item.is-checked { border-color: #5fd58c; background: rgba(95,213,140,0.05); }
+.check-item.is-checked .l-title { color: #5fd58c; text-decoration: line-through; text-decoration-color: rgba(95,213,140,0.4); text-decoration-thickness: 2px; }
+
+/* Summary review */
+.review { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 540px) { .review { grid-template-columns: 1fr; } }
+.review-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+.review-card h4 {
+  font-family: var(--display); font-size: 12px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 12px;
+}
+.review-row { display: flex; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.review-row:last-child { border: 0; }
+.review-row .k { color: var(--ink-3); font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; }
+.review-row .v { color: var(--ink); font-weight: 500; text-align: right; }
+.review-row .v.missing { color: #f47572; font-style: italic; }
+
+/* Nav footer */
+.nav-bar {
+  display: flex; justify-content: space-between; gap: 14px;
+  margin-top: auto;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.btn {
+  background: var(--accent); color: var(--ppf-black); border: 0;
+  padding: 12px 20px; border-radius: 999px; cursor: pointer;
+  font-family: var(--display); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.btn:hover { background: var(--accent-2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.alt { background: transparent; color: var(--ink-2); border: 1px solid var(--line-2); }
+.btn.alt:hover { color: var(--ink); border-color: var(--accent); }
+.btn.lg { padding: 14px 28px; font-size: 15px; }
+.btn.go { background: #5fd58c; color: var(--ppf-black); }
+.btn.go:hover { background: #7ae4a2; }
+
+/* Launched confirmation */
+.launched {
+  text-align: center;
+  padding: 48px 24px;
+}
+.launched-icon {
+  width: 72px; height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #5fd58c;
+  color: var(--ppf-black);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  font-family: var(--display);
+}
+.launched h3 { font-family: var(--display); font-size: 36px; margin: 0 0 10px; text-transform: uppercase; }
+.launched p { color: var(--ink-2); margin: 0 auto 24px; max-width: 48ch; }
+.followup-list { text-align: left; max-width: 500px; margin: 0 auto; }
+.followup-list li {
+  padding: 10px 14px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); margin-bottom: 8px; list-style: none;
+  display: flex; justify-content: space-between; gap: 14px; font-size: 13px;
+}
+.followup-list .when { font-family: var(--display); letter-spacing: 0.1em; color: var(--accent); text-transform: uppercase; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+
+<div class="ops-banner">
+  Operator Mode
+  <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+</div>
+
+<div class="ops-header-bar">
+  <div class="brand"><a href="/ops">◂ Ops Hub</a></div>
+  <div class="header-right">
+    <nav class="ops-site-nav">
+      <a href="/ops/plan" class="nav-link">Plan</a>
+      <a href="/ops/stops" class="nav-link">Stops</a>
+      <a href="/ops/people" class="nav-link">People</a>
+      <a href="/ops/onboard" class="nav-link is-active">Onboard</a>
+    </nav>
+    <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="page-eyebrow">New Store · Onboarding</div>
+  <h1 class="page-title">Onboard a new store</h1>
+  <p class="page-sub">Work through the eight steps below. When every step is complete the store goes live on the route, the welcome email sends, and your follow-ups are scheduled.</p>
+
+  <div class="wizard">
+
+    <aside class="steplist" aria-label="Onboarding steps">
+      <div class="steplist-head"><span>Progress</span><span><span class="count" id="done-count">0</span>/8</span></div>
+      <div class="step-item is-active" data-step="1">
+        <div class="step-num">1</div>
+        <div><div class="step-label">Store identity</div><div class="step-sub">Name · town</div></div>
+      </div>
+      <div class="step-item" data-step="2">
+        <div class="step-num">2</div>
+        <div><div class="step-label">Franchisee contact</div><div class="step-sub">Manager info</div></div>
+      </div>
+      <div class="step-item" data-step="3">
+        <div class="step-num">3</div>
+        <div><div class="step-label">Route &amp; schedule</div><div class="step-sub">FSQ · LYN · FBW</div></div>
+      </div>
+      <div class="step-item" data-step="4">
+        <div class="step-num">4</div>
+        <div><div class="step-label">Standing order</div><div class="step-sub">Singles · doubles</div></div>
+      </div>
+      <div class="step-item" data-step="5">
+        <div class="step-num">5</div>
+        <div><div class="step-label">Portal access</div><div class="step-sub">PIN · creds</div></div>
+      </div>
+      <div class="step-item" data-step="6">
+        <div class="step-num">6</div>
+        <div><div class="step-label">Kit prep</div><div class="step-sub">Physical pieces</div></div>
+      </div>
+      <div class="step-item" data-step="7">
+        <div class="step-num">7</div>
+        <div><div class="step-label">Welcome delivery</div><div class="step-sub">Date · driver</div></div>
+      </div>
+      <div class="step-item" data-step="8">
+        <div class="step-num">8</div>
+        <div><div class="step-label">Review &amp; launch</div><div class="step-sub">Go live</div></div>
+      </div>
+    </aside>
+
+    <section class="pane" id="pane">
+      <div class="pane-progress"><div class="pane-progress-fill" id="progress-fill"></div></div>
+
+      <!-- STEP 1 ─ Store identity ──────────────────────────────── -->
+      <div class="step-pane is-active" data-pane="1">
+        <div class="step-eyebrow">Step 1 of 8</div>
+        <h2 class="step-title">Store identity</h2>
+        <p class="step-help">The basics. Pulled from the 7-Eleven franchise agreement. Everything else keys off this record.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="store_name">Store name</label>
+            <input id="store_name" type="text" placeholder="7-Eleven #12345" />
+          </div>
+          <div class="field">
+            <label for="store_town">Town</label>
+            <input id="store_town" type="text" placeholder="Franklin Square" />
+          </div>
+          <div class="field full">
+            <label for="store_address">Street address</label>
+            <input id="store_address" type="text" placeholder="123 Hempstead Tpke, Franklin Square, NY 11010" />
+          </div>
+          <div class="field">
+            <label for="store_display_name">Display name <span style="opacity:.6">(optional)</span></label>
+            <input id="store_display_name" type="text" placeholder="Franklin Tpke" />
+            <div class="hint">Shown to driver &amp; baker. Falls back to "Name — Town".</div>
+          </div>
+          <div class="field">
+            <label for="store_code">Store code <span style="opacity:.6">(optional)</span></label>
+            <input id="store_code" type="text" placeholder="FSQ-07" />
+            <div class="hint">For portal URL &amp; invoices. Auto-generates if blank.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 ─ Franchisee contact ──────────────────────────── -->
+      <div class="step-pane" data-pane="2">
+        <div class="step-eyebrow">Step 2 of 8</div>
+        <h2 class="step-title">Franchisee contact</h2>
+        <p class="step-help">The one person we'll address in the welcome email. All ongoing comms happen through the portal, not by phone or text — so this is for the email and your records only.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="manager_first">First name</label>
+            <input id="manager_first" type="text" placeholder="Raj" />
+          </div>
+          <div class="field">
+            <label for="manager_last">Last name</label>
+            <input id="manager_last" type="text" placeholder="Patel" />
+          </div>
+          <div class="field full">
+            <label for="manager_email">Email</label>
+            <input id="manager_email" type="email" placeholder="raj@fsq711.com" />
+            <div class="hint">The welcome email goes here. Must be an inbox they check.</div>
+          </div>
+          <div class="field full">
+            <label for="manager_phone">Phone <span style="opacity:.6">(records only)</span></label>
+            <input id="manager_phone" type="tel" placeholder="(516) 555-0199" />
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 ─ Route & schedule ────────────────────────────── -->
+      <div class="step-pane" data-pane="3">
+        <div class="step-eyebrow">Step 3 of 8</div>
+        <h2 class="step-title">Route &amp; schedule</h2>
+        <p class="step-help">Pick the route and set delivery days. Stop order is set after launch when you re-sequence the route in /ops/stops.</p>
+
+        <div class="field full" style="margin-bottom: 24px;">
+          <label>Route</label>
+          <div class="routes">
+            <button type="button" class="route-tile" data-route="FSQ">
+              <div class="r-code">FSQ</div>
+              <div class="r-name">Franklin Square bakery</div>
+            </button>
+            <button type="button" class="route-tile" data-route="LYN">
+              <div class="r-code">LYN</div>
+              <div class="r-name">Lynbrook bakery</div>
+            </button>
+            <button type="button" class="route-tile" data-route="FBW">
+              <div class="r-code">FBW</div>
+              <div class="r-name">FBW route</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label>Delivery days</label>
+          <div class="days" id="days">
+            <div class="day" data-day="mon">Mon</div>
+            <div class="day" data-day="tue">Tue</div>
+            <div class="day" data-day="wed">Wed</div>
+            <div class="day" data-day="thu">Thu</div>
+            <div class="day" data-day="fri">Fri</div>
+            <div class="day" data-day="sat">Sat</div>
+            <div class="day" data-day="sun">Sun</div>
+          </div>
+          <div class="hint" style="margin-top:10px;">Order cutoff is noon the day prior.</div>
+        </div>
+      </div>
+
+      <!-- STEP 4 ─ Standing order ──────────────────────────────── -->
+      <div class="step-pane" data-pane="4">
+        <div class="step-eyebrow">Step 4 of 8</div>
+        <h2 class="step-title">Standing order</h2>
+        <p class="step-help">The default per-delivery count. The store manager can adjust in the portal; this baseline runs until they change it. Minimum total is 10 units per delivery.</p>
+
+        <div class="order-pair">
+          <div class="order-item">
+            <h4>Single twists</h4>
+            <div class="counter">
+              <button type="button" data-step-order="-" data-which="single">−</button>
+              <div class="n" id="n-single">8</div>
+              <button type="button" data-step-order="+" data-which="single">+</button>
+            </div>
+            <div class="u">@ $2.15 wholesale</div>
+          </div>
+          <div class="order-item">
+            <h4>Double twists</h4>
+            <div class="counter">
+              <button type="button" data-step-order="-" data-which="double">−</button>
+              <div class="n" id="n-double">4</div>
+              <button type="button" data-step-order="+" data-which="double">+</button>
+            </div>
+            <div class="u">@ $3.85 wholesale</div>
+          </div>
+        </div>
+
+        <div class="order-sum">
+          Daily baseline: <b id="order-total-units">12 units</b> · wholesale <b id="order-total-cost">$32.60</b>
+        </div>
+      </div>
+
+      <!-- STEP 5 ─ Portal access ───────────────────────────────── -->
+      <div class="step-pane" data-pane="5">
+        <div class="step-eyebrow">Step 5 of 8</div>
+        <h2 class="step-title">Portal access</h2>
+        <p class="step-help">Generate the 4-digit PIN the store manager uses to sign in. They'll be prompted to rotate it on first sign-in. These credentials auto-populate the welcome email in step 7.</p>
+
+        <div class="pin-box">
+          <div class="pin-display" id="pin-display">0000</div>
+          <div class="pin-actions">
+            <button type="button" class="btn-regen" id="pin-regen">Regenerate PIN</button>
+            <div class="pin-note">Store manager rotates on first sign-in</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; padding: 20px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-md); font-size: 13px; color: var(--ink-2); line-height: 1.6;">
+          <div style="font-family: var(--display); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px;">Portal link</div>
+          <code style="font-family:monospace; color: var(--ink); font-size: 14px;" id="portal-link">the-pretzel-cup.vercel.app/store/—</code>
+          <div style="margin-top: 12px; font-size: 12px; color: var(--ink-3);">Final slug uses the store code (step 1) when you launch.</div>
+        </div>
+      </div>
+
+      <!-- STEP 6 ─ Kit prep ─────────────────────────────────────── -->
+      <div class="step-pane" data-pane="6">
+        <div class="step-eyebrow">Step 6 of 8</div>
+        <h2 class="step-title">Kit prep</h2>
+        <p class="step-help">Confirm each piece of the day-one welcome kit is printed, pulled from backstock, or packed into the basket. Driver loads this with the first delivery.</p>
+
+        <div class="checklist" id="kit-check">
+          <label class="check-item"><input type="checkbox" data-kit="basket"><div><div class="l-title">Wicker basket</div><div class="l-sub">Backstock or new order. Washed.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="stand"><div><div class="l-title">Counter display stand + basket-card-2 insert</div><div class="l-sub">Pretzel + Coffee pairing graphic in the acrylic holder.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="counter_card"><div><div class="l-title">$4 / $6 retail counter card</div><div class="l-sub">PPF-branded single/double pricing.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="upc_stickers"><div><div class="l-title">Laminated UPC sticker sheet</div><div class="l-sub">Pre-printed stock.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="window_cling"><div><div class="l-title">Window cling</div><div class="l-sub">"Proudly Serving" graphic — vendor TBD.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="upc_card"><div><div class="l-title">UPC register card</div><div class="l-sub">For whoever programs the 7-Eleven POS.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="welcome_letter"><div><div class="l-title">Welcome letter from Chris</div><div class="l-sub">Printed, signed.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="driver_card"><div><div class="l-title">Driver intro card</div><div class="l-sub">Pre-printed for assigned driver.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="contact_card"><div><div class="l-title">Contact card (QR → portal)</div><div class="l-sub">QR encodes the portal URL from step 5.</div></div></label>
+          <label class="check-item"><input type="checkbox" data-kit="bags"><div><div class="l-title">Branded bags for the first batch</div><div class="l-sub">From current stock.</div></div></label>
+        </div>
+      </div>
+
+      <!-- STEP 7 ─ Welcome delivery ─────────────────────────────── -->
+      <div class="step-pane" data-pane="7">
+        <div class="step-eyebrow">Step 7 of 8</div>
+        <h2 class="step-title">Welcome delivery</h2>
+        <p class="step-help">Pick the first delivery date and the driver running it. The driver's name and stats will be printed on the driver card and included in the welcome email.</p>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="delivery_date">First delivery date</label>
+            <input id="delivery_date" type="date" />
+          </div>
+          <div class="field">
+            <label for="driver_name">Driver</label>
+            <select id="driver_name">
+              <option value="">Select a driver</option>
+              <option value="Gary">Gary — LYN · 5 yrs · 250K+ delivered</option>
+              <option value="Mike">Mike — FSQ · 3 yrs · 150K+ delivered</option>
+              <option value="Dani">Dani — FBW · 2 yrs · 80K+ delivered</option>
+            </select>
+            <div class="hint">Options come from the people table (driver role).</div>
+          </div>
+          <div class="field full">
+            <label>Follow-ups auto-scheduled on launch</label>
+            <div style="font-size: 13px; color: var(--ink-2); line-height: 1.7;">
+              • <b>Day 1</b> — call the manager after the first delivery lands<br>
+              • <b>Week 1</b> — check sell-through and comfort with the portal<br>
+              • <b>Month 1</b> — review volume vs. baseline, adjust standing order
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 8 ─ Review & launch ──────────────────────────────── -->
+      <div class="step-pane" data-pane="8">
+        <div class="step-eyebrow">Step 8 of 8</div>
+        <h2 class="step-title">Review &amp; launch</h2>
+        <p class="step-help">Everything you captured. Launching flips the store to active, sends the welcome email, and puts the follow-ups on your calendar.</p>
+
+        <div class="review" id="review">
+          <!-- Populated by renderReview() -->
+        </div>
+      </div>
+
+      <!-- NAV BAR ─────────────────────────────────────────────── -->
+      <div class="nav-bar">
+        <button type="button" class="btn alt" id="btn-back" disabled>← Back</button>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn alt" id="btn-save">Save draft</button>
+          <button type="button" class="btn" id="btn-next">Next step →</button>
+          <button type="button" class="btn go lg" id="btn-launch" style="display:none;">🚀 Launch store</button>
+        </div>
+      </div>
+
+      <!-- LAUNCHED CONFIRMATION ───────────────────────────────── -->
+      <div class="step-pane" data-pane="done" style="display:none;">
+        <div class="launched">
+          <div class="launched-icon">✓</div>
+          <h3>Store launched</h3>
+          <p id="done-msg">All set. The welcome email is on its way and the kit is ready for day-one delivery.</p>
+          <ul class="followup-list">
+            <li><span>Day-1 call to the store manager</span><span class="when" id="followup-day1">—</span></li>
+            <li><span>Week-1 check-in</span><span class="when" id="followup-week1">—</span></li>
+            <li><span>Month-1 review</span><span class="when" id="followup-month1">—</span></li>
+          </ul>
+          <div style="margin-top: 36px; display: flex; gap: 10px; justify-content: center;">
+            <a href="/ops/stops" class="btn">View all stops</a>
+            <a href="/ops/onboard" class="btn alt">Onboard another</a>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+</main>
+</div><!-- /#app -->
+
+<script>
+// ─── Auth gate ─────────────────────────────────────────────────
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') {
+      location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : me.role === 'store' ? '/store' : '/signin');
+      return;
+    }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    document.getElementById('user-tag').textContent = me.name || 'operator';
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch {}
+      location.replace('/signin');
+    });
+    initApp();
+    loadDrivers();
+  } catch { location.replace('/signin?next=' + next); }
+}
+boot();
+
+async function loadDrivers() {
+  try {
+    const r = await fetch('/api/schedule?resource=people', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) return;
+    const { people } = await r.json();
+    const drivers = (people || []).filter(p => p.role === 'driver');
+    if (!drivers.length) return;
+    const sel = document.getElementById('driver_name');
+    sel.innerHTML = '<option value="">Select a driver</option>' + drivers
+      .map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    if (state.driver_name) sel.value = state.driver_name;
+  } catch (e) { console.error('loadDrivers:', e); }
+}
+
+// ─── State ─────────────────────────────────────────────────────
+const DRAFT_KEY = 'ppf-onboard-draft-v1';
+const state = loadDraft() || {
+  step: 1,
+  store_name: '', store_town: '', store_address: '',
+  store_display_name: '', store_code: '',
+  manager_first: '', manager_last: '', manager_email: '', manager_phone: '',
+  route_key: '', delivery_days: [],
+  singles: 8, doubles: 4,
+  portal_pin: generatePin(),
+  kit: {}, // dict of booleans by key
+  delivery_date: '', driver_name: '',
+  launched: false,
+};
+const TOTAL_STEPS = 8;
+
+// ─── Initial render ────────────────────────────────────────────
+function initApp() {
+  // Hydrate inputs from state
+  ['store_name','store_town','store_address','store_display_name','store_code',
+   'manager_first','manager_last','manager_email','manager_phone',
+   'delivery_date'].forEach(k => {
+    const el = document.getElementById(k);
+    if (el && state[k]) el.value = state[k];
+    if (el) el.addEventListener('input', () => { state[k] = el.value; updateUI(); });
+  });
+  const driver = document.getElementById('driver_name');
+  if (driver) {
+    if (state.driver_name) driver.value = state.driver_name;
+    driver.addEventListener('change', () => { state.driver_name = driver.value; updateUI(); });
+  }
+
+  // Route tiles
+  document.querySelectorAll('.route-tile').forEach(t => {
+    if (t.dataset.route === state.route_key) t.classList.add('is-on');
+    t.addEventListener('click', () => {
+      state.route_key = t.dataset.route;
+      document.querySelectorAll('.route-tile').forEach(x => x.classList.toggle('is-on', x.dataset.route === state.route_key));
+      updateUI();
+    });
+  });
+
+  // Delivery days
+  document.querySelectorAll('.day').forEach(d => {
+    if (state.delivery_days.includes(d.dataset.day)) d.classList.add('is-on');
+    d.addEventListener('click', () => {
+      const i = state.delivery_days.indexOf(d.dataset.day);
+      if (i === -1) { state.delivery_days.push(d.dataset.day); d.classList.add('is-on'); }
+      else { state.delivery_days.splice(i, 1); d.classList.remove('is-on'); }
+      updateUI();
+    });
+  });
+
+  // Order counters
+  document.querySelectorAll('[data-step-order]').forEach(b => {
+    b.addEventListener('click', () => {
+      const which = b.dataset.which; // single|double
+      const op = b.dataset.stepOrder;
+      const key = which === 'single' ? 'singles' : 'doubles';
+      const delta = op === '+' ? 1 : -1;
+      state[key] = Math.max(0, state[key] + delta);
+      updateOrder();
+      updateUI();
+    });
+  });
+  updateOrder();
+
+  // PIN
+  updatePin();
+  document.getElementById('pin-regen').addEventListener('click', () => {
+    state.portal_pin = generatePin();
+    updatePin();
+    updateUI();
+  });
+
+  // Kit checklist
+  document.querySelectorAll('[data-kit]').forEach(cb => {
+    cb.checked = !!state.kit[cb.dataset.kit];
+    cb.closest('.check-item').classList.toggle('is-checked', cb.checked);
+    cb.addEventListener('change', () => {
+      state.kit[cb.dataset.kit] = cb.checked;
+      cb.closest('.check-item').classList.toggle('is-checked', cb.checked);
+      updateUI();
+    });
+  });
+
+  // Steplist clicks
+  document.querySelectorAll('.step-item').forEach(si => {
+    si.addEventListener('click', () => showStep(parseInt(si.dataset.step, 10)));
+  });
+
+  // Nav buttons
+  document.getElementById('btn-back').addEventListener('click', () => showStep(Math.max(1, state.step - 1)));
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (state.step < TOTAL_STEPS) showStep(state.step + 1);
+  });
+  document.getElementById('btn-save').addEventListener('click', () => {
+    saveDraft();
+    flashButton('btn-save', 'Saved ✓');
+  });
+  document.getElementById('btn-launch').addEventListener('click', launchStore);
+
+  showStep(state.step);
+}
+
+// ─── Helpers ───────────────────────────────────────────────────
+function generatePin() {
+  return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+}
+
+function stepComplete(n) {
+  switch (n) {
+    case 1: return !!(state.store_name && state.store_town && state.store_address);
+    case 2: return !!(state.manager_first && state.manager_email);
+    case 3: return !!(state.route_key && state.delivery_days.length);
+    case 4: return (state.singles + state.doubles) >= 10;
+    case 5: return !!state.portal_pin && state.portal_pin.length === 4;
+    case 6: return Object.values(state.kit).filter(Boolean).length >= 9; // all required
+    case 7: return !!(state.delivery_date && state.driver_name);
+    case 8: return [1,2,3,4,5,6,7].every(stepComplete);
+  }
+  return false;
+}
+
+function showStep(n) {
+  state.step = n;
+  document.querySelectorAll('.step-pane[data-pane]').forEach(p => {
+    p.classList.toggle('is-active', p.dataset.pane === String(n));
+  });
+  document.querySelectorAll('.step-item').forEach(si => {
+    si.classList.toggle('is-active', parseInt(si.dataset.step, 10) === n);
+  });
+  if (n === 8) renderReview();
+  updateUI();
+}
+
+function updateUI() {
+  // Mark done steps
+  let doneCount = 0;
+  document.querySelectorAll('.step-item').forEach(si => {
+    const n = parseInt(si.dataset.step, 10);
+    const done = stepComplete(n);
+    si.classList.toggle('is-done', done);
+    if (done) doneCount++;
+  });
+  document.getElementById('done-count').textContent = doneCount;
+
+  // Progress fill
+  document.getElementById('progress-fill').style.width = ((state.step - 1) / (TOTAL_STEPS - 1) * 100) + '%';
+
+  // Back/Next/Launch button state
+  document.getElementById('btn-back').disabled = state.step === 1;
+  const next = document.getElementById('btn-next');
+  const launch = document.getElementById('btn-launch');
+  if (state.step === TOTAL_STEPS) {
+    next.style.display = 'none';
+    launch.style.display = 'inline-flex';
+    launch.disabled = !stepComplete(8);
+  } else {
+    next.style.display = 'inline-flex';
+    launch.style.display = 'none';
+    next.disabled = !stepComplete(state.step);
+  }
+
+  // Portal link preview
+  const link = document.getElementById('portal-link');
+  if (link) {
+    const slug = state.store_code || (state.route_key || '—');
+    link.textContent = `the-pretzel-cup.vercel.app/store/${slug.toLowerCase()}`;
+  }
+
+  // Autosave on every tick
+  saveDraft();
+}
+
+function updateOrder() {
+  document.getElementById('n-single').textContent = state.singles;
+  document.getElementById('n-double').textContent = state.doubles;
+  const units = state.singles + state.doubles;
+  const cost = (state.singles * 2.15 + state.doubles * 3.85).toFixed(2);
+  document.getElementById('order-total-units').textContent = `${units} units`;
+  document.getElementById('order-total-cost').textContent = `$${cost}`;
+}
+
+function updatePin() {
+  document.getElementById('pin-display').textContent = state.portal_pin;
+}
+
+function renderReview() {
+  const kit = Object.values(state.kit).filter(Boolean).length;
+  const html = `
+    <div class="review-card">
+      <h4>Store</h4>
+      <div class="review-row"><span class="k">Name</span><span class="v ${state.store_name?'':'missing'}">${state.store_name || 'Missing'}</span></div>
+      <div class="review-row"><span class="k">Town</span><span class="v ${state.store_town?'':'missing'}">${state.store_town || 'Missing'}</span></div>
+      <div class="review-row"><span class="k">Address</span><span class="v ${state.store_address?'':'missing'}">${state.store_address || 'Missing'}</span></div>
+      <div class="review-row"><span class="k">Store code</span><span class="v">${state.store_code || '(auto)'}</span></div>
+    </div>
+    <div class="review-card">
+      <h4>Franchisee</h4>
+      <div class="review-row"><span class="k">Name</span><span class="v ${state.manager_first?'':'missing'}">${state.manager_first} ${state.manager_last}</span></div>
+      <div class="review-row"><span class="k">Email</span><span class="v ${state.manager_email?'':'missing'}">${state.manager_email || 'Missing'}</span></div>
+      <div class="review-row"><span class="k">Phone</span><span class="v">${state.manager_phone || '—'}</span></div>
+    </div>
+    <div class="review-card">
+      <h4>Delivery</h4>
+      <div class="review-row"><span class="k">Route</span><span class="v ${state.route_key?'':'missing'}">${state.route_key || 'Missing'}</span></div>
+      <div class="review-row"><span class="k">Days</span><span class="v ${state.delivery_days.length?'':'missing'}">${state.delivery_days.length ? state.delivery_days.join(', ').toUpperCase() : 'Missing'}</span></div>
+      <div class="review-row"><span class="k">First delivery</span><span class="v ${state.delivery_date?'':'missing'}">${state.delivery_date || 'Missing'}</span></div>
+      <div class="review-row"><span class="k">Driver</span><span class="v ${state.driver_name?'':'missing'}">${state.driver_name || 'Missing'}</span></div>
+    </div>
+    <div class="review-card">
+      <h4>Order &amp; portal</h4>
+      <div class="review-row"><span class="k">Standing order</span><span class="v">${state.singles} single · ${state.doubles} double</span></div>
+      <div class="review-row"><span class="k">Daily wholesale</span><span class="v">$${(state.singles*2.15 + state.doubles*3.85).toFixed(2)}</span></div>
+      <div class="review-row"><span class="k">Portal PIN</span><span class="v">${state.portal_pin}</span></div>
+      <div class="review-row"><span class="k">Kit items ready</span><span class="v ${kit<9?'missing':''}">${kit} of 10</span></div>
+    </div>
+  `;
+  document.getElementById('review').innerHTML = html;
+}
+
+function flashButton(id, text) {
+  const b = document.getElementById(id);
+  const prev = b.textContent;
+  b.textContent = text;
+  setTimeout(() => { b.textContent = prev; }, 1400);
+}
+
+function saveDraft() {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(state)); } catch {}
+}
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; }
+}
+
+async function launchStore() {
+  const btn = document.getElementById('btn-launch');
+  btn.disabled = true;
+  btn.textContent = 'Launching…';
+
+  try {
+    const r = await fetch('/api/schedule?resource=onboard-create', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        route_key:          state.route_key,
+        name:               state.store_name,
+        town:               state.store_town,
+        address:            state.store_address,
+        store_display_name: state.store_display_name,
+        store_code:         state.store_code,
+        singles_drop:       state.singles,
+        doubles_drop:       state.doubles,
+        delivery_days:      state.delivery_days,
+        manager_first_name: state.manager_first,
+        manager_last_name:  state.manager_last,
+        manager_email:      state.manager_email,
+        manager_phone:      state.manager_phone,
+        portal_pin:         state.portal_pin,
+      }),
+    });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      throw new Error(body.error || `HTTP ${r.status}`);
+    }
+    const result = await r.json();
+    console.log('store onboarded:', result);
+
+    // Compute follow-up dates
+    const d = state.delivery_date ? new Date(state.delivery_date) : new Date();
+    const d1 = new Date(d); d1.setDate(d.getDate() + 1);
+    const w1 = new Date(d); w1.setDate(d.getDate() + 7);
+    const m1 = new Date(d); m1.setMonth(d.getMonth() + 1);
+    const fmt = x => x.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    // Switch to done pane
+    document.querySelectorAll('.step-pane').forEach(p => p.classList.remove('is-active'));
+    document.querySelector('[data-pane="done"]').style.display = 'block';
+    document.querySelector('[data-pane="done"]').classList.add('is-active');
+    document.querySelector('.nav-bar').style.display = 'none';
+    document.querySelector('.pane-progress').style.display = 'none';
+
+    document.getElementById('followup-day1').textContent = fmt(d1);
+    document.getElementById('followup-week1').textContent = fmt(w1);
+    document.getElementById('followup-month1').textContent = fmt(m1);
+    document.getElementById('done-msg').textContent =
+      `${state.store_name} is live on the ${state.route_key} route. Welcome email is on its way to ${state.manager_email}.`;
+
+    // Clear draft on success
+    localStorage.removeItem(DRAFT_KEY);
+  } catch (err) {
+    alert('Launch failed. Check the console and try again.');
+    btn.disabled = false;
+    btn.textContent = '🚀 Launch store';
+  }
+}
+</script>
+</body>
+</html>

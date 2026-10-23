@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0D5237" />
+<title>PPF Operator &mdash; The Pretzel Cup</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="description" content="Internal operator view for the Philly Pretzel Factory Pretzel Cup competition." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" />
+
+<style>
+:root {
+  --ppf-green: #0D5237;
+  --ppf-green-deep: #083521;
+  --ppf-green-light: #126b48;
+  --ppf-gold-light: #F2E7A4;
+  --ppf-gold:       #D4B662;
+  --ppf-gold-deep:  #B2872F;
+  --ppf-black:  #000000;
+  --ppf-white:  #FFFFFF;
+  --ppf-gray:   #6D6E71;
+
+  --bg: var(--ppf-green);
+  --bg-2: var(--ppf-green-deep);
+  --bg-3: var(--ppf-green-light);
+  --line: rgba(255, 255, 255, 0.12);
+  --line-2: rgba(255, 255, 255, 0.22);
+  --ink: var(--ppf-white);
+  --ink-2: rgba(255, 255, 255, 0.78);
+  --ink-3: rgba(255, 255, 255, 0.55);
+  --accent: var(--ppf-gold);
+  --accent-2: var(--ppf-gold-light);
+  --success: #5fd58c;
+  --danger: #f47572;
+  --warning: #f4c25f;
+
+  --display: 'Anton', 'Bebas Neue', 'Arial Black', sans-serif;
+  --body: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+  --script: 'Caveat', 'Brush Script MT', cursive;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
+  min-height: 100dvh;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a { color: var(--accent); text-decoration: none; transition: color 150ms ease; }
+a:hover { color: var(--accent-2); text-decoration: underline; }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--ppf-black);
+  padding: 12px 16px;
+  font-weight: 700;
+  z-index: 1000;
+  border-radius: var(--radius-sm);
+  font-family: var(--display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.skip-link:focus-visible { left: 8px; top: 8px; }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* DIAMOND PLATE */
+.diamond-strip {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 64px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 64' width='80' height='64'><g fill='%23ffffff' opacity='0.32'><path d='M5 4 L18 0 L13 12 L0 16 Z'/><path d='M25 4 L38 0 L33 12 L20 16 Z'/><path d='M45 4 L58 0 L53 12 L40 16 Z'/><path d='M65 4 L78 0 L73 12 L60 16 Z'/><path d='M5 24 L18 20 L13 32 L0 36 Z'/><path d='M25 24 L38 20 L33 32 L20 36 Z'/><path d='M45 24 L58 20 L53 32 L40 36 Z'/><path d='M65 24 L78 20 L73 32 L60 36 Z'/><path d='M5 44 L18 40 L13 52 L0 56 Z'/><path d='M25 44 L38 40 L33 52 L20 56 Z'/><path d='M45 44 L58 40 L53 52 L40 56 Z'/><path d='M65 44 L78 40 L73 52 L60 56 Z'/></g></svg>");
+  background-repeat: repeat-x;
+  background-size: 80px 64px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOGIN GATE
+   ═══════════════════════════════════════════════════════════ */
+.gate-wrap {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  position: relative;
+}
+
+.gate-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 56px 48px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.gate-card .diamond-strip {
+  position: absolute;
+  height: 32px;
+}
+
+.gate-logo {
+  display: block;
+  width: 88px;
+  height: 78px;
+  margin: 24px auto 24px;
+  border-radius: 6px;
+}
+
+.gate-eyebrow {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.gate-title {
+  font-family: var(--display);
+  font-size: 40px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+
+.gate-sub {
+  font-size: 14px;
+  color: var(--ink-2);
+  text-align: center;
+  margin: 0 0 32px;
+  line-height: 1.5;
+}
+
+.gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gate-label {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+.gate-input {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 500;
+  transition: border-color 150ms ease;
+}
+.gate-input::placeholder { color: var(--ink-3); }
+.gate-input:focus-visible {
+  border-color: var(--accent);
+  outline-offset: 1px;
+}
+
+.gate-error {
+  font-size: 13px;
+  color: var(--danger);
+  font-weight: 600;
+  min-height: 18px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.gate-submit {
+  background: var(--accent);
+  color: var(--ppf-black);
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  font-family: var(--display);
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 150ms ease, transform 100ms ease;
+}
+.gate-submit:hover { background: var(--accent-2); }
+.gate-submit:active { transform: translateY(1px); }
+.gate-submit:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gate-submit { transition: none; }
+  .gate-submit:active { transform: none; }
+}
+
+.gate-footnote {
+  font-size: 11px;
+  color: var(--ink-3);
+  text-align: center;
+  margin-top: 24px;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   OPERATOR DASHBOARD (shown after auth)
+   ═══════════════════════════════════════════════════════════ */
+.app { display: none; }
+.app.is-authed { display: block; }
+
+/* HEADER */
+.header-wrap { position: relative; background: var(--ppf-green); border-bottom: 1px solid var(--line); }
+
+.header {
+  position: relative; z-index: 2;
+  padding: 80px 24px 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 16px; font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; text-transform: uppercase; }
+.brand-logo { width: 64px; height: 57px; display: block; flex-shrink: 0; border-radius: 4px; }
+@media (min-width: 600px) { .brand-logo { width: 80px; height: 71px; } }
+
+.brand-text { display: flex; flex-direction: column; line-height: 1; }
+.brand-text .top {
+  font-size: 11px; letter-spacing: 0.18em; opacity: 0.7;
+  font-family: var(--body); font-weight: 600; margin-bottom: 6px;
+}
+.brand-text .bot { font-size: 24px; letter-spacing: 0.02em; }
+
+.header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.live-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-2); background: rgba(0,0,0,0.2);
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 0 rgba(95, 213, 140, 0.7);
+  animation: pulse 2.4s infinite;
+}
+.live-pill[data-state="loading"] .live-dot { background: var(--warning); animation: pulse 1s infinite; }
+.live-pill[data-state="error"] .live-dot { background: var(--danger); animation: none; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(95, 213, 140, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(95, 213, 140, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link {
+  display: inline-flex; align-items: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: transparent;
+  font-family: var(--display);
+  font-weight: 400;
+  text-decoration: none;
+}
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.nav-cta {
+  display: inline-flex; align-items: center;
+  padding: 11px 18px;
+  background: var(--accent); color: var(--ppf-black);
+  border-radius: 999px;
+  font-family: var(--display);
+  font-size: 12px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.nav-cta:hover { background: var(--accent-2); color: var(--ppf-black); transform: translateY(-1px); }
+
+/* Small "View site →" out-link to the public brand site. Visually quieter
+   than nav items — this is a context jump, not primary nav. */
+.public-link {
+  color: var(--ink-3);
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-left: 1px solid var(--line);
+}
+.public-link:hover { color: var(--accent); }
+
+/* OPERATOR EYEBROW BANNER — distinguishes from participant view */
+.ops-banner {
+  background: var(--ppf-black);
+  border-top: 1px solid var(--accent);
+  border-bottom: 1px solid var(--accent);
+  padding: 10px 24px;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.ops-banner .user-tag {
+  color: var(--ink-2);
+  margin-left: 12px;
+  border-left: 1px solid var(--line-2);
+  padding-left: 12px;
+}
+
+/* HERO */
+.hero {
+  position: relative; padding: 48px 24px 56px;
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: 1.4fr 1fr;
+  gap: 56px; align-items: end;
+}
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; gap: 40px; padding: 32px 20px 48px; } }
+
+.hero-eyebrow {
+  font-family: var(--display);
+  font-size: 13px; letter-spacing: 0.22em;
+  color: var(--accent); margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.hero h1 {
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(56px, 9vw, 120px);
+  line-height: 0.88; letter-spacing: 0.005em;
+  margin: 0 0 24px; text-transform: uppercase; text-wrap: balance;
+}
+.hero h1 .crave-script {
+  font-family: var(--script); text-transform: none;
+  font-size: clamp(56px, 9vw, 116px); font-weight: 700;
+  color: var(--accent); letter-spacing: -0.01em;
+  display: inline-block; transform: rotate(-3deg);
+  margin: 0 4px; line-height: 1;
+}
+.hero-subtitle {
+  font-size: 17px; color: var(--ink-2);
+  max-width: 56ch; text-wrap: pretty;
+  margin: 0 0 28px; line-height: 1.55;
+}
+
+.hero-meta { display: flex; flex-wrap: wrap; gap: 32px; }
+.hero-meta-cell {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+.hero-meta-cell strong {
+  display: block; color: var(--ink);
+  font-family: var(--display);
+  font-size: 32px; font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px; letter-spacing: 0.01em;
+}
+
+.season-card {
+  background: radial-gradient(circle at 30% 25%, var(--ppf-gold-light) 0%, var(--ppf-gold) 50%, var(--ppf-gold-deep) 100%);
+  color: var(--ppf-black);
+  padding: 32px 28px;
+  border-radius: var(--radius-lg);
+  position: relative; overflow: hidden;
+  box-shadow: 0 24px 48px -20px rgba(0, 0, 0, 0.5);
+}
+.season-label {
+  font-family: var(--display);
+  font-size: 11px; letter-spacing: 0.18em;
+  margin-bottom: 8px; opacity: 0.65;
+  text-transform: uppercase;
+}
+.season-number {
+  font-family: var(--display);
+  font-size: 56px;
+  line-height: 0.92; letter-spacing: 0.01em;
+  margin: 0 0 4px; text-transform: uppercase;
+}
+.season-dates {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  opacity: 0.8;
+}
+.season-prize-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-top: 1px solid rgba(0,0,0,0.15);
+  padding-top: 14px;
+}
+.season-prize-label {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.season-prize-value {
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* COUNTDOWN */
+.countdown-strip {
+  background: var(--ppf-black);
+  padding: 24px;
+  border-top: 4px solid var(--accent);
+  border-bottom: 1px solid var(--line);
+}
+.countdown-inner {
+  max-width: 1280px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+}
+.countdown-label {
+  font-family: var(--display);
+  font-size: 14px; letter-spacing: 0.16em;
+  color: var(--accent); text-transform: uppercase;
+}
+.countdown-label .small {
+  display: block; color: var(--ink-3);
+  font-size: 11px; font-family: var(--body);
+  font-weight: 600; letter-spacing: 0.1em; margin-top: 4px;
+}
+.countdown-value {
+  display: flex; gap: 20px; align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.countdown-cell { text-align: center; min-width: 48px; }
+.countdown-num {
+  font-family: var(--display);
+  font-size: clamp(36px, 4vw, 52px);
+  letter-spacing: 0.02em; line-height: 1; color: var(--ink);
+}
+.countdown-unit {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--ink-3); margin-top: 6px;
+}
+
+/* PODIUM */
+.podium-section { padding: 56px 24px 24px; max-width: 1280px; margin: 0 auto; }
+
+.section-eyebrow {
+  font-family: var(--display);
+  font-size: 13px; letter-spacing: 0.22em;
+  color: var(--accent); margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.section-heading {
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 0.95; letter-spacing: 0.01em;
+  margin: 0 0 12px; text-wrap: balance; text-transform: uppercase;
+}
+.section-sub {
+  color: var(--ink-2); font-size: 16px;
+  margin: 0 0 32px; max-width: 60ch;
+  text-wrap: pretty; line-height: 1.55;
+}
+
+.podium {
+  display: grid; grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 16px; align-items: end; margin-bottom: 40px;
+}
+@media (max-width: 700px) { .podium { grid-template-columns: 1fr; gap: 12px; } }
+
+.podium-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 24px 20px;
+  position: relative;
+  transition: transform 200ms ease, border-color 200ms ease;
+}
+.podium-card:hover { transform: translateY(-3px); border-color: var(--line-2); }
+@media (prefers-reduced-motion: reduce) {
+  .podium-card { transition: none; }
+  .podium-card:hover { transform: none; }
+}
+
+.podium-card[data-rank="1"] {
+  background: linear-gradient(180deg, rgba(212, 182, 98, 0.18), var(--bg-2) 70%);
+  border-color: var(--accent); border-width: 2px;
+  box-shadow: 0 0 0 1px var(--accent), 0 16px 40px -16px rgba(212, 182, 98, 0.4);
+  padding: 32px 24px; order: 2;
+}
+.podium-card[data-rank="2"] { order: 1; }
+.podium-card[data-rank="3"] { order: 3; }
+@media (max-width: 700px) {
+  .podium-card[data-rank="1"], .podium-card[data-rank="2"], .podium-card[data-rank="3"] { order: unset; }
+}
+
+.podium-rank-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.medal {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--display); font-size: 15px;
+  letter-spacing: 0.02em; color: var(--ppf-black);
+  flex-shrink: 0;
+}
+.medal-1 { background: var(--accent); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2), 0 0 0 2px var(--bg-2), 0 0 0 4px rgba(212, 182, 98, 0.4); }
+.medal-2 { background: #c8c4bd; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); }
+.medal-3 { background: #b87333; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); color: var(--ppf-white); }
+
+.podium-rank-label {
+  font-family: var(--display);
+  font-size: 13px; letter-spacing: 0.18em;
+  color: var(--ink-3); text-transform: uppercase;
+}
+.podium-card[data-rank="1"] .podium-rank-label { color: var(--accent); }
+
+.podium-store {
+  font-family: var(--display); font-size: 22px;
+  letter-spacing: 0.02em; line-height: 1.05;
+  margin: 0 0 6px; text-wrap: balance; text-transform: uppercase;
+}
+.podium-card[data-rank="1"] .podium-store { font-size: 26px; }
+
+.podium-loc { font-size: 13px; color: var(--ink-3); margin: 0 0 20px; }
+
+.podium-amount {
+  font-family: var(--display);
+  font-size: clamp(36px, 4.5vw, 52px);
+  line-height: 1; letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums; margin: 0 0 6px;
+}
+.podium-card[data-rank="1"] .podium-amount { color: var(--accent); }
+.podium-meta { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* LEADERBOARD */
+.board-section { padding: 24px 24px 56px; max-width: 1280px; margin: 0 auto; }
+
+.board-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.search-input {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--ink); font-family: var(--body);
+  font-size: 14px; font-weight: 500;
+  width: 280px; min-width: 0;
+  transition: border-color 150ms ease;
+}
+.search-input::placeholder { color: var(--ink-3); }
+.search-input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+
+.board-meta {
+  font-size: 11px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  font-family: var(--display);
+}
+
+.board {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 130px 140px;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  transition: background-color 150ms ease;
+  gap: 16px;
+}
+.board-row:last-child { border-bottom: none; }
+.board-row:hover { background: var(--bg-3); }
+
+.board-row.is-header {
+  background: rgba(0, 0, 0, 0.25);
+  font-family: var(--display); font-size: 12px;
+  letter-spacing: 0.16em; color: var(--ink-3);
+  padding: 14px 24px; text-transform: uppercase;
+}
+.board-row.is-header:hover { background: rgba(0, 0, 0, 0.25); }
+
+@media (max-width: 720px) {
+  .board-row { grid-template-columns: 48px 1fr auto; padding: 14px 16px; gap: 8px; }
+  .col-change { display: none; }
+  .board-row.is-header .col-store::after { content: ' & Sales'; color: var(--ink-3); }
+}
+
+.col-rank {
+  font-family: var(--display); font-size: 20px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums; color: var(--ink-2);
+}
+.col-rank .rank-medal {
+  display: inline-grid; place-items: center;
+  width: 30px; height: 30px; line-height: 1;
+  border-radius: 50%; font-family: var(--display);
+  font-size: 14px; letter-spacing: 0.02em;
+}
+
+.col-store { display: flex; flex-direction: column; min-width: 0; }
+.store-name {
+  font-family: var(--display); font-size: 16px;
+  letter-spacing: 0.04em; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; text-transform: uppercase;
+}
+.store-meta-line { display: flex; align-items: center; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
+.store-loc { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+.store-badge {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 2px 7px; border-radius: 999px;
+  background: rgba(244, 194, 95, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(244, 194, 95, 0.3);
+  font-family: var(--display);
+}
+
+.col-revenue {
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  font-size: 22px; color: var(--ink); text-align: right;
+}
+.col-revenue.is-zero { color: var(--ink-3); }
+
+.col-change {
+  text-align: right; font-size: 14px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+}
+.change-up { color: var(--success); }
+.change-down { color: var(--danger); }
+.change-flat { color: var(--ink-3); }
+
+/* MOVER CARD */
+.mover-card[hidden] { display: none; }
+.mover-card {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 24px 28px; margin-top: 28px;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 24px; align-items: center;
+}
+@media (max-width: 600px) { .mover-card { grid-template-columns: 1fr; gap: 16px; padding: 20px; } }
+.mover-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(95, 213, 140, 0.14);
+  border: 2px solid rgba(95, 213, 140, 0.4);
+  display: grid; place-items: center;
+  color: var(--success); font-size: 28px;
+  flex-shrink: 0; font-family: var(--display);
+}
+.mover-label {
+  font-family: var(--display); font-size: 12px;
+  letter-spacing: 0.18em; color: var(--success);
+  margin: 0 0 6px; text-transform: uppercase;
+}
+.mover-store {
+  font-family: var(--display); font-size: 22px;
+  letter-spacing: 0.02em; margin: 0 0 4px; text-transform: uppercase;
+}
+.mover-detail { font-size: 13px; color: var(--ink-2); margin: 0; }
+.mover-pct {
+  font-family: var(--display); font-size: 40px;
+  font-variant-numeric: tabular-nums;
+  color: var(--success); letter-spacing: 0.01em; line-height: 1;
+}
+
+/* DAILY DRILLDOWN GRID */
+.daily-section {
+  padding: 32px 24px 56px;
+  max-width: 1280px;
+  margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+.daily-grid-wrap {
+  margin-top: 20px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--ink-3);
+  padding: 16px;
+}
+.daily-grid-wrap:empty,
+.daily-grid-wrap > .state-card { padding: 16px; }
+table.daily-grid {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink);
+}
+table.daily-grid thead th {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-2);
+  padding: 10px 10px;
+  text-align: right;
+  background: transparent;
+  border-bottom: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+table.daily-grid thead th.col-store { text-align: left; }
+table.daily-grid thead th.is-today {
+  color: var(--accent);
+  text-shadow: 0 0 16px rgba(212, 182, 98, 0.35);
+}
+table.daily-grid tbody td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+table.daily-grid tbody td.is-store { text-align: left; font-weight: 600; }
+table.daily-grid tbody td.is-empty { color: var(--ink-3); }
+table.daily-grid tbody td.is-today { background: rgba(212, 182, 98, 0.06); }
+table.daily-grid tbody td.is-week-total { font-weight: 700; color: var(--accent); }
+table.daily-grid tbody tr:last-child td { border-bottom: none; }
+.store-stale-flag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ppf-black);
+  background: var(--warning);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.store-last-reported {
+  display: block;
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* QUARTER STANDINGS */
+.quarter-section {
+  padding: 56px 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+.quarter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+}
+@media (max-width: 800px) { .quarter-grid { grid-template-columns: 1fr; } }
+
+.quarter-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+.quarter-card[data-place="1"] {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(212, 182, 98, 0.12), var(--bg-2) 80%);
+}
+.quarter-prize-label {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.quarter-card[data-place="1"] .quarter-prize-label { color: var(--accent); }
+.quarter-prize {
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  line-height: 1.1;
+}
+.quarter-store {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.quarter-stat {
+  font-size: 13px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* CRAVE BANNER */
+.crave-banner { background: var(--ppf-black); padding: 56px 24px; text-align: center; }
+.crave-banner h2 {
+  font-family: var(--display);
+  font-size: clamp(40px, 6vw, 80px);
+  line-height: 0.92; letter-spacing: 0.02em;
+  color: var(--accent); margin: 0;
+  text-transform: uppercase; max-width: 18ch;
+  margin-inline: auto;
+}
+.crave-banner h2 .accent { color: var(--ppf-white); }
+
+/* FOOTER */
+.footer {
+  background: var(--ppf-green-deep);
+  border-top: 1px solid var(--line);
+  padding: 40px 24px 32px;
+  text-align: center;
+}
+.footer-tagline {
+  font-family: var(--display); font-size: 32px;
+  color: var(--ink); letter-spacing: 0.04em;
+  margin-bottom: 8px; text-transform: uppercase;
+}
+.footer-tagline sup { font-size: 0.4em; margin-left: 2px; vertical-align: super; }
+.footer-meta {
+  font-size: 11px; color: var(--ink-3);
+  font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; font-family: var(--display);
+}
+.last-update { font-size: 11px; color: var(--ink-3); font-weight: 500; margin-top: 12px; letter-spacing: 0.04em; }
+
+/* STAGGER ENTRANCE */
+.fade-in { animation: fadeIn 600ms ease-out backwards; }
+.fade-in:nth-child(1) { animation-delay: 0ms; }
+.fade-in:nth-child(2) { animation-delay: 60ms; }
+.fade-in:nth-child(3) { animation-delay: 120ms; }
+.fade-in:nth-child(4) { animation-delay: 180ms; }
+.fade-in:nth-child(5) { animation-delay: 240ms; }
+.fade-in:nth-child(6) { animation-delay: 300ms; }
+.fade-in:nth-child(7) { animation-delay: 360ms; }
+.fade-in:nth-child(8) { animation-delay: 420ms; }
+.fade-in:nth-child(9) { animation-delay: 480ms; }
+.fade-in:nth-child(10) { animation-delay: 540ms; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
+.state-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 48px 24px;
+  text-align: center; color: var(--ink-2);
+}
+.state-card .state-title {
+  font-family: var(--display);
+  font-size: 20px;
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.state-card.is-error .state-title { color: var(--danger); }
+.state-card .state-text {
+  font-size: 14px; color: var(--ink-2);
+  margin: 0; max-width: 50ch;
+  margin-inline: auto; line-height: 1.5;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--line-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: spin 800ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+
+<body>
+
+<!-- Server-cookie boot — see boot() in the script below. The visible
+     sign-in UI lives at /signin; this page only renders for operators. -->
+<section class="gate-wrap" id="boot">
+  <div style="color:var(--ink-3);font-family:var(--display);letter-spacing:0.2em;text-transform:uppercase;font-size:11px;">Loading&hellip;</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     OPERATOR APP — revealed after successful auth.
+     ═══════════════════════════════════════════════════════════ -->
+<div class="app" id="app" aria-hidden="true">
+  <a href="#leaderboard" class="skip-link">Skip to leaderboard</a>
+
+  <div class="ops-banner" role="region" aria-label="Operator session">
+    PPF Operator View &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo" />
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+          <a href="/ops/plan#v-sh" class="nav-link">Routes</a>
+          <a href="/ops/plan#v-sh" class="nav-link">Stores</a>
+          <a href="/ops/plan#v-su" class="nav-link">Suppliers</a>
+          <a href="/ops/standings" class="nav-link is-active">Standings</a>
+        </nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <div class="live-pill" id="status-pill" role="status" aria-live="polite">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span id="status-text">Loading&hellip;</span>
+        </div>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <div class="hero-eyebrow">Operator Dashboard &middot; Full Visibility</div>
+      <h1>Season <span id="hero-season">&mdash;</span><br/><span class="crave-script">Live</span></h1>
+      <p class="hero-subtitle">
+        Full standings with dollar values, week-over-week deltas, and biggest-mover tracking. Quarter prizes track concurrently &mdash; see below for current grand-prize standings.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-meta-cell">Stores In<strong id="store-count">&mdash;</strong></div>
+        <div class="hero-meta-cell">Season Revenue<strong id="total-revenue">&mdash;</strong></div>
+        <div class="hero-meta-cell">Avg / Store<strong id="avg-revenue">&mdash;</strong></div>
+      </div>
+    </div>
+
+    <aside class="season-card" aria-labelledby="season-heading">
+      <div class="season-label">Current Season</div>
+      <p class="season-number" id="season-heading">Season <span id="season-number-display">&mdash;</span></p>
+      <p class="season-dates" id="season-dates">&mdash;</p>
+      <div class="season-prize-row">
+        <span class="season-prize-label">Winner</span>
+        <span class="season-prize-value">10% Off</span>
+      </div>
+    </aside>
+  </section>
+
+  <!-- COUNTDOWN -->
+  <div class="countdown-strip">
+    <div class="countdown-inner">
+      <div class="countdown-label">
+        Season Ends In
+        <span class="small">Mon 12:01 AM</span>
+      </div>
+      <div class="countdown-value" id="countdown" role="timer" aria-live="off">
+        <div class="countdown-cell"><div class="countdown-num" id="cd-days">&mdash;</div><div class="countdown-unit">Days</div></div>
+        <div class="countdown-cell"><div class="countdown-num" id="cd-hours">&mdash;</div><div class="countdown-unit">Hours</div></div>
+        <div class="countdown-cell"><div class="countdown-num" id="cd-mins">&mdash;</div><div class="countdown-unit">Min</div></div>
+        <div class="countdown-cell"><div class="countdown-num" id="cd-secs">&mdash;</div><div class="countdown-unit">Sec</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PODIUM -->
+  <section class="podium-section" aria-labelledby="podium-heading">
+    <div class="section-eyebrow">Top of the Board</div>
+    <h2 class="section-heading" id="podium-heading">The Front Runners</h2>
+    <p class="section-sub">The three stores currently leading this season. The gold card takes the 10% discount if the season ended right now.</p>
+    <div class="podium" id="podium" aria-label="Top three stores"></div>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section class="board-section" id="leaderboard" aria-labelledby="board-heading">
+    <div class="section-eyebrow">Full Standings</div>
+    <h2 class="section-heading" id="board-heading">Every Store. Every Sale.</h2>
+    <p class="section-sub">All participating 7-Eleven stores, ranked by total season sales. Dollar values shown for operations; the participant view shows progress bars only.</p>
+
+    <div class="board-toolbar">
+      <label for="search" style="position:absolute;left:-9999px;">Search stores</label>
+      <input
+        id="search" type="search" inputmode="search"
+        class="search-input" placeholder="Search stores&hellip;"
+        autocomplete="off" spellcheck="false"
+      />
+      <div class="board-meta" id="board-meta">&mdash;</div>
+    </div>
+
+    <div class="board" role="region" aria-label="Sales leaderboard" id="board"></div>
+
+    <div class="mover-card" id="mover-card" hidden>
+      <div class="mover-icon" aria-hidden="true">↑</div>
+      <div>
+        <p class="mover-label">Biggest Mover This Season</p>
+        <p class="mover-store" id="mover-store">&mdash;</p>
+        <p class="mover-detail" id="mover-detail">&mdash;</p>
+      </div>
+      <div class="mover-pct" id="mover-pct">&mdash;</div>
+    </div>
+  </section>
+
+  <!-- DAILY DRILLDOWN — per-store, per-day reporting grid for the current week -->
+  <section class="daily-section" id="daily" aria-labelledby="daily-heading">
+    <div class="section-eyebrow">Daily Drilldown</div>
+    <h2 class="section-heading" id="daily-heading">This Week, Day by Day</h2>
+    <p class="section-sub">Per-store, per-day reported sales for the current competition week (Mon&ndash;Sun). Empty cells = no report filed. Rows tagged <em>pending</em> haven&rsquo;t filed since yesterday or earlier.</p>
+    <div class="daily-grid-wrap" id="daily-grid">&mdash;</div>
+  </section>
+
+  <!-- QUARTER STANDINGS — grand prize, 2nd, 3rd -->
+  <section class="quarter-section" aria-labelledby="quarter-heading">
+    <div class="section-eyebrow">Long Game</div>
+    <h2 class="section-heading" id="quarter-heading"><span id="quarter-num">&mdash;</span> Grand Prizes</h2>
+    <p class="section-sub">Running totals across all seasons in the current quarter. Three prizes awarded at quarter close.</p>
+    <div class="quarter-grid" id="quarter-grid"></div>
+  </section>
+
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-tagline" translate="no">Made&nbsp;to&nbsp;Crave<sup>&reg;</sup></div>
+    <p class="footer-meta">Philly Pretzel Factory &middot; The Pretzel Cup &middot; Operator View</p>
+    <p class="last-update" id="last-update">&nbsp;</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ═══════════════════════════════════════════════════════════
+  // CONFIG
+  // ═══════════════════════════════════════════════════════════
+
+  // Live published-CSV URLs from the source spreadsheet — one per tab.
+  // Each tab is fetched independently and the results are merged so the
+  // operator view sees every 7-Eleven across all tabs.
+  const SHEET_CSV_URLS = [
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=1825588771&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=1112663081&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=580731113&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=1308920282&single=true&output=csv',
+  ];
+
+  // Campaign anchor — first Monday of the first season.
+  // Everything else (current season, current quarter) is computed from this.
+  const CAMPAIGN_START = new Date('2026-04-27T00:00:00');  // Season 1 Monday
+
+  // Quarter-end prizes shown in the "Long Game" section.
+  const QUARTER_PRIZES = {
+    1: 'Grand Prize',
+    2: '2nd Place',
+    3: '3rd Place',
+  };
+
+  // Real auth as of P1 — see /api/auth/* + /signin. CREDENTIALS gone.
+
+  // ═══════════════════════════════════════════════════════════
+  // FORMATTERS
+  // ═══════════════════════════════════════════════════════════
+  const moneyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const moneyFmtFine = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+  const numFmt = new Intl.NumberFormat('en-US');
+  const pctFmt = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1, signDisplay: 'always' });
+  const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+  const datetimeFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function debounce(fn, wait) {
+    let t; return function () { const a = arguments, c = this; clearTimeout(t); t = setTimeout(function () { fn.apply(c, a); }, wait); };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SEASON / QUARTER MATH
+  // Season N starts at CAMPAIGN_START + (N-1) weeks (always a Monday).
+  // Quarter Q contains seasons (Q-1)*13+1 .. Q*13.
+  // ═══════════════════════════════════════════════════════════
+  function currentSeason(now) {
+    now = now || new Date();
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const diff = now - CAMPAIGN_START;
+    if (diff < 0) return 1;
+    return Math.floor(diff / msPerWeek) + 1;
+  }
+  function seasonRange(seasonNum) {
+    const start = new Date(CAMPAIGN_START);
+    start.setDate(start.getDate() + (seasonNum - 1) * 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return { start: start, end: end };
+  }
+  function currentQuarter(now) {
+    now = now || new Date();
+    return Math.floor(now.getMonth() / 3) + 1;
+  }
+  function quarterYear(now) {
+    return (now || new Date()).getFullYear();
+  }
+  function quarterRange(quarterNum, year) {
+    const startMonth = (quarterNum - 1) * 3;
+    const rawStart = new Date(year, startMonth, 1);
+    const start = rawStart < CAMPAIGN_START ? CAMPAIGN_START : rawStart;
+    const end = new Date(year, startMonth + 3, 1);
+    return { start: start, end: end };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // CSV PARSER (same as before — handles multi-table layout)
+  // ═══════════════════════════════════════════════════════════
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { field += c; }
+      } else {
+        if (c === '"') { inQuotes = true; }
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\r') { /* skip */ }
+        else if (c === '\n') { row.push(field); field = ''; rows.push(row); row = []; }
+        else { field += c; }
+      }
+    }
+    if (field || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function parseMoney(cell) {
+    if (cell == null) return null;
+    const s = String(cell).trim().replace(/[$,]/g, '');
+    if (s === '' || s === '-') return null;
+    const n = parseFloat(s);
+    if (isNaN(n)) return null;
+    return n;
+  }
+
+  function parseSheetDate(cell) {
+    if (!cell) return null;
+    const s = String(cell).trim();
+    const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (!match) return null;
+    const month = parseInt(match[1], 10);
+    const day = parseInt(match[2], 10);
+    let year = parseInt(match[3], 10);
+    if (year < 100) year += 2000;
+    if (year < 1000) year += 2000;
+    return new Date(year, month - 1, day);
+  }
+
+  // Local-tz YYYY-MM-DD key for indexing daily store data.
+  function isoDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function isWithinRange(date, start, end) {
+    if (!date) return false;
+    return date >= start && date < end;
+  }
+
+  const SEVEN_ELEVEN_PATTERNS = ['711', '7-eleven', '7 eleven'];
+
+  // Columns that look like 7-Elevens but aren't part of the active program.
+  // Filtered out everywhere — leaderboard, podium, hero stats, daily grid,
+  // quarter standings. Match against the cleaned (paren-stripped) column name.
+  const EXCLUDED_STORES = new Set([
+    '711 cross island',
+  ]);
+  function isSevenEleven(header) {
+    if (!header) return false;
+    const h = header.toLowerCase().trim();
+    return SEVEN_ELEVEN_PATTERNS.some(function (p) { return h.indexOf(p) >= 0; });
+  }
+  // Parse a store column header into a display name and (optional) full
+  // street address. Two header shapes coexist in the sheet:
+  //   New format:    "552 Franklin Ave, Franklin Square, NY 11010 (711 FSQ)"
+  //                  → name from parens ("711 FSQ"), address from prefix.
+  //   Legacy/other:  "711 VS (5/5)", "Eastern Meat Farms (6/6)", "711 X"
+  //                  → name from prefix, no address. Parens with capacity
+  //                    codes (e.g. "5/5", "F - Sun 5/5", "10/10") are kept
+  //                    as the "not-a-nickname" signal.
+  function parseStoreHeader(header) {
+    const raw = String(header).trim();
+    const match = raw.match(/\(([^)]+)\)\s*$/);
+    if (match) {
+      const parenContent = match[1].trim();
+      const beforeParens = raw.slice(0, match.index).replace(/,\s*$/, '').trim();
+      const hasLetters = /[a-zA-Z]/.test(parenContent);
+      const looksLikeCapacity = /^[FMTWS\-\s]*\d+\/\d+/.test(parenContent) ||
+                                 /^[\d\s\/]+[A-Z]?$/.test(parenContent);
+      if (hasLetters && !looksLikeCapacity) {
+        return { name: parenContent, address: beforeParens };
+      }
+      return { name: beforeParens, address: '' };
+    }
+    return { name: raw, address: '' };
+  }
+
+  // Collapse a full street address down to "Town, ST" for display under
+  // each store name. Falls back to the raw address if it doesn't split
+  // into enough comma-separated parts.
+  function shortLocation(address) {
+    if (!address) return '';
+    const parts = address.split(',').map(function (p) { return p.trim(); });
+    if (parts.length >= 3) {
+      const town = parts[parts.length - 2];
+      const state = parts[parts.length - 1].split(/\s+/)[0];
+      return town + ', ' + state;
+    }
+    return address;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SHEET PROCESSING — accumulates by date-range bucket
+  // ═══════════════════════════════════════════════════════════
+  function processSheet(rows) {
+    const now = new Date();
+    const seasonNum = currentSeason();
+    const quarterNum = currentQuarter(now);
+    const qYear = quarterYear(now);
+    const thisSeason = seasonRange(seasonNum);
+    const lastSeason = seasonRange(seasonNum - 1);
+    const thisQuarter = quarterRange(quarterNum, qYear);
+
+    const stores = {}; // { name: { address, thisSeason, lastSeason, ..., daily: { 'YYYY-MM-DD': $ }, lastReported: Date } }
+    function init(name, address) {
+      if (!stores[name]) {
+        stores[name] = {
+          address: address || '',
+          thisSeason: 0, lastSeason: 0,
+          daysReportedThisSeason: 0, daysReportedLastSeason: 0,
+          thisQuarter: 0, daysReportedThisQuarter: 0,
+          daily: {},           // per-day dollar totals keyed by isoDate(recordDate)
+          lastReported: null,  // latest recordDate that had a non-null value
+        };
+      } else if (!stores[name].address && address) {
+        // Prefer any non-empty address if the first-seen column for this
+        // store was a legacy header without one.
+        stores[name].address = address;
+      }
+    }
+
+    let currentHeaders = null;
+    let storeColumns = [];
+
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0) continue;
+
+      const looksLikeHeader = row.some(function (c) { return /timestamp/i.test(String(c)); }) &&
+                              row.some(function (c) { return /date/i.test(String(c)); });
+      if (looksLikeHeader) {
+        currentHeaders = row;
+        storeColumns = [];
+        for (let c = 0; c < row.length; c++) {
+          if (!isSevenEleven(row[c])) continue;
+          const parsed = parseStoreHeader(row[c]);
+          const clean = parsed.name;
+          if (EXCLUDED_STORES.has(clean.toLowerCase())) continue;
+          storeColumns.push({ col: c, name: clean });
+          init(clean, parsed.address);
+        }
+        continue;
+      }
+      if (!currentHeaders || storeColumns.length === 0) continue;
+
+      let dateColIdx = -1;
+      for (let c = 0; c < currentHeaders.length; c++) {
+        if (/date/i.test(String(currentHeaders[c]))) { dateColIdx = c; break; }
+      }
+      if (dateColIdx < 0) continue;
+
+      const recordDate = parseSheetDate(row[dateColIdx]);
+      if (!recordDate) continue;
+      // Skip future-dated rows — almost always a typo in the source sheet
+      // (sales lag the report date by 1 day, so anything past today is invalid).
+      if (recordDate > now) continue;
+
+      const inThisSeason = isWithinRange(recordDate, thisSeason.start, thisSeason.end);
+      const inLastSeason = seasonNum > 1 && isWithinRange(recordDate, lastSeason.start, lastSeason.end);
+      const inThisQuarter = isWithinRange(recordDate, thisQuarter.start, thisQuarter.end);
+
+      const dateKey = isoDate(recordDate);
+
+      for (let i = 0; i < storeColumns.length; i++) {
+        const sc = storeColumns[i];
+        const value = parseMoney(row[sc.col]);
+        if (value === null) continue;
+
+        // Always-on tracking: per-day total + latest-reported watermark.
+        // These power the Daily Drilldown grid and the stale-store flag.
+        stores[sc.name].daily[dateKey] = (stores[sc.name].daily[dateKey] || 0) + value;
+        if (!stores[sc.name].lastReported || recordDate > stores[sc.name].lastReported) {
+          stores[sc.name].lastReported = recordDate;
+        }
+
+        if (inThisSeason) {
+          stores[sc.name].thisSeason += value;
+          stores[sc.name].daysReportedThisSeason += 1;
+        }
+        if (inLastSeason) {
+          stores[sc.name].lastSeason += value;
+          stores[sc.name].daysReportedLastSeason += 1;
+        }
+        if (inThisQuarter) {
+          stores[sc.name].thisQuarter += value;
+          stores[sc.name].daysReportedThisQuarter += 1;
+        }
+      }
+    }
+
+    const result = [];
+    for (const name in stores) {
+      const s = stores[name];
+      // Include any store that has ever logged a value (including dormant).
+      // Ops view wants the full picture.
+      if (!s.lastReported) continue;
+      result.push({
+        id: name.replace(/\s+/g, '-').toLowerCase(),
+        name: name,
+        address: s.address || '',
+        location: shortLocation(s.address),
+        thisSeason: s.thisSeason,
+        lastSeason: s.lastSeason,
+        daysReportedThisSeason: s.daysReportedThisSeason,
+        daysReportedLastSeason: s.daysReportedLastSeason,
+        thisQuarter: s.thisQuarter,
+        daysReportedThisQuarter: s.daysReportedThisQuarter,
+        daily: s.daily,
+        lastReported: s.lastReported,
+      });
+    }
+    return result;
+  }
+
+  function pctChange(store) {
+    if (!store.lastSeason || !store.daysReportedLastSeason) return null;
+    const days = store.daysReportedThisSeason || 1;
+    const lastProrated = (store.lastSeason / store.daysReportedLastSeason) * days;
+    if (lastProrated === 0) return null;
+    return (store.thisSeason - lastProrated) / lastProrated;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════
+  let cachedStores = [];
+
+  function setStatus(state, text) {
+    const pill = document.getElementById('status-pill');
+    pill.dataset.state = state;
+    document.getElementById('status-text').textContent = text;
+  }
+
+  function renderHeroStats(stores) {
+    const now = new Date();
+    const seasonNum = currentSeason();
+    const quarterNum = currentQuarter(now);
+    const qYear = quarterYear(now);
+    const range = seasonRange(seasonNum);
+    const active = stores.filter(function (s) { return s.daysReportedThisSeason > 0 || s.daysReportedLastSeason > 0; });
+    const total = stores.reduce(function (sum, s) { return sum + s.thisSeason; }, 0);
+
+    document.getElementById('hero-season').textContent = seasonNum;
+    document.getElementById('season-number-display').textContent = seasonNum;
+    document.getElementById('season-dates').textContent =
+      dateFmt.format(range.start) + ' – ' + dateFmt.format(new Date(range.end.getTime() - 1));
+    document.getElementById('store-count').textContent = numFmt.format(active.length);
+    document.getElementById('total-revenue').textContent = moneyFmt.format(total);
+    const avg = active.length > 0 ? total / active.length : 0;
+    document.getElementById('avg-revenue').textContent = moneyFmt.format(avg);
+
+    document.getElementById('quarter-num').textContent = 'Q' + quarterNum + ' ' + qYear;
+  }
+
+  function renderPodium(rankedActive) {
+    const podium = document.getElementById('podium');
+    const top3 = rankedActive.slice(0, 3);
+    if (top3.length === 0) {
+      podium.innerHTML = '<div class="state-card"><p class="state-text">No sales reported this season yet. Check back after the first daily report comes in.</p></div>';
+      return;
+    }
+    podium.innerHTML = top3.map(function (s, i) {
+      const rank = i + 1;
+      const rankLabel = rank === 1 ? 'Champion' : rank === 2 ? 'Runner-up' : 'Third Place';
+      return (
+        '<article class="podium-card fade-in" data-rank="' + rank + '" aria-label="Rank ' + rank + ': ' + escapeHtml(s.name) + '">' +
+          '<div class="podium-rank-row">' +
+            '<span class="medal medal-' + rank + '" aria-hidden="true">' + rank + '</span>' +
+            '<span class="podium-rank-label">' + rankLabel + '</span>' +
+          '</div>' +
+          '<h3 class="podium-store">' + escapeHtml(s.name) + '</h3>' +
+          (s.location ? '<p class="podium-loc">' + escapeHtml(s.location) + '</p>' : '<p class="podium-loc">&nbsp;</p>') +
+          '<p class="podium-amount">' + moneyFmtFine.format(s.thisSeason) + '</p>' +
+          '<p class="podium-meta">' + numFmt.format(s.daysReportedThisSeason) + (s.daysReportedThisSeason === 1 ? ' day' : ' days') + ' reported</p>' +
+        '</article>'
+      );
+    }).join('');
+  }
+
+  function renderBoard(filter) {
+    filter = (filter || '').trim().toLowerCase();
+    const board = document.getElementById('board');
+    const meta = document.getElementById('board-meta');
+
+    const sorted = cachedStores.slice().sort(function (a, b) {
+      const aHas = a.daysReportedThisSeason > 0;
+      const bHas = b.daysReportedThisSeason > 0;
+      if (aHas !== bHas) return aHas ? -1 : 1;
+      return b.thisSeason - a.thisSeason;
+    });
+    sorted.forEach(function (s, i) { s.rank = i + 1; });
+
+    const filtered = sorted.filter(function (s) {
+      if (!filter) return true;
+      return s.name.toLowerCase().indexOf(filter) >= 0 ||
+             (s.location && s.location.toLowerCase().indexOf(filter) >= 0);
+    });
+
+    let html = (
+      '<div class="board-row is-header" role="row" aria-hidden="true">' +
+        '<div class="col-rank">#</div>' +
+        '<div class="col-store">Store</div>' +
+        '<div class="col-revenue">Revenue</div>' +
+        '<div class="col-change">vs Last Season</div>' +
+      '</div>'
+    );
+
+    if (filtered.length === 0) {
+      html += '<div class="state-card"><p class="state-text">No stores match &ldquo;' + escapeHtml(filter) + '&rdquo;</p></div>';
+      meta.textContent = '0 of ' + cachedStores.length + ' stores';
+      board.innerHTML = html;
+      return;
+    }
+
+    meta.textContent = filtered.length + ' of ' + cachedStores.length + ' stores';
+
+    html += filtered.map(function (s) {
+      const change = pctChange(s);
+      const noDataYet = s.daysReportedThisSeason === 0;
+
+      let changeHtml = '<span class="change-flat">&mdash;</span>';
+      if (!noDataYet && change !== null) {
+        const cls = change > 0.001 ? 'change-up' : change < -0.001 ? 'change-down' : 'change-flat';
+        const arrow = change > 0.001 ? '↑' : change < -0.001 ? '↓' : '';
+        changeHtml = '<span class="' + cls + '">' + arrow + ' ' + pctFmt.format(change) + '</span>';
+      }
+
+      let rankCell;
+      if (!noDataYet && s.rank <= 3) {
+        rankCell = '<span class="rank-medal medal-' + s.rank + '">' + s.rank + '</span>';
+      } else if (noDataYet) {
+        rankCell = '&mdash;';
+      } else {
+        rankCell = String(s.rank);
+      }
+
+      const revenueClass = noDataYet ? 'col-revenue is-zero' : 'col-revenue';
+      const revenueDisplay = noDataYet ? '&mdash;' : moneyFmtFine.format(s.thisSeason);
+      const badge = noDataYet ? '<span class="store-badge">Pending</span>' : '';
+
+      return (
+        '<div class="board-row fade-in" role="row">' +
+          '<div class="col-rank" role="cell">' + rankCell + '</div>' +
+          '<div class="col-store" role="cell">' +
+            '<span class="store-name">' + escapeHtml(s.name) + '</span>' +
+            '<span class="store-meta-line">' +
+              (s.location ? '<span class="store-loc">' + escapeHtml(s.location) + '</span>' : '') +
+              badge +
+            '</span>' +
+          '</div>' +
+          '<div class="' + revenueClass + '" role="cell" aria-label="Revenue">' + revenueDisplay + '</div>' +
+          '<div class="col-change" role="cell" aria-label="Change vs last season">' + changeHtml + '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    board.innerHTML = html;
+  }
+
+  function renderMover(stores) {
+    const withChange = stores
+      .filter(function (s) { return s.daysReportedThisSeason > 0; })
+      .map(function (s) { return { store: s, change: pctChange(s) }; })
+      .filter(function (x) { return x.change !== null && x.change > 0; });
+
+    const card = document.getElementById('mover-card');
+    if (withChange.length === 0) { card.hidden = true; return; }
+    withChange.sort(function (a, b) { return b.change - a.change; });
+    const winner = withChange[0];
+
+    card.hidden = false;
+    document.getElementById('mover-store').textContent = winner.store.name;
+    const detail = (winner.store.location ? winner.store.location + ' \u00b7 ' : '') + 'Currently rank #' + winner.store.rank;
+    document.getElementById('mover-detail').textContent = detail;
+    document.getElementById('mover-pct').textContent = pctFmt.format(winner.change);
+  }
+
+  // Per-store, per-day grid for the current calendar week (Mon–Sun in local time).
+  // Pulls from each store's `daily` map populated in processSheet. Stores whose
+  // most recent report is older than yesterday are flagged "pending".
+  function renderDailyGrid(stores) {
+    const wrap = document.getElementById('daily-grid');
+    if (!wrap) return;
+
+    // Compute current week (Mon 00:00 .. Sun 23:59 local).
+    const now = new Date();
+    const dow = now.getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+    const daysSinceMon = (dow + 6) % 7;
+    const weekStart = new Date(now);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - daysSinceMon);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      days.push(d);
+    }
+    const todayKey = isoDate(new Date());
+
+    // "Stale" = last report is older than yesterday's midnight.
+    const yesterday = new Date();
+    yesterday.setHours(0, 0, 0, 0);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const dayLabelFmt = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+    const dayDateFmt = new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric' });
+
+    if (!stores || stores.length === 0) {
+      wrap.innerHTML = '<div class="state-card"><p class="state-text">No store data available.</p></div>';
+      return;
+    }
+
+    // Sort by season total desc — same default ordering as the leaderboard.
+    const sorted = stores.slice().sort(function (a, b) { return b.thisSeason - a.thisSeason; });
+
+    let html = '<table class="daily-grid"><thead><tr>';
+    html += '<th class="col-store">Store · Last Report</th>';
+    for (let i = 0; i < 7; i++) {
+      const key = isoDate(days[i]);
+      const isToday = key === todayKey;
+      html += '<th class="' + (isToday ? 'is-today' : '') + '">' +
+        dayLabelFmt.format(days[i]) + ' ' + dayDateFmt.format(days[i]) +
+        '</th>';
+    }
+    html += '<th>Week $</th></tr></thead><tbody>';
+
+    sorted.forEach(function (s) {
+      const isStale = !s.lastReported || s.lastReported < yesterday;
+      const lastReportedLabel = s.lastReported
+        ? dateFmt.format(s.lastReported)
+        : 'never';
+
+      let weekTotal = 0;
+      let dayCells = '';
+      for (let i = 0; i < 7; i++) {
+        const key = isoDate(days[i]);
+        const v = s.daily ? s.daily[key] : null;
+        const isToday = key === todayKey;
+        const cellClasses = (v == null ? 'is-empty ' : '') + (isToday ? 'is-today' : '');
+        const cellContent = v == null ? '&mdash;' : moneyFmtFine.format(v);
+        if (v != null) weekTotal += v;
+        dayCells += '<td class="' + cellClasses.trim() + '">' + cellContent + '</td>';
+      }
+
+      const staleFlag = isStale ? '<span class="store-stale-flag">Pending</span>' : '';
+      html += '<tr>' +
+        '<td class="is-store">' +
+          escapeHtml(s.name) + staleFlag +
+          '<span class="store-last-reported">Last: ' + escapeHtml(lastReportedLabel) + '</span>' +
+        '</td>' +
+        dayCells +
+        '<td class="is-week-total">' + (weekTotal > 0 ? moneyFmtFine.format(weekTotal) : '&mdash;') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  function renderQuarterStandings(stores) {
+    const top3 = stores
+      .filter(function (s) { return s.thisQuarter > 0; })
+      .sort(function (a, b) { return b.thisQuarter - a.thisQuarter; })
+      .slice(0, 3);
+
+    const grid = document.getElementById('quarter-grid');
+    if (top3.length === 0) {
+      grid.innerHTML = '<div class="state-card" style="grid-column: 1 / -1;"><p class="state-text">No quarter data yet.</p></div>';
+      return;
+    }
+
+    grid.innerHTML = [1, 2, 3].map(function (place) {
+      const s = top3[place - 1];
+      const inner = s
+        ? '<div class="quarter-store">' + escapeHtml(s.name) + '</div>' +
+          '<div class="quarter-stat">' + moneyFmt.format(s.thisQuarter) + ' \u00b7 ' + numFmt.format(s.daysReportedThisQuarter) + ' days reported</div>'
+        : '<div class="quarter-store" style="color: var(--ink-3); font-size: 14px;">&mdash;</div>' +
+          '<div class="quarter-stat">Awaiting more data</div>';
+      return (
+        '<article class="quarter-card fade-in" data-place="' + place + '">' +
+          '<div class="quarter-prize-label">' + place + (place === 1 ? 'st' : place === 2 ? 'nd' : 'rd') + ' Place</div>' +
+          '<div class="quarter-prize">' + QUARTER_PRIZES[place] + '</div>' +
+          inner +
+        '</article>'
+      );
+    }).join('');
+  }
+
+  // COUNTDOWN
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function updateCountdown() {
+    const now = new Date();
+    const seasonEnd = seasonRange(currentSeason()).end;
+    const diff = seasonEnd - now;
+    if (diff <= 0) {
+      ['cd-days', 'cd-hours', 'cd-mins', 'cd-secs'].forEach(function (id) {
+        document.getElementById(id).textContent = '00';
+      });
+      return;
+    }
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    document.getElementById('cd-days').textContent = pad(days);
+    document.getElementById('cd-hours').textContent = pad(hours);
+    document.getElementById('cd-mins').textContent = pad(mins);
+    document.getElementById('cd-secs').textContent = pad(secs);
+  }
+
+  function showError(msg) {
+    const board = document.getElementById('board');
+    board.innerHTML = '<div class="state-card is-error"><div class="state-title">Couldn&rsquo;t load standings</div><p class="state-text">' + escapeHtml(msg) + '</p></div>';
+    setStatus('error', 'Connection error');
+  }
+
+  async function loadData() {
+    if (!SHEET_CSV_URLS || SHEET_CSV_URLS.length === 0) {
+      showError('No sheet URLs configured.');
+      return;
+    }
+    setStatus('loading', 'Loading\u2026');
+    try {
+      const responses = await Promise.all(SHEET_CSV_URLS.map(function (url) {
+        return fetch(url, { cache: 'no-store' }).then(function (resp) {
+          if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + url);
+          return resp.text();
+        });
+      }));
+      // Concat rows from each tab. processSheet already detects header rows
+      // mid-stream, so stacked tab data appears as additional header blocks.
+      let rows = [];
+      for (let i = 0; i < responses.length; i++) {
+        if (i > 0) rows.push([]);
+        rows = rows.concat(parseCSV(responses[i]));
+      }
+      const stores = processSheet(rows);
+
+      cachedStores = stores;
+      const rankedActive = stores
+        .filter(function (s) { return s.daysReportedThisSeason > 0; })
+        .sort(function (a, b) { return b.thisSeason - a.thisSeason; });
+
+      renderHeroStats(stores);
+      renderPodium(rankedActive);
+      renderBoard('');
+      renderMover(stores);
+      renderDailyGrid(stores);
+      renderQuarterStandings(stores);
+
+      document.getElementById('last-update').textContent = 'Updated ' + datetimeFmt.format(new Date());
+      setStatus('live', 'Season ' + currentSeason() + ' \u2014 Live');
+    } catch (err) {
+      console.error('Failed to load sheet:', err);
+      showError('We couldn\u2019t reach the sales sheet. The page will retry on next load.');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // AUTH GATE (client-side velvet rope, not real security)
+  // ═══════════════════════════════════════════════════════════
+  // \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Boot: server cookie is the only session carrier. Non-operators
+  // land on their own home; signed-out viewers go to /signin.
+  // \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  async function handleSignOut() {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  }
+
+  let appInitialized = false;
+  function initApp(user) {
+    document.getElementById('user-tag').textContent = user;
+    const app = document.getElementById('app');
+    app.classList.add('is-authed');
+    app.setAttribute('aria-hidden', 'false');
+    document.getElementById('boot').style.display = 'none';
+    if (appInitialized) { loadData(); return; }
+    appInitialized = true;
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+    document.getElementById('search').addEventListener('input', debounce(function (e) {
+      renderBoard(e.target.value);
+    }, 120));
+
+    loadData();
+    setInterval(loadData, 5 * 60 * 1000);
+  }
+
+  async function init() {
+    document.getElementById('logout-btn').addEventListener('click', handleSignOut);
+    const next = encodeURIComponent(location.pathname + location.search);
+    try {
+      const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { location.replace('/signin?next=' + next); return; }
+      const me = await r.json();
+      if (me.role !== 'operator') {
+        location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin');
+        return;
+      }
+      initApp(me.name);
+    } catch (e) {
+      location.replace('/signin?next=' + next);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

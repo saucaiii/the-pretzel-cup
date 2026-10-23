@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Store Portal — Dashboard · PPF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  --green:#0D5237; --green-deep:#083521;
+  --gold:#D4B662; --gold-2:#F2E7A4;
+  --ink:#FFFFFF; --ink-2:rgba(255,255,255,0.78); --ink-3:rgba(255,255,255,0.55);
+  --bg-2:#083521; --line:rgba(255,255,255,0.12); --line-2:rgba(255,255,255,0.22);
+  --danger:#f47572; --good:#7ad692;
+  --display: 'Anton', 'Impact', sans-serif;
+  --body: 'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--green); color: var(--ink); font-family: var(--body);
+  min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) 14px max(48px, env(safe-area-inset-bottom));
+}
+
+/* Mobile tap baseline — see /store/signin.html for rationale. */
+button, [role="button"], input[type="button"], input[type="submit"], .actions a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 720px; margin: 0 auto; }
+
+/* curtain hides page until boot gate resolves */
+#curtain { position: fixed; inset: 0; background: var(--green); z-index: 9999;
+  display: grid; place-items: center; color: var(--ink-3); font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase; font-family: var(--display); }
+
+header.top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0 16px; border-bottom: 1px solid var(--line); margin-bottom: 18px;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand img { width: 36px; height: 32px; border-radius: 4px; }
+.brand .t { font-family: var(--display); font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); line-height: 1; }
+.brand .s { font-size: 10px; letter-spacing: 0.18em; color: var(--ink-3); text-transform: uppercase; }
+.signout {
+  background: transparent; border: 1px solid var(--line-2); color: var(--ink-2);
+  font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
+  transition: transform 80ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.signout:hover { color: var(--ink); border-color: var(--gold); }
+.signout:active { transform: scale(0.96); background: rgba(0,0,0,0.2); }
+
+h1 { font-family: var(--display); font-weight: 400; font-size: 28px;
+  letter-spacing: 0.02em; text-transform: uppercase; margin: 0 0 2px; line-height: 1.05; }
+.sub { color: var(--ink-3); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; }
+
+.card {
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px; margin: 14px 0;
+}
+h2 { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--gold); margin: 0 0 10px; }
+
+.drop-today { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+.drop-today .big {
+  font-family: var(--display); font-size: 56px; line-height: 1; letter-spacing: 0.02em;
+  color: var(--gold); white-space: nowrap;
+}
+.drop-today .lab { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; margin-top: 4px; }
+.drop-today .meta { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.drop-today .meta .b { color: var(--ink); font-weight: 700; }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.actions a, .actions button {
+  display: block; text-align: center; text-decoration: none; cursor: pointer;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--line-2); color: var(--ink);
+  font: 600 13px var(--body); padding: 12px 10px; border-radius: 10px;
+  letter-spacing: 0.02em;
+  transition: transform 80ms ease, background 120ms ease, border-color 120ms ease;
+}
+.actions a:hover, .actions button:hover { background: rgba(255,255,255,0.1); border-color: var(--gold); }
+.actions a:active, .actions button:active { transform: scale(0.98); background: rgba(0,0,0,0.2); }
+.actions .primary { background: var(--gold); color: #000; border-color: var(--gold); }
+.actions .primary:hover { background: var(--gold-2); }
+.actions .primary:active { background: var(--gold-2); }
+.actions.single { grid-template-columns: 1fr; }
+
+.totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.totals .k { background: rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.totals .k .lab { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; }
+.totals .k .v { font-family: var(--display); font-size: 22px; color: var(--gold); letter-spacing: 0.02em; margin-top: 4px; line-height: 1; font-variant-numeric: tabular-nums; }
+.totals .k .meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+@media (max-width: 540px) {
+  .totals { grid-template-columns: repeat(2, 1fr); }
+  .drop-today .big { font-size: 44px; }
+}
+
+table.recent { width: 100%; border-collapse: collapse; font-size: 13px; }
+.recent th { text-align: left; font: 700 10px var(--body); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.recent td { padding: 8px; border-bottom: 1px solid var(--line); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.recent td.date { color: var(--ink); font-weight: 600; }
+.recent td.cents { color: var(--gold); font-weight: 700; }
+.empty { color: var(--ink-3); font-size: 13px; padding: 12px 0; text-align: center; }
+
+.chip { display: inline-block; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-weight: 700; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.chip.open { color: var(--danger); border-color: var(--danger); }
+.chip.pending { color: var(--gold); border-color: var(--gold); }
+.chip.ack { color: var(--ink-2); }
+
+.row-list { display: flex; flex-direction: column; gap: 8px; }
+.row { background: rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.row .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.row .r1 .k { font-weight: 700; color: var(--ink); }
+.row .r2 { color: var(--ink-2); margin-top: 4px; font-size: 12px; }
+.row .date { color: var(--ink-3); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.footlinks { text-align: center; margin-top: 22px; color: var(--ink-3); font-size: 12px; }
+.footlinks a { color: var(--gold); text-decoration: none; margin: 0 10px; }
+</style>
+</head>
+<body>
+
+<div id="curtain">Loading…</div>
+
+<div class="wrap" id="app" style="display:none">
+  <header class="top">
+    <div class="brand">
+      <img src="/ppf-logo.jpg" alt="">
+      <div>
+        <div class="t">Pretzel Cup</div>
+        <div class="s">Store Portal</div>
+      </div>
+    </div>
+    <button class="signout" type="button" id="signout">Sign out</button>
+  </header>
+
+  <h1 id="store-name">—</h1>
+  <div class="sub" id="store-sub">—</div>
+
+  <!-- Today's drop + call/text -->
+  <section class="card">
+    <h2>Your standard drop</h2>
+    <div class="drop-today">
+      <div>
+        <div class="big" id="drop-big">—</div>
+        <div class="lab">singles / doubles</div>
+      </div>
+      <div class="meta">
+        <div><span class="b">Basket:</span> <span id="basket">—</span></div>
+        <div><span class="b">Note:</span> <span id="note">—</span></div>
+        <div style="margin-top:6px; color: var(--ink-3); font-size: 12px;" id="wknd-hint"></div>
+      </div>
+    </div>
+    <div class="actions" id="contact-row">
+      <a id="call-link" class="primary" href="#">Call us</a>
+      <a id="text-link" href="#">Text us</a>
+    </div>
+  </section>
+
+  <!-- Totals -->
+  <section class="card">
+    <h2>Your sales</h2>
+    <div class="totals">
+      <div class="k">
+        <div class="lab">This week</div>
+        <div class="v" id="t-week">$0</div>
+        <div class="meta" id="t-week-sub">— singles · — doubles</div>
+        <div class="meta" id="t-week-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
+      </div>
+      <div class="k">
+        <div class="lab">This month</div>
+        <div class="v" id="t-month">$0</div>
+        <div class="meta" id="t-month-sub">— singles · — doubles</div>
+        <div class="meta" id="t-month-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
+      </div>
+      <div class="k">
+        <div class="lab">This quarter</div>
+        <div class="v" id="t-quarter">$0</div>
+        <div class="meta" id="t-quarter-sub">— singles · — doubles</div>
+        <div class="meta" id="t-quarter-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
+      </div>
+      <div class="k">
+        <div class="lab">Year to date</div>
+        <div class="v" id="t-ytd">$0</div>
+        <div class="meta" id="t-ytd-sub">— singles · — doubles</div>
+        <div class="meta" id="t-ytd-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Actions (moved up for visibility, right after sales) -->
+  <section class="card">
+    <h2>What else?</h2>
+    <div class="actions">
+      <a href="/store/issue">Report an issue</a>
+      <a href="/store/request">Request a change</a>
+      <a href="/store/history">Full history</a>
+      <a href="/store/billing">Billing &amp; invoices</a>
+      <a href="/store/invoice" id="invoice-link">Monthly invoice</a>
+    </div>
+  </section>
+
+  <!-- Recent deliveries -->
+  <section class="card">
+    <h2>Recent deliveries</h2>
+    <div id="recent-wrap">
+      <table class="recent" id="recent-table" style="display:none">
+        <thead>
+          <tr><th>Date</th><th>Dropped</th><th>Sold</th><th>$</th><th>Driver</th></tr>
+        </thead>
+        <tbody id="recent-body"></tbody>
+      </table>
+      <div class="empty" id="recent-empty">No deliveries recorded yet.</div>
+    </div>
+  </section>
+
+  <!-- Open issues -->
+  <section class="card" id="issues-card" style="display:none">
+    <h2>Open issues</h2>
+    <div class="row-list" id="issues-list"></div>
+  </section>
+
+  <!-- Pending change requests -->
+  <section class="card" id="reqs-card" style="display:none">
+    <h2>Pending change requests</h2>
+    <div class="row-list" id="reqs-list"></div>
+  </section>
+
+  <p class="footlinks">
+    PPF · Pretzel Cup · <a href="tel:" id="foot-call">Call us</a>
+  </p>
+</div>
+
+<script>
+const money = c => '$' + ((c || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = iso => {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-').map(n => parseInt(n,10));
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+};
+const kindLabel = k => ({
+  short_count: 'Short count', long_count: 'Long count', missed: 'Missed drop',
+  damage: 'Damage', other: 'Other',
+  double: 'Double drop', skip: 'Skip', custom: 'Custom',
+}[k] || k);
+
+async function boot() {
+  try {
+    const r = await fetch('/api/store?resource=dashboard', { credentials: 'same-origin', cache: 'no-store' });
+    if (r.status === 401) { location.href = '/store/signin'; return; }
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'load failed');
+    render(j);
+  } catch (e) {
+    document.getElementById('curtain').textContent = 'Could not load. Pull to refresh.';
+    console.error(e);
+    return;
+  }
+  document.getElementById('curtain').style.display = 'none';
+  document.getElementById('app').style.display = '';
+}
+
+function render(d) {
+  const s = d.stop;
+  document.getElementById('store-name').textContent = s.display_name;
+  const parts = [];
+  if (s.route_label) parts.push(s.route_label + ' route');
+  if (s.address) parts.push(s.address);
+  document.getElementById('store-sub').textContent = parts.join(' · ');
+
+  document.getElementById('drop-big').textContent = `${s.singles_drop} / ${s.doubles_drop}`;
+  document.getElementById('basket').textContent = s.basket || '—';
+  document.getElementById('note').textContent = s.note || '—';
+  if (s.singles_drop_wknd != null || s.doubles_drop_wknd != null) {
+    const sw = s.singles_drop_wknd != null ? s.singles_drop_wknd : s.singles_drop;
+    const dw = s.doubles_drop_wknd != null ? s.doubles_drop_wknd : s.doubles_drop;
+    document.getElementById('wknd-hint').textContent = `Weekend drop: ${sw} / ${dw}`;
+  }
+
+  const phone = d.operator_phone || '';
+  if (phone) {
+    document.getElementById('call-link').href = 'tel:' + phone;
+    document.getElementById('text-link').href = 'sms:' + phone;
+    document.getElementById('foot-call').href = 'tel:' + phone;
+  } else {
+    document.getElementById('contact-row').style.display = 'none';
+  }
+
+  const T = d.totals || {};
+  const setT = (id, t) => {
+    t = t || { gross_cents: 0, singles_sold: 0, doubles_sold: 0, deliveries: 0 };
+    document.getElementById(id).textContent = money(t.gross_cents);
+    document.getElementById(id + '-sub').textContent = `${t.singles_sold || 0} singles · ${t.doubles_sold || 0} doubles`;
+    document.getElementById(id + '-deliv').textContent = `${t.deliveries || 0} ${t.deliveries === 1 ? 'delivery' : 'deliveries'}`;
+  };
+  setT('t-week',    T.this_week);
+  setT('t-month',   T.this_month);
+  setT('t-quarter', T.this_quarter);
+  setT('t-ytd',     T.ytd);
+
+  const body = document.getElementById('recent-body');
+  const rows = d.recent || [];
+  if (rows.length) {
+    body.innerHTML = rows.map(r => `
+      <tr>
+        <td class="date">${esc(fmtDate(r.for_date))}</td>
+        <td>${r.singles_drop ?? '—'} / ${r.doubles_drop ?? '—'}</td>
+        <td>${r.sold_singles ?? '—'} / ${r.sold_doubles ?? '—'}</td>
+        <td class="cents">${r.sold_cents != null ? money(r.sold_cents) : '—'}</td>
+        <td>${esc(r.submitted_by_name || '—')}</td>
+      </tr>`).join('');
+    document.getElementById('recent-table').style.display = '';
+    document.getElementById('recent-empty').style.display = 'none';
+  }
+
+  const issues = d.issues || [];
+  if (issues.length) {
+    document.getElementById('issues-card').style.display = '';
+    document.getElementById('issues-list').innerHTML = issues.map(i => `
+      <div class="row">
+        <div class="r1">
+          <span class="k">${esc(kindLabel(i.kind))}</span>
+          <span class="chip ${i.status === 'open' ? 'open' : 'ack'}">${esc(i.status)}</span>
+        </div>
+        <div class="r2">${esc(i.note)}</div>
+        <div class="date">${esc(fmtDate(i.for_date || i.created_at.slice(0,10)))}</div>
+      </div>`).join('');
+  }
+
+  const reqs = d.change_requests || [];
+  if (reqs.length) {
+    document.getElementById('reqs-card').style.display = '';
+    document.getElementById('reqs-list').innerHTML = reqs.map(r => {
+      const detail = r.kind === 'custom'
+        ? `Δsingles ${r.singles_delta ?? 0}, Δdoubles ${r.doubles_delta ?? 0}`
+        : '';
+      return `
+      <div class="row">
+        <div class="r1">
+          <span class="k">${esc(kindLabel(r.kind))} · ${esc(fmtDate(r.effective_date))}</span>
+          <span class="chip pending">${esc(r.status)}</span>
+        </div>
+        ${detail ? `<div class="r2">${esc(detail)}</div>` : ''}
+        ${r.note ? `<div class="r2">${esc(r.note)}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // Invoice link defaults to current month.
+  const now = new Date();
+  const yyyyMm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('invoice-link').href = `/store/invoice?month=${yyyyMm}`;
+}
+
+document.getElementById('signout').addEventListener('click', async () => {
+  try { await fetch('/api/store?resource=signout', { method: 'POST', credentials: 'same-origin' }); } catch {}
+  location.href = '/store/signin';
+});
+
+boot();
+</script>
+</body>
+</html>

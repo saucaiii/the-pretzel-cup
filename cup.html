@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0D5237" />
+<title>The Pretzel Cup &mdash; Philly Pretzel Factory Weekly Sales Leaderboard</title>
+<meta name="description" content="Weekly sales leaderboard for participating 7-Eleven stores. The store that moves the most Philly Pretzels takes 10% off their next supply bill. Resets every Monday." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" />
+
+<style>
+:root {
+  --ppf-green: #0D5237;
+  --ppf-green-deep: #083521;
+  --ppf-green-light: #126b48;
+  --ppf-gold-light: #F2E7A4;
+  --ppf-gold:       #D4B662;
+  --ppf-gold-deep:  #B2872F;
+  --ppf-black:  #000000;
+  --ppf-white:  #FFFFFF;
+  --ppf-gray:   #6D6E71;
+
+  --bg: var(--ppf-green);
+  --bg-2: var(--ppf-green-deep);
+  --bg-3: var(--ppf-green-light);
+  --line: rgba(255, 255, 255, 0.12);
+  --line-2: rgba(255, 255, 255, 0.22);
+  --ink: var(--ppf-white);
+  --ink-2: rgba(255, 255, 255, 0.78);
+  --ink-3: rgba(255, 255, 255, 0.55);
+  --accent: var(--ppf-gold);
+  --accent-2: var(--ppf-gold-light);
+  --success: #5fd58c;
+  --danger: #f47572;
+  --warning: #f4c25f;
+
+  --display: 'Anton', 'Bebas Neue', 'Arial Black', sans-serif;
+  --body: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+  --script: 'Caveat', 'Brush Script MT', cursive;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
+  min-height: 100dvh;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a { color: var(--accent); text-decoration: none; transition: color 150ms ease; }
+a:hover { color: var(--accent-2); text-decoration: underline; }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--ppf-black);
+  padding: 12px 16px;
+  font-weight: 700;
+  z-index: 1000;
+  border-radius: var(--radius-sm);
+  font-family: var(--display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.skip-link:focus-visible { left: 8px; top: 8px; }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* DIAMOND PLATE */
+.diamond-strip {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 64px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 64' width='80' height='64'><g fill='%23ffffff' opacity='0.32'><path d='M5 4 L18 0 L13 12 L0 16 Z'/><path d='M25 4 L38 0 L33 12 L20 16 Z'/><path d='M45 4 L58 0 L53 12 L40 16 Z'/><path d='M65 4 L78 0 L73 12 L60 16 Z'/><path d='M5 24 L18 20 L13 32 L0 36 Z'/><path d='M25 24 L38 20 L33 32 L20 36 Z'/><path d='M45 24 L58 20 L53 32 L40 36 Z'/><path d='M65 24 L78 20 L73 32 L60 36 Z'/><path d='M5 44 L18 40 L13 52 L0 56 Z'/><path d='M25 44 L38 40 L33 52 L20 56 Z'/><path d='M45 44 L58 40 L53 52 L40 56 Z'/><path d='M65 44 L78 40 L73 52 L60 56 Z'/></g></svg>");
+  background-repeat: repeat-x;
+  background-size: 80px 64px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* HEADER */
+.header-wrap { position: relative; background: var(--ppf-green); border-bottom: 1px solid var(--line); }
+
+.header {
+  position: relative; z-index: 2;
+  padding: 80px 24px 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 16px; font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; text-transform: uppercase; }
+.brand-logo {
+  width: 64px;
+  height: 57px;
+  display: block;
+  flex-shrink: 0;
+  /* Logo is supplied as-is per PPF brand guide (no recoloring, rotation, or alteration). */
+}
+@media (min-width: 600px) {
+  .brand-logo { width: 80px; height: 71px; }
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1; }
+.brand-text .top {
+  font-size: 11px; letter-spacing: 0.18em; opacity: 0.7;
+  font-family: var(--body); font-weight: 600; margin-bottom: 6px;
+}
+.brand-text .bot { font-size: 24px; letter-spacing: 0.02em; }
+
+.live-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-2); background: rgba(0,0,0,0.2);
+}
+
+/* Header cluster — site nav + Order CTA + live pill on the right. */
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cup-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link {
+  display: inline-flex; align-items: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: transparent;
+  font-family: var(--display);
+  font-weight: 400;
+}
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); text-decoration: none; }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.nav-cta {
+  display: inline-flex; align-items: center;
+  padding: 11px 18px;
+  background: var(--accent); color: var(--ppf-black);
+  border-radius: 999px;
+  font-family: var(--display);
+  font-size: 12px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.nav-cta:hover { background: var(--accent-2); color: var(--ppf-black); text-decoration: none; transform: translateY(-1px); }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 0 rgba(95, 213, 140, 0.7);
+  animation: pulse 2.4s infinite;
+}
+.live-pill[data-state="loading"] .live-dot { background: var(--warning); animation: pulse 1s infinite; }
+.live-pill[data-state="error"] .live-dot { background: var(--danger); animation: none; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(95, 213, 140, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(95, 213, 140, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+/* HERO */
+.hero {
+  position: relative; padding: 56px 24px 64px;
+  max-width: 1280px; margin: 0 auto;
+  display: grid; grid-template-columns: 1.4fr 1fr;
+  gap: 56px; align-items: end;
+}
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; gap: 40px; padding: 32px 20px 48px; } }
+
+.hero-eyebrow {
+  font-family: var(--display);
+  font-size: 13px; letter-spacing: 0.22em;
+  color: var(--accent); margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.hero h1 {
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(64px, 11vw, 144px);
+  line-height: 0.88; letter-spacing: 0.005em;
+  margin: 0 0 28px; text-transform: uppercase; text-wrap: balance;
+}
+.hero h1 .crave-script {
+  font-family: var(--script); text-transform: none;
+  font-size: clamp(64px, 11vw, 140px); font-weight: 700;
+  color: var(--accent); letter-spacing: -0.01em;
+  display: inline-block; transform: rotate(-3deg);
+  margin: 0 4px; line-height: 1;
+}
+.hero-subtitle {
+  font-size: 18px; color: var(--ink-2);
+  max-width: 56ch; text-wrap: pretty;
+  margin: 0 0 32px; line-height: 1.5;
+}
+.hero-subtitle strong { color: var(--ink); font-weight: 700; }
+
+.hero-meta { display: flex; flex-wrap: wrap; gap: 32px; }
+.hero-meta-cell {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+.hero-meta-cell strong {
+  display: block; color: var(--ink);
+  font-family: var(--display);
+  font-size: 36px; font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px; letter-spacing: 0.01em;
+}
+
+.prize-card {
+  background: radial-gradient(circle at 30% 25%, var(--ppf-gold-light) 0%, var(--ppf-gold) 50%, var(--ppf-gold-deep) 100%);
+  color: var(--ppf-black);
+  padding: 36px 32px;
+  border-radius: var(--radius-lg);
+  position: relative; overflow: hidden;
+  box-shadow: 0 24px 48px -20px rgba(0, 0, 0, 0.5);
+}
+.prize-stamp {
+  position: absolute; top: 16px; right: 16px;
+  width: 84px; height: 84px;
+  border-radius: 50%;
+  background: var(--ppf-black);
+  display: grid; place-items: center;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.1);
+}
+.prize-stamp span {
+  font-family: var(--display); color: var(--ppf-gold-light);
+  font-size: 30px; letter-spacing: 0.02em;
+}
+.prize-label {
+  font-family: var(--display);
+  font-size: 12px; letter-spacing: 0.18em;
+  margin-bottom: 8px; opacity: 0.65;
+  text-transform: uppercase;
+}
+.prize-headline {
+  font-family: var(--display);
+  font-size: clamp(40px, 5.5vw, 60px);
+  line-height: 0.92; letter-spacing: 0.01em;
+  margin: 0 0 12px; text-transform: uppercase;
+  max-width: 11ch;
+}
+.prize-desc {
+  margin: 16px 0 0;
+  font-size: 14px; font-weight: 500;
+  line-height: 1.5; max-width: 32ch;
+}
+
+/* COUNTDOWN */
+.countdown-strip {
+  background: var(--ppf-black);
+  padding: 28px 24px;
+  border-top: 4px solid var(--accent);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+.countdown-inner {
+  max-width: 1280px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+}
+.countdown-label {
+  font-family: var(--display);
+  font-size: 16px; letter-spacing: 0.16em;
+  color: var(--accent); text-transform: uppercase;
+}
+.countdown-label .small {
+  display: block; color: var(--ink-3);
+  font-size: 11px; font-family: var(--body);
+  font-weight: 600; letter-spacing: 0.1em; margin-top: 4px;
+}
+.countdown-season {
+  font-family: var(--display);
+  font-size: clamp(44px, 6.5vw, 84px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  line-height: 1;
+  text-align: center;
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 36px rgba(212, 182, 98, 0.35);
+}
+.countdown-value {
+  display: flex; gap: 24px; align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.countdown-cell { text-align: center; min-width: 56px; }
+.countdown-num {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 60px);
+  letter-spacing: 0.02em; line-height: 1; color: var(--ink);
+}
+.countdown-unit {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--ink-3); margin-top: 8px;
+}
+
+/* PODIUM */
+.podium-section { padding: 64px 24px 32px; max-width: 1280px; margin: 0 auto; }
+
+.section-eyebrow {
+  font-family: var(--display);
+  font-size: 13px; letter-spacing: 0.22em;
+  color: var(--accent); margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.section-heading {
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(40px, 6vw, 80px);
+  line-height: 0.92; letter-spacing: 0.01em;
+  margin: 0 0 12px; text-wrap: balance; text-transform: uppercase;
+}
+.section-sub {
+  color: var(--ink-2); font-size: 16px;
+  margin: 0 0 36px; max-width: 60ch;
+  text-wrap: pretty; line-height: 1.55;
+}
+
+.podium {
+  display: grid; grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 16px; align-items: end; margin-bottom: 48px;
+}
+@media (max-width: 700px) { .podium { grid-template-columns: 1fr; gap: 12px; } }
+
+.podium-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 28px 24px;
+  position: relative;
+  transition: transform 200ms ease, border-color 200ms ease;
+}
+.podium-card:hover { transform: translateY(-3px); border-color: var(--line-2); }
+@media (prefers-reduced-motion: reduce) {
+  .podium-card { transition: none; }
+  .podium-card:hover { transform: none; }
+}
+
+.podium-card[data-rank="1"] {
+  background: linear-gradient(180deg, rgba(212, 182, 98, 0.18), var(--bg-2) 70%);
+  border-color: var(--accent); border-width: 2px;
+  box-shadow: 0 0 0 1px var(--accent), 0 16px 40px -16px rgba(212, 182, 98, 0.4);
+  padding: 36px 28px; order: 2;
+}
+.podium-card[data-rank="2"] { order: 1; }
+.podium-card[data-rank="3"] { order: 3; }
+@media (max-width: 700px) {
+  .podium-card[data-rank="1"], .podium-card[data-rank="2"], .podium-card[data-rank="3"] { order: unset; }
+}
+
+.podium-rank-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.medal {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--display); font-size: 17px;
+  letter-spacing: 0.02em; color: var(--ppf-black);
+  flex-shrink: 0;
+}
+.medal-1 { background: var(--accent); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2), 0 0 0 2px var(--bg-2), 0 0 0 4px rgba(212, 182, 98, 0.4); }
+.medal-2 { background: #c8c4bd; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); }
+.medal-3 { background: #b87333; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); color: var(--ppf-white); }
+
+.podium-rank-label {
+  font-family: var(--display);
+  font-size: 14px; letter-spacing: 0.18em;
+  color: var(--ink-3); text-transform: uppercase;
+}
+.podium-card[data-rank="1"] .podium-rank-label { color: var(--accent); }
+
+.podium-store {
+  font-family: var(--display); font-size: 24px;
+  letter-spacing: 0.02em; line-height: 1.05;
+  margin: 0 0 6px; text-wrap: balance; text-transform: uppercase;
+}
+.podium-card[data-rank="1"] .podium-store { font-size: 30px; }
+
+.podium-loc { font-size: 13px; color: var(--ink-3); margin: 0 0 24px; }
+
+.podium-amount {
+  font-family: var(--display);
+  font-size: clamp(40px, 5.5vw, 64px);
+  line-height: 1; letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums; margin: 0 0 6px;
+}
+.podium-card[data-rank="1"] .podium-amount { color: var(--accent); }
+.podium-meta { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* LEADERBOARD */
+.board-section { padding: 32px 24px 64px; max-width: 1280px; margin: 0 auto; }
+
+.board-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
+}
+.search-input {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--ink); font-family: var(--body);
+  font-size: 14px; font-weight: 500;
+  width: 280px; min-width: 0;
+  transition: border-color 150ms ease;
+}
+.search-input::placeholder { color: var(--ink-3); }
+.search-input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+
+.board-meta {
+  font-size: 11px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  font-family: var(--display);
+}
+
+.board {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-md); overflow: hidden;
+  position: relative;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 130px 140px;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  transition: background-color 150ms ease;
+  gap: 16px;
+}
+.board-row:last-child { border-bottom: none; }
+.board-row:hover { background: var(--bg-3); }
+
+.board-row.is-header {
+  background: rgba(0, 0, 0, 0.25);
+  font-family: var(--display); font-size: 12px;
+  letter-spacing: 0.16em; color: var(--ink-3);
+  padding: 14px 24px; text-transform: uppercase;
+}
+.board-row.is-header:hover { background: rgba(0, 0, 0, 0.25); }
+
+@media (max-width: 720px) {
+  .board-row { grid-template-columns: 48px 1fr auto; padding: 14px 16px; gap: 8px; }
+  .col-change { display: none; }
+  .board-row.is-header .col-store::after { content: ' & Sales'; color: var(--ink-3); }
+}
+
+.col-rank {
+  font-family: var(--display); font-size: 22px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums; color: var(--ink-2);
+}
+.col-rank .rank-medal {
+  display: inline-grid; place-items: center;
+  width: 32px; height: 32px; line-height: 1;
+  border-radius: 50%; font-family: var(--display);
+  font-size: 15px; letter-spacing: 0.02em;
+}
+
+.col-store { display: flex; flex-direction: column; min-width: 0; }
+.store-name {
+  font-family: var(--display); font-size: 17px;
+  letter-spacing: 0.04em; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; text-transform: uppercase;
+}
+.store-meta-line { display: flex; align-items: center; gap: 8px; margin-top: 2px; flex-wrap: wrap; }
+.store-loc { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+.store-badge {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 2px 7px; border-radius: 999px;
+  background: rgba(244, 194, 95, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(244, 194, 95, 0.3);
+  font-family: var(--display);
+}
+
+.col-revenue {
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  font-size: 24px; color: var(--ink); text-align: right;
+}
+.col-revenue.is-zero { color: var(--ink-3); }
+
+.col-change {
+  display: flex; align-items: center; justify-content: stretch;
+  min-width: 120px;
+}
+
+/* Progress bar — visual standing relative to the current leader.
+   Width encodes thisWeek revenue as a fraction of #1's revenue without
+   exposing the raw dollar figures. */
+.progress-bar {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ppf-gold-deep), var(--accent));
+  border-radius: 999px;
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  min-width: 2px;
+}
+.progress-bar.is-leader .progress-bar-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px rgba(212, 182, 98, 0.45);
+}
+.progress-bar.is-empty {
+  background: rgba(255, 255, 255, 0.04);
+}
+.progress-bar.is-empty .progress-bar-fill { display: none; }
+
+/* MOVER CARD */
+.mover-card {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 28px 32px; margin-top: 32px;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 28px; align-items: center;
+}
+@media (max-width: 600px) { .mover-card { grid-template-columns: 1fr; gap: 16px; padding: 24px; } }
+.mover-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(95, 213, 140, 0.14);
+  border: 2px solid rgba(95, 213, 140, 0.4);
+  display: grid; place-items: center;
+  color: var(--success); font-size: 32px;
+  flex-shrink: 0; font-family: var(--display);
+}
+.mover-label {
+  font-family: var(--display); font-size: 13px;
+  letter-spacing: 0.18em; color: var(--success);
+  margin: 0 0 6px; text-transform: uppercase;
+}
+.mover-store {
+  font-family: var(--display); font-size: 26px;
+  letter-spacing: 0.02em; margin: 0 0 4px; text-transform: uppercase;
+}
+.mover-detail { font-size: 13px; color: var(--ink-2); margin: 0; }
+.mover-pct {
+  font-family: var(--display); font-size: 48px;
+  font-variant-numeric: tabular-nums;
+  color: var(--success); letter-spacing: 0.01em; line-height: 1;
+}
+
+/* RULES */
+/* QUARTERLY SCOREBOARD — bubble map */
+.quarter-section {
+  padding: 56px 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+.quarter-countdown {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 12px 22px;
+  background: rgba(212, 182, 98, 0.12);
+  border: 1px solid rgba(212, 182, 98, 0.34);
+  border-radius: var(--radius-md);
+}
+.quarter-countdown-num {
+  font-family: var(--display);
+  font-size: 36px;
+  line-height: 1;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.quarter-countdown-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.quarter-bubble-map {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 24px;
+  background: radial-gradient(circle at center, rgba(212, 182, 98, 0.08), transparent 70%), rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  min-height: 360px;
+}
+.quarter-bubble {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--bg-3);
+  border: 2px solid var(--line-2);
+  color: var(--ink);
+  cursor: default;
+  position: relative;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, border-color 220ms ease;
+  flex-shrink: 0;
+  /* Width + height set inline by JS */
+}
+.quarter-bubble:hover {
+  transform: translateY(-3px) scale(1.04);
+  border-color: var(--accent);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  z-index: 5;
+}
+.quarter-bubble.medal-1 {
+  background: radial-gradient(circle at 30% 30%, var(--accent-2), var(--ppf-gold-deep));
+  border-color: var(--accent-2);
+  color: var(--ppf-black);
+  box-shadow: 0 0 32px rgba(212, 182, 98, 0.5), inset 0 0 24px rgba(255, 255, 255, 0.15);
+}
+.quarter-bubble.medal-2 {
+  background: radial-gradient(circle at 30% 30%, #ECECEC, #A8A8A8);
+  border-color: #DCDCDC;
+  color: #1a1a1a;
+  box-shadow: 0 0 22px rgba(220, 220, 220, 0.3);
+}
+.quarter-bubble.medal-3 {
+  background: radial-gradient(circle at 30% 30%, #D4A04F, #8a6020);
+  border-color: #D4A04F;
+  color: var(--ppf-white);
+  box-shadow: 0 0 22px rgba(178, 135, 47, 0.4);
+}
+.quarter-bubble-inner {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+.quarter-bubble-rank {
+  font-family: var(--display);
+  font-size: 1.5em;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.quarter-bubble-name {
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  max-width: 85%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.quarter-bubble-prize {
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.quarter-bubble-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+  z-index: 10;
+}
+.quarter-bubble-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--line-2);
+}
+.quarter-bubble:hover .quarter-bubble-tooltip,
+.quarter-bubble:focus-visible .quarter-bubble-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+@media (max-width: 600px) {
+  .quarter-bubble-map { padding: 24px 12px; gap: 10px; }
+}
+
+.rules-section {
+  padding: 64px 24px; max-width: 1280px; margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+.rules-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px; margin-top: 32px;
+}
+.rule-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 28px 24px; background: var(--bg-2);
+}
+.rule-num {
+  font-family: var(--display); font-size: 56px;
+  color: var(--accent); margin: 0 0 12px;
+  display: inline-block; letter-spacing: 0.02em; line-height: 1;
+}
+.rule-title {
+  font-family: var(--display); font-size: 22px;
+  margin: 0 0 10px; letter-spacing: 0.02em;
+  text-transform: uppercase; line-height: 1.05;
+}
+.rule-text { font-size: 14px; color: var(--ink-2); line-height: 1.6; margin: 0; }
+
+/* CRAVE BANNER */
+.crave-banner { background: var(--ppf-black); padding: 64px 24px; text-align: center; position: relative; }
+.crave-banner h2 {
+  font-family: var(--display);
+  font-size: clamp(48px, 8vw, 96px);
+  line-height: 0.92; letter-spacing: 0.02em;
+  color: var(--accent); margin: 0;
+  text-transform: uppercase; max-width: 18ch;
+  margin-inline: auto;
+}
+.crave-banner h2 .accent { color: var(--ppf-white); }
+
+/* FOOTER */
+.footer {
+  background: var(--ppf-green-deep);
+  border-top: 1px solid var(--line);
+  padding: 48px 24px 36px;
+  text-align: center;
+}
+.footer-tagline {
+  font-family: var(--display); font-size: 36px;
+  color: var(--ink); letter-spacing: 0.04em;
+  margin-bottom: 10px; text-transform: uppercase;
+}
+.footer-tagline sup { font-size: 0.4em; margin-left: 2px; vertical-align: super; }
+.footer-meta {
+  font-size: 11px; color: var(--ink-3);
+  font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; font-family: var(--display);
+}
+.last-update { font-size: 11px; color: var(--ink-3); font-weight: 500; margin-top: 12px; letter-spacing: 0.04em; }
+
+/* STAGGER ENTRANCE */
+.fade-in { animation: fadeIn 600ms ease-out backwards; }
+.fade-in:nth-child(1) { animation-delay: 0ms; }
+.fade-in:nth-child(2) { animation-delay: 60ms; }
+.fade-in:nth-child(3) { animation-delay: 120ms; }
+.fade-in:nth-child(4) { animation-delay: 180ms; }
+.fade-in:nth-child(5) { animation-delay: 240ms; }
+.fade-in:nth-child(6) { animation-delay: 300ms; }
+.fade-in:nth-child(7) { animation-delay: 360ms; }
+.fade-in:nth-child(8) { animation-delay: 420ms; }
+.fade-in:nth-child(9) { animation-delay: 480ms; }
+.fade-in:nth-child(10) { animation-delay: 540ms; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
+/* LOADING / ERROR / EMPTY STATES */
+.state-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-2);
+}
+.state-card .state-title {
+  font-family: var(--display);
+  font-size: 22px;
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.state-card.is-error .state-title { color: var(--danger); }
+.state-card .state-text {
+  font-size: 14px;
+  color: var(--ink-2);
+  margin: 0 0 16px;
+  max-width: 50ch;
+  margin-inline: auto;
+  line-height: 1.5;
+}
+.state-card .state-text code {
+  background: var(--ppf-black);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--accent);
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--line-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: spin 800ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+
+<body>
+<a href="#leaderboard" class="skip-link">Skip to leaderboard</a>
+
+<!-- HEADER -->
+<div class="header-wrap">
+  <div class="diamond-strip" aria-hidden="true"></div>
+  <header class="header">
+    <a href="/" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Philly Pretzel Factory home">
+      <img
+        src="/ppf-logo.jpg"
+        alt=""
+        class="brand-logo"
+        width="80"
+        height="71"
+        fetchpriority="high"
+      />
+      <div class="brand-text">
+        <span class="top">Philly Pretzel Factory</span>
+        <span class="bot">The Pretzel Cup</span>
+      </div>
+    </a>
+    <div class="header-right">
+      <nav class="cup-site-nav" aria-label="Primary">
+        <a href="/products" class="nav-link">Products</a>
+        <a href="/deliveries" class="nav-link">Deliveries</a>
+        <a href="/partners" class="nav-link">Partners</a>
+        <a href="/host" class="nav-link">Host</a>
+        <a href="/cup" class="nav-link is-active">The Cup</a>
+      </nav>
+      <a href="/order" class="nav-cta">Order Now</a>
+      <div class="live-pill" id="status-pill" role="status" aria-live="polite">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span id="status-text">Loading&hellip;</span>
+      </div>
+    </div>
+  </header>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow">Weekly Sales Competition &middot; 7-Eleven Network</div>
+    <h1>Sell more.<br/>Crave more.<br/><span class="crave-script">Pay less.</span></h1>
+    <p class="hero-subtitle">
+      Every week, the 7-Eleven that moves the most Philly Pretzels takes <strong>10% off their next supply bill</strong> &mdash; funded straight from our share of the profit. The more you sell, the more you save. Resets every Monday.
+    </p>
+    <div class="hero-meta">
+      <div class="hero-meta-cell">Season<strong id="season-number">&mdash;</strong></div>
+      <div class="hero-meta-cell">Stores Competing<strong id="store-count">&mdash;</strong></div>
+      <div class="hero-meta-cell">Reports Filed<strong id="reports-filed">&mdash;</strong></div>
+      <div class="hero-meta-cell">Climbing<strong id="climbing-count">&mdash;</strong></div>
+    </div>
+  </div>
+
+  <aside class="prize-card" aria-labelledby="prize-heading">
+    <div class="prize-stamp" aria-hidden="true"><span>10%</span></div>
+    <div class="prize-label">This Week&rsquo;s Prize</div>
+    <p class="prize-headline" id="prize-heading">10% Off The Bill</p>
+    <p class="prize-desc">Awarded to the #1 store every Monday morning. Discount applies to next week&rsquo;s pretzel supply order. Funded from the producer&rsquo;s share &mdash; the more you sell, the more it&rsquo;s worth.</p>
+  </aside>
+</section>
+
+<!-- COUNTDOWN -->
+<div class="countdown-strip">
+  <div class="countdown-inner">
+    <div class="countdown-label">
+      Resets In
+      <span class="small">Mon 12:01 AM</span>
+    </div>
+    <div class="countdown-season" aria-live="polite">Season <span id="countdown-season-num">&mdash;</span></div>
+    <div class="countdown-value" id="countdown" role="timer" aria-live="off">
+      <div class="countdown-cell"><div class="countdown-num" id="cd-days">&mdash;</div><div class="countdown-unit">Days</div></div>
+      <div class="countdown-cell"><div class="countdown-num" id="cd-hours">&mdash;</div><div class="countdown-unit">Hours</div></div>
+      <div class="countdown-cell"><div class="countdown-num" id="cd-mins">&mdash;</div><div class="countdown-unit">Min</div></div>
+      <div class="countdown-cell"><div class="countdown-num" id="cd-secs">&mdash;</div><div class="countdown-unit">Sec</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PODIUM -->
+<section class="podium-section" aria-labelledby="podium-heading">
+  <div class="section-eyebrow">Top of the Board</div>
+  <h2 class="section-heading" id="podium-heading">The Front Runners</h2>
+  <p class="section-sub">The three stores currently leading the pack. The one in gold takes the discount if the week ended right now.</p>
+  <div class="podium" id="podium" aria-label="Top three stores"></div>
+</section>
+
+<!-- LEADERBOARD -->
+<section class="board-section" id="leaderboard" aria-labelledby="board-heading">
+  <div class="section-eyebrow">Full Standings</div>
+  <h2 class="section-heading" id="board-heading">Every Store. Every Sale.</h2>
+  <p class="section-sub">All participating 7-Eleven stores, ranked by who&rsquo;s moving the most pretzels this week. Climb the board to claim the discount on Monday. Updated each morning when daily reports come in.</p>
+
+  <div class="board-toolbar">
+    <label for="search" style="position:absolute;left:-9999px;">Search stores</label>
+    <input
+      id="search"
+      type="search"
+      inputmode="search"
+      class="search-input"
+      placeholder="Search stores&hellip;"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <div class="board-meta" id="board-meta">&mdash;</div>
+  </div>
+
+  <div class="board" role="region" aria-label="Sales leaderboard" id="board"></div>
+
+  <div class="mover-card" id="mover-card" hidden>
+    <div class="mover-icon" aria-hidden="true">↑</div>
+    <div>
+      <p class="mover-label">Biggest Mover This Week</p>
+      <p class="mover-store" id="mover-store">&mdash;</p>
+      <p class="mover-detail" id="mover-detail">&mdash;</p>
+    </div>
+    <div class="mover-pct" id="mover-pct">&mdash;</div>
+  </div>
+</section>
+
+<!-- QUARTERLY SCOREBOARD — bubble map -->
+<section class="quarter-section" id="quarter" aria-labelledby="quarter-heading">
+  <div class="section-eyebrow">The Long Game</div>
+  <h2 class="section-heading" id="quarter-heading">Q<span id="quarter-num">&mdash;</span> Bubble Map</h2>
+  <p class="section-sub">Every store, sized by how far they&rsquo;ve come this quarter. Bigger bubble = closer to the cup. Grand prizes go to the top three when the quarter closes.</p>
+  <div class="quarter-countdown" role="timer" aria-live="polite">
+    <span class="quarter-countdown-num" id="quarter-days-remaining">&mdash;</span>
+    <span class="quarter-countdown-label" id="quarter-countdown-label">Days Until Quarter Closes</span>
+  </div>
+  <div class="quarter-bubble-map" id="quarter-board" role="region" aria-label="Quarterly bubble map"></div>
+</section>
+
+<!-- RULES -->
+<section class="rules-section" aria-labelledby="rules-heading">
+  <div class="section-eyebrow">The Playbook</div>
+  <h2 class="section-heading" id="rules-heading">How It Works</h2>
+  <p class="section-sub">Four rules. Same rules every week. No fuss, no frills &mdash; just sales.</p>
+  <div class="rules-grid">
+    <article class="rule-card">
+      <span class="rule-num">01</span>
+      <h3 class="rule-title">Mondays Start Fresh</h3>
+      <p class="rule-text">Every Monday at 12:01 AM, the leaderboard resets. Last week&rsquo;s winners and last week&rsquo;s losers are even again.</p>
+    </article>
+    <article class="rule-card">
+      <span class="rule-num">02</span>
+      <h3 class="rule-title">Total Sales Win</h3>
+      <p class="rule-text">Stores ranked by total pretzels moved from Monday to Sunday. Singles and doubles all count toward the same total.</p>
+    </article>
+    <article class="rule-card">
+      <span class="rule-num">03</span>
+      <h3 class="rule-title">10% Off The Bill</h3>
+      <p class="rule-text">The #1 store gets 10% off their next supply order. Applied automatically the following Monday morning.</p>
+    </article>
+    <article class="rule-card">
+      <span class="rule-num">04</span>
+      <h3 class="rule-title">7-Eleven Only</h3>
+      <p class="rule-text">Open exclusively to participating 7-Eleven locations in the network. Other channels are tracked separately.</p>
+    </article>
+  </div>
+</section>
+
+<!-- CRAVE BANNER -->
+<section class="crave-banner" aria-label="Brand tagline">
+  <h2>Crave Big. <span class="accent">Snack Bigger.</span></h2>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-tagline" translate="no">Made&nbsp;to&nbsp;Crave<sup>&reg;</sup></div>
+  <p class="footer-meta">Philly Pretzel Factory &middot; The Pretzel Cup &middot; Resets every Monday</p>
+  <p class="last-update" id="last-update">&nbsp;</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ─────────────────────────────────────────────────────────────
+  // CONFIG — edit this block to wire the site to your data.
+  // ─────────────────────────────────────────────────────────────
+
+  // Live published-CSV URLs from the source spreadsheet — one per tab.
+  // Sheet is published via File > Share > Publish to web > CSV; each tab
+  // is fetched independently and the results are merged.
+  const SHEET_CSV_URLS = [
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=1825588771&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=1112663081&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=580731113&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF1Q_szvrvTyPdA0TIxX66N_QuZlZl7xf4dXPLiT_Og2f0AqWCOnZku7ocIwvElZLg1xHEFYW7gOa1/pub?gid=1308920282&single=true&output=csv',
+  ];
+
+  // Campaign anchor — Season 1 Monday. Every subsequent season is +7 days.
+  // The current week's competition window is auto-derived from this on every
+  // page load, so no manual Monday-morning updates are needed.
+  const CAMPAIGN_START = new Date('2026-04-27T00:00:00');
+
+  // Season / quarter math.
+  // A season is one Monday→Sunday week. A quarter is the calendar quarter
+  // capped at CAMPAIGN_START so pre-campaign dates don't bleed in.
+  function currentSeason(now) {
+    now = now || new Date();
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const diff = now - CAMPAIGN_START;
+    if (diff < 0) return 1;
+    return Math.floor(diff / msPerWeek) + 1;
+  }
+  function seasonRange(seasonNum) {
+    const start = new Date(CAMPAIGN_START);
+    start.setDate(start.getDate() + (seasonNum - 1) * 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return { start: start, end: end };
+  }
+  function currentQuarter(now) {
+    now = now || new Date();
+    return Math.floor(now.getMonth() / 3) + 1;
+  }
+  function quarterYear(now) {
+    return (now || new Date()).getFullYear();
+  }
+  function quarterRange(quarterNum, year) {
+    const startMonth = (quarterNum - 1) * 3;
+    const rawStart = new Date(year, startMonth, 1);
+    const start = rawStart < CAMPAIGN_START ? CAMPAIGN_START : rawStart;
+    const end = new Date(year, startMonth + 3, 1);
+    return { start: start, end: end };
+  }
+
+  // Active competition window (the "this week" bucket). Derived live.
+  const _activeRange = seasonRange(currentSeason());
+  const COMPETITION_START = _activeRange.start;
+  const COMPETITION_END   = _activeRange.end;
+
+  // Hero-stats window. Sums total revenue / store count from this date forward.
+  // 2025 history is ignored so the all-time figure reflects the 2026 program only.
+  const STATS_START = new Date('2026-01-01T00:00:00');
+
+  // Hard list of which column headers count as competing 7-Eleven stores.
+  // Order doesn't matter; this is just used for filtering. Lowercased + trimmed
+  // before matching. Must include every 7-Eleven column in your sheet.
+  const SEVEN_ELEVEN_PATTERNS = [
+    '711',     // any column starting with "711" or containing "7-eleven"
+    '7-eleven',
+    '7 eleven',
+  ];
+
+  // Sheet columns that match the 7-Eleven pattern but aren't part of the
+  // active program. These are filtered out before any aggregation — they
+  // contribute nothing to the leaderboard, podium, hero stats, or grid.
+  // Names are matched case-insensitively against the cleaned column header
+  // (after the "(10/10)" capacity suffix is stripped).
+  const EXCLUDED_STORES = new Set([
+    '711 cross island',
+  ]);
+
+  // ─────────────────────────────────────────────────────────────
+  // FORMATTERS (locale-aware)
+  // ─────────────────────────────────────────────────────────────
+  const moneyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const moneyFmtFine = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+  const numFmt = new Intl.NumberFormat('en-US');
+  const pctFmt = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1, signDisplay: 'always' });
+  const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+  const datetimeFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function debounce(fn, wait) {
+    let t; return function () { const a = arguments, c = this; clearTimeout(t); t = setTimeout(function () { fn.apply(c, a); }, wait); };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // CSV PARSER
+  // Handles quoted fields, embedded commas, and the multi-table layout
+  // of the source sheet (multiple header rows separated by blank rows).
+  // ─────────────────────────────────────────────────────────────
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { field += c; }
+      } else {
+        if (c === '"') { inQuotes = true; }
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\r') { /* skip */ }
+        else if (c === '\n') { row.push(field); field = ''; rows.push(row); row = []; }
+        else { field += c; }
+      }
+    }
+    if (field || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  // Strip $ signs, commas, whitespace; return null for blank cells.
+  function parseMoney(cell) {
+    if (cell == null) return null;
+    const s = String(cell).trim().replace(/[$,]/g, '');
+    if (s === '' || s === '-') return null;
+    const n = parseFloat(s);
+    if (isNaN(n)) return null;
+    return n;
+  }
+
+  // Robust date parser that handles m/d/yyyy AND the "0026" typos in the sheet.
+  function parseSheetDate(cell) {
+    if (!cell) return null;
+    const s = String(cell).trim();
+    // Match m/d/yyyy or m/d/yy
+    const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (!match) return null;
+    const month = parseInt(match[1], 10);
+    const day = parseInt(match[2], 10);
+    let year = parseInt(match[3], 10);
+    if (year < 100) year += 2000;
+    if (year < 1000) year += 2000; // handles "0026" typo → 2026
+    return new Date(year, month - 1, day);
+  }
+
+  function isWithinWeek(date, start, end) {
+    if (!date) return false;
+    return date >= start && date < end;
+  }
+
+  function isSevenEleven(header) {
+    if (!header) return false;
+    const h = header.toLowerCase().trim();
+    return SEVEN_ELEVEN_PATTERNS.some(function (p) { return h.indexOf(p) >= 0; });
+  }
+
+  // Parse a store column header into a display name and (optional) full
+  // street address. Two header shapes coexist in the sheet:
+  //   New format:    "552 Franklin Ave, Franklin Square, NY 11010 (711 FSQ)"
+  //                  → name from parens ("711 FSQ"), address from prefix.
+  //   Legacy/other:  "711 VS (5/5)", "Eastern Meat Farms (6/6)", "711 X"
+  //                  → name from prefix, no address. Parens with capacity
+  //                    codes (e.g. "5/5", "F - Sun 5/5", "10/10") are kept
+  //                    as the "not-a-nickname" signal.
+  function parseStoreHeader(header) {
+    const raw = String(header).trim();
+    const match = raw.match(/\(([^)]+)\)\s*$/);
+    if (match) {
+      const parenContent = match[1].trim();
+      const beforeParens = raw.slice(0, match.index).replace(/,\s*$/, '').trim();
+      const hasLetters = /[a-zA-Z]/.test(parenContent);
+      const looksLikeCapacity = /^[FMTWS\-\s]*\d+\/\d+/.test(parenContent) ||
+                                 /^[\d\s\/]+[A-Z]?$/.test(parenContent);
+      if (hasLetters && !looksLikeCapacity) {
+        return { name: parenContent, address: beforeParens };
+      }
+      return { name: beforeParens, address: '' };
+    }
+    return { name: raw, address: '' };
+  }
+
+  // Collapse a full street address down to "Town, ST" for the location
+  // subtitle under each store name. Falls back to the raw address if it
+  // doesn't have enough comma-separated parts to split cleanly.
+  function shortLocation(address) {
+    if (!address) return '';
+    const parts = address.split(',').map(function (p) { return p.trim(); });
+    if (parts.length >= 3) {
+      const town = parts[parts.length - 2];
+      const state = parts[parts.length - 1].split(/\s+/)[0];
+      return town + ', ' + state;
+    }
+    return address;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // SHEET PROCESSING
+  // The sheet has multiple tables stacked vertically with their own headers.
+  // We scan for header rows (any row containing "Timestamp" + "Date" cells),
+  // then pair them with the following data rows.
+  // ─────────────────────────────────────────────────────────────
+  function processSheet(rows) {
+    const stores = {}; // { storeName: { thisWeek: $, lastWeek: $, daysReportedThisWeek: n, hasReportedToday: bool } }
+    const lastWeekStart = new Date(COMPETITION_START);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const _now = new Date();
+    const _quarterRange = quarterRange(currentQuarter(_now), quarterYear(_now));
+
+    // Reject rows whose Date column is in the future — almost always a typo
+    // in the source sheet (e.g. someone meant 3/30 but typed 4/30). Sales lag
+    // the actual date by one day, so any date past today is invalid.
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    let currentHeaders = null;
+    let storeColumns = []; // { col: index, name: cleanName, original: rawHeader }
+
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0) continue;
+
+      // Detect a header row: must contain "Timestamp" and a date column.
+      const looksLikeHeader = row.some(function (c) { return /timestamp/i.test(String(c)); }) &&
+                              row.some(function (c) { return /date/i.test(String(c)); });
+      if (looksLikeHeader) {
+        currentHeaders = row;
+        storeColumns = [];
+        for (let c = 0; c < row.length; c++) {
+          if (!isSevenEleven(row[c])) continue;
+          const parsed = parseStoreHeader(row[c]);
+          const clean = parsed.name;
+          if (EXCLUDED_STORES.has(clean.toLowerCase())) continue;
+          storeColumns.push({ col: c, name: clean, original: row[c] });
+          if (!stores[clean]) {
+            stores[clean] = {
+              address: parsed.address,
+              thisWeek: 0, lastWeek: 0,
+              daysReportedThisWeek: 0, daysReportedLastWeek: 0,
+              thisQuarter: 0, daysReportedThisQuarter: 0,
+              since2026: 0, daysReportedSince2026: 0,
+              allTime: 0, daysReportedAllTime: 0,
+            };
+          } else if (!stores[clean].address && parsed.address) {
+            // Prefer any non-empty address if the first-seen column for this
+            // store was a legacy header without one.
+            stores[clean].address = parsed.address;
+          }
+        }
+        continue;
+      }
+      if (!currentHeaders || storeColumns.length === 0) continue;
+
+      // Data row — find the "date" column (column 1 in your sheet).
+      // Look for the column index in currentHeaders that matches "Date".
+      let dateColIdx = -1;
+      for (let c = 0; c < currentHeaders.length; c++) {
+        if (/date/i.test(String(currentHeaders[c]))) { dateColIdx = c; break; }
+      }
+      if (dateColIdx < 0) continue;
+
+      const recordDate = parseSheetDate(row[dateColIdx]);
+      if (!recordDate) continue;
+      // Skip future-dated rows (data-entry typos). Sales lag by 1 day,
+      // so anything past today's local midnight is invalid.
+      if (recordDate > todayMidnight) continue;
+
+      const inThisWeek = isWithinWeek(recordDate, COMPETITION_START, COMPETITION_END);
+      const inLastWeek = isWithinWeek(recordDate, lastWeekStart, COMPETITION_START);
+      const inSince2026 = recordDate >= STATS_START;
+      const inThisQuarter = isWithinWeek(recordDate, _quarterRange.start, _quarterRange.end);
+
+      for (let i = 0; i < storeColumns.length; i++) {
+        const sc = storeColumns[i];
+        const value = parseMoney(row[sc.col]);
+        if (value === null) continue;
+        stores[sc.name].allTime += value;
+        stores[sc.name].daysReportedAllTime += 1;
+        if (inSince2026) {
+          stores[sc.name].since2026 += value;
+          stores[sc.name].daysReportedSince2026 += 1;
+        }
+        if (inThisQuarter) {
+          stores[sc.name].thisQuarter += value;
+          stores[sc.name].daysReportedThisQuarter += 1;
+        }
+        if (inThisWeek) {
+          stores[sc.name].thisWeek += value;
+          stores[sc.name].daysReportedThisWeek += 1;
+        } else if (inLastWeek) {
+          stores[sc.name].lastWeek += value;
+          stores[sc.name].daysReportedLastWeek += 1;
+        }
+      }
+    }
+
+    // Convert to array and filter out stores that have never had any
+    // reported value across the full history of the sheet (column exists
+    // but no data has ever been entered).
+    const result = [];
+    for (const name in stores) {
+      const s = stores[name];
+      if (s.daysReportedAllTime === 0) continue;
+      result.push({
+        id: name.replace(/\s+/g, '-').toLowerCase(),
+        name: name,
+        address: s.address || '',
+        location: shortLocation(s.address),
+        thisWeek: s.thisWeek,
+        lastWeek: s.lastWeek,
+        daysReportedThisWeek: s.daysReportedThisWeek,
+        daysReportedLastWeek: s.daysReportedLastWeek,
+        thisQuarter: s.thisQuarter,
+        daysReportedThisQuarter: s.daysReportedThisQuarter,
+        since2026: s.since2026,
+        daysReportedSince2026: s.daysReportedSince2026,
+        allTime: s.allTime,
+        daysReportedAllTime: s.daysReportedAllTime,
+      });
+    }
+    return result;
+  }
+
+  function pctChange(store) {
+    if (!store.lastWeek || !store.daysReportedLastWeek) return null;
+    const days = store.daysReportedThisWeek || 1;
+    // Apples-to-apples: prorate last week to days-reported this week.
+    const lastWeekProrated = (store.lastWeek / store.daysReportedLastWeek) * days;
+    if (lastWeekProrated === 0) return null;
+    return (store.thisWeek - lastWeekProrated) / lastWeekProrated;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────
+  let cachedStores = [];
+
+  function setStatus(state, text) {
+    const pill = document.getElementById('status-pill');
+    pill.dataset.state = state;
+    document.getElementById('status-text').textContent = text;
+  }
+
+  function renderHeroStats(stores) {
+    // Public hero is intentionally money-free — surface participation and
+    // momentum signals only so competing stores can't see each other's
+    // dollar figures. Ownership has the comprehensive numbers on /ops.
+    const competing = stores.filter(function (s) {
+      return s.daysReportedThisWeek > 0 || s.daysReportedLastWeek > 0;
+    });
+    const reportsFiled = stores.reduce(function (sum, s) {
+      return sum + s.daysReportedThisWeek;
+    }, 0);
+    const climbing = stores.filter(function (s) {
+      const c = pctChange(s);
+      return c !== null && c > 0.001;
+    }).length;
+    document.getElementById('season-number').textContent = numFmt.format(currentSeason());
+    document.getElementById('store-count').textContent = numFmt.format(competing.length);
+    document.getElementById('reports-filed').textContent = numFmt.format(reportsFiled);
+    document.getElementById('climbing-count').textContent = numFmt.format(climbing);
+  }
+
+  function renderPodium(rankedActive) {
+    const podium = document.getElementById('podium');
+    const top3 = rankedActive.slice(0, 3);
+    if (top3.length === 0) {
+      podium.innerHTML = '<div class="state-card"><p class="state-text">No sales reported this week yet. Check back after the first daily report comes in.</p></div>';
+      return;
+    }
+    // PPF brand-voice flavor copy per podium spot. Replaces the prior
+    // %-change line — the front runners section is about bragging rights
+    // and pretzel pride, not numeric deltas.
+    const RANK_COPY = {
+      1: 'Setting the crave standard.',
+      2: 'One twist from the top.',
+      3: 'Holding down the medal.',
+    };
+    podium.innerHTML = top3.map(function (s, i) {
+      const rank = i + 1;
+      const rankLabel = rank === 1 ? 'Champion' : rank === 2 ? 'Runner-up' : 'Third Place';
+      const copyHtml = '<p class="podium-amount">' + RANK_COPY[rank] + '</p>';
+      return (
+        '<article class="podium-card fade-in" data-rank="' + rank + '" aria-label="Rank ' + rank + ': ' + escapeHtml(s.name) + '">' +
+          '<div class="podium-rank-row">' +
+            '<span class="medal medal-' + rank + '" aria-hidden="true">' + rank + '</span>' +
+            '<span class="podium-rank-label">' + rankLabel + '</span>' +
+          '</div>' +
+          '<h3 class="podium-store">' + escapeHtml(s.name) + '</h3>' +
+          (s.location ? '<p class="podium-loc">' + escapeHtml(s.location) + '</p>' : '<p class="podium-loc">&nbsp;</p>') +
+          copyHtml +
+          '<p class="podium-meta">' + numFmt.format(s.daysReportedThisWeek) + (s.daysReportedThisWeek === 1 ? ' day' : ' days') + ' reported</p>' +
+        '</article>'
+      );
+    }).join('');
+  }
+
+  function renderBoard(filter) {
+    filter = (filter || '').trim().toLowerCase();
+    const board = document.getElementById('board');
+    const meta = document.getElementById('board-meta');
+
+    // Leaderboard scope: omit dormant 7-Elevens (no activity in either the
+    // current or prior competition week). Hero stats still count them.
+    const active = cachedStores.filter(function (s) {
+      return s.daysReportedThisWeek > 0 || s.daysReportedLastWeek > 0;
+    });
+
+    // Sort: stores with reports first (by thisWeek), then "no data yet" stores at the bottom.
+    const sorted = active.slice().sort(function (a, b) {
+      const aHas = a.daysReportedThisWeek > 0;
+      const bHas = b.daysReportedThisWeek > 0;
+      if (aHas !== bHas) return aHas ? -1 : 1;
+      return b.thisWeek - a.thisWeek;
+    });
+    sorted.forEach(function (s, i) { s.rank = i + 1; });
+
+    const filtered = sorted.filter(function (s) {
+      if (!filter) return true;
+      return s.name.toLowerCase().indexOf(filter) >= 0 ||
+             (s.location && s.location.toLowerCase().indexOf(filter) >= 0);
+    });
+
+    // Leader's thisWeek used to scale every store's progress bar relative
+    // to #1. Computed off the unfiltered active set so the bar stays stable
+    // even when a search filter narrows the rendered list.
+    const leaderThisWeek = sorted.reduce(function (max, s) {
+      return s.thisWeek > max ? s.thisWeek : max;
+    }, 0);
+
+    let html = (
+      '<div class="board-row is-header" role="row" aria-hidden="true">' +
+        '<div class="col-rank">#</div>' +
+        '<div class="col-store">Store</div>' +
+        '<div class="col-revenue">Days In</div>' +
+        '<div class="col-change">Progress</div>' +
+      '</div>'
+    );
+
+    if (filtered.length === 0) {
+      html += '<div class="state-card"><p class="state-text">No stores match &ldquo;' + escapeHtml(filter) + '&rdquo;</p></div>';
+      meta.textContent = '0 of ' + sorted.length + ' stores';
+      board.innerHTML = html;
+      return;
+    }
+
+    meta.textContent = filtered.length + ' of ' + sorted.length + ' stores';
+
+    html += filtered.map(function (s) {
+      const noDataYet = s.daysReportedThisWeek === 0;
+
+      // Progress bar — store's thisWeek as a fraction of the leader's.
+      // The leader fills the full bar; others scale proportionally. No
+      // dollar value is exposed; only relative standing.
+      let changeHtml;
+      if (noDataYet || leaderThisWeek === 0) {
+        changeHtml = '<div class="progress-bar is-empty" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar-fill" style="width:0%"></div></div>';
+      } else {
+        const pct = Math.max(2, Math.min(100, (s.thisWeek / leaderThisWeek) * 100));
+        const leaderCls = s.rank === 1 ? ' is-leader' : '';
+        changeHtml = '<div class="progress-bar' + leaderCls + '" role="progressbar" aria-valuenow="' + Math.round(pct) + '" aria-valuemin="0" aria-valuemax="100" aria-label="Standing vs leader">' +
+          '<div class="progress-bar-fill" style="width:' + pct + '%"></div>' +
+        '</div>';
+      }
+
+      let rankCell;
+      if (!noDataYet && s.rank <= 3) {
+        rankCell = '<span class="rank-medal medal-' + s.rank + '">' + s.rank + '</span>';
+      } else if (noDataYet) {
+        rankCell = '&mdash;';
+      } else {
+        rankCell = String(s.rank);
+      }
+
+      const revenueClass = noDataYet ? 'col-revenue is-zero' : 'col-revenue';
+      const revenueDisplay = noDataYet ? '&mdash;' : numFmt.format(s.daysReportedThisWeek) + ' / 7';
+
+      const badge = noDataYet ? '<span class="store-badge">Pending</span>' : '';
+
+      return (
+        '<div class="board-row fade-in" role="row">' +
+          '<div class="col-rank" role="cell">' + rankCell + '</div>' +
+          '<div class="col-store" role="cell">' +
+            '<span class="store-name">' + escapeHtml(s.name) + '</span>' +
+            '<span class="store-meta-line">' +
+              (s.location ? '<span class="store-loc">' + escapeHtml(s.location) + '</span>' : '') +
+              badge +
+            '</span>' +
+          '</div>' +
+          '<div class="' + revenueClass + '" role="cell" aria-label="Days reported this week">' + revenueDisplay + '</div>' +
+          '<div class="col-change" role="cell" aria-label="Progress vs leader">' + changeHtml + '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    board.innerHTML = html;
+  }
+
+  // Quarterly bubble map — every active store rendered as a circle sized by
+  // its share of the leader's quarter total. Top 3 get medal colors + prize
+  // tags. No dollar amounts exposed; size is the only competitive signal.
+  function renderQuarterScoreboard(stores) {
+    const board = document.getElementById('quarter-board');
+    const qNumEl = document.getElementById('quarter-num');
+    if (!board || !qNumEl) return;
+
+    // Quarter number + days-remaining countdown. Days are ceil'd so the
+    // last day of the quarter still reads "1 day remaining" instead of "0".
+    const _now = new Date();
+    const qNum = currentQuarter(_now);
+    const qYear = quarterYear(_now);
+    const qRange = quarterRange(qNum, qYear);
+    const msRemaining = qRange.end - _now;
+    const daysRemaining = Math.max(0, Math.ceil(msRemaining / 86400000));
+    qNumEl.textContent = numFmt.format(qNum);
+    const daysEl = document.getElementById('quarter-days-remaining');
+    const labelEl = document.getElementById('quarter-countdown-label');
+    if (daysEl) daysEl.textContent = numFmt.format(daysRemaining);
+    if (labelEl) labelEl.textContent = daysRemaining === 1
+      ? 'Day Until Q' + qNum + ' Closes'
+      : 'Days Until Q' + qNum + ' Closes';
+
+    const active = stores
+      .filter(function (s) { return s.daysReportedThisQuarter > 0; })
+      .sort(function (a, b) { return b.thisQuarter - a.thisQuarter; });
+
+    if (active.length === 0) {
+      board.innerHTML = '<div class="state-card"><p class="state-text">No quarter standings yet. First daily reports unlock the map.</p></div>';
+      return;
+    }
+
+    const leader = active[0].thisQuarter;
+    const PRIZE_TAG = { 1: 'Grand Prize', 2: '2nd Place', 3: '3rd Place' };
+
+    // Bubble size scales between MIN_SIZE (lowest ranked) and MAX_SIZE
+    // (leader). Stays inside font-size sweet spots for legibility.
+    const MIN_SIZE = 96;
+    const MAX_SIZE = 200;
+
+    board.innerHTML = active.map(function (s, i) {
+      const rank = i + 1;
+      const ratio = leader > 0 ? s.thisQuarter / leader : 0;
+      // Square-root scaling so smaller bubbles aren't visually crushed.
+      const size = Math.round(MIN_SIZE + Math.sqrt(ratio) * (MAX_SIZE - MIN_SIZE));
+      const medalCls = rank <= 3 ? ' medal-' + rank : '';
+      const fontEm = Math.max(0.85, size / 120); // scale rank font with bubble
+      // Trim the "711 " prefix for the in-bubble label so the name fits.
+      const shortName = s.name.replace(/^711\s+/i, '');
+      const prizeHtml = rank <= 3
+        ? '<span class="quarter-bubble-prize">' + PRIZE_TAG[rank] + '</span>'
+        : '';
+      const daysLabel = numFmt.format(s.daysReportedThisQuarter) +
+        (s.daysReportedThisQuarter === 1 ? ' day' : ' days') + ' reported';
+      const tooltipLines = [
+        'Rank #' + rank + ' · ' + escapeHtml(s.name),
+        s.location ? escapeHtml(s.location) : '',
+        daysLabel,
+      ].filter(Boolean).join(' — ');
+      const styleAttr = 'width:' + size + 'px;height:' + size + 'px;font-size:' + fontEm.toFixed(2) + 'em';
+      return (
+        '<div class="quarter-bubble fade-in' + medalCls + '" data-rank="' + rank + '" ' +
+          'style="' + styleAttr + '" ' +
+          'tabindex="0" ' +
+          'role="img" ' +
+          'aria-label="Rank ' + rank + ': ' + escapeHtml(s.name) + ', ' + daysLabel + '">' +
+          '<div class="quarter-bubble-inner">' +
+            '<span class="quarter-bubble-rank">#' + rank + '</span>' +
+            '<span class="quarter-bubble-name">' + escapeHtml(shortName) + '</span>' +
+            prizeHtml +
+          '</div>' +
+          '<span class="quarter-bubble-tooltip">' + tooltipLines + '</span>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function renderMover(stores) {
+    const withChange = stores
+      .filter(function (s) { return s.daysReportedThisWeek > 0; })
+      .map(function (s) { return { store: s, change: pctChange(s) }; })
+      .filter(function (x) { return x.change !== null && x.change > 0; });
+
+    const card = document.getElementById('mover-card');
+    if (withChange.length === 0) { card.hidden = true; return; }
+
+    withChange.sort(function (a, b) { return b.change - a.change; });
+    const winner = withChange[0];
+
+    card.hidden = false;
+    document.getElementById('mover-store').textContent = winner.store.name;
+    const detail = (winner.store.location ? winner.store.location + ' \u00b7 ' : '') + 'Currently rank #' + winner.store.rank;
+    document.getElementById('mover-detail').textContent = detail;
+    document.getElementById('mover-pct').textContent = pctFmt.format(winner.change);
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function updateCountdown() {
+    const now = new Date();
+    // Live season banner — recomputed on every tick so it flips to the new
+    // number the moment the clock rolls past midnight on a Monday morning.
+    const seasonNumEl = document.getElementById('countdown-season-num');
+    if (seasonNumEl) seasonNumEl.textContent = numFmt.format(currentSeason(now));
+    const diff = COMPETITION_END - now;
+    if (diff <= 0) {
+      ['cd-days', 'cd-hours', 'cd-mins', 'cd-secs'].forEach(function (id) {
+        document.getElementById(id).textContent = '00';
+      });
+      return;
+    }
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    document.getElementById('cd-days').textContent = pad(days);
+    document.getElementById('cd-hours').textContent = pad(hours);
+    document.getElementById('cd-mins').textContent = pad(mins);
+    document.getElementById('cd-secs').textContent = pad(secs);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // DATA LOADING
+  // ─────────────────────────────────────────────────────────────
+  function showSetupNeeded() {
+    const board = document.getElementById('board');
+    board.innerHTML = (
+      '<div class="state-card">' +
+        '<div class="state-title">One-time setup</div>' +
+        '<p class="state-text">' +
+          'Open the source spreadsheet, then go to <code>File &rarr; Share &rarr; Publish to web</code>, ' +
+          'choose the correct tab, pick <code>Comma-separated values (.csv)</code>, and click <strong>Publish</strong>. ' +
+          'Paste the resulting URL into the <code>SHEET_CSV_URLS</code> array near the top of <code>index.html</code> (one entry per tab).' +
+        '</p>' +
+        '<p class="state-text" style="margin-top: 8px; opacity: 0.7;">' +
+          'Once set, this page automatically pulls fresh data on every load &mdash; no rebuild needed.' +
+        '</p>' +
+      '</div>'
+    );
+    setStatus('error', 'Setup needed');
+    document.getElementById('podium').innerHTML = '';
+    document.getElementById('season-number').textContent = '\u2014';
+    document.getElementById('store-count').textContent = '\u2014';
+    document.getElementById('reports-filed').textContent = '\u2014';
+    document.getElementById('climbing-count').textContent = '\u2014';
+  }
+
+  function showError(msg) {
+    const board = document.getElementById('board');
+    board.innerHTML = (
+      '<div class="state-card is-error">' +
+        '<div class="state-title">Couldn&rsquo;t load standings</div>' +
+        '<p class="state-text">' + escapeHtml(msg) + '</p>' +
+      '</div>'
+    );
+    setStatus('error', 'Connection error');
+  }
+
+  async function loadData() {
+    if (!SHEET_CSV_URLS || SHEET_CSV_URLS.length === 0) { showSetupNeeded(); return; }
+
+    setStatus('loading', 'Loading\u2026');
+    try {
+      const responses = await Promise.all(SHEET_CSV_URLS.map(function (url) {
+        return fetch(url, { cache: 'no-store' }).then(function (resp) {
+          if (!resp.ok) throw new Error('HTTP ' + resp.status + ' for ' + url);
+          return resp.text();
+        });
+      }));
+      // Concat parsed rows from each tab. processSheet already handles
+      // multiple header blocks in the same row stream, so the tabs simply
+      // appear as additional stacked tables \u2014 separated by a blank row to
+      // guarantee the header detector resets between tabs.
+      let rows = [];
+      for (let i = 0; i < responses.length; i++) {
+        if (i > 0) rows.push([]);
+        rows = rows.concat(parseCSV(responses[i]));
+      }
+      const stores = processSheet(rows);
+
+      cachedStores = stores;
+      const rankedActive = stores
+        .filter(function (s) { return s.daysReportedThisWeek > 0; })
+        .sort(function (a, b) { return b.thisWeek - a.thisWeek; });
+
+      renderHeroStats(stores);
+      renderPodium(rankedActive);
+      renderBoard('');
+      renderMover(stores);
+      renderQuarterScoreboard(stores);
+
+      const now = new Date();
+      document.getElementById('last-update').textContent = 'Updated ' + datetimeFmt.format(now);
+      setStatus('live', 'Season ' + currentSeason() + ' \u00b7 Week of ' + dateFmt.format(COMPETITION_START) + ' \u2014 Live');
+    } catch (err) {
+      console.error('Failed to load sheet:', err);
+      showError('We couldn\u2019t reach the sales sheet. The page will retry on next load.');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────────────────────────
+  function init() {
+    // Static UI
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+    document.getElementById('search').addEventListener('input', debounce(function (e) {
+      renderBoard(e.target.value);
+    }, 120));
+
+    // Initial data load
+    loadData();
+
+    // Refresh every 5 minutes while the tab is open. Browsers throttle
+    // background tabs, so this is best-effort. Fresh page loads always
+    // re-fetch.
+    setInterval(loadData, 5 * 60 * 1000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

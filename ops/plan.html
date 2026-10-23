@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PPF Routes 90-Day Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Anton + Inter for the shared ops gate; Oswald + Source Sans 3 for the plan itself. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<!-- Shared brand tokens — needed by the gate styles below (--ppf-green, --accent, etc.) -->
+<link rel="stylesheet" href="/brand.css">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   GATE — copied verbatim from /ops so the sign-in experience is
+   identical. Only addition: .gate-wrap sets its own green background
+   because the plan's own body uses a cream background.
+   ───────────────────────────────────────────────────────────── */
+.gate-wrap {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  position: relative;
+  background: var(--ppf-green);
+  color: var(--ppf-white);
+  font-family: var(--body);
+}
+.gate-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 56px 48px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+}
+.gate-card .diamond-strip { position: absolute; height: 32px; }
+.gate-logo { display: block; width: 88px; height: 78px; margin: 24px auto 24px; border-radius: 6px; }
+.gate-eyebrow { font-family: var(--display); font-size: 12px; letter-spacing: 0.22em; color: var(--accent); text-align: center; margin-bottom: 8px; text-transform: uppercase; }
+.gate-title { font-family: var(--display); font-size: 36px; letter-spacing: 0.02em; text-align: center; margin: 0 0 8px; text-transform: uppercase; line-height: 0.95; }
+.gate-sub { font-size: 14px; color: var(--ink-2); text-align: center; margin: 0 0 32px; line-height: 1.5; }
+.gate-form { display: flex; flex-direction: column; gap: 16px; }
+.gate-field { display: flex; flex-direction: column; gap: 6px; }
+.gate-label { font-family: var(--display); font-size: 11px; letter-spacing: 0.18em; color: var(--ink-3); text-transform: uppercase; }
+.gate-input { background: var(--bg); border: 1px solid var(--line-2); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--ink); font-family: var(--body); font-size: 15px; font-weight: 500; transition: border-color 150ms ease; }
+.gate-input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+.gate-error { font-size: 13px; color: #f47572; font-weight: 600; min-height: 18px; text-align: center; margin-top: 4px; }
+.gate-submit { background: var(--accent); color: var(--ppf-black); border: 0; border-radius: var(--radius-sm); padding: 14px 20px; font-family: var(--display); font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: background 150ms ease, transform 100ms ease; }
+.gate-submit:hover { background: var(--accent-2); }
+.gate-submit:active { transform: translateY(1px); }
+.gate-footnote { font-size: 11px; color: var(--ink-3); text-align: center; margin-top: 24px; letter-spacing: 0.1em; text-transform: uppercase; font-family: var(--display); }
+
+/* ─────────────────────────────────────────────────────────────
+   PLAN PAGE — unchanged from the attached file. Oswald + Source
+   Sans 3, cream palette, scrollable tables. Scoped under #app so
+   it does not bleed into the gate (which uses brand.css tokens).
+   ───────────────────────────────────────────────────────────── */
+#app {
+  --green:#0D5237;--gold:#D4B662;--deepgold:#B2872F;--lightgold:#F2E7A4;
+  --ink:#1c1c1a;--gray:#6D6E71;--bg:#F6F1E3;--panel:#FBF8EF;--line:#DCD3BA;--band:#EFE8D3;--red:#8a2b1c;
+  --base:#0D5237;--grow:#B2872F;--pp:#1c1c1a;--mkt:#6D6E71;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 "Source Sans 3", system-ui, sans-serif;
+  display: block;
+  min-height: 100dvh;
+}
+#app[hidden] { display: none !important; }
+#app *{box-sizing:border-box}
+/* Shared ops chrome at the top of the plan page. Explicit colors — the
+   plan page re-defines --bg/--ink inside #app so brand tokens would read
+   the plan's cream palette here, not the operator-chrome dark green. */
+#app .ops-banner {
+  background: #000; color: #D4B662;
+  padding: 10px 24px;
+  font: 600 12px Oswald, sans-serif;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+#app .ops-banner .user-tag { color: rgba(255,255,255,0.5); margin-left: 20px; }
+#app .ops-chrome {
+  background: #0D5237; color: #FFF;
+  padding: 14px 24px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+#app .ops-brand { display: flex; align-items: center; gap: 10px; color: #FFF; text-decoration: none; }
+#app .ops-brand-logo { width: 36px; height: 32px; border-radius: 4px; }
+#app .ops-brand-text { display: flex; flex-direction: column; line-height: 1; font-family: Anton, "Arial Black", sans-serif; text-transform: uppercase; }
+#app .ops-brand-text .t { font: 600 9px "Source Sans 3", sans-serif; letter-spacing: 0.18em; opacity: 0.7; margin-bottom: 4px; }
+#app .ops-brand-text .b { font-size: 18px; letter-spacing: 0.02em; }
+#app .ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+#app .nav-link {
+  display: inline-flex; align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font: 400 12px Anton, "Arial Black", sans-serif;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  background: transparent;
+  text-decoration: none;
+}
+#app .nav-link:hover { color: #FFF; background: rgba(0,0,0,0.2); }
+#app .nav-link.is-active { color: #000; background: #D4B662; }
+#app .nav-link.is-active:hover { background: #F2E7A4; color: #000; }
+#app .ops-chrome-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+#app .public-link {
+  color: rgba(255,255,255,0.5);
+  font: 400 11px Anton, "Arial Black", sans-serif;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-left: 1px solid rgba(255,255,255,0.12);
+}
+#app .public-link:hover { color: #D4B662; }
+#app .top-link.signout { border: 1px solid rgba(255,255,255,0.22); color: rgba(255,255,255,0.7); background: transparent; padding: 8px 14px; border-radius: 999px; font: 400 11px Anton, "Arial Black", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+#app .top-link.signout:hover { color: #FFF; background: rgba(0,0,0,0.2); }
+@media (max-width: 720px) {
+  #app .ops-chrome-right { margin-left: 0; width: 100%; justify-content: flex-start; }
+}
+
+#app header{background:var(--green);color:#F6F1E3;padding:22px 24px 0}
+#app header h1{font:600 30px/1.1 Oswald,sans-serif;letter-spacing:.02em;text-transform:uppercase;margin:0}
+#app header p{margin:6px 0 14px;color:var(--lightgold)}
+#app .header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+#app .header-top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#app .top-link{color:#F6F1E3;background:transparent;border:1px solid rgba(246,241,227,.4);padding:5px 11px;font:600 11px "Source Sans 3",sans-serif;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;cursor:pointer;border-radius:0}
+#app .top-link:hover{border-color:var(--gold);color:var(--gold)}
+#app .top-link.save-ok{border-color:transparent;color:rgba(246,241,227,.6)}
+#app .top-link.save-pending{border-color:#f4c25f;color:#f4c25f;animation:pulse-save 1.6s ease-in-out infinite}
+#app .top-link.save-fail{border-color:#f47572;color:#f47572}
+@keyframes pulse-save { 0%,100%{opacity:.75} 50%{opacity:1} }
+#app .views{display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+#app .views button{flex:none;white-space:nowrap;background:transparent;border:0;border-bottom:3px solid transparent;color:#F6F1E3;font:600 15px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.04em;padding:10px 16px;cursor:pointer}
+#app .views button[aria-selected="true"]{border-bottom-color:var(--gold);color:var(--gold)}
+#app .wrap{max-width:1240px;margin:0 auto;padding:18px 24px 40px}
+#app .stats{display:flex;flex-wrap:wrap;border:1px solid var(--line);background:var(--panel);margin-bottom:16px}
+#app .stat{flex:1 1 150px;padding:12px 16px;border-right:1px solid var(--line)}
+#app .stat:last-child{border-right:0}
+#app .stat b{display:block;font:600 24px/1 Oswald,sans-serif}
+#app .stat span{font-size:13px;color:var(--gray)}
+#app .rule{border:1px solid var(--line);border-top:3px solid var(--gold);background:var(--panel);padding:10px 16px;margin-bottom:16px;font-size:14px}
+#app .rule b{font-weight:600}
+#app .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+#app .chip{border:1px solid var(--ink);background:transparent;color:var(--ink);padding:5px 12px;font:600 13px "Source Sans 3",sans-serif;cursor:pointer;border-radius:0}
+#app .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+#app .chip .sw{display:inline-block;width:9px;height:9px;margin-right:6px;vertical-align:0}
+#app .spacer{flex:1}
+#app .grid{display:block}
+#app dialog{border:1px solid var(--ink);background:var(--panel);color:var(--ink);padding:0;width:min(460px,calc(100vw - 32px));max-height:calc(100vh - 48px);border-radius:0}
+#app dialog::backdrop{background:rgba(28,28,26,.45)}
+#app .dlg-body{padding:20px 20px 18px;overflow-y:auto;max-height:calc(100vh - 50px)}
+#app .dlg-top{display:flex;justify-content:space-between;align-items:start;gap:12px}
+#app .x-btn{border:1px solid var(--ink);background:transparent;color:var(--ink);font:600 13px "Source Sans 3",sans-serif;padding:4px 10px;cursor:pointer;border-radius:0;flex:none}
+#app .tl{border:1px solid var(--line);background:var(--panel);overflow-x:auto}
+#app .tl-inner{min-width:760px;position:relative}
+#app .row{display:flex;align-items:center;height:30px;border-bottom:1px solid var(--band);cursor:pointer}
+#app .row.head{height:28px;cursor:default;border-bottom:1px solid var(--line);font-size:12px;color:var(--gray)}
+#app .row.track{cursor:default;background:var(--band);font:600 13px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.04em}
+#app .lab{width:230px;flex:none;padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+#app .lane{position:relative;flex:1;height:100%}
+#app .bar{position:absolute;top:8px;height:14px}
+#app .bar.blocked{background-image:repeating-linear-gradient(135deg,transparent 0 4px,rgba(246,241,227,.65) 4px 7px)}
+#app .bar.done{opacity:.35}
+#app .row.sel{background:var(--lightgold)}
+#app .row.pre .lab::before{content:"Needs  ";color:var(--deepgold);font-size:11px;text-transform:uppercase;white-space:pre}
+#app .row.post .lab::before{content:"Unlocks  ";color:var(--green);font-size:11px;text-transform:uppercase;white-space:pre}
+#app .row.pre .lab{font-weight:600}
+#app .row.done .lab{color:var(--gray);text-decoration:line-through}
+#app .overlay{position:absolute;top:0;bottom:0;left:230px;right:0;pointer-events:none}
+#app .ms{position:absolute;top:0;bottom:0;border-left:1px dashed var(--gray)}
+#app .today{position:absolute;top:0;bottom:0;border-left:2px solid var(--deepgold)}
+#app .mlab{position:absolute;font-size:11px;color:var(--gray);white-space:nowrap;transform:translateX(-50%)}
+#app .panel h2{font:600 20px/1.15 Oswald,sans-serif;margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em}
+#app .meta{font-size:13px;color:var(--gray);margin-bottom:12px}
+#app h3.cap{font:600 12px "Source Sans 3",sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin:14px 0 6px}
+#app .deliv{border-top:3px solid var(--gold);padding-top:8px}
+#app .dep{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--band);cursor:pointer;font-size:14px}
+#app .dep:last-child{border-bottom:0}
+#app .tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border:1px solid currentColor;white-space:nowrap;height:fit-content}
+#app .t-done{color:var(--green)}
+#app .t-ready{color:var(--deepgold)}
+#app .t-blocked{color:var(--red)}
+#app .check{display:flex;gap:8px;align-items:center;margin-top:14px;padding:10px;border:1px solid var(--ink);cursor:pointer;font-weight:600}
+#app .check input, #app td input{width:18px;height:18px;accent-color:var(--green)}
+#app .empty{color:var(--gray);font-size:14px}
+#app .box{margin-top:16px;border:1px solid var(--line);background:var(--panel)}
+#app .box h3{margin:0;padding:10px 14px;font:600 14px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+#app .box p{margin:0;padding:10px 14px;font-size:14px;border-bottom:1px solid var(--band)}
+#app .nrow{display:flex;gap:12px;align-items:baseline;padding:8px 14px;border-bottom:1px solid var(--band);cursor:pointer;font-size:14px}
+#app .nrow:last-child{border-bottom:0}
+#app .nrow .d{width:62px;flex:none;color:var(--gray);font-size:13px}
+#app .nrow .x{flex:1}
+#app .legend{font-size:12px;color:var(--gray);margin-top:8px}
+#app .legend span{margin-right:14px}
+#app .hatch{display:inline-block;width:22px;height:9px;background:var(--ink);background-image:repeating-linear-gradient(135deg,transparent 0 4px,rgba(246,241,227,.65) 4px 7px);vertical-align:0;margin-right:5px}
+#app .scroll{overflow-x:auto}
+#app table{width:100%;border-collapse:collapse;font-size:14px}
+#app th{text-align:left;font:600 12px "Source Sans 3",sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);padding:8px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+#app td{padding:8px 14px;border-bottom:1px solid var(--band);vertical-align:top}
+#app tr:last-child td{border-bottom:0}
+#app tr.ok td{color:var(--gray)}
+#app tr.good td{background:#E3EDE5}
+#app tr.good td:first-child{color:var(--green);font-weight:600}
+#app .gkey{display:inline-block;width:12px;height:12px;background:#E3EDE5;border:1px solid var(--green);vertical-align:-1px;margin-right:4px}
+#app td a{color:var(--green);font-weight:600}
+#app select{font:14px "Source Sans 3",sans-serif;border:1px solid var(--ink);background:var(--bg);color:var(--ink);padding:3px 6px;border-radius:0}
+#app .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#app footer{font-size:12px;color:var(--gray);margin-top:22px}
+#app [hidden]{display:none !important}
+@media (max-width:900px){
+  #app .grid, #app .cols{grid-template-columns:1fr}
+  #app .wrap{padding:14px 16px 32px}
+  #app header{padding:18px 16px 0}
+  #app .views button{padding:10px 10px;font-size:14px}
+  #app header h1{font-size:24px}
+  #app table{font-size:13px}
+  #app td, #app th{padding:8px 10px}
+}
+html,body{overflow-x:hidden;margin:0}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIN GATE — identical to /ops. Hidden once the shared
+     sessionStorage key is set.
+     ═══════════════════════════════════════════════════════════ -->
+<!-- Server-cookie boot — see boot() in the script below. The visible
+     sign-in UI lives at /signin; this page only renders for operators. -->
+<div class="gate-wrap" id="boot" style="color:#F7F8F4;font-family:var(--display);letter-spacing:0.2em;text-transform:uppercase;font-size:11px;">
+  Loading&hellip;
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP — revealed after the gate passes. Content below this is
+     the attached plan file verbatim, except for the save-status
+     chip and Sign Out in the header-top row.
+     ═══════════════════════════════════════════════════════════ -->
+<div id="app" hidden>
+<!-- Shared ops chrome (same on /ops, /ops/plan, /ops/standings) -->
+<div class="ops-banner">
+  PPF Operator &middot; Confidential
+  <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+</div>
+<div class="ops-chrome">
+  <a href="/ops" class="ops-brand" aria-label="Operator dashboard">
+    <img src="/ppf-logo.jpg" alt="" class="ops-brand-logo">
+    <span class="ops-brand-text">
+      <span class="t">Philly Pretzel Factory</span>
+      <span class="b">Operator</span>
+    </span>
+  </a>
+  <nav class="ops-site-nav" aria-label="Primary">
+    <a href="/ops" class="nav-link">Dashboard</a>
+    <a href="/ops/plan" class="nav-link is-active">Plan</a>
+    <a href="/ops/plan#v-sh" class="nav-link">Routes</a>
+    <a href="/ops/plan#v-sh" class="nav-link">Stores</a>
+    <a href="/ops/plan#v-su" class="nav-link">Suppliers</a>
+    <a href="/ops/standings" class="nav-link">Standings</a>
+  </nav>
+  <div class="ops-chrome-right">
+    <span class="top-link save-ok" id="save-status" title="Changes are saved on the server for everyone">Saved</span>
+    <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+    <button class="top-link signout" type="button" id="signout-btn">Sign Out</button>
+  </div>
+</div>
+
+<header>
+  <div class="header-top">
+    <div>
+      <h1>PPF Routes: 90-Day Plan</h1>
+      <p>Oct 16, 2026 to Jan 13, 2027</p>
+    </div>
+  </div>
+  <div class="views" role="tablist">
+    <button role="tab" data-v="tl" aria-selected="true">Timeline</button>
+    <button role="tab" data-v="sh" aria-selected="false">Stores</button>
+    <button role="tab" data-v="br" aria-selected="false">Bars</button>
+    <button role="tab" data-v="su" aria-selected="false">Suppliers</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="rule"><b>Store minimum:</b> $15/day or $120/week. <b>Under 3 weeks in a row:</b> in-store sales push (counter refresh, placement fix, sampling, staff talk, drop check). <b>Still under after a push:</b> every other day or dropped.</div>
+
+  <section id="v-tl">
+    <div class="controls" id="controls"></div>
+    <div class="grid">
+      <div>
+        <div class="tl"><div class="tl-inner" id="tl"></div></div>
+        <div class="legend"><span><span class="hatch"></span>Blocked by a prerequisite</span><span>Faded bar: done</span><span style="color:var(--deepgold)">Solid gold line: today</span></div>
+        <div class="box"><h3>Ready to start, not done</h3><div id="next"></div></div>
+      </div>
+    </div>
+    <dialog id="dlg" aria-labelledby="dlg-title"><div class="dlg-body panel" id="panel"></div></dialog>
+  </section>
+
+  <section id="v-sh" hidden>
+    <div class="box" style="margin-top:0">
+      <h3>Baseline: 4 weeks, Sep 20 to Oct 17</h3>
+      <p>Pulled from the daily delivery sales sheet, Sunday to Saturday weeks. Weeks in red are under the $120/week minimum. <span class="gkey"></span><b style="color:var(--green)">Green</b> = in good shape: averaging $120/week or more and under the minimum in no more than 1 of the 4 weeks. Sells = average daily sales divided by the drop's full value. Missing days are left out of the average, not counted as $0.</p>
+      <div class="controls" id="bfilter" style="padding:10px 14px 0;margin:0"></div>
+      <div class="scroll"><table><thead><tr><th>Store</th><th>Route</th><th>Drop</th><th>Avg/day</th><th>Avg/wk</th><th>Wk 1</th><th>Wk 2</th><th>Wk 3</th><th>Wk 4</th><th>Sells</th></tr></thead><tbody id="baseline"></tbody></table></div>
+    </div>
+    <div class="box">
+      <h3>Average sales by weekday</h3>
+      <p>Best day per store in bold, stores in good shape in green. Use this to set per-weekday drop counts.</p>
+      <div class="scroll"><table><thead><tr><th>Store</th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead><tbody id="dow"></tbody></table></div>
+    </div>
+    <div class="box">
+      <h3>Drop counts and sell-through</h3>
+      <p>Drop count = singles/doubles left per delivery. A 5/5 drop that sells out is $30/day; 10/10 is $60/day. Sells = average daily sales divided by the drop's full value. Rule: any underperforming store above the base 5/5 comes down to 5/5. Tick a store once its new drop is in place.</p>
+      <div class="scroll"><table><thead><tr><th>Done</th><th>Store</th><th>Route</th><th>Drop</th><th>Avg/day</th><th>Sells</th><th>Change</th></tr></thead><tbody id="drops"></tbody></table></div>
+      <p style="border-bottom:0">Not cut: Malverne Deli (10/10, 45%, $188/wk, above minimum). IVB (15/15, 20/20 weekends) sells 99% but stays as is. Kooka Malverne is already at 5/5 and sells 15%, so it needs a push, not a cut. Every Baldwin/Freeport stop is already 5/5. Drop counts still needed: 711 Broadway (Hewlett), 711 SR.</p>
+    </div>
+    <div class="box">
+      <h3>Urgent: under $120/week all 4 weeks</h3>
+      <p>From the baseline. Tick a store once its sales push is done. Baldwin/Freeport is a route problem: run one route-wide push there. Every stop on it is already at the base 5/5.</p>
+      <div class="scroll"><table><thead><tr><th>Pushed</th><th>Store</th><th>Route</th><th>Weekly</th><th>Push week</th></tr></thead><tbody id="urgent"></tbody></table></div>
+    </div>
+    <div class="cols">
+      <div class="box">
+        <h3>Watch: under 2 or 3 of the 4 weeks</h3>
+        <div class="scroll"><table><tbody id="watch"></tbody></table></div>
+      </div>
+      <div class="box">
+        <h3>Dead stops, $0 (win-back): log the reason</h3>
+        <div class="scroll"><table><tbody id="dead"></tbody></table></div>
+      </div>
+    </div>
+    <div class="box">
+      <h3>Add accounts on existing routes: West Hempstead and Hempstead</h3>
+      <p>Franklin Square route. Pitch with the sell sheet. Lead with store margin: $1.85 on a single, $2.15 on a double.</p>
+      <div class="scroll"><table><thead><tr><th>Pri</th><th>Store</th><th>Address</th><th>Phone</th><th>Status</th></tr></thead><tbody id="targets"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="v-br" hidden>
+    <div class="box" style="margin-top:0">
+      <h3>Pretzels &amp; Pints prospects</h3>
+      <p>Rivets, delivered frozen, no buy-back. Kitchen status comes from public listings, so confirm on the walk-in. First week: Barrier (both), South Shore, BrewSA, Plattduetsche. Tap a venue to open it in Google Maps.</p>
+      <div class="scroll"><table><thead><tr><th>Tier</th><th>Venue</th><th>Nearest stop</th><th>Notes</th><th>Status</th></tr></thead><tbody id="bars"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="v-su" hidden>
+    <div class="box" style="margin-top:0">
+      <h3>Window clings</h3>
+      <p>Spec: static cling, mounted inside the glass facing out, about 30 units (24 7-Elevens, new accounts, spares). Artwork from the PPF brand kit: "Fresh Philly Pretzels. Delivered Daily." Get quotes; no prices confirmed yet.</p>
+      <div class="scroll"><table><thead><tr><th>Supplier</th><th>Where</th><th>Contact</th><th>Notes</th><th>Status</th></tr></thead><tbody id="suppliers"></tbody></table></div>
+    </div>
+    <div class="box">
+      <h3>Before you print</h3>
+      <div class="scroll"><table><tbody id="approvals"></tbody></table></div>
+    </div>
+  </section>
+
+  <footer>Progress saves on the server for everyone. Day 1 is Oct 16, 2026. Source of truth: the PPF Routes doc and the daily delivery sales sheet.</footer>
+</div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   CLIENT GATE (shares sessionStorage with /ops)
+   ───────────────────────────────────────────────────────────── */
+// Server-cookie boot. No in-page password; sign-in lives at /signin.
+// _me holds the server-returned {name, role, sub} after boot succeeds.
+let _me = null;
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    _me = await r.json();
+    if (_me.role !== 'operator') {
+      location.replace(_me.role === 'baker' ? '/baker' : _me.role === 'driver' ? '/driver' : '/signin');
+      return;
+    }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    initApp();
+  } catch (e) {
+    location.replace('/signin?next=' + next);
+  }
+}
+
+function showGate() {
+  // Used after sign-out — just send to /signin.
+  location.replace('/signin');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   APP — the attached file's logic, with server storage.
+   ───────────────────────────────────────────────────────────── */
+let _appStarted = false;
+
+async function initApp() {
+  document.getElementById('signout-btn').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  const utEl = document.getElementById('user-tag');
+  if (_me && utEl) utEl.textContent = _me.name;
+  if (_appStarted) return;
+  _appStarted = true;
+  bindViews();
+  await hydrate();
+  render();
+}
+
+// Switch to a view by id (tl/sh/br/su). Updates both the tab UI state
+// and the hidden-ness of the section panels. Used by the tab buttons
+// and by the hash router below.
+function selectView(v) {
+  if (!['tl','sh','br','su'].includes(v)) return;
+  view = v;
+  document.querySelectorAll('.views button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
+  ['tl','sh','br','su'].forEach(id => document.getElementById('v-' + id).hidden = id !== v);
+}
+
+function bindViews() {
+  document.querySelectorAll('.views button').forEach(b => {
+    b.onclick = () => selectView(b.dataset.v);
+  });
+  const dlgEl = document.getElementById('dlg');
+  dlgEl.addEventListener('close', () => { if (sel) { sel = null; render(); } });
+  dlgEl.addEventListener('click', (e) => { if (e.target === dlgEl) dlgEl.close(); });
+
+  // Hash router — the ops nav links to /ops/plan#v-sh, #v-su, #v-br to
+  // deep-link into a specific tab. Honor the hash on load, and also
+  // react to hashchange so clicking a nav link while already on this
+  // page actually switches the tab.
+  function applyHash() {
+    const m = (location.hash || '').match(/^#v-(tl|sh|br|su)$/);
+    if (m) selectView(m[1]);
+  }
+  applyHash();
+  window.addEventListener('hashchange', applyHash);
+}
+
+const START=new Date(2026,9,16),SPAN=90;
+const TRACKS={base:"Fix the base",grow:"Grow by density",pp:"Pretzels & Pints",mkt:"Marketing"};
+const T=[
+["B1","base","Baseline week",0,7,"4-week baseline (Sep 20 to Oct 17) for every stop: avg daily and weekly sales, each week against the $120 minimum, sell-through, and sales by weekday. On the Stores tab. Units per stop still needed: the sheet only records dollars.",[]],
+["B2","base","Diagnose dead stops",0,14,"A reason logged for each dead stop in the dead stops box on the Stores tab: 711 RVC, ATL, AU, EM, ATLB and Red Label.",[]],
+["B6","base","Set route revenue floor",5,10,"Written daily revenue floor per route. Confirm whether the store minimum is $15/day ($105/week) or $120/week.",["B1"]],
+["B9","base","Cut drops on underperformers",0,7,"New drop counts in place: 711 HMP, FSQ, HF and LAW to 5/5, 711 OS to 6/6. Drivers told, drop counts updated in the forms. See the drop count table on the Stores tab.",[]],
+["B3","base","Raise drop at Hewlett and Kooka RVC",3,30,"Higher drop at both stores, raised weekly until they stop selling out. Needs Hewlett's current drop count first.",["B1"]],
+["B5","base","Per-store, per-weekday drop counts",7,21,"Drop count table in the sheet for every stop, weekend runs loaded heavier.",["B1","B9"]],
+["B4","base","Win-back pitches",7,30,"At least 2 dead stops back on delivery with a fresh counter card and a 5/5 starting drop.",["B2"]],
+["B8","base","Sales pushes, under minimum",7,89,"Every store under the minimum 3 weeks running gets an in-store push, starting with the Baldwin/Freeport route (plus SRRVC and GA from the watch list), then M2, NCA and HMP. Weekly sales logged before and after. Track it on the Stores tab.",["B1","M1"]],
+["B7","base","Min stop rule and re-cluster",60,89,"Updated route list: stores still under the minimum after a push move to every other day or are dropped, every route above the floor.",["B5","B6","B8","G3"]],
+["G1","grow","Gap-town target list",21,30,"Targets in West Hempstead, Hempstead and Oceanside, all on existing routes. West Hempstead and Hempstead are already listed on the Stores tab. Merrick, Bellmore and Wantagh are off-limits.",[]],
+["G2","grow","Gap-town pitches, 15 stores",30,60,"15 pitches made, starting with the two West Hempstead 7-Elevens. 4 accounts signed and added to the sheet in the current header format.",["G1"]],
+["G3","grow","East Rock/Oceanside push",30,60,"3 or more new stops on the East Rock/Oceanside route.",["G1"]],
+["G4","grow","Close 2 more retail accounts",60,89,"6 new retail accounts live in total.",["G2"]],
+["P1","pp","Lock pricing and minimums",0,4,"Rivet serving and bucket wholesale price, brewery minimum order, delivery days.",[]],
+["P2","pp","PPF corporate sign-off",0,10,"Written approval for Pretzels & Pints and the UGC campaign.",[]],
+["P4","pp","Confirm frozen capacity",0,10,"Weekly Rivet baking and freezing capacity, in units.",[]],
+["P3","pp","Hero image and counter cards",0,10,"Final hero image chosen, 5x7 counter cards printed.",["P2"]],
+["P5","pp","Tasting visits, Tier 1",3,12,"Tastings at Tier 1 taprooms with notes on each.",["P1"]],
+["P6","pp","Sign first 2 venues",10,30,"2 venues signed with go-live dates and the staff heating walkthrough done.",["P2","P3","P4","P5"]],
+["P7","pp","Book UGC creators",20,30,"3 to 5 Long Island micro creators booked with game-day dates and budget set.",["P2","P6"]],
+["P8","pp","UGC game-day visits",30,55,"Creator clips from each venue's first 2 to 3 weeks (Thu, Sat, Sun, Mon).",["P7"]],
+["P9","pp","Sign venue 3",35,60,"Third venue live (Tier 2, or a Tier 3 bar near a route stop).",["P6"]],
+["P10","pp","Dec 1 recap",44,46,"Recap: bucket orders per venue, best clips, winter edition decision.",["P6","P8"]],
+["P11","pp","Playoff bar pitches",62,89,"Next round of breweries and sports bars signed for the NFL playoffs.",["P10"]],
+["M2","mkt","Fall flavor push",0,15,"Fall flavor signage and product in stores.",[]],
+["M1","mkt","Counter refresh, all stops",0,21,"\"Baked this morning\" card, price anchor and coffee-station sign at every live stop.",[]],
+["M3","mkt","Weekly store scorecards",7,89,"A Friday one-line sales update to every store, with the Pretzel Cup winner.",["B1"]],
+["M4","mkt","Football packs and Thanksgiving loads",30,48,"Game-day pack in 7-Elevens and heavier loads Thanksgiving week.",["B5"]],
+["M6","mkt","Higgsfield seasonal ads",30,60,"One Ads Studio ad per seasonal drop, using real product photos.",[]],
+["M5","mkt","Geo ads test",35,60,"Readout of ad spend against sales in the test cluster.",["B1"]],
+["M7","mkt","Super Bowl tray presell",70,89,"Presold Super Bowl tray orders from bars and stores.",["M4","P10"]],
+["M8","mkt","Q4 prizes and Q1 Cup kickoff",76,84,"Q4 Pretzel Cup prizes awarded and Q1 announced to stores.",[]],
+["M9","mkt","Window clings",3,21,"About 30 static clings printed and installed at every live stop. Supplier quotes and both approvals are on the Suppliers tab.",["P2"]]].map(([id,track,name,s,e,deliv,pre])=>({id,track,name,s,e,deliv,pre}));
+const byId=Object.fromEntries(T.map(t=>[t.id,t]));
+T.forEach(t=>t.post=T.filter(o=>o.pre.includes(t.id)).map(o=>o.id));
+const MS=[[6,"Pricing locked"],[29,"Day 30"],[46,"Dec 1 recap"],[59,"Day 60"],[76,"Q4 closes"],[89,"Day 90"]];
+
+const URGENT=[
+["m2","711 M2, 58 E Merrick Rd, Valley Stream","Valley Stream/RVC","$56","Oct 19"],
+["nca","711 NCA, 190 N Central Ave, Valley Stream","Valley Stream/RVC","$56","Oct 19"],
+["hmp","711 HMP, 850 Hempstead Tpke, Franklin Square","Franklin Square","$72","Oct 19"],
+["atlf","711 ATLF, 500 Atlantic Ave, Freeport","Baldwin/Freeport","$70","Oct 19 (route push)"],
+["bk","711 BK, 80 Brooklyn Ave, Freeport","Baldwin/Freeport","$76","Oct 19 (route push)"],
+["nr","711 NR, 420 Nassau Rd, Roosevelt","Baldwin/Freeport","$80","Oct 19 (route push)"],
+["gl","711 GL, 294 Guy Lombardo Ave, Freeport","Baldwin/Freeport","$86","Oct 19 (route push)"],
+["srf","711 SRF, 145 Sunrise Hwy, Freeport","Baldwin/Freeport","$88","Oct 19 (route push)"],
+["kookam","Kooka Malverne, 324A Hempstead Ave","Franklin Square","$32","Oct 26"],
+["bg","Bagel Gourmet, 151 Main St, East Rock","East Rock/Oceanside","$65","Oct 26"],
+["lbr","711 LBR, 504 Long Beach Blvd, Long Beach","East Rock/Oceanside","$74","Oct 26"],
+["fsq","711 FSQ, 552 Franklin Ave, Franklin Square","Franklin Square","$96","Oct 26"],
+["law","711 LAW, 3125 Lawson Blvd, Oceanside","East Rock/Oceanside","$110","Oct 26"]
+];
+const WATCH=[["711 SRRVC, Baldwin/Freeport","Under 3 of 4, then $127 last week. Include in the route push"],["711 GA, Baldwin/Freeport","Under 3 of 4, then $121 last week. Include in the route push"],["711 HF, Franklin Square","$159 and $138, then $94 and $95. Sliding"],["Brock's Deli, Franklin Square","Under 2 of 4 ($97 and $115)"]];
+const DEAD=[["dead_rvc","711 RVC, 128 N Village Ave"],["dead_atl","711 ATL, Lynbrook"],["dead_au","711 AU, Island Park"],["dead_em","711 EM, Freeport"],["dead_atlb","711 ATLB, Baldwin"],["dead_rl","Red Label IP and ER"]];
+const REASONS=["Reason not logged","Placement","Manager change","Stale returns","Price","Competitor","Asked us to stop","Other"];
+const BASE=[["Brock's Deli", "Franklin Square", "5/5", 16.68, 117, [129, 97, 127, 115], 56, [8.49, 11.8, 18.88, 16.73, 15.03, 25.45, 20.38], false], ["711 FSQ", "Franklin Square", "10/10", 13.69, 96, [96, 96, 108, 84], 23, [6.65, 18.65, 13.84, 16.41, 12.45, 15.11, 12.69], false], ["711 VS", "Franklin Square", "5/5", 19.63, 137, [151, 143, 102, 153], 65, [15.11, 19.61, 19.07, 22.72, 21.88, 22.39, 16.61], false], ["Malverne Deli", "Franklin Square", "10/10", 26.9, 188, [190, 192, 210, 161], 45, [17.0, 22.61, 30.14, 28.19, 21.34, 37.19, 31.81], false], ["Kooka Malverne", "Franklin Square", "5/5", 4.57, 32, [23, 36, 29, 42], 15, [0.0, 0.0, 0.0, 0.0, 8.04, 8.87, 16.19], false], ["IVB", "Franklin Square", "15/15", 89.29, 625, [670, 624, 615, 591], 99, [104.51, 82.5, 87.54, 90.0, 85.19, 85.08, 90.2], false], ["711 HMP", "Franklin Square", "10/10", 10.23, 72, [80, 60, 57, 89], 17, [11.69, 5.46, 8.8, 11.04, 13.5, 11.57, 9.55], false], ["711 HF", "Franklin Square", "10/10", 17.36, 122, [159, 138, 94, 95], 29, [13.5, 16.5, 20.98, 24.0, 16.54, 15.54, 14.46], false], ["711 Broadway (Hewlett)", "Valley Stream/RVC", "?", 22.08, 155, [148, 151, 158, 161], null, [19.75, 23.73, 16.95, 22.1, 27.88, 23.69, 20.45], false], ["711 SR", "Valley Stream/RVC", "?", 18.62, 130, [120, 142, 138, 119], null, [7.3, 21.43, 17.8, 19.73, 21.65, 22.73, 21.02], false], ["711 NCA", "Valley Stream/RVC", "5/5", 7.94, 56, [62, 70, 42, 48], 26, [5.46, 3.43, 10.81, 7.39, 10.07, 9.31, 8.0], false], ["711 M2", "Valley Stream/RVC", "5/5", 8.05, 56, [53, 53, 45, 77], 27, [8.46, 7.58, 9.99, 6.54, 12.0, 7.61, 2.72], false], ["711 M1", "Valley Stream/RVC", "5/5", 20.03, 140, [132, 134, 151, 142], 67, [9.65, 21.13, 26.57, 18.54, 20.38, 26.11, 17.43], false], ["Kooka RVC", "Valley Stream/RVC", "5/5", 23.82, 167, [186, 151, 182, 148], 79, [28.5, 18.13, 23.04, 19.5, 20.15, 28.5, 28.72], false], ["711 RVC", "Valley Stream/RVC", "5/5", 2.46, 17, [39, 30, 0, 0], 8, [2.04, 10.0, 6.42, 0.0, 0.0, 0.0, 0.0], true], ["711 ATL", "East Rock/Oceanside", "6/6", 0.0, 0, [0, 0, 0, 0], 0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], true], ["Bagel Gourmet", "East Rock/Oceanside", "12 singles", 9.32, 65, [52, 62, 82, 65], 36, [6.45, 11.82, 6.45, 8.06, 13.44, 9.14, 10.03], false], ["711 LAW", "East Rock/Oceanside", "10/5", 15.74, 110, [114, 102, 109, 116], 39, [9.0, 13.61, 16.07, 20.38, 10.93, 25.19, 14.72], false], ["711 OS", "East Rock/Oceanside", "10/10", 21.17, 148, [149, 182, 119, 141], 35, [14.75, 25.27, 25.81, 20.57, 20.38, 20.04, 21.43], false], ["711 LBR", "East Rock/Oceanside", "5/5", 10.62, 74, [72, 85, 66, 75], 35, [14.89, 6.96, 15.03, 8.15, 8.04, 11.46, 9.58], false], ["711 AU", "East Rock/Oceanside", "5/5", 0.0, 0, [0, 0, 0, 0], 0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], true], ["711 SRRVC", "Baldwin/Freeport", "5/5", 13.76, 96, [61, 105, 92, 127], 46, [10.28, 15.85, 15.43, 4.39, 15.65, 17.77, 16.93], false], ["711 SRF", "Baldwin/Freeport", "5/5", 12.52, 88, [98, 96, 90, 66], 42, [4.08, 17.46, 16.39, 17.89, 15.85, 12.0, 3.96], false], ["711 BK", "Baldwin/Freeport", "5/5", 10.88, 76, [95, 66, 64, 79], 36, [8.15, 11.57, 14.26, 12.31, 13.39, 8.15, 8.35], false], ["711 EM", "Baldwin/Freeport", "5/5", 0.0, 0, [0, 0, 0, 0], 0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], true], ["711 GL", "Baldwin/Freeport", "5/5", 12.33, 86, [98, 80, 88, 80], 41, [11.66, 15.85, 8.46, 10.19, 15.54, 13.81, 10.81], false], ["711 ATLF", "Baldwin/Freeport", "5/5", 9.96, 70, [65, 59, 55, 99], 33, [7.06, 8.81, 10.39, 11.44, 10.43, 7.8, 13.79], false], ["711 ATLB", "Baldwin/Freeport", "5/5", 0.0, 0, [0, 0, 0, 0], 0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], true], ["711 GA", "Baldwin/Freeport", "5/5", 15.94, 112, [101, 114, 111, 121], 53, [14.46, 14.86, 15.67, 17.09, 15.34, 16.01, 18.16], false], ["711 NR", "Baldwin/Freeport", "5/5", 11.4, 80, [53, 78, 97, 92], 38, [9.43, 8.46, 10.5, 11.43, 16.93, 12.0, 11.04], false]];
+const TARGETS=[
+["wh1",1,"7-Eleven","310 Hempstead Ave, West Hempstead","516-538-2980"],
+["wh2",1,"7-Eleven","136 Hempstead Tpke, West Hempstead","516-483-4693"],
+["cvd",2,"Cherry Valley Deli","168 Hempstead Tpke, West Hempstead","516-292-3381"],
+["asb",2,"A&S Bagels","761 Hempstead Tpke, Franklin Square","516-326-9288"],
+["bh",3,"Bagel Hero","290 Hempstead Ave, West Hempstead","516-280-3743"],
+["fulton",3,"7-Eleven","531 Fulton Ave, Hempstead","516-483-2082"],
+["main35",3,"35 Main St Bagel and Deli","35 Main St, Hempstead","516-286-1393"],
+["sunoco",3,"Sunoco","665 Peninsula Blvd, Hempstead","516-564-4236"],
+["qs",4,"Quick Stop Convenience","352 Fulton Ave, Hempstead","516-469-8688"]
+];
+const DROPS=[
+["d1","711 HMP","Franklin Square","10/10","$10.23","17%","5/5"],
+["d2","711 FSQ","Franklin Square","10/10","$13.69","23%","5/5"],
+["d3","711 HF (Holiday Farms)","Franklin Square","10/10","$17.36","29%","5/5"],
+["d4","711 OS","East Rock/Oceanside","10/10","$21.17","35%","6/6 (busy days hit $33 to $39)"],
+["d5","711 LAW","East Rock/Oceanside","10/5","$15.74","39%","5/5"],
+["d6","Malverne Deli","Franklin Square","10/10","$26.90","45%","None"],
+["d7","Kooka Malverne","Franklin Square","5/5","$4.57","15%","Push, then decide"],
+["d8","IVB","Franklin Square","15/15, 20/20 wknd","$89.29","99%","None (off-limits)"],
+["d9","Brock's Deli","Franklin Square","5/5","$16.68","56%","None"],
+["d10","711 VS","Franklin Square","5/5","$19.63","65%","None"]
+];
+const BARS=[
+["b1",1,"Barrier Brewing, Oceanside (3001 New St)","711 LAW / 711 OS","Same owner as Long Beach: one meeting, two accounts"],
+["b2",1,"Barrier Brewing, Long Beach (135 E Park Ave)","711 LBR","Same owner as Oceanside"],
+["b3",1,"South Shore Craft Brewery, Oceanside","711 OS","No real kitchen"],
+["b4",1,"BrewSA, Freeport (180 Woodcleft Ave)","711 GL","No real kitchen"],
+["b5",1,"Bright Eye Beer Co., Long Beach","711 LBR","Burger vendor inside, pitch as add-on"],
+["b6",2,"Plattduetsche Park, Franklin Square","711 HMP","Already serves a pretzel, biggest volume"],
+["b7",2,"Prost Grill & Garten, Garden City","IVB area","Already serves a Bavarian pretzel"],
+["b8",2,"Craftu Kitchen & Tap House, Lynbrook","711 M1","Serves giant pretzels"],
+["b9",2,"EGP, Oceanside","711 OS","Pretzel appetizer on menu"],
+["b10",2,"Bootleggers, Oceanside","711 OS","Next to 711 OS"],
+["b11",2,"Dox, Island Park","Old 711 AU area","Pretzel appetizer on menu"],
+["b12",3,"1762 Broadway Lounge, Hewlett","711 Bway","Same block"],
+["b13",3,"Whiskeys, Freeport","711 GL","A block away"],
+["b14",3,"Knockers Pub, Baldwin","711 GA","Grand Ave"],
+["b15",3,"Kerryman's Corner, Valley Stream","711 NCA",""],
+["b16",3,"Legends Sports Bar, Franklin Square","711 HMP",""],
+["b17",3,"Lilah's Bar and Grill, East Rockaway","BG",""],
+["b18",3,"The Bold O'Donoghue's, East Rockaway","BG","Near the LIRR"],
+["b19",3,"Broadway Tavern, Malverne","MD",""],
+["b20",3,"Shannon Rose Pub, Lynbrook","711 M1","Simple apps"],
+["b21",3,"Fibber McGee's, Lynbrook","711 M1","No kitchen noted"],
+["b22",3,"The Wreck, Island Park","Old 711 AU area","Could revive that stop"],
+["b23",3,"Nolan's Pub, Long Beach","711 LBR","No kitchen noted"],
+["b24",3,"Shine's Bar, Long Beach","711 LBR","West End"]
+];
+const SUPPLIERS=[
+["s1","Minuteman Press of Rockville Centre","488 Sunrise Hwy, RVC","516-763-3222","4.9 stars (269 reviews), on the Valley Stream/RVC route"],
+["s2","AC Graphics","532 Merrick Rd, Lynbrook","516-341-8261","5.0 stars (21 reviews), signage and vehicle graphics"],
+["s3","GotPrint","Online","https://www.gotprint.com/window-clings.html","Cheaper per unit, slower"],
+["s4","Sticker Mule","Online","https://www.stickermule.com/uk/products/static-clings","Cheaper per unit, slower"]
+];
+const APPROVALS=[["a1","7-Eleven franchisee OK on window signage (many limit their windows)"],["a2","PPF corporate sign-off on logo use"],["a3","Final artwork proofed"]];
+const STATUSES=["Not pitched","Pitched","Follow up","Signed","Passed"];
+const SUP_STATUSES=["Not contacted","Quote requested","Quote in","Chosen","Passed"];
+
+/* ─────────────────────────────────────────────────────────────
+   SERVER STATE — four groups: done, pushed, tstat, ostat.
+   On load: GET /api/plan-state (with the gate password), then
+   render. On every change: optimistic UI + POST per field. If a
+   POST fails, mark pending and retry with backoff. localStorage
+   is kept purely as an offline-read fallback for when the GET
+   itself fails.
+   ───────────────────────────────────────────────────────────── */
+let done = {}, pushed = {}, tstat = {}, ostat = {};
+const LS_KEY = 'ppf-plan-state-cache';
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || typeof s !== 'object') return null;
+    return s;
+  } catch (e) { return null; }
+}
+function writeCache() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ done, pushed, tstat, ostat }));
+  } catch (e) { /* storage full or disabled — ignore */ }
+}
+
+function hydrateFromObject(s) {
+  done   = s && s.done   && typeof s.done   === 'object' ? s.done   : {};
+  pushed = s && s.pushed && typeof s.pushed === 'object' ? s.pushed : {};
+  tstat  = s && s.tstat  && typeof s.tstat  === 'object' ? s.tstat  : {};
+  ostat  = s && s.ostat  && typeof s.ostat  === 'object' ? s.ostat  : {};
+}
+
+async function hydrate() {
+  try {
+    const r = await fetch('/api/plan-state', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    const s = await r.json();
+    hydrateFromObject(s);
+    writeCache();
+    setSaveStatus('ok');
+  } catch (e) {
+    // Server unreachable or misconfigured (missing env vars → 401).
+    // Fall back to the local cache so the user still sees their
+    // last-known state. Any new changes will queue for retry. We do
+    // NOT bounce back to the gate — the client gate already matched;
+    // an API error is a server config problem, not a sign-in failure.
+    const cached = readCache();
+    if (cached) { hydrateFromObject(cached); setSaveStatus('fail', 'Offline — using cached state'); }
+    else { hydrateFromObject({}); setSaveStatus('fail', 'Server not configured — writes won’t save'); }
+  }
+}
+
+/* ─ Save queue: per (group,key) latest value wins. On flush we POST
+   each pending change; failures stay in the queue and retry. ─ */
+const _pending = new Map(); // Map<"group|key", {group, key, value}>
+let _flushTimer = null;
+let _flushBackoff = 1500;
+let _savingCount = 0;
+
+function queueSave(group, key, value) {
+  _pending.set(group + '|' + key, { group, key, value });
+  writeCache();
+  scheduleFlush(0);
+}
+
+function scheduleFlush(delay) {
+  clearTimeout(_flushTimer);
+  _flushTimer = setTimeout(flush, delay);
+}
+
+async function flush() {
+  if (_pending.size === 0) return;
+  _savingCount++;
+  setSaveStatus('pending');
+
+  const entries = Array.from(_pending.values());
+  let anyFailed = false;
+  for (const patch of entries) {
+    try {
+      const r = await fetch('/api/plan-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(patch),
+      });
+      // 401 from the API is a server config problem, not a sign-in
+      // problem — don't log the user out. Treat it like any other
+      // failure so the patch stays in the retry queue.
+      if (!r.ok) throw new Error('http ' + r.status);
+      // Only remove from queue if the request succeeded AND the value
+      // hasn't been replaced by a newer edit in the meantime.
+      const latest = _pending.get(patch.group + '|' + patch.key);
+      if (latest && latest.value === patch.value) {
+        _pending.delete(patch.group + '|' + patch.key);
+      }
+    } catch (e) {
+      anyFailed = true;
+    }
+  }
+  _savingCount--;
+  if (_pending.size === 0 && !anyFailed) {
+    _flushBackoff = 1500;
+    setSaveStatus('ok');
+  } else {
+    setSaveStatus('fail', 'Not saved, retrying');
+    _flushBackoff = Math.min(_flushBackoff * 2, 30000);
+    scheduleFlush(_flushBackoff);
+  }
+}
+
+function setSaveStatus(state, text) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.classList.remove('save-ok','save-pending','save-fail');
+  if (state === 'ok')      { el.classList.add('save-ok');      el.textContent = text || 'Saved'; }
+  else if (state === 'pending') { el.classList.add('save-pending'); el.textContent = text || 'Saving…'; }
+  else                     { el.classList.add('save-fail');    el.textContent = text || 'Not saved, retrying'; }
+}
+
+// Field-level writes. `value === null` means delete.
+function setField(group, key, value) {
+  const bag = group === 'done' ? done : group === 'pushed' ? pushed : group === 'tstat' ? tstat : ostat;
+  if (value === null || value === undefined) delete bag[key]; else bag[key] = value;
+  queueSave(group, key, value);
+  render();
+}
+
+async function serverReset() {
+  setSaveStatus('pending', 'Resetting…');
+  try {
+    const r = await fetch('/api/plan-state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ action: 'reset' }),
+    });
+    if (!r.ok) throw new Error('http ' + r.status);
+    _pending.clear();
+    done = {}; pushed = {}; tstat = {}; ostat = {};
+    writeCache();
+    setSaveStatus('ok');
+    render();
+  } catch (e) {
+    setSaveStatus('fail', 'Reset failed');
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Rendering — attached file, with store/load replaced by the
+   setField / serverReset helpers above.
+   ───────────────────────────────────────────────────────────── */
+let bf="all",filter="all",sel=null,hideDone=false,view="tl";
+const pct=d=>(d/SPAN*100)+"%";
+const fmt=d=>{const x=new Date(START);x.setDate(x.getDate()+d);return x.toLocaleDateString("en-US",{month:"short",day:"numeric"})};
+const status=t=>done[t.id]?"done":t.pre.every(p=>done[p])?"ready":"blocked";
+const todayDay=Math.round((new Date().setHours(0,0,0,0)-START)/864e5);
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+function stats(){
+  const n=T.length,d=T.filter(t=>done[t.id]).length,r=T.filter(t=>status(t)==="ready").length;
+  const day=Math.min(Math.max(todayDay+1,0),SPAN);
+  const p=URGENT.filter(u=>pushed[u[0]]).length,signed=TARGETS.filter(t=>tstat[t[0]]==="Signed").length;
+  document.getElementById("stats").innerHTML=
+   `<div class="stat"><b>${day<1?"Not started":"Day "+day}</b><span>of 90</span></div>`+
+   `<div class="stat"><b>${d} / ${n}</b><span>tasks done</span></div>`+
+   `<div class="stat"><b>${r}</b><span>tasks ready to start</span></div>`+
+   `<div class="stat"><b>${p} / ${URGENT.length}</b><span>urgent stores pushed</span></div>`+
+   `<div class="stat"><b>${signed} / 6</b><span>new accounts signed</span></div>`+
+   `<div class="stat"><b>${BARS.filter(t=>ostat[t[0]]==="Signed").length} / 3</b><span>venues signed</span></div>`;
+}
+function controls(){
+  const c=document.getElementById("controls");
+  c.innerHTML=`<button class="chip" data-f="all" aria-pressed="${filter==="all"}">All tracks</button>`+
+   Object.entries(TRACKS).map(([k,v])=>`<button class="chip" data-f="${k}" aria-pressed="${filter===k}"><span class="sw" style="background:var(--${k})"></span>${v}</button>`).join("")+
+   `<span class="spacer"></span><button class="chip" id="hd" aria-pressed="${hideDone}">Hide done</button><button class="chip" id="rs">Reset progress</button>`;
+  c.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
+  c.querySelector("#hd").onclick=()=>{hideDone=!hideDone;render()};
+  c.querySelector("#rs").onclick=()=>{if(confirm("Clear all done marks, pushes and target statuses for everyone?")){serverReset()}};
+}
+function timeline(){
+  const s=sel&&byId[sel];
+  let h=`<div class="row head"><div class="lab">Task</div><div class="lane">`+
+    [[0,"Oct 16"],[16,"Nov 1"],[46,"Dec 1"],[77,"Jan 1"]].map(([d,n])=>`<span class="mlab" style="left:${pct(d)};top:7px;transform:none">${n}</span>`).join("")+`</div></div>`;
+  Object.entries(TRACKS).forEach(([k,v])=>{
+    if(filter!=="all"&&filter!==k)return;
+    const rows=T.filter(t=>t.track===k&&!(hideDone&&done[t.id])).sort((a,b)=>a.s-b.s||a.e-b.e);
+    if(!rows.length)return;
+    h+=`<div class="row track"><div class="lab">${v}</div></div>`;
+    rows.forEach(t=>{
+      const st=status(t);
+      const cls=["row",t.id===sel?"sel":"",s&&s.pre.includes(t.id)?"pre":"",s&&s.post.includes(t.id)?"post":"",done[t.id]?"done":""].join(" ");
+      h+=`<div class="${cls}" data-id="${t.id}" title="${esc(t.name)}"><div class="lab">${esc(t.name)}</div><div class="lane"><div class="bar ${st}" style="left:${pct(t.s)};width:${pct(Math.max(t.e-t.s,1.5))};background-color:var(--${t.track})"></div></div></div>`;
+    });
+  });
+  h+=`<div class="row head" style="height:38px;border:0"><div class="lab"></div><div class="lane">`+MS.map(([d,n],i)=>`<span class="mlab" style="left:${pct(d)};top:${i%2?20:4}px">${n}</span>`).join("")+`</div></div>`;
+  h+=`<div class="overlay">`+MS.map(([d])=>`<div class="ms" style="left:${pct(d)}"></div>`).join("")+(todayDay>=0&&todayDay<=SPAN?`<div class="today" style="left:${pct(todayDay)}"></div>`:"")+`</div>`;
+  const el=document.getElementById("tl");el.innerHTML=h;
+  el.querySelectorAll(".row[data-id]").forEach(r=>r.onclick=()=>{sel=r.dataset.id;render()});
+}
+function depRow(id){const t=byId[id],st=status(t);return `<div class="dep" data-go="${id}"><span>${esc(t.name)}</span><span class="tag t-${st}">${st}</span></div>`}
+function panel(){
+  const p=document.getElementById("panel"),dlg=document.getElementById("dlg");
+  if(!sel){if(dlg.open)dlg.close();return}
+  const t=byId[sel],st=status(t);
+  p.innerHTML=`<div class="dlg-top"><h2 id="dlg-title">${esc(t.name)}</h2><button class="x-btn" id="xb">Close</button></div>
+   <div class="meta">${TRACKS[t.track]} · ${fmt(t.s)} to ${fmt(t.e)} · <span class="tag t-${st}">${st}</span></div>
+   <h3 class="cap">Deliverable</h3><div class="deliv">${esc(t.deliv)}</div>
+   <h3 class="cap">Prerequisites</h3>${t.pre.length?t.pre.map(depRow).join(""):`<div class="empty">None. Can start now.</div>`}
+   <h3 class="cap">Unlocks</h3>${t.post.length?t.post.map(depRow).join(""):`<div class="empty">Nothing depends on this.</div>`}
+   <label class="check"><input type="checkbox" id="dn" ${done[t.id]?"checked":""}> Deliverable done</label>`;
+  p.querySelector("#dn").onchange=e=>setField('done', t.id, e.target.checked ? true : null);
+  p.querySelectorAll("[data-go]").forEach(d=>d.onclick=()=>{sel=d.dataset.go;render();p.scrollTop=0});
+  p.querySelector("#xb").onclick=()=>dlg.close();
+  if(!dlg.open)dlg.showModal();
+}
+function next(){
+  const r=T.filter(t=>status(t)==="ready"&&(filter==="all"||t.track===filter)).sort((a,b)=>a.s-b.s);
+  const el=document.getElementById("next");
+  el.innerHTML=r.length?r.map(t=>`<div class="nrow" data-go="${t.id}"><span class="d">${fmt(t.s)}</span><span class="x">${esc(t.name)}</span><span class="tag" style="color:var(--${t.track})">${TRACKS[t.track]}</span></div>`).join(""):`<div class="nrow"><span class="empty">Nothing ready in this view.</span></div>`;
+  el.querySelectorAll("[data-go]").forEach(d=>d.onclick=()=>{sel=d.dataset.go;render()});
+}
+function health(){
+  const sel_=(k,opts)=>{const v=ostat[k]||opts[0];return `<select data-o="${k}" aria-label="Status">${opts.map(s=>`<option ${s===v?"selected":""}>${s}</option>`).join("")}</select>`};
+  document.getElementById("urgent").innerHTML=URGENT.map(([k,s,r,w,wk])=>`<tr class="${pushed[k]?"ok":""}"><td><input type="checkbox" data-push="${k}" ${pushed[k]?"checked":""} aria-label="Push done at ${esc(s)}"></td><td>${esc(s)}</td><td>${r}</td><td>${w}</td><td>${wk}</td></tr>`).join("");
+  document.getElementById("watch").innerHTML=WATCH.map(([s,n])=>`<tr><td>${esc(s)}</td><td>${n}</td></tr>`).join("");
+  document.getElementById("dead").innerHTML=DEAD.map(([k,n])=>`<tr><td>${esc(n)}</td><td>${sel_(k,REASONS)}</td></tr>`).join("");
+  const money=v=>"$"+v.toFixed(2), red=w=>w===null?"<td></td>":`<td style="${w<120?"color:var(--red);font-weight:600":""}">$${w}</td>`;
+  const good=b=>!b[8]&&b[4]>=120&&b[5].filter(w=>w!==null&&w<120).length<=1;
+  const rows=BASE.filter(b=>bf==="all"||b[1]===bf).sort((a,b)=>a[8]-b[8]||a[4]-b[4]);
+  document.getElementById("bfilter").innerHTML=["all",...new Set(BASE.map(b=>b[1]))].map(r=>`<button class="chip" data-bf="${r}" aria-pressed="${bf===r}">${r==="all"?"All routes":r}</button>`).join("");
+  document.querySelectorAll("[data-bf]").forEach(b=>b.onclick=()=>{bf=b.dataset.bf;health()});
+  document.getElementById("baseline").innerHTML=rows.map(b=>{const [n,r,d,a,w,ws,sl,dw,dead]=b;return `<tr class="${dead?"ok":good(b)?"good":""}"><td>${esc(n)}${dead?" (dead)":""}</td><td>${r}</td><td>${d}</td><td>${money(a)}</td><td>$${w}</td>${ws.map(red).join("")}<td>${sl===null?"?":sl+"%"}</td></tr>`}).join("");
+  document.getElementById("dow").innerHTML=rows.filter(b=>!b[8]).map(b=>{const n=b[0],dw=b[7];const mx=Math.max(...dw);return `<tr class="${good(b)?"good":""}"><td>${esc(n)}</td>${dw.map(v=>`<td style="${v===mx?"font-weight:600":""}">${money(v)}</td>`).join("")}</tr>`}).join("");
+  document.getElementById("targets").innerHTML=TARGETS.map(([k,p,n,a,ph])=>{const v=tstat[k]||"Not pitched";return `<tr class="${v==="Passed"?"ok":""}"><td>${p}</td><td>${esc(n)}</td><td>${a}</td><td><a href="tel:+1${ph.replace(/-/g,"")}">${ph}</a></td><td><select data-t="${k}" aria-label="Status for ${esc(n)}">${STATUSES.map(s=>`<option ${s===v?"selected":""}>${s}</option>`).join("")}</select></td></tr>`}).join("");
+  const maps=n=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(n.replace(/[()]/g," ").replace(/\s+/g," ").trim()+", NY");
+  const tel=ph=>`<a href="tel:+1${ph.replace(/-/g,"")}">${ph}</a>`;
+  document.getElementById("drops").innerHTML=DROPS.map(([k,n,r,d,a,pc,c])=>{const act=/^\d/.test(c);return `<tr class="${ostat[k]?"ok":""}"><td>${act?`<input type="checkbox" data-ap="${k}" ${ostat[k]?"checked":""} aria-label="New drop in place at ${esc(n)}">`:""}</td><td>${esc(n)}</td><td>${r}</td><td>${d}</td><td>${a}</td><td>${pc}</td><td>${act?`<b>${c}</b>`:c}</td></tr>`}).join("");
+  document.getElementById("bars").innerHTML=BARS.map(([k,t,n,s,no])=>`<tr class="${ostat[k]==="Passed"?"ok":""}"><td>${t}</td><td><a href="${maps(n)}" target="_blank" rel="noopener">${esc(n)}</a></td><td>${s}</td><td>${esc(no)}</td><td>${sel_(k,STATUSES)}</td></tr>`).join("");
+  document.getElementById("suppliers").innerHTML=SUPPLIERS.map(([k,n,w,c,no])=>`<tr class="${ostat[k]==="Passed"?"ok":""}"><td>${n}</td><td>${w}</td><td>${c.startsWith("http")?`<a href="${c}" target="_blank" rel="noopener">Order page</a>`:tel(c)}</td><td>${no}</td><td>${sel_(k,SUP_STATUSES)}</td></tr>`).join("");
+  document.getElementById("approvals").innerHTML=APPROVALS.map(([k,n])=>`<tr class="${ostat[k]?"ok":""}"><td style="width:40px"><input type="checkbox" data-ap="${k}" ${ostat[k]?"checked":""} aria-label="${esc(n)}"></td><td>${esc(n)}</td></tr>`).join("");
+  document.querySelectorAll("[data-o]").forEach(s=>s.onchange=()=>setField('ostat', s.dataset.o, s.value));
+  document.querySelectorAll("[data-ap]").forEach(c=>c.onchange=()=>setField('ostat', c.dataset.ap, c.checked ? true : null));
+  document.querySelectorAll("[data-push]").forEach(c=>c.onchange=()=>setField('pushed', c.dataset.push, c.checked ? true : null));
+  document.querySelectorAll("[data-t]").forEach(s=>s.onchange=()=>setField('tstat', s.dataset.t, s.value));
+}
+
+function render(){stats();controls();timeline();panel();next();health()}
+
+/* ─────────────────────────────────────────────────────────────
+   BOOT — check the shared session, then start.
+   ───────────────────────────────────────────────────────────── */
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>People — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+
+.page { max-width: 920px; margin: 0 auto; padding: 56px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 72ch; margin: 0 0 32px; line-height: 1.5; }
+
+.card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+.row { display: grid; grid-template-columns: 160px 100px 1fr 120px 100px; gap: 10px; align-items: center; padding: 12px 20px; border-top: 1px solid var(--line); font-size: 14px; }
+.row:first-child { border-top: 0; }
+.row.header { background: rgba(0,0,0,0.1); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+.row .who { font-weight: 700; }
+.row .role { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+.handle-row { display: flex; align-items: center; gap: 6px; }
+.handle-row .at { color: var(--ink-3); font-size: 15px; }
+.handle-row input { flex: 1; background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 7px 10px; color: var(--ink); font-family: var(--body); font-size: 14px; }
+.handle-row input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+.handle-row input.dirty { border-color: var(--accent); background: rgba(212,182,98,0.08); }
+.bound { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
+.bound.yes { color: #5fd58c; border: 1px solid rgba(95,213,140,0.4); background: rgba(95,213,140,0.08); }
+.bound.no  { color: var(--ink-3); border: 1px solid var(--line-2); }
+.row-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.btn-sm { background: var(--accent); color: var(--ppf-black); border: 0; border-radius: 6px; padding: 6px 12px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+.chip { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.chip.ok   { color: #5fd58c; border: 1px solid rgba(95,213,140,0.4); background: rgba(95,213,140,0.08); }
+.chip.fail { color: #f47572; border: 1px solid rgba(244,117,114,0.4); background: rgba(244,117,114,0.08); }
+.note { font-size: 13px; color: var(--ink-3); margin-top: 16px; line-height: 1.6; }
+.note b { color: var(--ink-2); }
+
+@media (max-width: 820px) {
+  .row { grid-template-columns: 1fr; gap: 6px; }
+  .row.header { display: none; }
+  .row-actions { justify-content: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/updates" class="nav-link">Updates</a>
+          <a href="/ops/time-off" class="nav-link">Time Off</a>
+          <a href="/ops/stops" class="nav-link">Stops</a>
+          <a href="/ops/store" class="nav-link">Store</a>
+          <a href="/ops/shifts" class="nav-link">Shifts</a>
+          <a href="/ops/people" class="nav-link is-active">People</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+          <a href="/ops/standings" class="nav-link">Standings</a>
+        </nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Directory</div>
+    <h1 class="page-title">People</h1>
+    <p class="page-sub">Enter each person's Telegram <code>@handle</code> so the bot can @-mention them in audience-targeted updates and record their "Got it" taps. The handle is case-insensitive; the <b>Bound</b> chip turns green once they tap a button for the first time (the bot captures their user id automatically).</p>
+
+    <div class="card">
+      <div class="row header">
+        <div>Person</div>
+        <div>Role</div>
+        <div>Telegram handle</div>
+        <div>Bound</div>
+        <div></div>
+      </div>
+      <div id="rows"></div>
+    </div>
+
+    <div class="note">
+      <b>How to find your handle:</b> in Telegram, Settings → Edit profile → Username. If they don't have one yet, they can set one for free (and still show their real name in chats).
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let _people = [];
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') { location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin'); return; }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    $('#user-tag').textContent = me.name;
+    initApp();
+  } catch (e) { location.replace('/signin?next=' + next); }
+}
+boot();
+
+function initApp() {
+  $('#logout-btn').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  loadPeople();
+}
+
+async function loadPeople() {
+  try {
+    const r = await fetch('/api/schedule?resource=people', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    _people = (await r.json()).people || [];
+    render();
+  } catch (e) {
+    $('#rows').innerHTML = `<div class="row"><div>Could not load — ${esc(e.message)}</div></div>`;
+  }
+}
+
+function render() {
+  $('#rows').innerHTML = _people.map(p => `
+    <div class="row" data-id="${esc(p.id)}">
+      <div class="who">${esc(p.name)}</div>
+      <div class="role">${esc(p.role)}</div>
+      <div class="handle-row">
+        <span class="at">@</span>
+        <input type="text" data-k="handle" value="${esc(p.telegram_handle || '')}" placeholder="telegram_username" maxlength="40">
+      </div>
+      <div>
+        <span class="bound ${p.telegram_user_id ? 'yes' : 'no'}">${p.telegram_user_id ? 'Linked' : 'Pending'}</span>
+      </div>
+      <div class="row-actions">
+        <span class="chip" data-k="chip" hidden></span>
+        <button type="button" class="btn-sm" data-k="save" disabled>Save</button>
+      </div>
+    </div>
+  `).join('');
+  document.querySelectorAll('[data-id]').forEach(bindRow);
+}
+
+function bindRow(row) {
+  const id = row.dataset.id;
+  const orig = _people.find(p => p.id === id);
+  const inp = row.querySelector('[data-k="handle"]');
+  const btn = row.querySelector('[data-k="save"]');
+  const chip = row.querySelector('[data-k="chip"]');
+  const normalize = v => v.trim().replace(/^@/, '');
+  const dirty = () => {
+    const cur = normalize(inp.value);
+    const was = (orig.telegram_handle || '').trim();
+    const changed = cur.toLowerCase() !== was.toLowerCase();
+    btn.disabled = !changed;
+    inp.classList.toggle('dirty', changed);
+    chip.hidden = true;
+  };
+  inp.addEventListener('input', dirty);
+  btn.onclick = async () => {
+    const payload = { telegram_handle: normalize(inp.value) };
+    btn.disabled = true;
+    chip.hidden = true;
+    try {
+      const r = await fetch(`/api/schedule?resource=people&id=${encodeURIComponent(id)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || r.status);
+      Object.assign(orig, j.person);
+      chip.hidden = false; chip.className = 'chip ok'; chip.textContent = 'Saved';
+      dirty();
+      setTimeout(() => { chip.hidden = true; }, 1600);
+      // Re-render the row's "Bound" status to clear if we blanked it.
+      const bound = row.querySelector('.bound');
+      bound.className = 'bound ' + (orig.telegram_user_id ? 'yes' : 'no');
+      bound.textContent = orig.telegram_user_id ? 'Linked' : 'Pending';
+    } catch (e) {
+      chip.hidden = false; chip.className = 'chip fail'; chip.textContent = (e.message || 'error').slice(0, 40);
+      btn.disabled = false;
+    }
+  };
+}
+</script>
+</body>
+</html>

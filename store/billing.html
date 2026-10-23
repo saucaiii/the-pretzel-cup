@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Billing — Store Portal · PPF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<!-- Stripe.js — Plaid Link runs inside it; same origin as billing.html. -->
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+:root {
+  --green:#0D5237; --green-deep:#083521;
+  --gold:#D4B662; --gold-2:#F2E7A4;
+  --ink:#FFFFFF; --ink-2:rgba(255,255,255,0.78); --ink-3:rgba(255,255,255,0.55);
+  --bg-2:#083521; --line:rgba(255,255,255,0.12); --line-2:rgba(255,255,255,0.22);
+  --danger:#f47572; --good:#7ad692; --warn:#f4c25f; --info:#7fb3d5;
+  --display:'Anton','Impact',sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { background: var(--green); color: var(--ink); font-family: var(--body);
+  min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) 14px max(48px, env(safe-area-inset-bottom)); }
+
+/* Mobile tap baseline — see /store/signin.html for rationale. */
+button, [role="button"], input[type="button"], input[type="submit"], a.back, a.brand {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 720px; margin: 0 auto; }
+
+#curtain { position: fixed; inset: 0; background: var(--green); z-index: 9999;
+  display: grid; place-items: center; color: var(--ink-3); font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase; font-family: var(--display); }
+
+header.top { display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0 16px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.brand img { width: 36px; height: 32px; border-radius: 4px; }
+.brand .t { font-family: var(--display); font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); line-height: 1; }
+.brand .s { font-size: 10px; letter-spacing: 0.18em; color: var(--ink-3); text-transform: uppercase; }
+.back { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2);
+  font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer; text-decoration: none;
+  transition: transform 80ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease; }
+.back:hover { color: var(--ink); border-color: var(--gold); }
+.back:active { transform: scale(0.96); background: rgba(0,0,0,0.2); }
+
+h1 { font-family: var(--display); font-weight: 400; font-size: 32px;
+  letter-spacing: 0.02em; text-transform: uppercase; margin: 0 0 2px; line-height: 1.05; }
+.sub { color: var(--ink-3); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; }
+
+.card {
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px; margin: 14px 0;
+}
+h2 { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--gold); margin: 0 0 10px; }
+
+/* Connect-bank CTA (prominent before setup, slim once connected) */
+.cta-bank {
+  display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center;
+  background: linear-gradient(135deg, rgba(212,182,98,0.14), rgba(212,182,98,0.02) 70%);
+  border: 1px solid rgba(212,182,98,0.3);
+}
+.cta-bank.connected { background: rgba(122,214,146,0.08); border-color: rgba(122,214,146,0.3); }
+.cta-bank .label { font: 700 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.cta-bank .value { font-family: var(--display); font-size: 20px; margin-top: 2px; color: var(--ink); }
+.cta-bank .btn-connect {
+  background: var(--gold); color: #000; border: 0; cursor: pointer;
+  font: 400 14px var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 12px 18px; border-radius: 10px;
+  transition: transform 80ms ease, background 120ms ease;
+}
+.cta-bank .btn-connect:hover { background: var(--gold-2); }
+.cta-bank .btn-connect:active:not(:disabled) { transform: scale(0.98); background: var(--gold-2); }
+.cta-bank .btn-connect:disabled { opacity: 0.6; cursor: wait; }
+.cta-bank .btn-replace {
+  background: transparent; border: 1px solid var(--line-2); color: var(--ink-2);
+  font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
+  transition: transform 80ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.cta-bank .btn-replace:hover { color: var(--ink); border-color: var(--gold); }
+.cta-bank .btn-replace:active { transform: scale(0.96); background: rgba(0,0,0,0.2); }
+
+/* Current cycle totals (hero number). */
+.cycle-amount { font-family: var(--display); font-size: 44px; color: var(--gold);
+  letter-spacing: 0.02em; line-height: 1; margin: 4px 0; }
+.cycle-meta { color: var(--ink-2); font-size: 13px; }
+.cycle-meta .b { color: var(--ink); font-weight: 700; }
+.cycle-note { font-size: 12px; color: var(--ink-3); margin-top: 10px; line-height: 1.5; }
+
+/* Monthly upsell banner (weekly stops only). */
+.upsell { padding: 14px; background: rgba(127,179,213,0.08);
+  border: 1px solid rgba(127,179,213,0.3); border-radius: 10px;
+  font-size: 13px; color: var(--ink-2); line-height: 1.5; margin: 14px 0; }
+.upsell .b { color: var(--ink); font-weight: 700; }
+
+/* Invoice list */
+.inv-list { display: flex; flex-direction: column; gap: 10px; }
+.inv-row { background: rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 14px; font-size: 13px; }
+.inv-row .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.inv-row .period { font-weight: 700; color: var(--ink); }
+.inv-row .amount { font-family: var(--display); font-size: 20px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.inv-row .r2 { color: var(--ink-3); font-size: 12px; margin-top: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inv-row .r2 .units { font-variant-numeric: tabular-nums; }
+.inv-row .fail-msg { color: var(--danger); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+
+.chip { display: inline-block; font: 700 10px var(--body); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.chip.paid       { color: var(--good);   border-color: var(--good);   background: rgba(122,214,146,0.1); }
+.chip.processing { color: var(--info);   border-color: var(--info);   background: rgba(127,179,213,0.1); }
+.chip.scheduled  { color: var(--gold);   border-color: var(--gold);   background: rgba(212,182,98,0.1); }
+.chip.failed     { color: var(--danger); border-color: var(--danger); background: rgba(244,117,114,0.1); }
+.chip.void       { color: var(--ink-3);  border-color: var(--line-2); background: rgba(0,0,0,0.2); }
+
+.empty { color: var(--ink-3); font-size: 13px; padding: 12px 0; text-align: center; }
+.err { color: var(--danger); font-size: 13px; margin: 10px 0; }
+.msg { color: var(--good); font-size: 13px; margin: 10px 0; }
+
+.footlinks { text-align: center; margin-top: 22px; color: var(--ink-3); font-size: 12px; }
+.footlinks a { color: var(--gold); text-decoration: none; margin: 0 10px; }
+
+@media (max-width: 520px) {
+  .cta-bank { grid-template-columns: 1fr; }
+  .cycle-amount { font-size: 36px; }
+}
+</style>
+</head>
+<body>
+
+<div id="curtain">Loading…</div>
+
+<div class="wrap" id="app" style="display:none">
+  <header class="top">
+    <a class="brand" href="/store/dashboard">
+      <img src="/ppf-logo.jpg" alt="">
+      <div>
+        <div class="t">Pretzel Cup</div>
+        <div class="s">Store Portal · Billing</div>
+      </div>
+    </a>
+    <a class="back" href="/store/dashboard">← Dashboard</a>
+  </header>
+
+  <h1 id="store-name">—</h1>
+  <div class="sub" id="store-sub">Billing &amp; settlement</div>
+
+  <!-- Connect-bank CTA / connected status -->
+  <section class="card" id="pm-card">
+    <div class="cta-bank" id="cta-bank">
+      <div>
+        <div class="label" id="pm-label">Bank account</div>
+        <div class="value" id="pm-value">—</div>
+      </div>
+      <div id="pm-action"></div>
+    </div>
+    <div class="err" id="pm-err" hidden></div>
+    <div class="msg" id="pm-msg" hidden></div>
+    <div class="cycle-note" id="pm-note" style="margin-top:12px;"></div>
+  </section>
+
+  <!-- Current cycle totals -->
+  <section class="card" id="cycle-card" style="display:none">
+    <h2>Current cycle</h2>
+    <div class="cycle-amount" id="cycle-amount">$0.00</div>
+    <div class="cycle-meta" id="cycle-meta">— pretzels this cycle</div>
+    <div class="cycle-note" id="cycle-note">Your next pull is scheduled by Pretzel Cup — nothing to click here.</div>
+  </section>
+
+  <!-- Monthly upsell (weekly stops) -->
+  <section id="upsell" class="upsell" style="display:none"></section>
+
+  <!-- Invoice list -->
+  <section class="card">
+    <h2>Settlement history</h2>
+    <div id="inv-wrap">
+      <div class="empty" id="inv-empty">No settlements yet. Your first weekly invoice will appear here once your cycle closes.</div>
+      <div class="inv-list" id="inv-list" style="display:none"></div>
+    </div>
+  </section>
+
+  <p class="footlinks">
+    Questions? <a id="foot-call" href="tel:">Call us</a> ·
+    <a id="foot-text" href="sms:">Text us</a>
+  </p>
+</div>
+
+<script>
+const money = c => '$' + ((c || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = iso => {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-').map(n => parseInt(n,10));
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+};
+const fmtPeriod = (s, e) => `${fmtDate(s)} – ${fmtDate(e)}`;
+
+// Stripe publishable key is served inside the payment-method payload
+// (not a secret, but no need to pin it in HTML). boot() populates this.
+let STRIPE_PK = '';
+let stripe = null;
+let dashboardData = null;
+let pmState = null;
+
+async function boot() {
+  try {
+    // Dashboard tells us the store's identity + operator phone + pricing +
+    // this-cycle totals (we reuse this_week / this_month depending on cadence).
+    const [dR, pmR, invR] = await Promise.all([
+      fetch('/api/store?resource=dashboard', { credentials: 'same-origin', cache: 'no-store' }),
+      fetch('/api/store?resource=payment-method', { credentials: 'same-origin', cache: 'no-store' }),
+      fetch('/api/store?resource=invoices&limit=20', { credentials: 'same-origin', cache: 'no-store' }),
+    ]);
+    if (dR.status === 401) { location.href = '/store/signin'; return; }
+    const d = await dR.json();   if (!dR.ok)  throw new Error(d.error || 'load failed');
+    const pm = await pmR.json(); if (!pmR.ok) throw new Error(pm.error || 'pm load failed');
+    const inv = await invR.json(); if (!invR.ok) throw new Error(inv.error || 'invoices load failed');
+    dashboardData = d;
+    pmState = pm;
+    STRIPE_PK = pm.stripe_publishable_key || '';
+    render(d, pm, inv.invoices || []);
+  } catch (e) {
+    document.getElementById('curtain').textContent = 'Could not load.';
+    console.error(e);
+    return;
+  }
+  document.getElementById('curtain').style.display = 'none';
+  document.getElementById('app').style.display = '';
+}
+
+function render(d, pm, invoices) {
+  const s = d.stop;
+  document.getElementById('store-name').textContent = s.display_name;
+
+  const phone = d.operator_phone || '';
+  if (phone) {
+    document.getElementById('foot-call').href = 'tel:' + phone;
+    document.getElementById('foot-text').href = 'sms:' + phone;
+  }
+
+  renderPaymentMethod(pm);
+  renderCurrentCycle(d, pm, invoices);
+  renderUpsell(d, pm, invoices);
+  renderInvoiceList(invoices);
+}
+
+function renderPaymentMethod(pm) {
+  const label = document.getElementById('pm-label');
+  const value = document.getElementById('pm-value');
+  const action = document.getElementById('pm-action');
+  const bank = document.getElementById('cta-bank');
+  const note = document.getElementById('pm-note');
+
+  if (pm.payment_mode !== 'electronic') {
+    label.textContent = 'Bank account';
+    value.textContent = 'Not set up';
+    action.innerHTML = '';
+    bank.classList.remove('connected');
+    note.textContent = 'Your account is on cash settlement. Ask Pretzel Cup to switch you to electronic billing if you want to pay via ACH.';
+    return;
+  }
+  if (pm.connected) {
+    label.textContent = 'Bank account · Connected';
+    value.textContent = pm.bank_last4 ? `•••• ${pm.bank_last4}` : 'Connected';
+    bank.classList.add('connected');
+    action.innerHTML = `<button type="button" class="btn-replace" id="btn-replace">Replace</button>`;
+    document.getElementById('btn-replace').addEventListener('click', connectBank);
+    note.textContent = pm.connected_at
+      ? `Connected ${new Date(pm.connected_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. Pretzel Cup pulls your ${pm.billing_cadence || 'cycle'} invoice automatically.`
+      : `Pretzel Cup pulls your ${pm.billing_cadence || 'cycle'} invoice automatically.`;
+  } else {
+    label.textContent = 'Connect your bank';
+    value.textContent = 'Takes about 60 seconds';
+    bank.classList.remove('connected');
+    action.innerHTML = `<button type="button" class="btn-connect" id="btn-connect">Connect bank →</button>`;
+    document.getElementById('btn-connect').addEventListener('click', connectBank);
+    note.innerHTML = 'We use <b>Plaid</b> inside Stripe to verify your account instantly — no routing numbers to type. Pretzel Cup never sees your bank login.';
+  }
+}
+
+function renderCurrentCycle(d, pm, invoices) {
+  // "Current cycle" is the amount that will become the next invoice. We
+  // approximate from the dashboard's this_week / this_month totals.
+  if (pm.payment_mode !== 'electronic') {
+    document.getElementById('cycle-card').style.display = 'none';
+    return;
+  }
+  const T = d.totals || {};
+  const cadence = pm.billing_cadence || 'weekly';
+  const t = cadence === 'monthly' ? T.this_month : T.this_week;
+  if (!t) {
+    document.getElementById('cycle-card').style.display = 'none';
+    return;
+  }
+  document.getElementById('cycle-card').style.display = '';
+  document.getElementById('cycle-amount').textContent = money(t.gross_cents || 0);
+  document.getElementById('cycle-meta').innerHTML = `
+    <span class="b">${t.singles_sold || 0}</span> singles ·
+    <span class="b">${t.doubles_sold || 0}</span> doubles ·
+    <span class="b">${t.deliveries || 0}</span> ${t.deliveries === 1 ? 'delivery' : 'deliveries'}
+  `;
+  document.getElementById('cycle-note').textContent =
+    cadence === 'monthly'
+      ? 'This runs on month-end. We review each invoice before pulling.'
+      : 'This runs every Monday. We review each invoice before pulling.';
+}
+
+function renderUpsell(d, pm, invoices) {
+  const el = document.getElementById('upsell');
+  if (pm.payment_mode !== 'electronic' || pm.billing_cadence !== 'weekly') { el.style.display = 'none'; return; }
+  // Rough yearly fee estimate at 0.8% capped $5/pull on ACH.
+  const weekly = (d.totals && d.totals.this_week && d.totals.this_week.gross_cents) || 0;
+  if (weekly <= 0) { el.style.display = 'none'; return; }
+  const fee = Math.min(500, Math.round(weekly * 0.008)); // cents per pull
+  const yearlyWeekly = fee * 52;
+  const yearlyMonthly = Math.min(500, Math.round(weekly * 4.33 * 0.008)) * 12;
+  const saves = Math.max(0, yearlyWeekly - yearlyMonthly);
+  if (saves < 500) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `
+    <div><span class="b">Switch to monthly?</span> Your weekly invoices average ${money(weekly)}.
+    Monthly pulls save roughly ${money(saves)}/yr in processing fees — Pretzel Cup absorbs those,
+    but we'd be glad to pass the savings on if you'd rather bill monthly.</div>
+    <div style="margin-top:8px;">Ask us to switch via <a href="/store/request" style="color:var(--gold)">Request a change</a> or call.</div>
+  `;
+}
+
+function renderInvoiceList(invoices) {
+  const wrap = document.getElementById('inv-list');
+  const empty = document.getElementById('inv-empty');
+  if (!invoices.length) { wrap.style.display = 'none'; empty.style.display = ''; return; }
+  empty.style.display = 'none'; wrap.style.display = '';
+  wrap.innerHTML = invoices.map(i => {
+    const chipClass =
+      i.status === 'paid'       ? 'paid'
+    : i.status === 'processing' ? 'processing'
+    : i.status === 'approved'   ? 'scheduled'
+    : i.status === 'failed'     ? 'failed'
+    : i.status === 'void'       ? 'void'
+    : '';
+    const chipLabel =
+      i.status === 'paid'       ? 'Paid'
+    : i.status === 'processing' ? 'Processing'
+    : i.status === 'approved'   ? 'Scheduled'
+    : i.status === 'failed'     ? 'Failed'
+    : i.status === 'void'       ? 'Void'
+    : i.status;
+    const paidWhen = i.paid_at
+      ? ` · Paid ${new Date(i.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      : '';
+    return `
+      <div class="inv-row">
+        <div class="r1">
+          <span class="period">${esc(fmtPeriod(i.period_start, i.period_end))}</span>
+          <span class="amount">${money(i.total_cents)}</span>
+        </div>
+        <div class="r2">
+          <span class="chip ${chipClass}">${esc(chipLabel)}</span>
+          <span class="units">${i.singles_count || 0} singles · ${i.doubles_count || 0} doubles</span>
+          <span>${esc(paidWhen)}</span>
+        </div>
+        ${i.status === 'failed' && (i.failure_message || i.failure_code) ? `
+          <div class="fail-msg">${esc(i.failure_code || '')}${i.failure_code && i.failure_message ? ': ' : ''}${esc(i.failure_message || 'Payment failed. Pretzel Cup will follow up.')}</div>
+        ` : ''}
+      </div>`;
+  }).join('');
+}
+
+async function connectBank() {
+  const btn = document.getElementById('btn-connect') || document.getElementById('btn-replace');
+  const err = document.getElementById('pm-err');
+  const msg = document.getElementById('pm-msg');
+  err.hidden = true; msg.hidden = true;
+
+  if (!STRIPE_PK) {
+    err.textContent = 'Stripe is not configured yet — please check back later.';
+    err.hidden = false;
+    return;
+  }
+  if (!stripe) stripe = Stripe(STRIPE_PK);
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; }
+  try {
+    const r = await fetch('/api/store?resource=payment-setup', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'setup failed');
+
+    // Open Plaid Link (via Stripe). Account holder name defaults to the
+    // store's display name; manager types their legal name in the sheet.
+    const name = dashboardData.stop.display_name;
+    const { setupIntent, error } = await stripe.collectBankAccountForSetup({
+      clientSecret: j.client_secret,
+      params: {
+        payment_method_type: 'us_bank_account',
+        payment_method_data: {
+          billing_details: { name },
+        },
+      },
+      expand: ['payment_method'],
+    });
+    if (error) { err.textContent = error.message || 'Bank connect failed'; err.hidden = false; return; }
+    if (!setupIntent) { err.textContent = 'Bank connect cancelled.'; err.hidden = false; return; }
+    if (setupIntent.status === 'requires_payment_method') {
+      err.textContent = 'No account was linked.'; err.hidden = false; return;
+    }
+    msg.textContent = 'Bank linked. Pretzel Cup will see this on their side within a few minutes.';
+    msg.hidden = false;
+    // Refresh pm state so the UI flips to "Connected".
+    setTimeout(boot, 2000);
+  } catch (e) {
+    err.textContent = e.message || 'Could not open Plaid.';
+    err.hidden = false;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = btn.id === 'btn-connect' ? 'Connect bank →' : 'Replace'; }
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

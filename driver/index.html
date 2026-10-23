@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Driver — PPF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  --green:#0D5237; --green-deep:#083521;
+  --gold:#D4B662; --gold-2:#F2E7A4;
+  --ink:#FFFFFF; --ink-2:rgba(255,255,255,0.80); --ink-3:rgba(255,255,255,0.55);
+  --line:rgba(255,255,255,0.12); --line-2:rgba(255,255,255,0.22);
+  --panel:#0F3B29; --panel-2:#0a2d1f;
+  --ok:#5fd58c; --warn:#f4c25f; --bad:#f47572;
+  --display: 'Anton','Impact',sans-serif;
+  --body: 'Inter',system-ui,sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--green); color: var(--ink); font: 15px/1.5 var(--body); min-height: 100dvh; overflow-x: hidden; }
+
+/* Mobile tap baseline — kills the 300ms double-tap-zoom race on controls
+   WITHOUT disabling pinch-zoom on page content. Also turns off the default
+   iOS tap-flash so the custom :active states own the feedback. */
+button, [role="button"], input[type="button"], input[type="submit"],
+.stop a.name, .stop .addr a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.boot { position: fixed; inset: 0; display: grid; place-items: center; background: var(--green); color: var(--ink-3); font: 400 11px var(--display); letter-spacing: 0.2em; text-transform: uppercase; z-index: 100; }
+.app { display: none; }
+.app.is-ready { display: block; }
+
+.ops-banner {
+  background: #000; color: var(--gold);
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  font: 400 11px var(--display);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.ops-banner .who { color: var(--ink-3); font-size: 10px; }
+
+header.top { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+header.top .brand { font: 400 15px var(--display); letter-spacing: 0.12em; text-transform: uppercase; margin-right: auto; display: flex; align-items: center; gap: 10px; }
+header.top .brand img { width: 36px; height: 32px; border-radius: 4px; }
+header.top .brand small { display: block; font: 600 10px var(--body); letter-spacing: 0.16em; color: var(--ink-3); margin-top: 3px; }
+header.top .action { font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 999px; background: transparent; cursor: pointer; transition: transform 80ms ease, background 120ms ease, color 120ms ease, border-color 120ms ease; }
+header.top .action:hover { color: var(--gold); border-color: var(--gold); }
+header.top .action:active { transform: scale(0.96); background: rgba(0,0,0,0.2); }
+
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; overscroll-behavior-x: contain; padding: 0 10px; border-bottom: 1px solid var(--line); background: rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 5; scrollbar-width: none; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button { flex: none; white-space: nowrap; background: transparent; border: 0; color: var(--ink-2); font: 400 13px var(--display); letter-spacing: 0.14em; text-transform: uppercase; padding: 14px 14px; cursor: pointer; border-bottom: 3px solid transparent; transition: color 100ms ease, background 100ms ease; }
+nav.tabs button[aria-selected="true"] { color: var(--gold); border-bottom-color: var(--gold); }
+nav.tabs button:active { background: rgba(0,0,0,0.25); color: var(--gold); }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 20px 16px 60px; }
+section.view { display: none; }
+section.view.is-active { display: block; }
+
+.hero-date { font: 400 11px var(--display); letter-spacing: 0.22em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+.hero-h { font: 400 clamp(40px, 7vw, 60px) var(--display); line-height: 0.95; margin: 0 0 20px; letter-spacing: 0.01em; text-transform: uppercase; text-wrap: balance; }
+
+/* Route picker row */
+.route-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.route-row button {
+  font: 400 13px var(--display); letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 10px 14px; border-radius: 999px; border: 1px solid var(--line-2);
+  background: transparent; color: var(--ink-2); cursor: pointer;
+  transition: transform 80ms ease, background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.route-row button[aria-pressed="true"] { background: var(--gold); color: #000; border-color: var(--gold); }
+.route-row button:active { transform: scale(0.96); background: rgba(0,0,0,0.25); }
+.route-row button[aria-pressed="true"]:active { background: var(--gold-2); }
+
+.route-head {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 18px; margin-bottom: 14px;
+  display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: baseline;
+}
+.route-head .fact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.route-head .fact .lbl { font: 400 10px var(--display); letter-spacing: 0.16em; color: var(--ink-3); text-transform: uppercase; }
+.route-head .fact .val { font: 400 20px var(--display); letter-spacing: 0.02em; color: var(--ink); }
+.route-head .fact.money .val { color: var(--gold); font-variant-numeric: tabular-nums; }
+
+h2.sect { font: 400 13px var(--display); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 20px 0 10px; }
+
+.prior-banner {
+  background: rgba(212,182,98,0.08); border: 1px solid rgba(212,182,98,0.35);
+  border-radius: 10px; padding: 10px 14px; margin: 10px 0 0;
+  color: var(--gold-2); font-size: 13px; line-height: 1.5;
+}
+.prior-banner b { color: var(--gold); font-weight: 700; }
+.prior-banner small { display: block; color: var(--ink-3); margin-top: 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--display); }
+
+.hist { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+.hist .top-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hist .date { font: 400 20px var(--display); color: var(--ink); }
+.hist .route { font: 400 11px var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); margin-left: 10px; }
+.hist .total { font: 400 20px var(--display); color: var(--gold); font-variant-numeric: tabular-nums; }
+.hist .meta { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.hist .meta b { color: var(--ink-2); font-weight: 600; }
+
+/* Stops list */
+.stops { display: flex; flex-direction: column; gap: 10px; }
+.stop {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px;
+  display: grid; grid-template-columns: 36px 1fr; gap: 10px 14px;
+  align-items: start;
+}
+.stop .num { font: 400 24px var(--display); line-height: 1; color: var(--gold); text-align: right; padding-top: 2px; font-variant-numeric: tabular-nums; }
+.stop .body { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.stop .name-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.stop .name { font: 700 17px var(--body); line-height: 1.2; }
+.stop a.name { color: var(--ink); text-decoration: none; border-bottom: 1px dashed var(--line-2); }
+.stop a.name:active, .stop a.name:focus-visible { color: var(--gold); border-bottom-color: var(--gold); }
+.stop .town { font-size: 13px; color: var(--ink-3); }
+.stop .map-tap { font: 400 10px var(--display); letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase; margin-left: 6px; opacity: 0.6; }
+.stop .drop-pill { font: 400 11px var(--display); letter-spacing: 0.14em; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); text-transform: uppercase; white-space: nowrap; }
+.stop .shorts-pill {
+  font: 400 11px var(--display); letter-spacing: 0.16em; padding: 4px 10px;
+  border-radius: 999px; border: 1px solid rgba(244,194,95,0.5);
+  color: var(--warn); background: rgba(244,194,95,0.12);
+  text-transform: uppercase; white-space: nowrap; font-weight: 700;
+}
+.stop.is-shorts { border-color: rgba(244,194,95,0.5); background: linear-gradient(180deg, rgba(244,194,95,0.06), var(--panel) 60%); }
+.stop .addr { font-size: 13px; line-height: 1.4; }
+.stop .addr a { color: var(--ink-3); text-decoration: none; border-bottom: 1px dashed transparent; }
+.stop .addr a:hover, .stop .addr a:active, .stop .addr a:focus-visible { color: var(--gold); border-bottom-color: var(--gold); }
+.stop .meta { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.stop .meta b { color: var(--ink); font-weight: 700; }
+.stop .note { font-size: 13px; color: var(--warn); background: rgba(244,194,95,0.08); border: 1px solid rgba(244,194,95,0.3); border-radius: 8px; padding: 7px 10px; }
+.stop .sold {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 2px;
+}
+.stop .sold .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stop .sold label { font: 400 10px var(--display); letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.stop .sold .max-hint { color: var(--ink-3); opacity: 0.7; letter-spacing: 0.1em; }
+.stop .sold input.over { border-color: var(--bad); background: rgba(244,117,114,0.08); }
+.stop .sold input {
+  font: 500 22px var(--body); padding: 12px 14px; border-radius: 8px;
+  border: 1px solid var(--line-2); background: var(--panel-2); color: var(--ink);
+  width: 100%; font-variant-numeric: tabular-nums; text-align: center;
+}
+.stop .sold input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
+.stop .sub-bill {
+  font: 400 11px var(--display); letter-spacing: 0.14em; color: var(--gold);
+  text-align: right; text-transform: uppercase; margin-top: 4px;
+}
+.stop .sub-bill b { font-weight: 400; color: var(--ink); font-size: 14px; margin-left: 6px; }
+.stop.posted { border-color: var(--ok); }
+.stop.posted .sub-bill { color: var(--ok); }
+.stop .prior-hint {
+  font: 400 10px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; display: inline-block;
+  border: 1px solid rgba(95,213,140,0.45); color: var(--ok); background: rgba(95,213,140,0.08);
+  align-self: flex-start;
+}
+.stop.edited .prior-hint { border-color: var(--warn); color: var(--warn); background: rgba(244,194,95,0.08); }
+.stop.edited { border-color: var(--warn); }
+.stop.edited .sub-bill { color: var(--warn); }
+
+/* Submit bar — bottom of the Route tab, sticks on scroll */
+.submit-bar {
+  position: sticky; bottom: 0;
+  margin: 18px -16px -20px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(13,82,55,0) 0%, var(--green) 25%);
+  display: flex; flex-direction: column; gap: 8px; align-items: stretch; z-index: 4;
+}
+.submit-bar button {
+  width: 100%; padding: 16px 18px; border: 0; border-radius: 12px;
+  font: 400 16px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--gold); color: #000; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  transition: transform 80ms ease, background 120ms ease, filter 120ms ease;
+}
+.submit-bar button:active:not(:disabled) { transform: scale(0.98); filter: brightness(0.92); }
+.submit-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+.submit-bar button.sent { background: var(--ok); color: #000; }
+.submit-bar .status { font: 400 12px var(--display); letter-spacing: 0.14em; text-transform: uppercase; text-align: center; color: var(--ink-3); min-height: 14px; }
+.submit-bar .status.ok { color: var(--ok); }
+.submit-bar .status.fail { color: var(--bad); }
+
+.total-strip {
+  margin-top: 18px; padding: 16px 18px;
+  background: #000; border: 1px solid var(--gold); border-radius: 12px;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.total-strip .lbl { font: 400 12px var(--display); letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase; }
+.total-strip .val { font: 400 28px var(--display); color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.total-strip .sub { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+
+/* Updates feed — copied from baker */
+.upd { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+.upd-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; font: 400 10px var(--display); letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.chip.ac { color: var(--gold); border-color: rgba(212,182,98,0.35); background: rgba(212,182,98,0.08); }
+.chip.ok { color: var(--ok); border-color: rgba(95,213,140,0.35); background: rgba(95,213,140,0.08); }
+.upd-title { font: 700 16px var(--body); line-height: 1.3; margin: 0; color: var(--ink); }
+.upd-body { font-size: 14px; color: var(--ink-2); line-height: 1.55; margin: 0; }
+.upd-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; font-size: 12px; color: var(--ink-3); flex-wrap: wrap; }
+.upd-ack-btn { font: 400 12px var(--display); letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border: 1px solid var(--gold); color: var(--gold); background: transparent; border-radius: 999px; cursor: pointer; transition: transform 80ms ease, background 120ms ease, color 120ms ease; }
+.upd-ack-btn:hover { background: var(--gold); color: #000; }
+.upd-ack-btn:active:not(:disabled) { transform: scale(0.96); background: var(--gold-2); color: #000; }
+.upd-ack-btn:disabled { cursor: default; color: var(--ok); border-color: rgba(95,213,140,0.4); background: rgba(95,213,140,0.08); }
+.empty { color: var(--ink-3); font-size: 14px; text-align: center; padding: 32px 10px; }
+
+/* Schedule */
+.wk-nav { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.wk-nav b { font: 400 14px var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin-right: auto; }
+.wk-nav button { font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase; padding: 7px 12px; border: 1px solid var(--line-2); color: var(--ink-2); background: transparent; border-radius: 999px; cursor: pointer; transition: transform 80ms ease, background 120ms ease; }
+.wk-nav button[aria-pressed="true"] { background: var(--gold); color: #000; border-color: var(--gold); }
+.wk-nav button:active { transform: scale(0.96); background: rgba(0,0,0,0.2); }
+.sched-wrap { overflow-x: auto; overscroll-behavior-x: contain; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table.sched { width: 100%; border-collapse: collapse; min-width: 540px; font-size: 13px; }
+table.sched th, table.sched td { padding: 8px 8px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+table.sched th:first-child, table.sched td:first-child { text-align: left; padding-left: 14px; }
+table.sched th { font: 400 11px var(--display); letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+table.sched th.today { color: var(--gold); border-bottom-color: var(--gold); }
+table.sched td.on { background: rgba(95,213,140,0.1); font-weight: 700; color: var(--ok); font-size: 12px; }
+table.sched td.off { background: rgba(244,117,114,0.1); color: var(--bad); font-size: 11px; font-weight: 700; }
+table.sched td.cov { background: rgba(244,194,95,0.14); color: var(--warn); font-size: 11px; font-weight: 700; }
+table.sched tr.group td { background: transparent; font: 400 10px var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); padding-top: 14px; }
+table.sched td b { color: var(--ink); font-weight: 700; }
+table.sched td .sub { display: block; font: 500 11px var(--body); color: var(--ink-3); margin-top: 2px; }
+
+/* Time off */
+.form { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.form label { display: flex; flex-direction: column; gap: 5px; font: 400 11px var(--display); letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+.form input, .form select, .form textarea { font: 500 15px var(--body); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line-2); background: #0a2d1f; color: var(--ink); }
+.form textarea { min-height: 70px; resize: vertical; }
+.form .err { color: var(--bad); font-size: 13px; margin: 0; min-height: 18px; }
+.form button { background: var(--gold); color: #000; border: 0; padding: 12px 18px; border-radius: 10px; font: 400 13px var(--display); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; transition: transform 80ms ease, background 120ms ease; }
+.form button:hover { background: var(--gold-2); }
+.form button:active:not(:disabled) { transform: scale(0.97); background: var(--gold-2); }
+.form button:disabled { opacity: 0.5; cursor: not-allowed; }
+.req { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; }
+.req .d { font: 400 15px var(--display); letter-spacing: 0.04em; }
+.req .meta { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.req .pill { font: 400 10px var(--display); letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.req .pending { color: var(--warn); }
+.req .approved { color: var(--ok); }
+.req .denied { color: var(--bad); }
+
+/* Change PIN dialog */
+dialog.pin-dlg { background: var(--panel); color: var(--ink); border: 1px solid var(--gold); border-radius: 14px; padding: 24px 24px 20px; width: min(360px, calc(100vw - 32px)); box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6); font-family: var(--body); }
+dialog.pin-dlg::backdrop { background: rgba(0,0,0,0.45); }
+.pin-dlg h3 { font: 400 14px var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin: 0 0 10px; }
+.pin-dlg p { margin: 0 0 14px; font-size: 14px; color: var(--ink-2); }
+.pin-dlg .err { color: var(--bad); font-size: 13px; min-height: 18px; margin: 0 0 10px; }
+.pin-dlg input { font: 500 18px var(--body); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line-2); background: #0a2d1f; color: var(--ink); width: 100%; letter-spacing: 0.25em; text-align: center; touch-action: manipulation; }
+.pin-dlg .btns { display: flex; gap: 8px; margin-top: 14px; }
+.pin-dlg .btns button { flex: 1; font: 400 13px var(--display); letter-spacing: 0.14em; text-transform: uppercase; padding: 11px 10px; border-radius: 10px; cursor: pointer; transition: transform 80ms ease, background 120ms ease; }
+.pin-dlg .btns button:active { transform: scale(0.97); }
+.pin-dlg .ghost { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); }
+.pin-dlg .ghost:active { background: rgba(0,0,0,0.25); }
+.pin-dlg .prim { background: var(--gold); color: #000; border: 0; }
+.pin-dlg .prim:active { background: var(--gold-2); }
+
+footer { color: var(--ink-3); font-size: 11px; text-align: center; padding: 24px 10px; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<div class="boot" id="boot">Loading…</div>
+
+<div class="app" id="app">
+  <div class="ops-banner">
+    <span>PPF Driver</span>
+    <span class="who" id="who">—</span>
+  </div>
+
+  <header class="top">
+    <div class="brand">
+      <img src="/ppf-logo.jpg" alt="">
+      <span>Driver<small>Philly Pretzel Factory</small></span>
+    </div>
+    <button class="action" type="button" id="change-pin">Change PIN</button>
+    <button class="action" type="button" id="signout">Sign Out</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-v="route"    aria-selected="true">Route</button>
+    <button role="tab" data-v="history"  aria-selected="false">History</button>
+    <button role="tab" data-v="updates"  aria-selected="false">Updates</button>
+    <button role="tab" data-v="schedule" aria-selected="false">Schedule</button>
+    <button role="tab" data-v="off"      aria-selected="false">Time Off</button>
+  </nav>
+
+  <div class="wrap">
+    <!-- Route -->
+    <section class="view is-active" id="view-route">
+      <h1 class="hero-h">Route sheet</h1>
+      <div class="form" style="margin-bottom:14px;">
+        <label>Day of deliveries (defaults to yesterday)
+          <input type="date" id="route-date">
+        </label>
+      </div>
+      <div class="route-row" id="route-row"></div>
+      <div class="route-head" id="route-head"></div>
+      <div class="prior-banner" id="prior-banner" hidden></div>
+      <h2 class="sect">Stops</h2>
+      <p class="empty" style="text-align:left;padding:0 0 6px;font-size:13px;">Enter <b style="color:var(--gold)">singles</b> and <b style="color:var(--gold)">doubles</b> sold at each stop. Tap a stop name to open Apple Maps.</p>
+      <div class="stops" id="stops"><div class="empty">Loading…</div></div>
+      <div class="total-strip" id="total-strip" hidden></div>
+      <div class="submit-bar">
+        <div id="submit-status" class="status"></div>
+        <button type="button" id="submit-btn" disabled>Submit route</button>
+      </div>
+    </section>
+
+    <!-- History: this driver's submissions, last 14 days -->
+    <section class="view" id="view-history">
+      <h1 class="hero-h">Recent submissions</h1>
+      <p class="empty" style="text-align:left;padding:0 0 10px;font-size:13px;">What you submitted over the last 14 days. Pulled live from the database — reflects any edits done after the fact.</p>
+      <div id="history-list"><div class="empty">Loading…</div></div>
+    </section>
+
+    <!-- Updates -->
+    <section class="view" id="view-updates">
+      <h1 class="hero-h">What changed</h1>
+      <div id="updates-list"><div class="empty">Loading…</div></div>
+    </section>
+
+    <!-- Schedule -->
+    <section class="view" id="view-schedule">
+      <h1 class="hero-h">Schedule</h1>
+      <div class="wk-nav">
+        <b id="week-label">—</b>
+        <button type="button" data-w="0" aria-pressed="true">This week</button>
+        <button type="button" data-w="1" aria-pressed="false">Next week</button>
+      </div>
+      <div class="sched-wrap"><table class="sched" id="sched-table"></table></div>
+    </section>
+
+    <!-- Time Off -->
+    <section class="view" id="view-off">
+      <h1 class="hero-h">Time off</h1>
+      <form class="form" id="off-form" novalidate>
+        <label>Day<input type="date" id="off-date" required></label>
+        <label>What you need
+          <select id="off-type">
+            <option value="off">Day off (planned ahead)</option>
+            <option value="cover">Coverage (can't make my shift)</option>
+          </select>
+        </label>
+        <label>Note (optional)<input type="text" id="off-note" maxlength="200" placeholder="Doctor's appointment"></label>
+        <p class="err" id="off-err">&nbsp;</p>
+        <button type="submit" id="off-submit">Send request</button>
+      </form>
+      <h2 class="sect">My requests</h2>
+      <div id="off-list"><div class="empty">Loading…</div></div>
+    </section>
+
+    <footer>Confidential · PPF Ops</footer>
+  </div>
+</div>
+
+<dialog class="pin-dlg" id="pin-dlg" aria-labelledby="pin-dlg-h">
+  <h3 id="pin-dlg-h">Change PIN</h3>
+  <p id="pin-dlg-sub">Enter a new 4-digit PIN.</p>
+  <p class="err" id="pin-dlg-err">&nbsp;</p>
+  <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="pin-dlg-input" autocomplete="new-password">
+  <div class="btns">
+    <button type="button" class="ghost" id="pin-dlg-cancel">Cancel</button>
+    <button type="button" class="prim" id="pin-dlg-save">Next</button>
+  </div>
+</dialog>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   Boot gate — redirect bakers / signed-out users elsewhere.
+   ───────────────────────────────────────────────────────────── */
+let _me = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const fmtDay = iso => { const d = new Date(iso + 'T12:00:00'); return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
+const fmtDayLong = iso => { const d = new Date(iso + 'T12:00:00'); return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); };
+const money = cents => '$' + (cents / 100).toFixed(2);
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    _me = await r.json();
+    if (_me.role !== 'driver' && _me.role !== 'operator') {
+      location.replace(_me.role === 'baker' ? '/baker' : '/signin');
+      return;
+    }
+    $('#who').textContent = _me.name;
+    $('#boot').style.display = 'none';
+    $('#app').classList.add('is-ready');
+    initApp();
+  } catch (e) {
+    location.replace('/signin?next=' + next);
+  }
+}
+
+function initApp() {
+  document.querySelectorAll('nav.tabs button').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('nav.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+      document.querySelectorAll('section.view').forEach(v => v.classList.toggle('is-active', v.id === 'view-' + b.dataset.v));
+      if (b.dataset.v === 'history')  renderHistory();
+      if (b.dataset.v === 'updates')  loadUpdates();
+      if (b.dataset.v === 'schedule') loadSchedule();
+      if (b.dataset.v === 'off')      loadTimeOff();
+    };
+  });
+  $('#signout').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  $('#change-pin').onclick = openPinDlg;
+  bindOffForm();
+  bindWkNav();
+  bindPinDlg();
+  bindRouteDate();
+  bindSubmitBtn();
+  loadRoute();  // defaults: driver's own route, date = yesterday
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Route view — date + route picker + one $ input per stop,
+   matching the Google Form drivers already use. Default date =
+   yesterday (the form's "day before today" convention).
+   ───────────────────────────────────────────────────────────── */
+let _route = null;    // currently selected route key, null = default
+let _date  = null;    // ISO YYYY-MM-DD, null = server default (yesterday)
+let _plan  = null;    // last fetched plan
+
+const yesterdayIso = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
+
+async function loadRoute(opts) {
+  opts = opts || {};
+  if (opts.route) _route = opts.route;
+  if (opts.date)  _date  = opts.date;
+  const params = new URLSearchParams();
+  if (_route) params.set('route', _route);
+  if (_date)  params.set('date',  _date);
+  const q = params.toString();
+  try {
+    const r = await fetch('/api/driver/today' + (q ? '?' + q : ''), { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    _plan  = await r.json();
+    _route = _plan.route.key;
+    _date  = _plan.for_date;
+    const dateInp = $('#route-date');
+    if (dateInp && dateInp.value !== _plan.for_date) dateInp.value = _plan.for_date;
+    renderRoute();
+  } catch (e) {
+    $('#stops').innerHTML = '<div class="empty">Could not load the route sheet.</div>';
+  }
+}
+
+// Fixed per-item pricing — $2.15 single, $3.85 double. Mirrors server.
+const PRICE_SINGLE_CENTS = 215;
+const PRICE_DOUBLE_CENTS = 385;
+
+function renderRoute() {
+  // Route picker
+  $('#route-row').innerHTML = _plan.routes.map(r => `
+    <button type="button" data-r="${r.key}" aria-pressed="${r.key === _plan.route.key ? 'true' : 'false'}">${esc(r.label)}</button>
+  `).join('');
+  $('#route-row').querySelectorAll('button').forEach(b => b.onclick = () => loadRoute({ route: b.dataset.r }));
+
+  // Head: scheduled driver + stop count + running $ total
+  const driver = _plan.scheduled.length ? _plan.scheduled.join(', ') : 'No driver scheduled';
+  $('#route-head').innerHTML = `
+    <div class="fact"><span class="lbl">Driver</span><span class="val">${esc(driver)}</span></div>
+    <div class="fact"><span class="lbl">Stops</span><span class="val">${_plan.stops.length}</span></div>
+    <div class="fact money"><span class="lbl">Route total</span><span class="val" id="head-total">$0.00</span></div>
+  `;
+
+  $('#stops').innerHTML = _plan.stops.map(stopHTML).join('');
+  bindStopInputs();
+  refreshTotalFromDOM();
+  setStatus('');
+
+  // "Already submitted" banner — surfaces when the date+route already has
+  // one or more stops saved. Driver can edit values freely and re-submit;
+  // the sheet row gets upserted in place rather than duplicated.
+  const prior = _plan.stops
+    .filter(s => s.logged_at)
+    .map(s => new Date(s.logged_at))
+    .sort((a, b) => b - a)[0];
+  const banner = $('#prior-banner');
+  if (prior) {
+    banner.hidden = false;
+    const when = prior.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    banner.innerHTML = `<b>Already submitted</b> for this date + route (last update: ${esc(when)}).
+      <small>Edit any stop and re-submit — the sheet row updates in place.</small>`;
+  } else {
+    banner.hidden = true;
+    banner.innerHTML = '';
+  }
+  // Button label reflects whether a re-submit is an update.
+  const btn = $('#submit-btn');
+  btn.dataset.mode = prior ? 'update' : 'submit';
+  btn.textContent = prior ? 'Update route' : 'Submit route';
+}
+
+function stopHTML(s) {
+  const sVal = s.sold_singles == null ? '' : s.sold_singles;
+  const dVal = s.sold_doubles == null ? '' : s.sold_doubles;
+  const alreadyPosted = s.sold_singles != null || s.sold_doubles != null;
+  const maxS = s.singles_drop, maxD = s.doubles_drop;
+  const priorHint = alreadyPosted
+    ? `<div class="prior-hint">Saved · ${s.sold_singles || 0} S · ${s.sold_doubles || 0} D</div>`
+    : '';
+  // Prefer the real street address for the map search — the stop name is a
+  // store code (e.g. "711 FSQ", "MD") that won't resolve. Fall back to
+  // "name, town" only if we don't have an address on file.
+  const query = s.address ? s.address : `${s.name}, ${s.town}, NY`;
+  const q = encodeURIComponent(query);
+  const mapHref = `https://maps.apple.com/?q=${q}`;
+  const shortsClass = s.shorts ? ' is-shorts' : '';
+  const shortsPill = s.shorts ? '<span class="shorts-pill">Shorts</span> ' : '';
+  return `<article class="stop${alreadyPosted ? ' posted' : ''}${shortsClass}" data-stop="${s.id}" data-prior-s="${s.sold_singles == null ? '' : s.sold_singles}" data-prior-d="${s.sold_doubles == null ? '' : s.sold_doubles}">
+    <div class="num">${s.order}</div>
+    <div class="body">
+      <div class="name-row">
+        <div>
+          <a class="name" href="${mapHref}" target="_blank" rel="noopener">${esc(s.name)}</a>
+          <span class="town">${esc(s.town)}</span>
+          <span class="map-tap" aria-hidden="true">↗ Maps</span>
+        </div>
+        <span>${shortsPill}<span class="drop-pill">${esc(s.drop_label)}</span></span>
+      </div>
+      ${s.address ? `<div class="addr"><a href="${mapHref}" target="_blank" rel="noopener">${esc(s.address)}</a></div>` : ''}
+      ${priorHint}
+      ${s.basket ? `<div class="meta">Basket: <b>${esc(s.basket)}</b></div>` : ''}
+      ${s.note   ? `<div class="note">${esc(s.note)}</div>` : ''}
+      <div class="sold" data-max-s="${maxS}" data-max-d="${maxD}">
+        <div class="field">
+          <label for="s-${s.id}">Singles sold <span class="max-hint">max ${maxS}</span></label>
+          <input id="s-${s.id}" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" min="0" max="${maxS}" step="1" data-f="s" value="${sVal}" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="d-${s.id}">Doubles sold <span class="max-hint">max ${maxD}</span></label>
+          <input id="d-${s.id}" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" min="0" max="${maxD}" step="1" data-f="d" value="${dVal}" placeholder="0">
+        </div>
+      </div>
+      <div class="sub-bill" data-sub="${s.id}">${subBillText(sVal, dVal)}</div>
+    </div>
+  </article>`;
+}
+
+function subBillText(sVal, dVal) {
+  const s = Math.max(0, parseInt(sVal || 0, 10) || 0);
+  const d = Math.max(0, parseInt(dVal || 0, 10) || 0);
+  if (!s && !d) return '<span style="color:var(--ink-3)">No sales entered</span>';
+  const cents = s * PRICE_SINGLE_CENTS + d * PRICE_DOUBLE_CENTS;
+  return `${s} single · ${d} double <b>${money(cents)}</b>`;
+}
+
+function bindStopInputs() {
+  document.querySelectorAll('.stop').forEach(card => {
+    const sIn = card.querySelector('input[data-f="s"]');
+    const dIn = card.querySelector('input[data-f="d"]');
+    const sub = card.querySelector('.sub-bill');
+    const sold = card.querySelector('.sold');
+    const maxS = parseInt(sold.dataset.maxS, 10);
+    const maxD = parseInt(sold.dataset.maxD, 10);
+    // Cap value on input: if the driver types a number greater than what was
+    // delivered, we snap it back to max. Server rejects anything over max too.
+    const clamp = (inp, max) => {
+      if (inp.value === '') { inp.classList.remove('over'); return; }
+      const n = parseInt(inp.value, 10);
+      if (Number.isFinite(n) && n > max) { inp.value = String(max); inp.classList.add('over'); setTimeout(() => inp.classList.remove('over'), 800); }
+      else if (Number.isFinite(n) && n < 0) { inp.value = '0'; }
+    };
+    const priorS = card.dataset.priorS;
+    const priorD = card.dataset.priorD;
+    const hasPrior = priorS !== '' || priorD !== '';
+    const onInput = (inp, max) => {
+      clamp(inp, max);
+      sub.innerHTML = subBillText(sIn.value, dIn.value);
+      if (hasPrior) {
+        // Flip between "saved" (green) and "edited" (yellow) based on
+        // whether the current input matches what was saved.
+        const changed = (sIn.value || '') !== priorS || (dIn.value || '') !== priorD;
+        card.classList.toggle('edited', changed);
+        card.classList.toggle('posted', !changed);
+        const chip = card.querySelector('.prior-hint');
+        if (chip) chip.textContent = changed
+          ? `Was · ${priorS || 0} S · ${priorD || 0} D (edit will update)`
+          : `Saved · ${priorS || 0} S · ${priorD || 0} D`;
+      } else {
+        card.classList.remove('posted');
+      }
+      refreshTotalFromDOM();
+      setSubmitEnabled();
+    };
+    sIn.addEventListener('input', () => onInput(sIn, maxS));
+    dIn.addEventListener('input', () => onInput(dIn, maxD));
+  });
+}
+
+function refreshTotalFromDOM() {
+  let total = 0, logged = 0;
+  document.querySelectorAll('.stop').forEach(card => {
+    const s = parseInt(card.querySelector('input[data-f="s"]').value || 0, 10) || 0;
+    const d = parseInt(card.querySelector('input[data-f="d"]').value || 0, 10) || 0;
+    if (s === 0 && d === 0) return;
+    logged++;
+    total += s * PRICE_SINGLE_CENTS + d * PRICE_DOUBLE_CENTS;
+  });
+  const strip = $('#total-strip');
+  const head  = $('#head-total');
+  if (head) head.textContent = money(total);
+  if (logged === 0) { strip.hidden = true; return; }
+  strip.hidden = false;
+  strip.innerHTML = `
+    <div>
+      <div class="lbl">${esc(_plan.route.label)} — ${esc(fmtDay(_plan.for_date))}</div>
+      <div class="sub">${logged} of ${_plan.stops.length} stops with sales</div>
+    </div>
+    <div class="val">${money(total)}</div>`;
+}
+
+function collectEntries() {
+  const out = [];
+  document.querySelectorAll('.stop').forEach(card => {
+    const sIn = card.querySelector('input[data-f="s"]');
+    const dIn = card.querySelector('input[data-f="d"]');
+    if (sIn.value === '' && dIn.value === '') return;  // untouched blank → skip
+    const priorS = card.dataset.priorS, priorD = card.dataset.priorD;
+    const hasPrior = priorS !== '' || priorD !== '';
+    if (hasPrior) {
+      // A card loaded with saved values that the driver hasn't changed
+      // doesn't need to be re-sent; the sheet row stays current from the
+      // server's full-state query on upsert.
+      const unchanged = (sIn.value || '') === priorS && (dIn.value || '') === priorD;
+      if (unchanged) return;
+    }
+    out.push({
+      stopId: card.dataset.stop,
+      soldSingles: Math.max(0, parseInt(sIn.value || 0, 10) || 0),
+      soldDoubles: Math.max(0, parseInt(dIn.value || 0, 10) || 0),
+    });
+  });
+  return out;
+}
+
+function setSubmitEnabled() {
+  const btn = $('#submit-btn');
+  const hasEntries = collectEntries().length > 0;
+  btn.disabled = !hasEntries;
+  if (btn.classList.contains('sent')) {
+    btn.classList.remove('sent');
+    btn.textContent = btn.dataset.mode === 'update' ? 'Update route' : 'Submit route';
+  }
+}
+
+function setStatus(msg, kind) {
+  const el = $('#submit-status');
+  if (!el) return;
+  el.className = 'status' + (kind ? ' ' + kind : '');
+  el.textContent = msg || '';
+}
+
+async function submitRoute() {
+  const entries = collectEntries();
+  if (!entries.length) return;
+  const btn = $('#submit-btn');
+  btn.disabled = true;
+  setStatus('Submitting…');
+  try {
+    const r = await fetch('/api/driver/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ forDate: _date, routeKey: _plan.route.key, entries }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.status);
+    // Clear every input on the sheet so the driver sees a clean slate.
+    // Values stay in Supabase + the Google Sheet; reloading the page will
+    // pull them back if someone needs to double-check what was sent.
+    document.querySelectorAll('.stop').forEach(c => {
+      c.classList.remove('posted');
+      c.querySelectorAll('input[data-f]').forEach(inp => { inp.value = ''; });
+      const sub = c.querySelector('.sub-bill');
+      if (sub) sub.innerHTML = subBillText('', '');
+    });
+    refreshTotalFromDOM();  // zeros out the head total + hides the strip
+    // After a successful submit, this driver has prior data for this
+    // (date, route) — next action is an update, not a fresh submit.
+    btn.dataset.mode = 'update';
+    btn.classList.remove('sent');
+    btn.textContent = 'Update route';
+    btn.disabled = true;
+    // Make the banner reflect reality right now, without a full reload.
+    const banner = $('#prior-banner');
+    const when = new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    banner.hidden = false;
+    banner.innerHTML = `<b>Already submitted</b> for this date + route (last update: ${esc(when)}).
+      <small>Edit any stop and re-submit — the sheet row updates in place.</small>`;
+    const replaced = (j.sheet_tabs || []).some(t => t.replaced);
+    const sheetMsg = j.sheet_pushed ? (replaced ? ' · sheet row updated' : ' · pushed to sheet') : (j.sheet_error ? ` · sheet: ${j.sheet_error}` : '');
+    setStatus(`Saved ${entries.length} stops${sheetMsg}`, 'ok');
+  } catch (e) {
+    setStatus('Could not submit — try again. ' + (e.message || ''), 'fail');
+    btn.disabled = false;
+  }
+}
+
+function bindSubmitBtn() {
+  $('#submit-btn').addEventListener('click', submitRoute);
+}
+
+function bindRouteDate() {
+  const inp = $('#route-date');
+  if (!inp) return;
+  if (!inp.value) inp.value = yesterdayIso();
+  inp.addEventListener('change', (e) => {
+    const v = e.target.value;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) loadRoute({ date: v });
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   History tab — renders from _plan.my_history (piggybacks on
+   today.js so the hobby plan function cap stays untouched).
+   ───────────────────────────────────────────────────────────── */
+async function renderHistory() {
+  // If today hasn't loaded yet (e.g. user tapped History before Route),
+  // kick a fetch and come back.
+  if (!_plan) { await loadRoute(); }
+  const list = $('#history-list');
+  const items = (_plan && _plan.my_history) || [];
+  if (!items.length) {
+    list.innerHTML = '<div class="empty">No submissions in the last 14 days.</div>';
+    return;
+  }
+  list.innerHTML = items.map(h => {
+    const when = h.last_submitted_at
+      ? new Date(h.last_submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : '';
+    return `<article class="hist">
+      <div class="top-row">
+        <div><span class="date">${esc(fmtDay(h.for_date))}</span><span class="route">${esc(h.route_label)}</span></div>
+        <span class="total">${money(h.total_cents)}</span>
+      </div>
+      <div class="meta">${h.stop_count} ${h.stop_count === 1 ? 'stop' : 'stops'} · submitted by <b>${esc(h.submitter || '—')}</b> · last update ${esc(when)}</div>
+    </article>`;
+  }).join('');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Updates feed with ack (same as baker)
+   ───────────────────────────────────────────────────────────── */
+async function loadUpdates() {
+  try {
+    const r = await fetch('/api/updates', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    const { updates } = await r.json();
+    if (!updates.length) { $('#updates-list').innerHTML = '<div class="empty">No updates yet.</div>'; return; }
+    $('#updates-list').innerHTML = updates.map(u => {
+      const aud = u.audience.length === 0 ? 'All hands' : u.audience.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(' + ');
+      const posted = new Date(u.posted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      const eff = u.effective_date ? ' · effective ' + fmtDay(u.effective_date) : '';
+      const ackChip = u.requires_ack ? `<span class="chip ac">${u.ack_count} / ${u.ack_total} confirmed</span>` : '';
+      const ackBtn = u.requires_ack
+        ? (u.my_ack
+            ? `<button class="upd-ack-btn" disabled>&check; Confirmed</button>`
+            : `<button class="upd-ack-btn" data-ack="${u.id}">Got it</button>`)
+        : '';
+      return `<article class="upd">
+        <div class="upd-head"><span class="chip">${esc(aud)}</span>${ackChip}</div>
+        <h3 class="upd-title">${esc(u.title)}</h3>
+        ${u.body ? `<p class="upd-body">${esc(u.body)}</p>` : ''}
+        <div class="upd-foot"><span>Posted ${esc(posted)}${esc(eff)}</span>${ackBtn}</div>
+      </article>`;
+    }).join('');
+    $('#updates-list').querySelectorAll('[data-ack]').forEach(b => { b.onclick = () => ackUpdate(b.dataset.ack, b); });
+  } catch (e) {
+    $('#updates-list').innerHTML = '<div class="empty">Could not load updates.</div>';
+  }
+}
+async function ackUpdate(id, btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/updates?action=ack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ updateId: id }),
+    });
+    if (!r.ok) throw new Error(r.status);
+    loadUpdates();
+  } catch (e) {
+    btn.disabled = false;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Schedule grid (same as baker)
+   ───────────────────────────────────────────────────────────── */
+let _weekOffset = 0;
+function bindWkNav() {
+  document.querySelectorAll('.wk-nav button').forEach(b => {
+    b.onclick = () => {
+      _weekOffset = parseInt(b.dataset.w, 10) || 0;
+      document.querySelectorAll('.wk-nav button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      loadSchedule();
+    };
+  });
+}
+async function loadSchedule() {
+  try {
+    const r = await fetch('/api/schedule?week=' + _weekOffset, { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    $('#week-label').textContent = fmtDay(j.days[0].date) + ' – ' + fmtDay(j.days[6].date);
+    const today = (() => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+    const roles = [['baker','Bakers'], ['driver','Drivers']];
+    const headCells = ['<th>Who</th>'].concat(j.days.map(d => {
+      const isToday = d.date === today;
+      return `<th class="${isToday ? 'today' : ''}">${esc(d.weekday)}<div class="sub">${d.date.slice(5).replace('-','/')}</div></th>`;
+    })).join('');
+    const groups = roles.map(([role, label]) => {
+      const peeps = j.people.filter(p => p.role === role);
+      if (!peeps.length) return '';
+      const rows = peeps.map(p => {
+        const myShifts = j.shifts.filter(s => s.person_id === p.id);
+        const myOff = j.timeOff.filter(o => o.person_id === p.id);
+        const cells = j.days.map(d => {
+          const shift = myShifts.find(s => (s.days || []).includes(d.dow));
+          if (!shift) return '<td></td>';
+          const approvedOff = myOff.find(o => o.requested_date === d.date && o.status === 'approved');
+          if (approvedOff) {
+            if (approvedOff.cover?.name) return `<td class="cov">${esc(approvedOff.cover.name)}<div class="sub">covering</div></td>`;
+            return `<td class="off">Off</td>`;
+          }
+          const pending = myOff.find(o => o.requested_date === d.date && o.status === 'pending');
+          const loc = (shift.location || '').replace(' bakery',' bake').replace(' route','');
+          return `<td class="on"><b>${esc(shift.route_key || 'Bake')}</b><div class="sub">${esc(loc)}${pending ? ' · asked off' : ''}</div></td>`;
+        }).join('');
+        return `<tr><td><b>${esc(p.name)}</b></td>${cells}</tr>`;
+      }).join('');
+      return `<tr class="group"><td colspan="8">${label}</td></tr>` + rows;
+    }).join('');
+    $('#sched-table').innerHTML = `<thead><tr>${headCells}</tr></thead><tbody>${groups}</tbody>`;
+  } catch (e) {
+    $('#sched-table').innerHTML = '<tbody><tr><td class="empty">Could not load schedule.</td></tr></tbody>';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Time off (same as baker)
+   ───────────────────────────────────────────────────────────── */
+function bindOffForm() {
+  const f = $('#off-form');
+  $('#off-date').value = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0,10); })();
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+      requestedDate: $('#off-date').value,
+      type: $('#off-type').value,
+      note: $('#off-note').value.trim(),
+    };
+    $('#off-err').textContent = ' ';
+    $('#off-submit').disabled = true;
+    try {
+      const r = await fetch('/api/time-off', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { $('#off-err').textContent = j.error || 'could not send'; $('#off-submit').disabled = false; return; }
+      $('#off-note').value = '';
+      $('#off-submit').disabled = false;
+      loadTimeOff();
+    } catch (e) {
+      $('#off-err').textContent = 'network error';
+      $('#off-submit').disabled = false;
+    }
+  };
+}
+async function loadTimeOff() {
+  try {
+    const r = await fetch('/api/time-off', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    const { requests } = await r.json();
+    if (!requests.length) { $('#off-list').innerHTML = '<div class="empty">No requests yet.</div>'; return; }
+    $('#off-list').innerHTML = requests.map(q => {
+      const cls = q.status === 'approved' ? 'approved' : q.status === 'denied' ? 'denied' : 'pending';
+      const label = q.status === 'approved' ? 'Approved' : q.status === 'denied' ? 'Denied' : 'Pending';
+      const typeTxt = q.type === 'off' ? 'Day off' : 'Needs coverage';
+      const cover = q.cover?.name ? ' · covered by ' + esc(q.cover.name) : '';
+      return `<div class="req">
+        <div>
+          <div class="d">${esc(fmtDay(q.requested_date))}</div>
+          <div class="meta">${esc(typeTxt)}${esc(q.note ? ' · ' + q.note : '')}${cover}</div>
+        </div>
+        <span class="pill ${cls}">${label}</span>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    $('#off-list').innerHTML = '<div class="empty">Could not load requests.</div>';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Change-PIN dialog (same as baker)
+   ───────────────────────────────────────────────────────────── */
+const pinDlg = { phase: 'enter', first: '' };
+function openPinDlg() {
+  pinDlg.phase = 'enter'; pinDlg.first = '';
+  $('#pin-dlg-sub').textContent = 'Enter a new 4-digit PIN.';
+  $('#pin-dlg-err').textContent = ' ';
+  $('#pin-dlg-input').value = '';
+  $('#pin-dlg-save').textContent = 'Next';
+  $('#pin-dlg').showModal();
+  setTimeout(() => $('#pin-dlg-input').focus(), 0);
+}
+function bindPinDlg() {
+  const dlg = $('#pin-dlg');
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  $('#pin-dlg-cancel').onclick = () => dlg.close();
+  $('#pin-dlg-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#pin-dlg-save').click(); } });
+  $('#pin-dlg-save').onclick = async () => {
+    const v = $('#pin-dlg-input').value.trim();
+    if (!/^\d{4,6}$/.test(v)) { $('#pin-dlg-err').textContent = 'PIN must be 4-6 digits.'; return; }
+    if (v === '0000')         { $('#pin-dlg-err').textContent = 'PIN cannot be 0000.'; return; }
+    $('#pin-dlg-err').textContent = ' ';
+    if (pinDlg.phase === 'enter') {
+      pinDlg.first = v; pinDlg.phase = 'confirm';
+      $('#pin-dlg-sub').textContent = 'Enter it again to confirm.';
+      $('#pin-dlg-input').value = ''; $('#pin-dlg-save').textContent = 'Save';
+      $('#pin-dlg-input').focus();
+      return;
+    }
+    if (v !== pinDlg.first) {
+      $('#pin-dlg-err').textContent = 'PINs didn’t match. Start over.';
+      pinDlg.phase = 'enter'; pinDlg.first = '';
+      $('#pin-dlg-sub').textContent = 'Enter a new 4-digit PIN.';
+      $('#pin-dlg-input').value = ''; $('#pin-dlg-save').textContent = 'Next';
+      return;
+    }
+    try {
+      const r = await fetch('/api/auth/change-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ newPin: v }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        $('#pin-dlg-err').textContent = j.error || 'could not save';
+        pinDlg.phase = 'enter'; pinDlg.first = '';
+        $('#pin-dlg-input').value = ''; $('#pin-dlg-save').textContent = 'Next';
+        return;
+      }
+      $('#pin-dlg').close();
+    } catch (e) {
+      $('#pin-dlg-err').textContent = 'network error';
+    }
+  };
+}
+
+boot();
+</script>
+</body>
+</html>

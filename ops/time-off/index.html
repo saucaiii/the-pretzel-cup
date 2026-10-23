@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Time Off — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+
+.page { max-width: 1080px; margin: 0 auto; padding: 56px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 60ch; margin: 0 0 32px; line-height: 1.5; }
+
+.toolbar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.filter { font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); background: transparent; cursor: pointer; }
+.filter[aria-pressed="true"] { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); }
+
+.sect { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 24px 0 10px; }
+
+.req { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 10px; }
+.req.pending  { border-left: 3px solid var(--accent); }
+.req.approved { border-left: 3px solid #5fd58c; }
+.req.denied   { border-left: 3px solid #f47572; opacity: 0.75; }
+.req-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.req-who { font-family: var(--body); font-weight: 700; font-size: 16px; color: var(--ink); }
+.req-who .role { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; margin-left: 8px; font-weight: 400; }
+.req-when { font-family: var(--display); font-size: 15px; color: var(--accent); letter-spacing: 0.01em; }
+.req-type { display: inline-block; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.req-type.off { color: var(--accent); border-color: rgba(212,182,98,0.4); background: rgba(212,182,98,0.08); }
+.req-type.cover { color: #7fb3d5; border-color: rgba(127,179,213,0.4); background: rgba(127,179,213,0.08); }
+.req-note { color: var(--ink-2); font-size: 14px; line-height: 1.5; margin: 6px 0 10px; white-space: pre-wrap; }
+.req-status { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+.req-status.approved { color: #5fd58c; }
+.req-status.denied   { color: #f47572; }
+.req-status.pending  { color: var(--accent); }
+.req-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.req-actions select { background: var(--bg); border: 1px solid var(--line-2); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--ink); font-size: 13px; }
+.req-actions .btn { background: #5fd58c; color: var(--ppf-black); border: 0; border-radius: var(--radius-sm); padding: 8px 16px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.req-actions .btn.deny { background: transparent; border: 1px solid #f47572; color: #f47572; }
+.req-actions .btn.deny:hover { background: #f47572; color: var(--ppf-black); }
+.req-actions .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.req-meta { font-family: var(--display); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-top: 8px; }
+.req-meta b { color: var(--ink-2); font-weight: 500; }
+
+.empty { padding: 32px 10px; text-align: center; color: var(--ink-3); font-size: 14px; border: 1px dashed var(--line); border-radius: var(--radius-md); }
+.status-msg { font-size: 13px; min-height: 18px; margin-left: 8px; }
+.status-msg.ok { color: #5fd58c; }
+.status-msg.fail { color: #f47572; }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/updates" class="nav-link">Updates</a>
+          <a href="/ops/time-off" class="nav-link is-active">Time Off</a>
+          <a href="/ops/stops" class="nav-link">Stops</a>
+          <a href="/ops/store" class="nav-link">Store</a>
+          <a href="/ops/shifts" class="nav-link">Shifts</a>
+          <a href="/ops/people" class="nav-link">People</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+          <a href="/ops/standings" class="nav-link">Standings</a>
+        </nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Approvals</div>
+    <h1 class="page-title">Time Off</h1>
+    <p class="page-sub">Pending requests at the top. Approving a request can optionally pin a specific cover person; otherwise the schedule page shows the day as open for anyone to pick up.</p>
+
+    <div class="toolbar">
+      <button type="button" class="filter" data-f="all" aria-pressed="true">All</button>
+      <button type="button" class="filter" data-f="pending"  aria-pressed="false">Pending</button>
+      <button type="button" class="filter" data-f="approved" aria-pressed="false">Approved</button>
+      <button type="button" class="filter" data-f="denied"   aria-pressed="false">Denied</button>
+    </div>
+
+    <h2 class="sect" id="pending-head" hidden>Pending</h2>
+    <div id="pending-list"></div>
+    <h2 class="sect" id="decided-head" hidden>Decided (last 60 days)</h2>
+    <div id="decided-list"></div>
+    <div id="all-empty" class="empty" hidden>Nothing to show.</div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+const fmtWhen = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+let _people = [];     // from /api/schedule
+let _requests = [];   // from /api/time-off?scope=all
+let _filter = 'all';
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') { location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin'); return; }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    $('#user-tag').textContent = me.name;
+    initApp();
+  } catch (e) { location.replace('/signin?next=' + next); }
+}
+boot();
+
+function initApp() {
+  document.querySelectorAll('.filter').forEach(b => b.onclick = () => {
+    _filter = b.dataset.f;
+    document.querySelectorAll('.filter').forEach(x => x.setAttribute('aria-pressed', x === b));
+    render();
+  });
+  $('#logout-btn').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  loadAll();
+}
+
+async function loadAll() {
+  try {
+    const [reqR, schR] = await Promise.all([
+      fetch('/api/time-off?scope=all', { credentials: 'same-origin', cache: 'no-store' }),
+      fetch('/api/schedule?week=0',    { credentials: 'same-origin', cache: 'no-store' }),
+    ]);
+    if (!reqR.ok) throw new Error('requests ' + reqR.status);
+    if (!schR.ok) throw new Error('schedule ' + schR.status);
+    _requests = (await reqR.json()).requests || [];
+    _people   = (await schR.json()).people || [];
+    render();
+  } catch (e) {
+    $('#pending-list').innerHTML = `<div class="empty">Could not load: ${esc(e.message)}</div>`;
+  }
+}
+
+function render() {
+  const filtered = _requests.filter(r => _filter === 'all' || r.status === _filter);
+  const pending  = filtered.filter(r => r.status === 'pending')
+    .sort((a, b) => a.requested_date.localeCompare(b.requested_date));
+  const decided  = filtered.filter(r => r.status !== 'pending')
+    .sort((a, b) => b.requested_date.localeCompare(a.requested_date));
+
+  $('#pending-head').hidden = pending.length === 0;
+  $('#decided-head').hidden = decided.length === 0;
+  $('#all-empty').hidden = (pending.length + decided.length) > 0;
+
+  $('#pending-list').innerHTML = pending.map(reqHTML).join('');
+  $('#decided-list').innerHTML = decided.map(reqHTML).join('');
+
+  // Bind actions on freshly-rendered pending cards
+  document.querySelectorAll('.req.pending').forEach(bindCard);
+}
+
+function reqHTML(r) {
+  const person = r.person || {};
+  const typeChip = r.type === 'off'
+    ? '<span class="req-type off">Off</span>'
+    : '<span class="req-type cover">Needs cover</span>';
+  const coverLine = r.cover && r.cover.name
+    ? `<div class="req-meta">Cover: <b>${esc(r.cover.name)}</b></div>`
+    : '';
+  const decidedLine = r.decided_at
+    ? `<div class="req-meta">Decided <b>${esc(fmtWhen(r.decided_at))}</b></div>`
+    : '';
+  const actions = r.status === 'pending'
+    ? `<div class="req-actions">
+         <select data-k="cover">
+           <option value="">No specific cover</option>
+           ${_people.filter(p => p.id !== person.id).map(p => `<option value="${esc(p.id)}">${esc(p.name)} (${esc(p.role)})</option>`).join('')}
+         </select>
+         <button type="button" class="btn" data-k="approve">Approve</button>
+         <button type="button" class="btn deny" data-k="deny">Deny</button>
+         <span class="status-msg" data-k="status"></span>
+       </div>`
+    : '';
+  return `<article class="req ${esc(r.status)}" data-id="${esc(r.id)}">
+    <div class="req-head">
+      <div><span class="req-who">${esc(person.name || '—')}<span class="role">${esc(person.role || '')}</span></span></div>
+      <div class="req-when">${esc(fmtDate(r.requested_date))}</div>
+    </div>
+    <div>${typeChip} <span class="req-status ${esc(r.status)}">${esc(r.status)}</span></div>
+    ${r.note ? `<div class="req-note">${esc(r.note)}</div>` : ''}
+    ${coverLine}
+    ${decidedLine}
+    ${actions}
+  </article>`;
+}
+
+function bindCard(card) {
+  const id = card.dataset.id;
+  const sel = card.querySelector('[data-k="cover"]');
+  const approve = card.querySelector('[data-k="approve"]');
+  const deny    = card.querySelector('[data-k="deny"]');
+  const stat    = card.querySelector('[data-k="status"]');
+  const act = (status) => async () => {
+    approve.disabled = true; deny.disabled = true;
+    stat.className = 'status-msg'; stat.textContent = status === 'approved' ? 'Approving…' : 'Denying…';
+    try {
+      const payload = { status };
+      if (status === 'approved' && sel.value) payload.coverPersonId = sel.value;
+      const r = await fetch('/api/time-off?id=' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || r.status);
+      stat.className = 'status-msg ok'; stat.textContent = status;
+      // Refresh after a short pause so the status flash is visible
+      setTimeout(loadAll, 500);
+    } catch (e) {
+      stat.className = 'status-msg fail'; stat.textContent = e.message || 'failed';
+      approve.disabled = false; deny.disabled = false;
+    }
+  };
+  approve.onclick = act('approved');
+  deny.onclick    = act('denied');
+}
+</script>
+</body>
+</html>

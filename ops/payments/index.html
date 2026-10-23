@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<meta name="robots" content="noindex,nofollow">
+<title>Payments — Operator · Philly Pretzel Factory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 72ch; margin: 0 0 32px; line-height: 1.5; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 32px; }
+.kpi { background: var(--bg-2); padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+.kpi-value { font-family: var(--display); font-size: 32px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.kpi-value.warn   { color: #f4c25f; }
+.kpi-value.danger { color: #f47572; }
+.kpi-value.good   { color: #7ad692; }
+.kpi-label { font-family: var(--display); font-size: 11px; letter-spacing: 0.16em; color: var(--ink-3); text-transform: uppercase; }
+.kpi-sub { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+/* Section */
+.sect { font-family: var(--display); font-size: 14px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 28px 0 12px; display: flex; align-items: center; justify-content: space-between; }
+.sect .count { color: var(--accent); margin-left: 10px; }
+.sect .actions { display: flex; gap: 10px; align-items: center; }
+.btn-primary { background: var(--accent); color: var(--ppf-black); border: 0; border-radius: 6px; padding: 8px 14px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost   { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); border-radius: 6px; padding: 8px 14px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+.btn-ghost:hover { color: var(--ink); border-color: var(--ink); }
+.btn-sm { padding: 6px 10px; font-size: 11px; }
+
+/* Invoice table */
+.tbl-wrap { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); overflow-x: auto; }
+.tbl-wrap.failed { border-color: rgba(244,117,114,0.4); background: linear-gradient(180deg, rgba(244,117,114,0.04), var(--bg-2) 70%); }
+table.inv { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 980px; }
+table.inv th, table.inv td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.inv th { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; background: rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 1; }
+table.inv tbody tr:hover { background: rgba(255,255,255,0.02); }
+table.inv td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+table.inv .stop-name { color: var(--ink); font-weight: 700; }
+table.inv .stop-town { color: var(--ink-3); font-size: 12px; }
+table.inv .period { color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.inv .amount { font-family: var(--display); font-size: 16px; color: var(--accent); font-variant-numeric: tabular-nums; }
+table.inv .fail-code { color: #f47572; font-weight: 700; font-family: ui-monospace, monospace; font-size: 12px; }
+table.inv .fail-msg { color: var(--ink-3); font-size: 11px; line-height: 1.4; }
+table.inv .row-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+table.inv .select-cell input { accent-color: var(--accent); transform: scale(1.1); }
+
+.chip { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; border: 1px solid var(--line-2); color: var(--ink-2); white-space: nowrap; }
+.chip.draft       { color: var(--ink-2); }
+.chip.approved    { color: #f2e7a4; border-color: #d4b662; background: rgba(212,182,98,0.1); }
+.chip.processing  { color: #7fb3d5; border-color: #7fb3d5; background: rgba(127,179,213,0.1); }
+.chip.paid        { color: #7ad692; border-color: #7ad692; background: rgba(122,214,146,0.1); }
+.chip.failed      { color: #f47572; border-color: #f47572; background: rgba(244,117,114,0.1); }
+.chip.void        { color: var(--ink-3); }
+.chip.variance    { color: #f4c25f; border-color: #f4c25f; background: rgba(244,194,95,0.1); margin-left: 8px; }
+.chip.no-pm       { color: #f47572; border-color: #f47572; background: rgba(244,117,114,0.1); margin-left: 8px; }
+
+.empty { padding: 32px; text-align: center; color: var(--ink-3); font-size: 14px; }
+.err   { padding: 12px; color: #f47572; font-size: 13px; border: 1px solid rgba(244,117,114,0.4); background: rgba(244,117,114,0.06); border-radius: var(--radius-md); margin: 12px 0; }
+
+/* Reconciliation card */
+.recon-card { margin-top: 32px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; }
+.recon-card h3 { font-family: var(--display); font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; margin: 0 0 10px; color: var(--ink); }
+.recon-card p { color: var(--ink-2); font-size: 13px; margin: 0 0 14px; line-height: 1.5; }
+.recon-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0; }
+.recon-step { background: rgba(0,0,0,0.18); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; font-size: 12px; color: var(--ink-2); line-height: 1.4; }
+.recon-step .num { font-family: var(--display); font-size: 20px; color: var(--accent); display: block; margin-bottom: 4px; }
+.recon-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.recon-form label { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+.recon-form input { background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; color: var(--ink); font-family: var(--body); font-size: 14px; }
+@media (max-width: 720px) {
+  .recon-steps { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" translate="no" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/updates" class="nav-link">Updates</a>
+          <a href="/ops/time-off" class="nav-link">Time Off</a>
+          <a href="/ops/stops" class="nav-link">Stops</a>
+          <a href="/ops/payments" class="nav-link is-active">Payments</a>
+          <a href="/ops/shifts" class="nav-link">Shifts</a>
+          <a href="/ops/people" class="nav-link">People</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+        </nav>
+        <a href="/" class="public-link">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Operational</div>
+    <h1 class="page-title">Payments</h1>
+    <p class="page-sub">
+      Review draft invoices, batch-approve pulls, and triage failed ACH debits. Pretzel Cup is the system of record;
+      Stripe is the money mover. Approvals finalize a Stripe invoice that auto-pulls via the stop's saved ACH mandate within an hour.
+    </p>
+
+    <!-- KPIs -->
+    <div class="kpi-row" id="kpi">
+      <div class="kpi"><div class="kpi-value" id="k-drafts">—</div><div class="kpi-label">Drafts</div><div class="kpi-sub" id="k-drafts-sub">$0</div></div>
+      <div class="kpi"><div class="kpi-value warn" id="k-inflight">—</div><div class="kpi-label">In flight</div><div class="kpi-sub" id="k-inflight-sub">approved + processing</div></div>
+      <div class="kpi"><div class="kpi-value danger" id="k-failed">—</div><div class="kpi-label">Failed</div><div class="kpi-sub" id="k-failed-sub">$0 blocked</div></div>
+      <div class="kpi"><div class="kpi-value" id="k-expected">—</div><div class="kpi-label">Expected this cycle</div><div class="kpi-sub">drafts + in flight</div></div>
+    </div>
+
+    <div class="err" id="err" hidden></div>
+
+    <!-- Failed pulls block (prominent, top of page) -->
+    <div class="sect"><span>Failed pulls <span class="count" id="failed-count"></span></span></div>
+    <div class="tbl-wrap failed" id="failed-wrap">
+      <table class="inv">
+        <thead>
+          <tr>
+            <th>Store</th><th>Period</th><th class="num">Amount</th>
+            <th>Failure</th><th>Failed</th><th class="num" style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="failed-body"></tbody>
+      </table>
+      <div class="empty" id="failed-empty">No failed pulls. 🧁</div>
+    </div>
+
+    <!-- Draft invoices -->
+    <div class="sect">
+      <span>Draft invoices <span class="count" id="drafts-count"></span></span>
+      <span class="actions">
+        <span id="selected-count" style="color:var(--ink-3);font-size:12px;">0 selected</span>
+        <button type="button" class="btn-primary" id="approve-selected" disabled>Approve selected</button>
+      </span>
+    </div>
+    <div class="tbl-wrap" id="drafts-wrap">
+      <table class="inv">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all" aria-label="Select all drafts"></th>
+            <th>Store</th><th>Period</th><th>Cadence</th>
+            <th class="num">Units</th><th class="num">Amount</th>
+            <th>Flags</th><th class="num" style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="drafts-body"></tbody>
+      </table>
+      <div class="empty" id="drafts-empty">No drafts right now. The cron fills these in early Monday after the week closes.</div>
+    </div>
+
+    <!-- In flight: approved + processing -->
+    <div class="sect"><span>In flight <span class="count" id="inflight-count"></span></span></div>
+    <div class="tbl-wrap" id="inflight-wrap">
+      <table class="inv">
+        <thead>
+          <tr>
+            <th>Store</th><th>Period</th><th>Cadence</th>
+            <th class="num">Amount</th><th>Status</th><th>Pulled</th>
+          </tr>
+        </thead>
+        <tbody id="inflight-body"></tbody>
+      </table>
+      <div class="empty" id="inflight-empty">Nothing in flight.</div>
+    </div>
+
+    <!-- Reconciliation -->
+    <div class="recon-card">
+      <h3>Monthly reconciliation</h3>
+      <p>
+        Three-way reconciliation: invoice ↔ Stripe charge ↔ Stripe payout ↔ Chase deposit.
+        Download the CSV, open your Chase statement, and match each payout line to the CSV.
+        Mismatches get flagged in the next ops meeting.
+      </p>
+      <div class="recon-steps">
+        <div class="recon-step"><span class="num">1</span>Draft generated on cycle close (idempotent — refreshes if returns were corrected).</div>
+        <div class="recon-step"><span class="num">2</span>Operator approves. Stripe pulls within ~1 hour of finalize.</div>
+        <div class="recon-step"><span class="num">3</span>ACH settles in 1–3 banking days. Status flips <span class="chip paid">Paid</span>.</div>
+        <div class="recon-step"><span class="num">4</span>Stripe payout batch → Chase deposit next business day. Match on CSV at month-end.</div>
+      </div>
+      <div class="recon-form">
+        <label>Month <input type="month" id="recon-month"></label>
+        <button type="button" class="btn-ghost" id="recon-dl">Download CSV</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const money = c => '$' + ((c || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = iso => {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-').map(n => parseInt(n,10));
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+const fmtWhen = iso => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+const periodLabel = r => `${fmtDate(r.period_start)}–${fmtDate(r.period_end)}`;
+
+const selected = new Set();
+
+async function requireOperator() {
+  const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+  if (!r.ok) { location.href = '/signin'; return null; }
+  const j = await r.json();
+  if (j.role !== 'operator') { location.href = '/signin'; return null; }
+  document.getElementById('user-tag').textContent = j.name || 'operator';
+  return j;
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/schedule?resource=pending-invoices', { credentials: 'same-origin', cache: 'no-store' });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'load failed');
+    render(j);
+  } catch (e) {
+    const err = document.getElementById('err');
+    err.textContent = 'Could not load: ' + (e.message || e);
+    err.hidden = false;
+  }
+}
+
+function render(d) {
+  const rows = d.rows || [];
+  const kpi = d.kpi || {};
+
+  document.getElementById('k-drafts').textContent      = kpi.drafts || 0;
+  document.getElementById('k-drafts-sub').textContent  = money(kpi.drafts_cents || 0);
+  document.getElementById('k-inflight').textContent    = (kpi.approved || 0) + (kpi.processing || 0);
+  document.getElementById('k-inflight-sub').textContent = money(kpi.in_flight_cents || 0);
+  document.getElementById('k-failed').textContent      = kpi.failed || 0;
+  document.getElementById('k-failed-sub').textContent  = money(kpi.failed_cents || 0) + ' blocked';
+  document.getElementById('k-expected').textContent    = money((kpi.drafts_cents || 0) + (kpi.in_flight_cents || 0));
+
+  const failed = rows.filter(r => r.status === 'failed');
+  const drafts = rows.filter(r => r.status === 'draft');
+  const inflight = rows.filter(r => r.status === 'approved' || r.status === 'processing');
+
+  renderFailed(failed);
+  renderDrafts(drafts, d.variance_threshold_pct || 25);
+  renderInFlight(inflight);
+}
+
+function renderFailed(rows) {
+  const body = document.getElementById('failed-body');
+  const empty = document.getElementById('failed-empty');
+  const wrap = document.getElementById('failed-wrap');
+  document.getElementById('failed-count').textContent = rows.length ? '· ' + rows.length : '';
+  if (!rows.length) {
+    body.innerHTML = ''; wrap.querySelector('table').style.display = 'none'; empty.style.display = '';
+    return;
+  }
+  wrap.querySelector('table').style.display = ''; empty.style.display = 'none';
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>
+        <div class="stop-name">${esc(r.stop_label)}</div>
+        <div class="stop-town">${esc(r.route_key || '')}${r.bank_last4 ? ' · ••' + esc(r.bank_last4) : ''}</div>
+      </td>
+      <td class="period">${esc(periodLabel(r))}</td>
+      <td class="num amount">${money(r.total_cents)}</td>
+      <td>
+        <div class="fail-code">${esc(r.failure_code || 'unknown')}</div>
+        ${r.failure_message ? `<div class="fail-msg">${esc(r.failure_message)}</div>` : ''}
+      </td>
+      <td class="period">${esc(fmtWhen(r.failed_at))}</td>
+      <td class="num">
+        <div class="row-actions">
+          <button class="btn-primary btn-sm" data-act="retry" data-id="${esc(r.id)}">Retry</button>
+          <button class="btn-ghost  btn-sm" data-act="mark-paid" data-id="${esc(r.id)}">Mark paid</button>
+          <button class="btn-ghost  btn-sm" data-act="void" data-id="${esc(r.id)}">Void</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderDrafts(rows, thresholdPct) {
+  const body = document.getElementById('drafts-body');
+  const empty = document.getElementById('drafts-empty');
+  const wrap = document.getElementById('drafts-wrap');
+  document.getElementById('drafts-count').textContent = rows.length ? '· ' + rows.length : '';
+  if (!rows.length) {
+    body.innerHTML = ''; wrap.querySelector('table').style.display = 'none'; empty.style.display = '';
+    document.getElementById('approve-selected').disabled = true;
+    return;
+  }
+  wrap.querySelector('table').style.display = ''; empty.style.display = 'none';
+  body.innerHTML = rows.map(r => {
+    const varianceChip = r.variance_flag
+      ? `<span class="chip variance" title="${esc('Average ' + money(r.variance_flag.avg_cents))}">Review variance ${r.variance_flag.pct > 0 ? '+' : ''}${r.variance_flag.pct}%</span>`
+      : '';
+    const noPmChip = r.has_payment_method ? '' : `<span class="chip no-pm">No bank</span>`;
+    const selectable = r.has_payment_method; // can't batch-approve without PM
+    return `
+      <tr>
+        <td class="select-cell">
+          <input type="checkbox" ${selectable ? '' : 'disabled'} data-id="${esc(r.id)}" ${selected.has(r.id) ? 'checked' : ''} class="row-cb" aria-label="Select">
+        </td>
+        <td>
+          <div class="stop-name">${esc(r.stop_label)}</div>
+          <div class="stop-town">${esc(r.route_key || '')}${r.bank_last4 ? ' · ••' + esc(r.bank_last4) : ''}</div>
+        </td>
+        <td class="period">${esc(periodLabel(r))}</td>
+        <td><span class="chip ${r.cadence === 'weekly' ? '' : 'approved'}">${esc(r.cadence)}</span></td>
+        <td class="num">${r.singles_count} s · ${r.doubles_count} d</td>
+        <td class="num amount">${money(r.total_cents)}</td>
+        <td>${varianceChip}${noPmChip}</td>
+        <td class="num">
+          <div class="row-actions">
+            <button class="btn-primary btn-sm" data-act="approve" data-id="${esc(r.id)}" ${selectable ? '' : 'disabled'}>Approve</button>
+            <button class="btn-ghost  btn-sm" data-act="void"    data-id="${esc(r.id)}">Void</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Wire checkboxes.
+  for (const cb of body.querySelectorAll('.row-cb')) {
+    cb.addEventListener('change', (e) => {
+      const id = e.target.getAttribute('data-id');
+      if (e.target.checked) selected.add(id);
+      else selected.delete(id);
+      updateSelected();
+    });
+  }
+  updateSelected();
+}
+
+function renderInFlight(rows) {
+  const body = document.getElementById('inflight-body');
+  const empty = document.getElementById('inflight-empty');
+  const wrap = document.getElementById('inflight-wrap');
+  document.getElementById('inflight-count').textContent = rows.length ? '· ' + rows.length : '';
+  if (!rows.length) {
+    body.innerHTML = ''; wrap.querySelector('table').style.display = 'none'; empty.style.display = '';
+    return;
+  }
+  wrap.querySelector('table').style.display = ''; empty.style.display = 'none';
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>
+        <div class="stop-name">${esc(r.stop_label)}</div>
+        <div class="stop-town">${esc(r.route_key || '')}${r.bank_last4 ? ' · ••' + esc(r.bank_last4) : ''}</div>
+      </td>
+      <td class="period">${esc(periodLabel(r))}</td>
+      <td><span class="chip">${esc(r.cadence)}</span></td>
+      <td class="num amount">${money(r.total_cents)}</td>
+      <td><span class="chip ${r.status}">${esc(r.status === 'processing' ? 'Processing' : 'Scheduled')}</span></td>
+      <td class="period">${esc(fmtWhen(r.pulled_at || r.approved_at))}</td>
+    </tr>
+  `).join('');
+}
+
+function updateSelected() {
+  const btn = document.getElementById('approve-selected');
+  const label = document.getElementById('selected-count');
+  label.textContent = `${selected.size} selected`;
+  btn.disabled = selected.size === 0;
+}
+
+// Approve selected (batch).
+document.getElementById('approve-selected').addEventListener('click', async () => {
+  if (!selected.size) return;
+  if (!confirm(`Approve ${selected.size} draft invoice${selected.size === 1 ? '' : 's'}? This will create Stripe invoices and auto-pull funds within ~1 hour.`)) return;
+  const btn = document.getElementById('approve-selected');
+  btn.disabled = true; btn.textContent = 'Approving…';
+  try {
+    const r = await fetch('/api/schedule?resource=approve-invoice', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(selected) }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'approve failed');
+    alert(`Approved ${j.approved}; ${j.failed} failed. See console for details.`);
+    console.log('approve results:', j.results);
+    selected.clear();
+    await load();
+  } catch (e) {
+    alert('Could not approve: ' + (e.message || e));
+  } finally {
+    btn.disabled = false; btn.textContent = 'Approve selected';
+  }
+});
+
+// Select-all checkbox.
+document.getElementById('select-all').addEventListener('change', (e) => {
+  const checked = e.target.checked;
+  for (const cb of document.querySelectorAll('.row-cb')) {
+    if (cb.disabled) continue;
+    cb.checked = checked;
+    const id = cb.getAttribute('data-id');
+    if (checked) selected.add(id); else selected.delete(id);
+  }
+  updateSelected();
+});
+
+// Delegated row-action buttons.
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const id  = btn.getAttribute('data-id');
+  const act = btn.getAttribute('data-act');
+  if (!id) return;
+  try {
+    if (act === 'approve') {
+      if (!confirm('Approve this invoice? Stripe will auto-pull within ~1 hour.')) return;
+      btn.disabled = true;
+      const r = await fetch('/api/schedule?resource=approve-invoice', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_id: id }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || 'approve failed');
+    } else if (act === 'void') {
+      if (!confirm('Void this invoice? If Stripe has it, it will be voided there too.')) return;
+      btn.disabled = true;
+      const r = await fetch('/api/schedule?resource=void-invoice', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_id: id }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || 'void failed');
+    } else if (act === 'retry') {
+      if (!confirm('Retry this pull? Stripe will try the same bank account again.')) return;
+      btn.disabled = true;
+      const r = await fetch('/api/schedule?resource=retry-invoice', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_id: id }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || 'retry failed');
+    } else if (act === 'mark-paid') {
+      const note = prompt('Describe how this was paid (check #, cash, etc.)');
+      if (note == null) return;
+      btn.disabled = true;
+      const r = await fetch('/api/schedule?resource=mark-paid', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoice_id: id, note }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || 'mark-paid failed');
+    } else return;
+    await load();
+  } catch (e) {
+    alert('Error: ' + (e.message || e));
+    btn.disabled = false;
+  }
+});
+
+// Reconciliation CSV download.
+(function initRecon() {
+  const now = new Date();
+  const yy = now.getFullYear(), mm = String(now.getMonth() + 1).padStart(2, '0');
+  document.getElementById('recon-month').value = `${yy}-${mm}`;
+  document.getElementById('recon-dl').addEventListener('click', () => {
+    const m = document.getElementById('recon-month').value;
+    if (!m) return;
+    location.href = `/api/schedule?resource=reconciliation&month=${encodeURIComponent(m)}`;
+  });
+})();
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch {}
+  location.href = '/signin';
+});
+
+(async function boot() {
+  const me = await requireOperator();
+  if (!me) return;
+  await load();
+  document.getElementById('boot').style.display = 'none';
+  document.getElementById('app').hidden = false;
+})();
+</script>
+</body>
+</html>

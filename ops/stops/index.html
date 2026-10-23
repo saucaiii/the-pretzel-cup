@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Stops — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 56px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 72ch; margin: 0 0 32px; line-height: 1.5; }
+
+.route-tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.route-tab { font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); background: transparent; cursor: pointer; }
+.route-tab[aria-pressed="true"] { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); }
+
+.sect { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 24px 0 10px; }
+
+/* Stops table */
+.tbl-wrap { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); overflow-x: auto; }
+table.stops-tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 820px; }
+table.stops-tbl th, table.stops-tbl td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.stops-tbl th { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; background: rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 1; }
+table.stops-tbl td.num { font-variant-numeric: tabular-nums; }
+table.stops-tbl tr.inactive { opacity: 0.5; }
+table.stops-tbl .name { font-weight: 700; color: var(--ink); }
+table.stops-tbl .town { font-size: 12px; color: var(--ink-3); }
+
+/* Dense number inputs for drop editing */
+.drop-inp { background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 8px; color: var(--ink); font-family: var(--body); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; width: 56px; text-align: center; }
+.drop-inp:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+.drop-inp.dirty { border-color: var(--accent); background: rgba(212,182,98,0.08); }
+.drop-inp.wknd { background: rgba(127,179,213,0.06); }
+.drop-inp.wknd::placeholder { color: var(--ink-3); font-weight: 400; }
+.drop-inp.wknd.dirty { background: rgba(212,182,98,0.08); }
+
+.row-actions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.row-actions .btn-sm { background: var(--accent); color: var(--ppf-black); border: 0; border-radius: 6px; padding: 6px 12px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.row-actions .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+.row-actions .btn-sm.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); }
+.row-actions .btn-sm.ghost:hover { color: var(--ink); border-color: var(--ink); }
+.row-actions .chip { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.row-actions .chip.ok   { color: #5fd58c; border: 1px solid rgba(95,213,140,0.4); background: rgba(95,213,140,0.08); }
+.row-actions .chip.fail { color: #f47572; border: 1px solid rgba(244,117,114,0.4); background: rgba(244,117,114,0.08); }
+
+/* Payment chip (per-row cycle: cash → elec/weekly → elec/monthly) */
+.pay-wrap { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 120px; }
+.pay-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  border: 1px solid var(--line-2); background: transparent; color: var(--ink-2);
+}
+.pay-chip:hover { color: var(--ink); border-color: var(--ink-2); }
+.pay-chip.cash     { color: var(--ink-3); }
+.pay-chip.elec     { color: #f2e7a4; border-color: #d4b662; background: rgba(212,182,98,0.08); }
+.pay-chip:disabled { cursor: wait; opacity: 0.6; }
+.pay-bank { font-size: 10px; color: var(--ink-3); font-family: ui-monospace, monospace; letter-spacing: 0.08em; }
+.pay-bank.good    { color: #7ad692; }
+.pay-bank.missing { color: #f4c25f; }
+
+.active-toggle { display: inline-flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; }
+.active-toggle input { accent-color: var(--accent); transform: scale(1.1); }
+.shorts-toggle { display: inline-flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; }
+.shorts-toggle input { accent-color: #f4c25f; transform: scale(1.1); }
+.shorts-toggle.on { color: #f4c25f; font-weight: 700; }
+table.stops-tbl tr.is-shorts { background: rgba(244,194,95,0.04); }
+table.stops-tbl tr.is-shorts .name::after {
+  content: ' SHORTS'; font-family: var(--display); font-size: 10px; font-weight: 400;
+  letter-spacing: 0.16em; color: #f4c25f; margin-left: 8px;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(244,194,95,0.4);
+  background: rgba(244,194,95,0.08);
+}
+
+.legend { font-size: 12px; color: var(--ink-3); margin-top: 14px; line-height: 1.6; }
+.legend b { color: var(--ink-2); font-weight: 500; }
+
+.empty { padding: 32px; text-align: center; color: var(--ink-3); font-size: 14px; }
+
+/* Add-stop form */
+.add-stop { background: rgba(212,182,98,0.04); border: 1px dashed rgba(212,182,98,0.3); border-radius: var(--radius-md); padding: 20px; }
+.add-stop .field-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; margin-bottom: 10px; }
+.add-stop .field-grid.narrow { grid-template-columns: repeat(4, 1fr); }
+.add-stop .field-grid.wide { grid-template-columns: 1fr 2fr; }
+.add-stop label { display: flex; flex-direction: column; gap: 4px; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+.add-stop input { background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; color: var(--ink); font-family: var(--body); font-size: 14px; font-weight: 500; }
+.add-stop input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+.add-stop .add-actions { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.add-stop .add-note { font-size: 12px; color: var(--ink-3); margin-top: 14px; line-height: 1.6; }
+.add-stop .add-note code { background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; }
+@media (max-width: 720px) {
+  .add-stop .field-grid, .add-stop .field-grid.narrow, .add-stop .field-grid.wide { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/updates" class="nav-link">Updates</a>
+          <a href="/ops/time-off" class="nav-link">Time Off</a>
+          <a href="/ops/stops" class="nav-link is-active">Stops</a>
+          <a href="/ops/payments" class="nav-link">Payments</a>
+          <a href="/ops/store" class="nav-link">Store</a>
+          <a href="/ops/shifts" class="nav-link">Shifts</a>
+          <a href="/ops/people" class="nav-link">People</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+          <a href="/ops/standings" class="nav-link">Standings</a>
+        </nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Operational</div>
+    <h1 class="page-title">Stops</h1>
+    <p class="page-sub">Edit drop sizes, basket type, and notes per stop. Drivers see the drop size as a cap on how much they can log as sold; bakers see the totals rolled up by route. Weekend values override weekday values on Saturdays and Sundays — leave them blank to use the weekday value. The <b style="color:#f4c25f">Shorts</b> flag means that stop gets the shorter-pretzel variant (baked only at Lynbrook; same price); flipping it posts an all-hands update automatically.</p>
+
+    <div class="route-tabs" id="route-tabs"></div>
+
+    <div id="route-sections"></div>
+
+    <!-- Add stop form, operator-only -->
+    <h2 class="sect" style="margin-top:36px;">Add a stop to the current route</h2>
+    <div class="add-stop">
+      <div class="field-grid">
+        <label>Name<input type="text" id="n-name" placeholder="e.g. 711 ABC" maxlength="80"></label>
+        <label>Town<input type="text" id="n-town" placeholder="e.g. Rockville Centre" maxlength="80"></label>
+        <label>Address<input type="text" id="n-addr" placeholder="123 Main St, Rockville Centre, NY 11570" maxlength="160"></label>
+      </div>
+      <div class="field-grid narrow">
+        <label>Singles drop<input type="number" id="n-s" min="0" step="1" value="5"></label>
+        <label>Doubles drop<input type="number" id="n-d" min="0" step="1" value="5"></label>
+        <label>Wknd singles (opt)<input type="number" id="n-sw" min="0" step="1" placeholder="="></label>
+        <label>Wknd doubles (opt)<input type="number" id="n-dw" min="0" step="1" placeholder="="></label>
+      </div>
+      <div class="field-grid wide">
+        <label>Basket (optional)<input type="text" id="n-basket" maxlength="200" placeholder="Standard mix"></label>
+        <label>Note (optional)<input type="text" id="n-note" maxlength="500" placeholder="Ask for Mark at the counter"></label>
+      </div>
+      <div class="field-grid wide">
+        <label>
+          Shorter pretzels at this stop?
+          <label class="shorts-toggle" style="padding:8px 0;"><input type="checkbox" id="n-shorts"> Shorts — bake short at Lynbrook</label>
+        </label>
+        <div style="font-size:12px;color:var(--ink-3);line-height:1.5;align-self:end;">
+          Check if this stop gets the shorter pretzel variant. Same price, same packaging, just a shorter twist. Baked only at the Lynbrook bakery.
+        </div>
+      </div>
+      <div class="field-grid wide">
+        <label>
+          Also add a column to the Google Sheet (recommended)
+          <select id="n-sheet-gid">
+            <option value="">— Skip sheet column (Supabase-only) —</option>
+          </select>
+        </label>
+        <div style="font-size:12px;color:var(--ink-3);line-height:1.5;align-self:end;">
+          For LYN the half picks which tab (VS/RVC or East Rock/Oceanside/LB).
+          The new column is inserted just before the Name column so the sheet writer picks it up on the next submit.
+        </div>
+      </div>
+      <div class="add-actions">
+        <button type="button" class="btn-sm" id="n-save">Add stop to <span id="n-route-label">—</span></button>
+        <span class="chip" id="n-status" hidden></span>
+      </div>
+      <div class="add-note">
+        <b>Where the new stop appears:</b> the driver and baker apps pick it up on their next page load from the live DB — no code change needed. The <b>Google Sheet</b> only receives sales if a column header in the matching tab contains <code>(name)</code>; opt in above and the server inserts the column for you (immediately before the Name column, inheriting the previous column's number format). If anything looks off, open the sheet and delete the new column — fully reversible.
+      </div>
+    </div>
+
+    <div class="legend">
+      <b>Singles</b> and <b>Doubles</b> are the weekday drop; <b>Wknd</b> columns are optional overrides for Saturday &amp; Sunday. <b>Inactive</b> stops disappear from the driver and baker views and are skipped by the sheet writer, but their past history is preserved.
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let _stops = [];
+let _routes = [];
+let _routeTabs = {};  // routeKey → [{gid, name}]
+let _activeRoute = null;
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') { location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin'); return; }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    $('#user-tag').textContent = me.name;
+    initApp();
+  } catch (e) { location.replace('/signin?next=' + next); }
+}
+boot();
+
+function initApp() {
+  $('#logout-btn').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  $('#n-save').onclick = onAddStop;
+  loadStops();
+}
+
+async function onAddStop() {
+  const chip = $('#n-status');
+  const show = (msg, kind) => { chip.hidden = false; chip.className = 'chip ' + kind; chip.textContent = msg; };
+  const payload = {
+    route_key: _activeRoute,
+    name:    $('#n-name').value.trim(),
+    town:    $('#n-town').value.trim(),
+    address: $('#n-addr').value.trim(),
+    singles_drop: $('#n-s').value,
+    doubles_drop: $('#n-d').value,
+    singles_drop_wknd: $('#n-sw').value,
+    doubles_drop_wknd: $('#n-dw').value,
+    basket:  $('#n-basket').value.trim(),
+    note:    $('#n-note').value.trim(),
+    shorts:  $('#n-shorts').checked,
+    sheet_insert_gid: Number($('#n-sheet-gid').value) || null,
+  };
+  if (!payload.name) return show('Name required', 'fail');
+  if (!payload.town) return show('Town required', 'fail');
+  $('#n-save').disabled = true;
+  show('Adding…', '');
+  try {
+    const r = await fetch('/api/schedule?resource=stops', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.status);
+    let msg = 'Added';
+    if (j.sheet_insert) msg += ` · sheet column ${j.sheet_insert.column_letter} added to ${j.sheet_insert.tab_name}`;
+    else if (j.sheet_insert_error) msg += ` · sheet column FAILED: ${j.sheet_insert_error}`;
+    else msg += ' · live on driver + baker apps immediately';
+    show(msg, j.sheet_insert_error ? 'fail' : 'ok');
+    // Reset the add form
+    ['#n-name','#n-town','#n-addr','#n-sw','#n-dw','#n-basket','#n-note'].forEach(id => $(id).value = '');
+    $('#n-s').value = '5'; $('#n-d').value = '5';
+    $('#n-shorts').checked = false;
+    // Re-render the active route to include the new stop
+    loadStops();
+    setTimeout(() => { chip.hidden = true; }, j.sheet_insert_error ? 8000 : 3500);
+  } catch (e) {
+    show((e.message || 'error').slice(0, 80), 'fail');
+  } finally {
+    $('#n-save').disabled = false;
+  }
+}
+
+async function loadStops() {
+  const container = $('#route-sections');
+  container.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const r = await fetch('/api/schedule?resource=stops', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    _stops     = j.stops || [];
+    _routes    = j.routes || [];
+    _routeTabs = j.route_tabs || {};
+    if (!_activeRoute && _routes.length) _activeRoute = _routes[0].key;
+    renderTabs();
+    renderRoute();
+  } catch (e) {
+    container.innerHTML = `<div class="empty">Could not load stops.</div>`;
+  }
+}
+
+function renderTabs() {
+  $('#route-tabs').innerHTML = _routes.map(r => `
+    <button type="button" class="route-tab" data-r="${esc(r.key)}" aria-pressed="${r.key === _activeRoute ? 'true' : 'false'}">${esc(r.label)}</button>
+  `).join('');
+  $('#route-tabs').querySelectorAll('button').forEach(b => b.onclick = () => {
+    _activeRoute = b.dataset.r;
+    renderTabs();
+    renderRoute();
+    updateAddFormLabel();
+  });
+  updateAddFormLabel();
+}
+
+function updateAddFormLabel() {
+  const route = _routes.find(r => r.key === _activeRoute);
+  const el = $('#n-route-label');
+  if (el) el.textContent = route ? route.label : '—';
+  // Rebuild the sheet-tab dropdown for this route.
+  const sel = $('#n-sheet-gid');
+  if (!sel) return;
+  const tabs = _routeTabs[_activeRoute] || [];
+  // Keep the "skip" option as default; append one option per sheet tab.
+  sel.innerHTML = '<option value="">— Skip sheet column (Supabase-only) —</option>'
+    + tabs.map(t => `<option value="${t.gid}">${esc(t.name)}</option>`).join('');
+  // If there's exactly one tab, pre-select it so the common case is one-click.
+  if (tabs.length === 1) sel.value = String(tabs[0].gid);
+}
+
+function renderRoute() {
+  const container = $('#route-sections');
+  const stops = _stops.filter(s => s.route_key === _activeRoute);
+  if (!stops.length) { container.innerHTML = '<div class="empty">No stops on this route.</div>'; return; }
+  container.innerHTML = `
+    <div class="tbl-wrap">
+      <table class="stops-tbl">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Stop</th>
+            <th style="width:80px;">Singles</th>
+            <th style="width:80px;">Doubles</th>
+            <th style="width:80px;">Wknd S</th>
+            <th style="width:80px;">Wknd D</th>
+            <th>Basket</th>
+            <th style="width:90px;">Shorts</th>
+            <th style="width:140px;">Payment</th>
+            <th style="width:100px;">Status</th>
+            <th style="width:180px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${stops.map(stopRow).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  container.querySelectorAll('tr[data-stop]').forEach(bindRow);
+}
+
+function stopRow(s) {
+  const dropV = v => v == null ? '' : s.singles_drop_wknd !== undefined ? v : v;  // keep numeric
+  const trClasses = [];
+  if (!s.active) trClasses.push('inactive');
+  if (s.shorts)  trClasses.push('is-shorts');
+  return `<tr data-stop="${esc(s.id)}" class="${trClasses.join(' ')}">
+    <td class="num">${s.stop_order}</td>
+    <td>
+      <div class="name">${esc(s.name)}</div>
+      <div class="town">${esc(s.town)}${s.address ? ' · ' + esc(s.address) : ''}</div>
+    </td>
+    <td><input class="drop-inp"      type="number" inputmode="numeric" min="0" step="1" data-f="singles_drop"      value="${s.singles_drop}"></td>
+    <td><input class="drop-inp"      type="number" inputmode="numeric" min="0" step="1" data-f="doubles_drop"      value="${s.doubles_drop}"></td>
+    <td><input class="drop-inp wknd" type="number" inputmode="numeric" min="0" step="1" data-f="singles_drop_wknd" value="${s.singles_drop_wknd == null ? '' : s.singles_drop_wknd}" placeholder="="></td>
+    <td><input class="drop-inp wknd" type="number" inputmode="numeric" min="0" step="1" data-f="doubles_drop_wknd" value="${s.doubles_drop_wknd == null ? '' : s.doubles_drop_wknd}" placeholder="="></td>
+    <td><input class="drop-inp" style="width:150px;text-align:left;" type="text" maxlength="200" data-f="basket" value="${esc(s.basket || '')}" placeholder="—"></td>
+    <td>
+      <label class="shorts-toggle ${s.shorts ? 'on' : ''}"><input type="checkbox" data-f="shorts" ${s.shorts ? 'checked' : ''}> Shorts</label>
+    </td>
+    <td>${paymentCell(s)}</td>
+    <td>
+      <label class="active-toggle"><input type="checkbox" data-f="active" ${s.active ? 'checked' : ''}> Active</label>
+    </td>
+    <td>
+      <div class="row-actions">
+        <span class="chip" data-k="chip" hidden></span>
+        <button type="button" class="btn-sm ghost" data-k="reset" disabled>Reset</button>
+        <button type="button" class="btn-sm" data-k="save" disabled>Save</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+// ─── payment cell + handler ───────────────────────────────────────
+// Click cycles through: cash → electronic/weekly → electronic/monthly → cash.
+// Shows the connected-bank last4 (good), or a warning when the stop is
+// opted in to electronic but the manager hasn't connected a bank yet.
+function paymentCell(s) {
+  const mode = s.payment_mode || 'cash';
+  const cad  = s.billing_cadence || null;
+  const label =
+    mode === 'cash' ? 'Cash'
+    : cad === 'weekly'  ? 'ACH · Weekly'
+    : cad === 'monthly' ? 'ACH · Monthly'
+    : 'ACH · (set cadence)';
+  const chipClass = mode === 'cash' ? 'cash' : 'elec';
+  let bank = '';
+  if (mode === 'electronic') {
+    if (s.stripe_pm_id && s.bank_last4) bank = `<span class="pay-bank good">•• ${s.bank_last4} linked</span>`;
+    else if (s.stripe_pm_id)             bank = `<span class="pay-bank good">bank linked</span>`;
+    else                                 bank = `<span class="pay-bank missing">bank not linked</span>`;
+  }
+  return `
+    <div class="pay-wrap">
+      <button type="button" class="pay-chip ${chipClass}" data-pay-cycle data-stop="${esc(s.id)}" title="Click to cycle payment mode">${esc(label)}</button>
+      ${bank}
+    </div>`;
+}
+
+// Deterministic cycle so repeated clicks are predictable.
+function nextPaymentState(cur) {
+  const mode = cur.payment_mode || 'cash';
+  const cad  = cur.billing_cadence || null;
+  if (mode === 'cash')                     return { payment_mode: 'electronic', billing_cadence: 'weekly' };
+  if (mode === 'electronic' && cad === 'weekly')  return { payment_mode: 'electronic', billing_cadence: 'monthly' };
+  if (mode === 'electronic' && cad === 'monthly') return { payment_mode: 'cash', billing_cadence: null };
+  // Weird state (electronic without cadence) → put it into weekly.
+  return { payment_mode: 'electronic', billing_cadence: 'weekly' };
+}
+
+// Delegated click handler for every payment chip in the stops table.
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-pay-cycle]');
+  if (!btn) return;
+  const stopId = btn.dataset.stop;
+  const stop = _stops.find(s => s.id === stopId);
+  if (!stop) return;
+  const next = nextPaymentState(stop);
+  const was = stop.payment_mode === 'cash' ? 'Cash' : `ACH ${stop.billing_cadence || ''}`;
+  const to  = next.payment_mode === 'cash' ? 'Cash' : `ACH ${next.billing_cadence}`;
+  if (!confirm(`Change ${stop.name} — ${stop.town}: ${was} → ${to}?`)) return;
+  btn.disabled = true;
+  const prevText = btn.textContent;
+  btn.textContent = 'Saving…';
+  try {
+    const r = await fetch(`/api/schedule?resource=stop-payment-settings&id=${encodeURIComponent(stopId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(next),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.status);
+    // Mutate the in-memory stop so re-render is immediate.
+    Object.assign(stop, next, j.stop || {});
+    const tr = btn.closest('tr');
+    const td = btn.closest('td');
+    if (td) td.innerHTML = paymentCell(stop);
+  } catch (err) {
+    alert('Could not save: ' + (err.message || err));
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
+});
+
+function bindRow(tr) {
+  const id = tr.dataset.stop;
+  const orig = _stops.find(s => s.id === id);
+  const inputs = tr.querySelectorAll('[data-f]');
+  const saveBtn = tr.querySelector('[data-k="save"]');
+  const resetBtn = tr.querySelector('[data-k="reset"]');
+  const chip = tr.querySelector('[data-k="chip"]');
+
+  const currentFromDom = () => {
+    const out = {};
+    inputs.forEach(inp => {
+      const f = inp.dataset.f;
+      if (f === 'active' || f === 'shorts') out[f] = inp.checked;
+      else if (f.endsWith('_wknd')) out[f] = inp.value === '' ? null : (parseInt(inp.value, 10) || 0);
+      else if (f === 'basket') out[f] = inp.value.trim() || null;
+      else out[f] = parseInt(inp.value, 10) || 0;
+    });
+    return out;
+  };
+  const isDirty = (cur) => {
+    for (const k in cur) {
+      const o = orig[k];
+      // Normalize null/undefined/empty-string for comparison
+      const normO = (o === undefined || o === '') ? null : o;
+      const normC = (cur[k] === undefined || cur[k] === '') ? null : cur[k];
+      if (normO !== normC) return true;
+    }
+    return false;
+  };
+  const updateDirty = () => {
+    const cur = currentFromDom();
+    const dirty = isDirty(cur);
+    inputs.forEach(inp => {
+      const f = inp.dataset.f;
+      if (f === 'active' || f === 'shorts') return;
+      const o = orig[f];
+      const normO = (o === undefined || o === '') ? null : o;
+      const v = (f.endsWith('_wknd')) ? (inp.value === '' ? null : (parseInt(inp.value, 10) || 0))
+             : (f === 'basket') ? (inp.value.trim() || null)
+             : (parseInt(inp.value, 10) || 0);
+      inp.classList.toggle('dirty', normO !== v);
+    });
+    // Reflect the shorts toggle label state live so the operator sees it
+    // "light up" the moment they tick the box, before hitting Save.
+    const shortsInp = tr.querySelector('[data-f="shorts"]');
+    if (shortsInp) {
+      const lbl = shortsInp.closest('.shorts-toggle');
+      if (lbl) lbl.classList.toggle('on', shortsInp.checked);
+    }
+    saveBtn.disabled = !dirty;
+    resetBtn.disabled = !dirty;
+    chip.hidden = true;
+  };
+  inputs.forEach(inp => inp.addEventListener('input', updateDirty));
+  inputs.forEach(inp => inp.addEventListener('change', updateDirty));
+
+  resetBtn.onclick = () => {
+    inputs.forEach(inp => {
+      const f = inp.dataset.f;
+      if (f === 'active' || f === 'shorts') inp.checked = !!orig[f];
+      else if (f === 'basket') inp.value = orig[f] || '';
+      else if (f.endsWith('_wknd')) inp.value = orig[f] == null ? '' : orig[f];
+      else inp.value = orig[f];
+    });
+    updateDirty();
+  };
+
+  saveBtn.onclick = async () => {
+    const cur = currentFromDom();
+    saveBtn.disabled = true;
+    chip.hidden = true;
+    try {
+      const r = await fetch(`/api/schedule?resource=stops&id=${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(cur),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || r.status);
+      // Mutate the in-memory original so dirty state resets correctly
+      Object.assign(orig, cur);
+      // Keep the row's shorts styling in sync with the saved value
+      tr.classList.toggle('is-shorts', !!orig.shorts);
+      chip.hidden = false;
+      chip.className = 'chip ok';
+      chip.textContent = 'Saved';
+      updateDirty();
+      setTimeout(() => { chip.hidden = true; }, 1600);
+    } catch (e) {
+      chip.hidden = false;
+      chip.className = 'chip fail';
+      chip.textContent = (e.message || 'error').slice(0, 40);
+      saveBtn.disabled = false;
+    }
+  };
+}
+</script>
+</body>
+</html>

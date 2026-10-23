@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="x-apple-disable-message-reformatting" />
+<title>Welcome to The Pretzel Cup</title>
+<!--
+  Welcome email template — The Pretzel Cup
+  Table-based layout for email-client compatibility (Outlook, Gmail, Apple Mail).
+  Placeholders use {{DoubleBraces}} — swap at send time via your email tool.
+
+  Suggested subject:  Welcome to The Pretzel Cup — your store is live
+  Suggested preheader: Your portal access, delivery schedule, and what to expect in week one.
+-->
+<style>
+  /* Fonts (gracefully degrades in email clients that strip <style>) */
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&family=Caveat:wght@600&display=swap');
+
+  /* Reset */
+  body, table, td, p { margin: 0; padding: 0; }
+  img { border: 0; outline: none; text-decoration: none; display: block; }
+  body { width: 100% !important; -webkit-text-size-adjust: 100%; }
+  table { border-collapse: collapse !important; }
+
+  /* Mobile */
+  @media screen and (max-width: 600px) {
+    .container { width: 100% !important; }
+    .px { padding-left: 24px !important; padding-right: 24px !important; }
+    .headline { font-size: 32px !important; }
+    .script { font-size: 28px !important; }
+    .cta td a { padding: 14px 24px !important; font-size: 15px !important; }
+    .creds td { padding: 14px 18px !important; }
+    .two-col td { display: block !important; width: 100% !important; }
+    .two-col td.left { padding-right: 0 !important; padding-bottom: 14px !important; border-right: 0 !important; }
+    .two-col td.right { padding-left: 0 !important; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px !important; }
+  }
+
+  /* Dark-mode polish — won't ship in all clients but doesn't hurt */
+  @media (prefers-color-scheme: dark) {
+    .body-bg { background: #072A1D !important; }
+  }
+</style>
+</head>
+<body class="body-bg" style="margin:0; padding:0; background:#F8F3E7; font-family:'Montserrat', Arial, Helvetica, sans-serif;">
+
+<!-- Preheader (hidden preview text) -->
+<div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
+  Your portal access, delivery schedule, and what to expect in week one.
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F3E7;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+
+      <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:600px; background:#FFFFFF; border-radius:10px; overflow:hidden; box-shadow:0 4px 20px rgba(14,41,24,0.08);">
+
+        <!-- DIAMOND PLATE STRIP -->
+        <tr>
+          <td style="background-color:#0D5237; background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'><g fill='white' fill-opacity='0.75'><polygon points='2,10 18,5 22,8 6,13'/><polygon points='26,18 42,13 46,16 30,21'/></g></svg>&quot;); background-repeat:repeat; height:36px; line-height:36px; font-size:0;">&nbsp;</td>
+        </tr>
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background:#0D5237; padding:28px 40px 32px; color:#FFFFFF;" class="px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-family:'Montserrat', Arial, sans-serif; font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:#D4B662; padding-bottom:8px;">
+                  The Pretzel Cup · Welcome aboard
+                </td>
+              </tr>
+              <tr>
+                <td class="headline" style="font-family:'Archivo Black', 'Arial Narrow', Arial, sans-serif; font-weight:700; font-size:40px; line-height:1; text-transform:uppercase; color:#FFFFFF; padding-bottom:4px;">
+                  Fresh pretzels
+                </td>
+              </tr>
+              <tr>
+                <td class="script" style="font-family:'Caveat', 'Brush Script MT', cursive; font-weight:600; font-size:36px; color:#D4B662; line-height:1;">
+                  at your store
+                </td>
+              </tr>
+              <tr>
+                <td style="padding-top:12px; font-family:'Montserrat', Arial, sans-serif; font-size:11px; font-weight:700; letter-spacing:0.08em; color:#FFFFFF;">
+                  MADE TO CRAVE<sup style="font-size:7px;">®</sup>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- GOLD RULE -->
+        <tr><td style="background:#D4B662; height:4px; line-height:4px; font-size:0;">&nbsp;</td></tr>
+
+        <!-- BODY -->
+        <tr>
+          <td class="px" style="padding:36px 40px 8px; font-family:'Montserrat', Arial, sans-serif; color:#072A1D; font-size:15px; line-height:1.6;">
+            <p style="margin:0 0 14px;">Hey {{ManagerFirstName}},</p>
+            <p style="margin:0 0 14px;">
+              Welcome to The Pretzel Cup. Your store, <strong>{{StoreName}}</strong>, is officially on our route starting <strong>{{StartDate}}</strong>. Every day going forward, fresh Philly Pretzel Factory pretzels show up at your door, bagged and ready to sell. You only pay for what you move.
+            </p>
+            <p style="margin:0 0 20px;">
+              Everything you need is below. Give it a read, and I'll see you on day one.
+            </p>
+          </td>
+        </tr>
+
+        <!-- PORTAL CREDENTIALS BLOCK -->
+        <tr>
+          <td class="px" style="padding:0 40px 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="creds" style="background:#0D5237; border-radius:8px; color:#FFFFFF;">
+              <tr>
+                <td style="padding:22px 24px 10px; font-family:'Montserrat', Arial, sans-serif; font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:#D4B662;">
+                  Your client portal
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 24px 20px; font-family:'Montserrat', Arial, sans-serif; font-size:14px; line-height:1.6; color:rgba(255,255,255,0.9);">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:4px 0; width:40%; color:rgba(255,255,255,0.6); font-size:12px; letter-spacing:0.06em; text-transform:uppercase;">Portal</td>
+                      <td style="padding:4px 0; font-family:'Courier New', monospace; font-size:13px; color:#FFFFFF;"><a href="{{PortalURL}}" style="color:#D4B662; text-decoration:none;">{{PortalURL}}</a></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0; color:rgba(255,255,255,0.6); font-size:12px; letter-spacing:0.06em; text-transform:uppercase;">Username</td>
+                      <td style="padding:4px 0; font-family:'Courier New', monospace; font-size:13px; color:#FFFFFF;">{{PortalUsername}}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0; color:rgba(255,255,255,0.6); font-size:12px; letter-spacing:0.06em; text-transform:uppercase;">Temp password</td>
+                      <td style="padding:4px 0; font-family:'Courier New', monospace; font-size:13px; color:#FFFFFF;">{{PortalTempPassword}}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr class="cta">
+                <td align="center" style="padding:0 24px 24px;">
+                  <a href="{{PortalURL}}" style="display:inline-block; background:#D4B662; color:#072A1D; font-family:'Archivo Black', Arial, sans-serif; font-weight:700; font-size:14px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; padding:14px 32px; border-radius:6px;">
+                    Open your portal
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:12px 0 0; font-size:12px; color:rgba(14,41,24,0.6); font-family:'Montserrat', Arial, sans-serif;">
+              You'll be asked to set your own password on first sign-in.
+            </p>
+          </td>
+        </tr>
+
+        <!-- SCHEDULE + DRIVER -->
+        <tr>
+          <td class="px" style="padding:16px 40px 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="two-col" style="background:#F8F3E7; border-radius:8px;">
+              <tr>
+                <td class="left" width="50%" valign="top" style="padding:22px 24px; border-right:1px solid rgba(14,41,24,0.1);">
+                  <div style="font-family:'Montserrat', Arial, sans-serif; font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:#D4B662; margin-bottom:8px;">Delivery</div>
+                  <div style="font-family:'Archivo Black', Arial, sans-serif; font-weight:700; font-size:24px; color:#072A1D; line-height:1; text-transform:uppercase; margin-bottom:10px;">Route {{Route}}</div>
+                  <div style="font-family:'Montserrat', Arial, sans-serif; font-size:13px; color:#072A1D; line-height:1.6;">
+                    <strong>Days:</strong> {{DeliveryDays}}<br/>
+                    <strong>Cutoff:</strong> {{OrderCutoff}} the day prior<br/>
+                    <strong>Min order:</strong> 10 units
+                  </div>
+                </td>
+                <td class="right" width="50%" valign="top" style="padding:22px 24px;">
+                  <div style="font-family:'Montserrat', Arial, sans-serif; font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:#D4B662; margin-bottom:8px;">Your driver</div>
+                  <div style="font-family:'Archivo Black', Arial, sans-serif; font-weight:700; font-size:24px; color:#072A1D; line-height:1; text-transform:uppercase; margin-bottom:10px;">{{DriverName}}</div>
+                  <div style="font-family:'Montserrat', Arial, sans-serif; font-size:13px; color:#072A1D; line-height:1.6;">
+                    Punctual, reliable, friendly. Delivers between {{DeliveryWindow}}. No need to coordinate with him directly — all comms run through me via the portal.
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- WHAT'S IN THE KIT -->
+        <tr>
+          <td class="px" style="padding:16px 40px 8px; font-family:'Montserrat', Arial, sans-serif; color:#072A1D;">
+            <div style="font-family:'Archivo Black', Arial, sans-serif; font-weight:700; font-size:18px; text-transform:uppercase; letter-spacing:0.04em; color:#0D5237; margin-bottom:10px;">What arrives on day one</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px; line-height:1.6;">
+              <tr><td style="padding:4px 0; width:16px; color:#D4B662; font-weight:700;">✓</td><td style="padding:4px 0;">Wicker basket + display stand with Pretzel + Coffee card</td></tr>
+              <tr><td style="padding:4px 0; color:#D4B662; font-weight:700;">✓</td><td style="padding:4px 0;">Counter price card and laminated UPC sticker sheet</td></tr>
+              <tr><td style="padding:4px 0; color:#D4B662; font-weight:700;">✓</td><td style="padding:4px 0;">Window cling for the front door</td></tr>
+              <tr><td style="padding:4px 0; color:#D4B662; font-weight:700;">✓</td><td style="padding:4px 0;">UPC card for programming your register</td></tr>
+              <tr><td style="padding:4px 0; color:#D4B662; font-weight:700;">✓</td><td style="padding:4px 0;">Your first batch of fresh pretzels, in branded bags</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- WALKTHROUGH VIDEO -->
+        <tr>
+          <td class="px" style="padding:24px 40px 8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#072A1D; border-radius:8px;">
+              <tr>
+                <td style="padding:24px 24px 20px; color:#FFFFFF;">
+                  <div style="font-family:'Montserrat', Arial, sans-serif; font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:#D4B662; margin-bottom:8px;">2-minute walkthrough</div>
+                  <div style="font-family:'Archivo Black', Arial, sans-serif; font-weight:700; font-size:22px; line-height:1.1; text-transform:uppercase; margin-bottom:14px;">See how the portal works</div>
+                  <a href="{{WalkthroughVideoURL}}" style="display:inline-block; background:#D4B662; color:#072A1D; font-family:'Archivo Black', Arial, sans-serif; font-weight:700; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; padding:12px 24px; border-radius:6px;">
+                    Watch the walkthrough
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- SIGN OFF -->
+        <tr>
+          <td class="px" style="padding:28px 40px 8px; font-family:'Montserrat', Arial, sans-serif; color:#072A1D; font-size:15px; line-height:1.6;">
+            <p style="margin:0 0 14px;">
+              One rule to make this easy on both of us: <strong>all communication runs through the portal.</strong> Message me there and I'll see it right away.
+            </p>
+            <p style="margin:0 0 20px;">
+              Really glad to have you on. Let's sell some pretzels.
+            </p>
+            <div style="font-family:'Caveat', 'Brush Script MT', cursive; font-size:40px; color:#0D5237; line-height:1;">Chris</div>
+            <div style="margin-top:4px; font-size:13px; color:#072A1D;">
+              <strong style="display:block;">Christopher Aumuller</strong>
+              Owner, The Pretzel Cup
+            </div>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="background:#072A1D; padding:20px 40px; color:rgba(255,255,255,0.6); font-family:'Montserrat', Arial, sans-serif; font-size:11px; letter-spacing:0.06em; text-transform:uppercase;" class="px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="left" style="color:rgba(255,255,255,0.6);">The Pretzel Cup · Long Island, NY</td>
+                <td align="right"><a href="https://the-pretzel-cup.vercel.app" style="color:#D4B662; text-decoration:none;">the-pretzel-cup.vercel.app</a></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+
+      <!-- Legal / unsubscribe footer -->
+      <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:600px;">
+        <tr>
+          <td align="center" style="padding:16px 24px 8px; font-family:'Montserrat', Arial, sans-serif; font-size:11px; color:rgba(14,41,24,0.5); line-height:1.5;">
+            You're receiving this because your store joined The Pretzel Cup delivery program.<br/>
+            Questions about this email? Reply directly or message Chris from your portal.
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

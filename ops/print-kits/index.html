@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Print Kits — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.ops-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.ops-header-bar .brand { font-family: var(--display); font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); }
+.ops-header-bar .brand a { color: inherit; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+
+.page { max-width: 1080px; margin: 0 auto; padding: 48px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 10px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 65ch; margin: 0 0 32px; line-height: 1.5; }
+.page-sub code { background: var(--bg); color: var(--accent); padding: 1px 6px; border-radius: 3px; font-family: monospace; font-size: 13px; }
+
+/* Workflow callout */
+.callout {
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 24px 26px;
+  margin-bottom: 28px;
+}
+.callout h3 { font-family: var(--display); font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+.callout ol { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 14px; line-height: 1.65; }
+.callout ol li b { color: var(--ink); }
+
+/* Filter chips */
+.filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.chip-btn { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); background: transparent; cursor: pointer; }
+.chip-btn.is-on { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); }
+.chip-btn .n { background: rgba(0,0,0,0.18); color: inherit; padding: 1px 7px; border-radius: 999px; margin-left: 6px; font-size: 10px; }
+.chip-btn.is-on .n { background: rgba(0,0,0,0.14); }
+
+/* Store rows */
+.list { margin-bottom: 28px; }
+.store-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+}
+.store-row.printed { opacity: 0.7; border-left: 3px solid #5fd58c; }
+.store-row:hover { border-color: var(--line-2); }
+.store-name { font-family: var(--display); font-size: 15px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink); }
+.store-town { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.store-slug { font-family: monospace; color: var(--ink-3); font-size: 12px; }
+.row-chip { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.row-chip.route-FSQ { color: #a5d9f7; border-color: #a5d9f7; }
+.row-chip.route-LYN { color: #e8b85e; border-color: #e8b85e; }
+.row-chip.route-FBW { color: #c5a3ff; border-color: #c5a3ff; }
+.row-chip.printed { color: #5fd58c; border-color: #5fd58c; }
+
+.btn {
+  background: var(--accent); color: var(--ppf-black); border: 0;
+  padding: 10px 18px; border-radius: 999px; cursor: pointer; text-decoration: none;
+  font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+  display: inline-flex; align-items: center;
+}
+.btn:hover { background: var(--accent-2); color: var(--ppf-black); }
+.btn.alt { background: transparent; color: var(--ink-2); border: 1px solid var(--line-2); }
+.btn.alt:hover { color: var(--ink); border-color: var(--accent); }
+
+/* Mark-printed button */
+.mark-done {
+  background: transparent; color: var(--ink-3); border: 1px solid var(--line-2);
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.mark-done:hover { color: #5fd58c; border-color: #5fd58c; }
+.store-row.printed .mark-done { color: #5fd58c; border-color: #5fd58c; background: rgba(95,213,140,0.08); }
+
+.empty { padding: 56px 24px; text-align: center; color: var(--ink-3); font-size: 15px; border: 1px dashed var(--line); border-radius: var(--radius-md); }
+
+@media (max-width: 640px) {
+  .store-row { grid-template-columns: 1fr auto; }
+  .store-row .cell-hide { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+
+<div class="ops-banner">
+  Operator Mode
+  <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+</div>
+
+<div class="ops-header-bar">
+  <div class="brand"><a href="/ops">◂ Ops Hub</a></div>
+  <div class="header-right">
+    <nav class="ops-site-nav">
+      <a href="/ops/plan" class="nav-link">Plan</a>
+      <a href="/ops/stops" class="nav-link">Stops</a>
+      <a href="/ops/people" class="nav-link">People</a>
+      <a href="/ops/onboard" class="nav-link">Onboard</a>
+      <a href="/ops/invite" class="nav-link">Invites</a>
+      <a href="/ops/print-kits" class="nav-link is-active">Print Kits</a>
+    </nav>
+    <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="page-eyebrow">Print &middot; Per-Store Bundles</div>
+  <h1 class="page-title">Print kits for Staples</h1>
+  <p class="page-sub">One row per active store. Each "Open bundle" button opens a page with all 5 kit pieces for that store, with the contact card's QR already personalized. Click <b>Print &middot; Save as PDF</b> inside the bundle to get one PDF per store, then upload the lot to Staples.</p>
+
+  <div class="callout">
+    <h3>Workflow</h3>
+    <ol>
+      <li>Click <b>Open bundle</b> for a store. A new tab opens with the store's 5 pieces previewed.</li>
+      <li>Inside that tab, click the gold <b>Print &middot; Save as PDF</b> button. Chrome's print dialog opens.</li>
+      <li>Choose destination <b>Save as PDF</b>, name it with the suggested filename (e.g. <code>kit-fsq01.pdf</code>), save to a folder on your Desktop.</li>
+      <li>Mark the row as printed with the <b>✓</b> button so you don't repeat it.</li>
+      <li>When you're through the list, upload every PDF to Staples' online print service and pick them up.</li>
+    </ol>
+  </div>
+
+  <div class="filter-bar" id="filter-bar">
+    <button type="button" class="chip-btn is-on" data-route="">All <span class="n" id="n-all">—</span></button>
+    <button type="button" class="chip-btn" data-route="FSQ">FSQ <span class="n" id="n-fsq">—</span></button>
+    <button type="button" class="chip-btn" data-route="LYN">LYN <span class="n" id="n-lyn">—</span></button>
+    <button type="button" class="chip-btn" data-route="FBW">FBW <span class="n" id="n-fbw">—</span></button>
+    <button type="button" class="chip-btn" data-route="done" style="margin-left:auto;">Printed <span class="n" id="n-done">—</span></button>
+  </div>
+
+  <div class="list" id="store-list"></div>
+</main>
+</div><!-- /#app -->
+
+<script>
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') {
+      location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : me.role === 'store' ? '/store' : '/signin');
+      return;
+    }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    document.getElementById('user-tag').textContent = me.name || 'operator';
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch {}
+      location.replace('/signin');
+    });
+    initApp();
+  } catch { location.replace('/signin?next=' + next); }
+}
+boot();
+
+const DONE_KEY = 'ppf-print-kits-done-v1';
+const doneIds = new Set();
+try { (JSON.parse(localStorage.getItem(DONE_KEY) || '[]')).forEach(id => doneIds.add(id)); } catch {}
+function saveDone() { try { localStorage.setItem(DONE_KEY, JSON.stringify([...doneIds])); } catch {} }
+
+let allStops = [];
+let activeFilter = '';
+
+function slugFor(s) {
+  if (s.store_code_norm) return s.store_code_norm;
+  return `${s.route_key}${String(s.stop_order).padStart(2, '0')}`;
+}
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function initApp() {
+  document.querySelectorAll('[data-route]').forEach(b => {
+    b.addEventListener('click', () => {
+      activeFilter = b.dataset.route;
+      document.querySelectorAll('[data-route]').forEach(x => x.classList.toggle('is-on', x.dataset.route === activeFilter));
+      render();
+    });
+  });
+  try {
+    const r = await fetch('/api/schedule?resource=stops', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error('load failed');
+    const { stops } = await r.json();
+    allStops = (stops || []).filter(s => s.active)
+      .sort((a, b) => (a.route_key || '').localeCompare(b.route_key || '') ||
+                      (a.stop_order || 0) - (b.stop_order || 0));
+    render();
+  } catch (err) {
+    document.getElementById('store-list').innerHTML =
+      `<div class="empty">Could not load stops: ${esc(err.message)}</div>`;
+  }
+}
+
+function render() {
+  // Counts
+  document.getElementById('n-all').textContent  = allStops.length;
+  document.getElementById('n-fsq').textContent  = allStops.filter(s => s.route_key === 'FSQ').length;
+  document.getElementById('n-lyn').textContent  = allStops.filter(s => s.route_key === 'LYN').length;
+  document.getElementById('n-fbw').textContent  = allStops.filter(s => s.route_key === 'FBW').length;
+  document.getElementById('n-done').textContent = allStops.filter(s => doneIds.has(s.id)).length;
+
+  // Filter
+  const rows = allStops.filter(s => {
+    if (!activeFilter) return true;
+    if (activeFilter === 'done') return doneIds.has(s.id);
+    return s.route_key === activeFilter;
+  });
+
+  const list = document.getElementById('store-list');
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty">No stores match this filter.</div>`;
+    return;
+  }
+
+  list.innerHTML = rows.map(s => {
+    const slug = slugFor(s);
+    const name = s.store_display_name || `${s.name} — ${s.town}`;
+    const url = `/onboarding-kit/print-store?store=${encodeURIComponent(slug)}&name=${encodeURIComponent(name)}&route=${encodeURIComponent(s.route_key)}`;
+    const done = doneIds.has(s.id);
+    return `
+      <div class="store-row${done ? ' printed' : ''}" data-id="${s.id}">
+        <div>
+          <div class="store-name">${esc(s.name)}</div>
+          <div class="store-town">${esc(s.town)} · <span class="store-slug">${esc(slug)}</span></div>
+        </div>
+        <span class="row-chip route-${s.route_key} cell-hide">${esc(s.route_key)}</span>
+        <a class="btn" href="${url}" target="_blank" rel="noopener">Open bundle →</a>
+        <button type="button" class="mark-done" title="${done ? 'Mark as not printed' : 'Mark as printed'}" data-id="${s.id}">${done ? '✓' : ' '}</button>
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.mark-done').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.id;
+      if (doneIds.has(id)) doneIds.delete(id); else doneIds.add(id);
+      saveDone();
+      render();
+    });
+  });
+  list.querySelectorAll('.btn[target="_blank"]').forEach(a => {
+    a.addEventListener('click', () => {
+      // Auto-mark as printed when they open the bundle. They can un-check later.
+      const row = a.closest('.store-row');
+      if (row) {
+        const id = row.dataset.id;
+        setTimeout(() => { doneIds.add(id); saveDone(); render(); }, 400);
+      }
+    });
+  });
+}
+</script>
+</body>
+</html>
