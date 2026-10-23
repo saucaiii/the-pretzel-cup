@@ -465,7 +465,7 @@ document.addEventListener('click', async (e) => {
       body: JSON.stringify(next),
     });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error || r.status);
+    if (!r.ok) throw new Error([j.error, j.detail].filter(Boolean).join(': ') || r.status);
     // Mutate the in-memory stop so re-render is immediate.
     Object.assign(stop, next, j.stop || {});
     const tr = btn.closest('tr');
