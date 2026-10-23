@@ -230,7 +230,14 @@ async function boot() {
     STRIPE_PK = pm.stripe_publishable_key || '';
     render(d, pm, inv.invoices || []);
   } catch (e) {
-    document.getElementById('curtain').textContent = 'Could not load.';
+    const msg = (e && e.message ? e.message : String(e)).slice(0, 220);
+    document.getElementById('curtain').innerHTML =
+      '<div style="max-width:420px;text-align:center;padding:0 20px;font-family:var(--body);text-transform:none;letter-spacing:0;font-size:14px;line-height:1.5;color:var(--ink-2);">' +
+        '<div style="font-family:var(--display);font-size:18px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Billing not ready</div>' +
+        'Pretzel Cup is finishing setting up your billing portal. ' +
+        'Please try again in a few minutes, or <a style="color:var(--gold);" href="/store/dashboard">return to the dashboard</a>.' +
+        '<div style="margin-top:14px;font-size:11px;color:var(--ink-3);">' + msg.replace(/[<>&]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;"}[c])) + '</div>' +
+      '</div>';
     console.error(e);
     return;
   }
