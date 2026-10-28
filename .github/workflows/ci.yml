@@ -1,0 +1,64 @@
+# Success criteria as required checks + durable evidence (GH-600 Domains 1, 4).
+# Required status checks: "test", "codeql".
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read   # least privilege by default; jobs elevate only what they need
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Test (results saved as evidence)
+        # pretzel-cup is a static site + serverless functions with no `npm test`
+        # yet. Record that explicitly as evidence; swap in a real suite later.
+        run: |
+          mkdir -p results
+          { echo "No tests configured in package.json ($(date -u +%FT%TZ))"; } | tee results/test-output.txt
+      - run: npm run lint --if-present
+      - name: Upload test evidence
+        if: always()   # keep evidence even when tests fail, for debugging
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          # Traceable: names the commit and run that produced it.
+          name: test-results-${{ github.sha }}-run${{ github.run_id }}
+          path: results/
+          retention-days: 30
+      - name: Evidence summary
+        if: always()
+        run: |
+          {
+            echo "### Evidence"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- Artifact: test-results-${{ github.sha }}-run${{ github.run_id }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read            # CodeQL reads the workflow run; required on private repos
+      security-events: write   # only what CodeQL needs to upload SARIF results
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: github/codeql-action/init@4bfa242aa49c5f7c6770b98670d354a7dfac05f8 # v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@4bfa242aa49c5f7c6770b98670d354a7dfac05f8 # v3

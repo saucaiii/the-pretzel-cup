@@ -9,3 +9,13 @@ node_modules/
 .DS_Store
 *.log
 .cache/
+
+# ─── GH600 agent runtime files (added by install) ───
+.agent/eval.md
+.agent-control/audit.log
+.agent-control/failures.json
+.agent-control/approval
+.agent-control/scope.txt
+.agent-control/archive/
+*.key
+secrets/
