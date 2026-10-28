@@ -1,13 +1,11 @@
-# Working memory (short-term). Keep under 60 lines. Prune when a task closes.
-Branch: none
-Task: none
-Status: idle
+# Working memory (short-term). Keep under 60 lines.
+Branch: agent/price-override-ga
+Task: price-override-ga
+Status: planning
+Started: 2026-10-28T13:41Z
 
 ## Progress
-- (none)
+- Created isolated worktree. Scope: supabase/migrations/
 
-## Failures and root causes
-- (none)
-
-## Review notes
-- (none)
+## Handoffs
+- (agent -> agent: input, output, result)
