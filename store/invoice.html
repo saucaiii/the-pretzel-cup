@@ -15,13 +15,18 @@
 --bg-2:#083521;--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.22);
 --display:'Anton','Impact',sans-serif;--body:'Inter',system-ui,sans-serif;color-scheme:dark;}
 *{box-sizing:border-box} html,body{margin:0;padding:0}
-body{background:var(--green);color:var(--ink);font-family:var(--body);min-height:100dvh;padding:16px 14px 48px}
+body{background:var(--green);color:var(--ink);font-family:var(--body);min-height:100dvh;padding:max(16px,env(safe-area-inset-top)) 14px max(48px,env(safe-area-inset-bottom))}
+button, [role="button"], input[type="button"], input[type="submit"], a.back, .btn {
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
 .wrap{max-width:720px;margin:0 auto}
 #curtain{position:fixed;inset:0;background:var(--green);z-index:9999;display:grid;place-items:center;color:var(--ink-3);font:400 13px var(--display);letter-spacing:.14em;text-transform:uppercase}
 header.top{display:flex;align-items:center;justify-content:space-between;padding:10px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px}
-.back{color:var(--ink-2);text-decoration:none;font:400 11px var(--display);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line-2);padding:8px 12px;border-radius:999px}
+.back{color:var(--ink-2);text-decoration:none;font:400 11px var(--display);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line-2);padding:8px 12px;border-radius:999px;transition:transform 80ms ease, color 120ms ease, border-color 120ms ease, background 120ms ease}
 .back:hover{color:var(--ink);border-color:var(--gold)}
-.btn{background:var(--gold);color:#000;border:1px solid var(--gold);border-radius:999px;padding:8px 14px;font:700 11px var(--display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.back:active{transform:scale(0.96);background:rgba(0,0,0,0.2)}
+.btn{background:var(--gold);color:#000;border:1px solid var(--gold);border-radius:999px;padding:8px 14px;font:700 11px var(--display);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:transform 80ms ease, background 120ms ease}
+.btn:active{transform:scale(0.97);background:#F2E7A4}
 .month-picker{display:flex;gap:8px;align-items:center;margin:0 0 16px}
 .month-picker input,.month-picker select{background:rgba(0,0,0,.3);border:1px solid var(--line-2);color:var(--ink);border-radius:8px;padding:8px 10px;font:600 14px var(--body);color-scheme:dark;appearance:menulist}
 h1{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:.02em;text-transform:uppercase;margin:0 0 2px}
@@ -35,18 +40,29 @@ h1{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:.02e
 .sheet th{text-align:left;font:700 10px var(--body);letter-spacing:.14em;text-transform:uppercase;color:#666;padding:6px 8px;border-bottom:1px solid #ccc}
 .sheet td{padding:7px 8px;border-bottom:1px solid #eee;font-variant-numeric:tabular-nums}
 .sheet .r{text-align:right}
-.sheet .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;font-variant-numeric:tabular-nums}
+.sheet .totals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:14px;font-variant-numeric:tabular-nums}
+@media (max-width: 600px){.sheet .totals{grid-template-columns:repeat(2,1fr)}}
 .sheet .totals .k{background:#f6f1dd;border:1px solid #e3d9a9;border-radius:8px;padding:10px 12px}
 .sheet .totals .lab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#777;font-weight:700}
 .sheet .totals .v{font-family:var(--display);font-size:22px;color:var(--green);margin-top:4px}
 .sheet .foot{margin-top:18px;font-size:11px;color:#777}
 .empty{color:#999;text-align:center;padding:24px}
 @media print{
-  body{background:#fff;padding:0;color:#111}
-  header.top,.month-picker,#noprint{display:none !important}
-  #curtain{display:none !important}
-  .sheet{box-shadow:none;border-radius:0;margin:0;padding:24px}
-  .wrap{max-width:100%}
+  @page{size:Letter;margin:0.5in}
+  :root{color-scheme:light}
+  html,body{background:#fff !important;color:#111 !important;padding:0 !important;margin:0 !important}
+  header.top,.month-picker,#noprint,#noprint-picker,#curtain{display:none !important}
+  .wrap{max-width:100% !important;margin:0 !important;padding:0 !important}
+  .sheet{box-shadow:none !important;border:0 !important;border-radius:0 !important;margin:0 !important;padding:0 !important;color:#111 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sheet .head .l,.sheet .totals .v{color:#0D5237 !important}
+  .sheet h2{color:#555 !important}
+  .sheet .totals{page-break-inside:avoid}
+  .sheet .totals .k{background:#f6f1dd !important;border-color:#e3d9a9 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table{page-break-inside:auto}
+  tr{page-break-inside:avoid;page-break-after:auto}
+  thead{display:table-header-group}
+  tfoot{display:table-footer-group}
+  .sheet .foot{color:#777 !important;border-top:1px solid #ccc;padding-top:12px;margin-top:18px}
 }
 </style>
 </head>
@@ -81,19 +97,20 @@ h1{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:.02e
 
     <h2>Deliveries</h2>
     <table id="rows-table" style="display:none">
-      <thead><tr><th>Date</th><th class="r">Singles</th><th class="r">Doubles</th><th class="r">Subtotal</th></tr></thead>
+      <thead><tr><th>Date</th><th class="r">Singles</th><th class="r">Doubles</th><th class="r">Revenue</th><th class="r">Wholesale</th><th class="r">Profit</th></tr></thead>
       <tbody id="rows-body"></tbody>
     </table>
     <div class="empty" id="rows-empty">No deliveries in this month.</div>
 
     <div class="totals">
-      <div class="k"><div class="lab">Singles sold</div><div class="v" id="t-singles">0</div></div>
-      <div class="k"><div class="lab">Doubles sold</div><div class="v" id="t-doubles">0</div></div>
+      <div class="k"><div class="lab">Singles · doubles</div><div class="v" id="t-units">0 · 0</div></div>
       <div class="k"><div class="lab">Deliveries</div><div class="v" id="t-deliv">0</div></div>
-      <div class="k"><div class="lab">Total</div><div class="v" id="t-total">$0</div></div>
+      <div class="k"><div class="lab">Revenue</div><div class="v" id="t-revenue">$0</div></div>
+      <div class="k"><div class="lab">Wholesale (you owe)</div><div class="v" id="t-total">$0</div></div>
+      <div class="k" style="background:#eaf6ec !important;border-color:#b8dcb8 !important;"><div class="lab">Profit</div><div class="v" id="t-profit">$0</div></div>
     </div>
 
-    <div class="foot">Reference only. Not an invoice for payment. Questions: call us.</div>
+    <div class="foot">Reference only. Not an invoice for payment. Retail assumed at $4.00 single · $6.00 double. Questions: call us.</div>
   </section>
 </div>
 
@@ -121,23 +138,33 @@ function render(d){
   document.getElementById('store-name').textContent=d.stop.display_name;
   document.getElementById('store-addr').textContent=d.stop.address||'';
   document.getElementById('month-label').textContent=monthLabel(d.month);
-  const rows=d.rows||[];const sp=d.pricing.single_cents;const dp=d.pricing.double_cents;
+  const rows=d.rows||[];
+  const P=d.pricing||{};
+  const sp=P.single_cents||215, dp=P.double_cents||385;
+  const rs=P.retail_single_cents||400, rd=P.retail_double_cents||600;
+  const ps=P.profit_single_cents||(rs-sp), pd=P.profit_double_cents||(rd-dp);
   const tbody=document.getElementById('rows-body');const table=document.getElementById('rows-table');const empty=document.getElementById('rows-empty');
+  let sumRev=0,sumCogs=0,sumProfit=0;
   if(rows.length){
     tbody.innerHTML=rows.map(r=>{
       const s=r.sold_singles||0,db=r.sold_doubles||0;
-      const sub=(r.sold_cents!=null)?r.sold_cents:(s*sp + db*dp);
-      return `<tr><td>${esc(fmtDate(r.for_date))}</td><td class="r">${s}</td><td class="r">${db}</td><td class="r">${money(sub)}</td></tr>`;
+      const cogs=(r.sold_cents!=null)?r.sold_cents:(s*sp + db*dp);
+      const rev=s*rs + db*rd;
+      const prof=s*ps + db*pd;
+      sumRev+=rev; sumCogs+=cogs; sumProfit+=prof;
+      return `<tr><td>${esc(fmtDate(r.for_date))}</td><td class="r">${s}</td><td class="r">${db}</td><td class="r">${money(rev)}</td><td class="r">${money(cogs)}</td><td class="r">${money(prof)}</td></tr>`;
     }).join('');
     table.style.display='';empty.style.display='none';
   } else {
     table.style.display='none';empty.style.display='';
   }
   const T=d.totals||{};
-  document.getElementById('t-singles').textContent=T.singles_sold||0;
-  document.getElementById('t-doubles').textContent=T.doubles_sold||0;
+  document.getElementById('t-units').textContent=`${T.singles_sold||0} · ${T.doubles_sold||0}`;
   document.getElementById('t-deliv').textContent=T.deliveries||0;
-  document.getElementById('t-total').textContent=money(T.gross_cents);
+  // Prefer server-side totals when present; fall back to the row sums above.
+  document.getElementById('t-revenue').textContent=money(T.revenue_cents!=null?T.revenue_cents:sumRev);
+  document.getElementById('t-total').textContent=money(T.cogs_cents!=null?T.cogs_cents:(T.gross_cents||sumCogs));
+  document.getElementById('t-profit').textContent=money(T.profit_cents!=null?T.profit_cents:sumProfit);
 }
 
 function exportXlsx(){

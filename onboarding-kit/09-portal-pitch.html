@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Store Portal — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  body { width: 8.5in; height: 11in; }
+
+  .pitch {
+    width: 8.5in; height: 11in;
+    background: var(--ppf-cream);
+    color: var(--ppf-ink);
+    display: flex; flex-direction: column;
+  }
+
+  /* ─── Head band ─────────────────────────────────────────────── */
+  .pitch-head-wrap { background: var(--ppf-green); }
+  .pitch-head {
+    background: var(--ppf-green); color: var(--ppf-white);
+    padding: 26px 60px 30px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .pitch-head .eyebrow {
+    font-family: var(--font-display); font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--ppf-gold); margin: 0 0 6px;
+  }
+  .pitch-head .headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 44px; line-height: 0.95;
+    text-transform: uppercase; margin: 0;
+  }
+  .pitch-head .script {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 36px; display: block; margin-top: 2px;
+  }
+  .pitch-head .right {
+    text-align: right; min-width: 150px;
+  }
+  .pitch-head .right .label {
+    font-family: var(--font-display); font-size: 10px; letter-spacing: 0.22em;
+    color: var(--ppf-gold); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .pitch-head .right .url {
+    font-family: var(--font-display); color: var(--ppf-white);
+    font-size: 15px; line-height: 1.1; letter-spacing: 0.04em;
+  }
+
+  /* ─── Hero line ─────────────────────────────────────────────── */
+  .pitch-hero {
+    padding: 22px 60px 10px;
+    font-size: 15px; line-height: 1.5; color: var(--ppf-ink);
+    border-bottom: 2px solid var(--ppf-gold);
+  }
+  .pitch-hero strong { color: var(--ppf-green); }
+
+  /* ─── Body grid ─────────────────────────────────────────────── */
+  .pitch-body {
+    flex: 1; padding: 22px 60px 12px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px;
+  }
+  .feat {
+    display: grid; grid-template-columns: 44px 1fr; gap: 10px;
+    align-items: start;
+  }
+  .feat .num {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--ppf-green); color: var(--ppf-gold);
+    font-family: var(--font-display); font-size: 15px;
+    display: grid; place-items: center; letter-spacing: 0;
+    flex-shrink: 0;
+  }
+  .feat .text { padding-top: 2px; }
+  .feat h3 {
+    margin: 0 0 2px;
+    font-family: var(--font-display); font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ppf-green);
+  }
+  .feat p {
+    margin: 0; font-size: 12px; line-height: 1.45; color: var(--ppf-ink);
+  }
+
+  /* ─── Highlight band ────────────────────────────────────────── */
+  .highlight {
+    margin: 0 60px 16px;
+    background: var(--ppf-white);
+    border-left: 4px solid var(--ppf-gold);
+    padding: 14px 20px;
+    display: flex; justify-content: space-between; align-items: center; gap: 20px;
+  }
+  .highlight .big {
+    font-family: var(--font-display); font-size: 22px; color: var(--ppf-green);
+    text-transform: uppercase; letter-spacing: 0.02em; line-height: 1;
+  }
+  .highlight .sub {
+    font-size: 12px; color: var(--ppf-ink); line-height: 1.4;
+    max-width: 54ch;
+  }
+  .highlight .sub strong { color: var(--ppf-green); }
+
+  /* ─── CTA band ──────────────────────────────────────────────── */
+  .cta-row {
+    display: flex; align-items: center; gap: 18px;
+    padding: 14px 60px;
+    background: var(--ppf-green-deep); color: var(--ppf-white);
+  }
+  .cta-row .kicker {
+    font-family: var(--font-display); font-size: 11px; letter-spacing: 0.22em;
+    color: var(--ppf-gold); text-transform: uppercase;
+  }
+  .cta-row .headline {
+    font-family: var(--font-display); font-size: 20px;
+    text-transform: uppercase; letter-spacing: 0.02em; margin: 0;
+  }
+  .cta-row .pin-block {
+    margin-left: auto; text-align: right;
+  }
+  .cta-row .pin-label {
+    font-family: var(--font-display); font-size: 10px; letter-spacing: 0.22em;
+    color: var(--ppf-gold); text-transform: uppercase; margin-bottom: 2px;
+  }
+  .cta-row .pin {
+    font-family: var(--font-display); font-size: 32px; letter-spacing: 0.14em;
+    color: var(--ppf-white);
+  }
+
+  /* ─── Footer ────────────────────────────────────────────────── */
+  .pitch-footer {
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    padding: 14px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .pitch-footer .gold { color: var(--ppf-gold); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="pitch">
+
+  <!-- HEAD -->
+  <div class="pitch-head-wrap">
+    <div class="plate-strip"></div>
+    <div class="pitch-head">
+      <div>
+        <div class="eyebrow">Your Store Portal</div>
+        <h1 class="headline">Know your<br/>pretzel profit</h1>
+        <span class="script">in real time</span>
+      </div>
+      <div class="right">
+        <div class="label">Sign in</div>
+        <div class="url" id="portal-url">the-pretzel-cup<br/>.vercel.app/store</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="pitch-hero">
+    You're already selling our pretzels. The <strong>Store Portal</strong> shows you exactly how much you've made — <strong>daily, weekly, monthly, quarterly, year-to-date</strong>. Revenue, wholesale cost, and <strong>profit</strong>, split by singles and doubles, right down to the delivery. No app to install, no password to remember.
+  </div>
+
+  <!-- FEATURES -->
+  <div class="pitch-body">
+    <div class="feat">
+      <div class="num">1</div>
+      <div class="text">
+        <h3>See your profit</h3>
+        <p>Each delivery flows straight into your dashboard. Profit is the headline number — not a line buried in a statement.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">2</div>
+      <div class="text">
+        <h3>Your full history</h3>
+        <p>Every drop since day one. Filter by date, roll up by month, see which days are moving pretzels and which aren't.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">3</div>
+      <div class="text">
+        <h3>Report issues in one tap</h3>
+        <p>Short count, damage, missed drop — flag it from your phone and it lands with the ops team instantly.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">4</div>
+      <div class="text">
+        <h3>Flex your schedule</h3>
+        <p>Request a double drop before a weekend, or skip tomorrow if you're closing early. We adjust the route.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">5</div>
+      <div class="text">
+        <h3>Monthly statements</h3>
+        <p>Printable PDF or Excel export — pre-formatted for your bookkeeper or your franchise accounting.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">6</div>
+      <div class="text">
+        <h3>Call or text us from inside</h3>
+        <p>Direct line to Chris. One tap. No phone-tree, no inbox purgatory, no delays.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">7</div>
+      <div class="text">
+        <h3>Dead simple access</h3>
+        <p>Bookmark the URL. Type your PIN. You're in. If you can text, you can use it.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">8</div>
+      <div class="text">
+        <h3>Your data, only yours</h3>
+        <p>You see your location, nobody else's. Separate PIN per store. Private by design.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIGHLIGHT -->
+  <div class="highlight">
+    <div class="big">$1.85<br/>$2.15</div>
+    <div class="sub">
+      Pure profit per <strong>single</strong> ($4.00 retail − $2.15 wholesale) and per <strong>double</strong> ($6.00 retail − $3.85 wholesale). The portal does the math for you across every period — pick a store, see the number.
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-row">
+    <div>
+      <div class="kicker">First time? Just two things:</div>
+      <h2 class="headline">Open the URL · Type the PIN</h2>
+    </div>
+    <div class="pin-block">
+      <div class="pin-label">Starter PIN</div>
+      <div class="pin">0000</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="pitch-footer">
+    <span>The Pretzel Cup · Store Portal</span>
+    <span class="gold">the-pretzel-cup.vercel.app/store</span>
+  </div>
+
+</div>
+
+<script>
+// Per-store URL: /onboarding-kit/09-portal-pitch?store=FBW01 bakes the
+// store's specific sign-in URL into the hero + footer. Falls back to
+// the generic portal URL when no store is passed (standalone preview).
+(function () {
+  const code = String(new URLSearchParams(location.search).get('store') || '')
+    .toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!code) return;
+  const short = `the-pretzel-cup<br/>.vercel.app/store/${code}`;
+  const flat  = `the-pretzel-cup.vercel.app/store/${code}`;
+  const urlEl = document.getElementById('portal-url');
+  if (urlEl) urlEl.innerHTML = short;
+  const footEl = document.querySelector('.pitch-footer .gold');
+  if (footEl) footEl.textContent = flat;
+})();
+</script>
+</body>
+</html>

@@ -1,291 +1,102 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-<meta charset="utf-8" />
-<title>New Store Onboarding Kit — The Pretzel Cup</title>
-<base href="/onboarding-kit/" />
-<link rel="stylesheet" href="assets/kit.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Store Onboarding Kit — PPF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
-  body {
-    background: #f3f0e8;
-    padding: 48px 32px 96px;
-    font-family: 'Montserrat', sans-serif;
-    color: var(--ppf-ink);
+  :root { --green:#0D5237; --gold:#D4B662; color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f3efe4; color: #111; font-family: 'Inter', system-ui, sans-serif; }
+  .toolbar {
+    background: var(--green); color: #fff;
+    padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
   }
-  .wrap { max-width: 1120px; margin: 0 auto; }
-  header {
-    margin-bottom: 40px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
+  .toolbar .title { font-family: 'Anton', sans-serif; font-size: 20px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  .toolbar .sub { font-size: 12px; color: rgba(255,255,255,.7); letter-spacing: .1em; text-transform: uppercase; }
+  .wrap { max-width: 920px; margin: 32px auto; padding: 0 24px; }
+  h1 { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 36px; letter-spacing: .02em; margin: 0 0 6px; text-transform: uppercase; color: var(--green); }
+  .lede { color: #555; font-size: 14px; margin: 0 0 28px; }
+  .lede b { color: #111; }
+  .group { margin-bottom: 28px; }
+  .group h2 { font-family: 'Anton', sans-serif; font-size: 14px; letter-spacing: .22em; text-transform: uppercase; color: var(--green); margin: 0 0 10px; }
+  .stops { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .stop {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    background: #fff; border: 1px solid #e9e3cf;
+    padding: 12px 16px; border-radius: 10px; text-decoration: none; color: inherit;
+    transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
   }
-  header .logo-badge { width: 72px; height: 72px; }
-  header h1 {
-    font-family: 'Archivo Black', sans-serif;
-    font-weight: 700;
-    font-size: 42px;
-    line-height: 0.95;
-    text-transform: uppercase;
-    margin: 0;
-    color: var(--ppf-green-deep);
+  .stop:hover { background: #faf4e1; border-color: var(--gold); }
+  .stop:active { transform: scale(.995); }
+  .stop .name { font-weight: 600; color: #111; }
+  .stop .code { color: var(--green); font-family: 'Anton', sans-serif; letter-spacing: .1em; font-size: 13px; }
+  .stop .url { color: #777; font-size: 12px; font-family: 'Anton', sans-serif; letter-spacing: .08em; margin-top: 2px; }
+  .stop .download {
+    background: var(--green); color: var(--gold); border-radius: 999px;
+    padding: 6px 14px; font: 700 11px 'Anton', sans-serif; letter-spacing: .14em; text-transform: uppercase;
+    white-space: nowrap;
   }
-  header .script { color: var(--ppf-gold); font-size: 38px; display: block; }
-  header p { margin: 6px 0 0; color: var(--ppf-ink); opacity: 0.75; font-size: 14px; }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px;
+  .stop:hover .download { background: var(--gold); color: #000; }
+  .loading { color: #777; padding: 24px; text-align: center; }
+  @media (min-width: 720px) {
+    .stops { grid-template-columns: 1fr 1fr; }
   }
-
-  .piece {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(14, 41, 24, 0.08);
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgba(14, 41, 24, 0.08);
-  }
-  .piece .preview {
-    background: #e9e4d8;
-    aspect-ratio: 4 / 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
-  }
-  .piece iframe {
-    border: 0;
-    pointer-events: none;
-    transform-origin: top left;
-  }
-  .piece .meta {
-    padding: 18px 20px 20px;
-  }
-  .piece .num {
-    font-family: 'Archivo Black', sans-serif;
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    color: var(--ppf-gold);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  .piece h3 {
-    font-family: 'Archivo Black', sans-serif;
-    font-weight: 700;
-    font-size: 20px;
-    text-transform: uppercase;
-    margin: 0 0 4px;
-    color: var(--ppf-green-deep);
-  }
-  .piece .size {
-    font-size: 11px;
-    color: var(--ppf-ink);
-    opacity: 0.6;
-    margin-bottom: 10px;
-    letter-spacing: 0.04em;
-  }
-  .piece .desc {
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--ppf-ink);
-    opacity: 0.8;
-    margin: 0 0 14px;
-  }
-  .piece .actions {
-    display: flex;
-    gap: 8px;
-  }
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    text-decoration: none;
-    letter-spacing: 0.02em;
-  }
-  .btn-primary { background: var(--ppf-green); color: white; }
-  .btn-ghost { background: transparent; color: var(--ppf-green); border: 1px solid var(--ppf-green); }
-
-  .inventory {
-    margin-top: 56px;
-    background: white;
-    border-radius: 10px;
-    padding: 32px;
-    box-shadow: 0 4px 16px rgba(14, 41, 24, 0.08);
-  }
-  .inventory h2 {
-    font-family: 'Archivo Black', sans-serif;
-    text-transform: uppercase;
-    font-size: 22px;
-    color: var(--ppf-green-deep);
-    margin: 0 0 16px;
-  }
-  .inv-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-  }
-  .inv-col h4 {
-    font-family: 'Archivo Black', sans-serif;
-    text-transform: uppercase;
-    font-size: 13px;
-    letter-spacing: 0.1em;
-    color: var(--ppf-gold);
-    margin: 0 0 8px;
-    border-bottom: 2px solid var(--ppf-gold);
-    padding-bottom: 6px;
-  }
-  .inv-col ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.6;
-  }
-  .inv-col li { padding-left: 18px; position: relative; margin-bottom: 4px; }
-  .inv-col li::before { content: ''; position: absolute; left: 0; top: 8px; width: 8px; height: 8px; background: var(--ppf-green); border-radius: 50%; }
-  .inv-col.pending li::before { background: var(--ppf-gold); }
-  .inv-col.sourcing li::before { background: #c0c0c0; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <span class="logo-badge" style="background-image: url('assets/ppf-logo.png');"></span>
-    <div>
-      <h1>New Store<br/><span class="script">onboarding kit</span></h1>
-      <p>The Pretzel Cup · Day-one welcome packet for 7-Eleven franchisees</p>
-    </div>
-  </header>
 
-  <div class="grid">
-    <div class="piece">
-      <div class="preview"><iframe src="01-welcome-letter.html" width="816" height="1056" style="transform: scale(0.37);"></iframe></div>
-      <div class="meta">
-        <div class="num">01 · Letter</div>
-        <h3>Welcome letter</h3>
-        <div class="size">8.5" × 11" · letter, portrait</div>
-        <p class="desc">A short letter from Chris: what's in the kit, how comms work, and what to expect.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="01-welcome-letter.html" target="_blank">Open · Print</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="piece">
-      <div class="preview"><iframe src="02-driver-card.html" width="480" height="672" style="transform: scale(0.45);"></iframe></div>
-      <div class="meta">
-        <div class="num">02 · Card</div>
-        <h3>Your driver</h3>
-        <div class="size">5" × 7" · portrait</div>
-        <p class="desc">Informational card — driver's name, tenure, route, pretzels delivered, personality tags. No contact info.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="02-driver-card.html" target="_blank">Open · Print</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="piece">
-      <div class="preview"><iframe src="03-contact-card.html" width="576" height="384" style="transform: scale(0.52);"></iframe></div>
-      <div class="meta">
-        <div class="num">03 · Card</div>
-        <h3>Contact Chris</h3>
-        <div class="size">6" × 4" · landscape</div>
-        <p class="desc">All comms run through the portal. QR code opens the client portal; direct message to Chris.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="03-contact-card.html" target="_blank">Open · Print</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="piece">
-      <div class="preview"><iframe src="04-upc-card.html" width="480" height="336" style="transform: scale(0.62);"></iframe></div>
-      <div class="meta">
-        <div class="num">04 · Card</div>
-        <h3>UPC register card</h3>
-        <div class="size">5" × 3.5" · landscape</div>
-        <p class="desc">Both UPCs and retail prices for whoever programs the 7-Eleven register.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="04-upc-card.html" target="_blank">Open · Print</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="piece">
-      <div class="preview"><iframe src="05-basket-stand-insert.html" width="576" height="384" style="transform: scale(0.52);"></iframe></div>
-      <div class="meta">
-        <div class="num">05 · Display</div>
-        <h3>Basket stand insert</h3>
-        <div class="size">6" × 4" · landscape</div>
-        <p class="desc">Goes in the counter display stand next to the basket. Pretzel + Coffee pairing, with a Pretzel Cup credit line.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="05-basket-stand-insert.html" target="_blank">Open · Print</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="piece">
-      <div class="preview"><iframe src="06-welcome-email.html" width="600" height="900" style="transform: scale(0.45);"></iframe></div>
-      <div class="meta">
-        <div class="num">06 · Email</div>
-        <h3>Welcome email</h3>
-        <div class="size">HTML + plain-text · 600px wide</div>
-        <p class="desc">Day-one email with portal credentials, delivery schedule, driver intro, and the walkthrough video link. Uses <code>{{DoubleBraces}}</code> placeholders.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="06-welcome-email.html" target="_blank">Preview HTML</a>
-          <a class="btn btn-ghost" href="06-welcome-email.txt" target="_blank">Plain text</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="inventory">
-    <h2>Full kit inventory</h2>
-    <div class="inv-grid">
-      <div class="inv-col">
-        <h4>In this folder</h4>
-        <ul>
-          <li>Welcome letter</li>
-          <li>Driver info card</li>
-          <li>Contact card (QR → portal)</li>
-          <li>UPC register card</li>
-          <li>Basket stand insert</li>
-          <li>Welcome email (HTML + plain-text)</li>
-        </ul>
-      </div>
-      <div class="inv-col">
-        <h4>From existing stock</h4>
-        <ul>
-          <li>Laminated UPC barcode sheet</li>
-          <li>$4/$6 retail counter price card</li>
-          <li>Branded bags</li>
-          <li>Wicker basket</li>
-          <li>Pretzel + Coffee pairing graphic</li>
-        </ul>
-      </div>
-      <div class="inv-col sourcing">
-        <h4>Still sourcing</h4>
-        <ul>
-          <li>Window cling · artwork = "Proudly Serving" PDF; vendor TBD</li>
-        </ul>
-      </div>
-      <div class="inv-col pending">
-        <h4>Digital — next up</h4>
-        <ul>
-          <li>Store-manager portal walkthrough video</li>
-          <li>Operator-portal onboarding module (code)</li>
-        </ul>
-      </div>
-    </div>
+<div class="toolbar">
+  <div>
+    <div class="title">Store Onboarding Kits</div>
+    <div class="sub">PPF · Pretzel Cup</div>
   </div>
 </div>
+
+<main class="wrap">
+  <h1>Pick a store</h1>
+  <p class="lede">Each store has a <b>pre-rendered 7-page PDF bundle</b> ready to download and print: welcome letter, driver card, contact card w/ QR, UPC card, basket stand insert, barcode strips, pricing card.</p>
+  <div id="groups" class="loading">Loading stores…</div>
+</main>
+
+<script>
+const ROUTE_ORDER = ['FSQ', 'LYN', 'FBW'];
+const ROUTE_LABELS = { FSQ: 'Franklin Square', LYN: 'Lynbrook', FBW: 'Freeport / Baldwin' };
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+(async () => {
+  const r = await fetch('/api/store?resource=stops', { cache: 'no-store' });
+  const j = await r.json();
+  if (!r.ok || !Array.isArray(j.stops)) { document.getElementById('groups').textContent = 'Could not load stores.'; return; }
+  const byRoute = {};
+  for (const s of j.stops) (byRoute[s.route_key] ||= []).push(s);
+  const html = ROUTE_ORDER.filter(k => byRoute[k]).map(k => `
+    <section class="group">
+      <h2>${esc(ROUTE_LABELS[k] || k)} — ${byRoute[k].length} store${byRoute[k].length===1?'':'s'}</h2>
+      <div class="stops">
+        ${byRoute[k].map(s => {
+          const code = (s.slug || '').toUpperCase();
+          const name = s.display_name || code;
+          const pdfHref = `/onboarding-kit/pdfs/${encodeURIComponent(code)}.pdf`;
+          return `<a class="stop" href="${esc(pdfHref)}" target="_blank" rel="noopener">
+                    <div>
+                      <div class="name">${esc(name)}</div>
+                      <div class="url">${esc(code)}.pdf · 7 pages</div>
+                    </div>
+                    <span class="download">Download kit →</span>
+                  </a>`;
+        }).join('')}
+      </div>
+    </section>
+  `).join('');
+  document.getElementById('groups').outerHTML = html;
+})();
+</script>
 </body>
 </html>

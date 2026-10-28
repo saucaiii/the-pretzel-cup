@@ -1,0 +1,164 @@
+[
+  {
+    "code": "711SRRVC",
+    "name": "711 SRRVC - Rockville Centre",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711SRRVC.pdf"
+  },
+  {
+    "code": "711SRF",
+    "name": "711 SRF - Freeport",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711SRF.pdf"
+  },
+  {
+    "code": "711BK",
+    "name": "711 BK - Freeport",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711BK.pdf"
+  },
+  {
+    "code": "711EM",
+    "name": "711 EM - Freeport",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711EM.pdf"
+  },
+  {
+    "code": "711GL",
+    "name": "711 GL - Freeport",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711GL.pdf"
+  },
+  {
+    "code": "711ATLF",
+    "name": "711 ATLF - Freeport",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711ATLF.pdf"
+  },
+  {
+    "code": "711ATLB",
+    "name": "711 ATLB - Baldwin",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711ATLB.pdf"
+  },
+  {
+    "code": "711GA",
+    "name": "711 GA - Baldwin",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711GA.pdf"
+  },
+  {
+    "code": "711NR",
+    "name": "711 NR - Roosevelt",
+    "route": "FBW",
+    "pdf": "/onboarding-kit/pdfs/711NR.pdf"
+  },
+  {
+    "code": "BROCKSDELI",
+    "name": "Brock's Deli - Franklin Square",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/BROCKSDELI.pdf"
+  },
+  {
+    "code": "711FSQ",
+    "name": "711 FSQ - Franklin Square",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/711FSQ.pdf"
+  },
+  {
+    "code": "711VS",
+    "name": "711 VS - Valley Stream",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/711VS.pdf"
+  },
+  {
+    "code": "MD",
+    "name": "MD - Malverne",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/MD.pdf"
+  },
+  {
+    "code": "KOOKAM",
+    "name": "Kooka M - Malverne",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/KOOKAM.pdf"
+  },
+  {
+    "code": "IVB",
+    "name": "IVB - Garden City",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/IVB.pdf"
+  },
+  {
+    "code": "711HMP",
+    "name": "711 HMP - Franklin Square",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/711HMP.pdf"
+  },
+  {
+    "code": "HF",
+    "name": "HF - Franklin Square",
+    "route": "FSQ",
+    "pdf": "/onboarding-kit/pdfs/HF.pdf"
+  },
+  {
+    "code": "711BWAY",
+    "name": "711 Bway - Hewlett",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711BWAY.pdf"
+  },
+  {
+    "code": "711SR",
+    "name": "711 SR - Valley Stream",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711SR.pdf"
+  },
+  {
+    "code": "711NCA",
+    "name": "711 NCA - Valley Stream",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711NCA.pdf"
+  },
+  {
+    "code": "711M2",
+    "name": "711 M2 - Valley Stream",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711M2.pdf"
+  },
+  {
+    "code": "711M1",
+    "name": "711 M1 - Lynbrook",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711M1.pdf"
+  },
+  {
+    "code": "KOOKARVC",
+    "name": "Kooka RVC - Rockville Centre",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/KOOKARVC.pdf"
+  },
+  {
+    "code": "BG",
+    "name": "BG - East Rockaway",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/BG.pdf"
+  },
+  {
+    "code": "711LAW",
+    "name": "711 LAW - Oceanside",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711LAW.pdf"
+  },
+  {
+    "code": "711OS",
+    "name": "711 OS - Oceanside",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711OS.pdf"
+  },
+  {
+    "code": "711LBR",
+    "name": "711 LBR - Long Beach",
+    "route": "LYN",
+    "pdf": "/onboarding-kit/pdfs/711LBR.pdf"
+  }
+]

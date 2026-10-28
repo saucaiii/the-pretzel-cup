@@ -1,173 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-<meta charset="utf-8">
-<title>Print Kit — Loading&hellip;</title>
-<base href="/onboarding-kit/">
+<meta charset="UTF-8">
+<title>Store Kit — PPF Onboarding</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; background: #f3efe6; font-family: system-ui, -apple-system, sans-serif; color: #0E2918; }
-
-  /* ── Screen view: a reviewable list of what's about to print ── */
-  @media screen {
-    .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
-    .controls {
-      background: #0D5237; color: white; padding: 28px; border-radius: 12px;
-      margin-bottom: 24px; display: flex; justify-content: space-between;
-      align-items: center; gap: 20px; flex-wrap: wrap;
-      box-shadow: 0 8px 24px rgba(14, 41, 24, 0.1);
-    }
-    .controls .ctl-info h1 { margin: 0 0 6px; font-size: 24px; font-family: 'Archivo Black', Impact, sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
-    .controls .ctl-info p  { margin: 0; opacity: 0.82; font-size: 14px; line-height: 1.5; max-width: 480px; }
-    .controls .ctl-info code { background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 3px; font-size: 12px; }
-    .print-btn {
-      background: #D4B662; color: #0E2918; border: 0;
-      padding: 16px 28px; font-family: 'Archivo Black', Impact, sans-serif;
-      font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
-      border-radius: 999px; cursor: pointer; white-space: nowrap;
-    }
-    .print-btn:hover { background: #E8CF7F; }
-
-    .pg {
-      background: white; margin-bottom: 20px; padding: 24px;
-      border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    .pg-label {
-      font-family: 'Archivo Black', Impact, sans-serif;
-      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: #0D5237; margin: 0 0 14px;
-    }
-    .pg-label .size { color: #999; margin-left: 10px; font-size: 10px; letter-spacing: 0.14em; }
-    .pg iframe { display: block; border: 1px solid rgba(0,0,0,0.08); }
-  }
-
-  /* ── Print view: letter paper, one piece per page ── */
-  @media print {
-    html, body { background: white; margin: 0; }
-    .controls, .pg-label { display: none !important; }
-    .wrap { padding: 0; margin: 0; max-width: none; }
-
-    @page { size: letter portrait; margin: 0.4in; }
-
-    .pg {
-      background: transparent; margin: 0; padding: 0;
-      border-radius: 0; box-shadow: none;
-      page-break-after: always;
-      break-after: page;
-      height: 10.2in;        /* letter height minus top+bottom margin */
-      display: flex; align-items: center; justify-content: center;
-    }
-    .pg:last-child { page-break-after: avoid; break-after: auto; }
-    .pg iframe { border: 0; }
-  }
+  body { background:#0D5237; color:#D4B662; font-family:system-ui,sans-serif;
+    min-height:100vh; margin:0; display:grid; place-items:center; text-align:center; padding:24px; }
+  a { color:#F2E7A4; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="controls">
-    <div class="ctl-info">
-      <h1 id="title">Print kit</h1>
-      <p id="bundle-desc">One file, five pages — welcome letter, driver card, contact card (per-store QR), UPC register card, basket stand insert. Click Print below and choose <b>Save as PDF</b>. Suggested filename: <code id="suggest-name">kit.pdf</code>.</p>
-    </div>
-    <button type="button" class="print-btn" onclick="window.print()">Print &middot; Save as PDF</button>
-  </div>
-
-  <div class="pg">
-    <div class="pg-label">01 &middot; Welcome letter <span class="size">8.5" &times; 11"</span></div>
-    <iframe src="01-welcome-letter" width="816" height="1056" title="Welcome letter"></iframe>
-  </div>
-
-  <div class="pg">
-    <div class="pg-label">02 &middot; Driver card <span class="size">5" &times; 7"</span></div>
-    <iframe id="driver-iframe" src="02-driver-card" width="480" height="672" title="Driver card"></iframe>
-  </div>
-
-  <div class="pg">
-    <div class="pg-label">03 &middot; Contact card <span class="size">6" &times; 4" &middot; per-store QR</span></div>
-    <iframe id="contact-iframe" src="" width="576" height="384" title="Contact card"></iframe>
-  </div>
-
-  <div class="pg">
-    <div class="pg-label">04 &middot; UPC register card <span class="size">5" &times; 3.5"</span></div>
-    <iframe src="04-upc-card" width="480" height="336" title="UPC register card"></iframe>
-  </div>
-
-  <div class="pg">
-    <div class="pg-label">05 &middot; Basket stand insert <span class="size">6" &times; 4"</span></div>
-    <iframe src="05-basket-stand-insert" width="576" height="384" title="Basket stand insert"></iframe>
-  </div>
-
-  <!-- New-store-only pieces (shown with ?full=1). Existing stores already
-       have a pricing card and barcode sheet so they're left out by default. -->
-  <div class="pg" id="pg-barcodes" hidden>
-    <div class="pg-label">06 &middot; Barcode strips <span class="size">7" &times; 3.4" &middot; two scannable strips, cut along dashed lines</span></div>
-    <iframe src="07-barcodes" width="672" height="326" title="Barcode strips"></iframe>
-  </div>
-
-  <div class="pg" id="pg-pricing" hidden>
-    <div class="pg-label">07 &middot; Pricing card (4-up) <span class="size">11" &times; 8.5" landscape &middot; cut on trim marks for 4 cards</span></div>
-    <iframe src="08-pricing-card" width="1056" height="816" title="Pricing card 4-up"></iframe>
-  </div>
+<div>
+  <p>Opening the kit PDF…</p>
+  <p id="fallback" style="display:none;">
+    If it doesn't open, <a id="link" href="/onboarding-kit">pick a store →</a>
+  </p>
 </div>
-
 <script>
-// The per-store bundle picks up ?store=<slug>&name=<display name>&full=<0|1>
-// from the URL. slug is baked into the contact card's QR; name is shown in
-// the heading and used for the suggested PDF filename; full=1 adds the
-// new-store-only pieces (barcode sheet + 4-up pricing card). Existing
-// stores (default, full=0) get the base 5 pieces only.
-(function () {
-  const params = new URLSearchParams(location.search);
-  const rawSlug = params.get('store') || '';
-  const slug = rawSlug.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const name = params.get('name') || slug || 'Store';
-  const full = params.get('full') === '1';
-
-  const titleEl = document.getElementById('title');
-  titleEl.textContent = 'Print kit — ' + name + (full ? ' (new store)' : '');
-  document.title = 'Print kit — ' + name;
-
-  const safeName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'store';
-  document.getElementById('suggest-name').textContent = 'kit-' + safeName + '.pdf';
-
-  document.getElementById('contact-iframe').src =
-    '03-contact-card' + (slug ? '?store=' + encodeURIComponent(slug) : '');
-
-  if (full) {
-    document.getElementById('pg-barcodes').hidden = false;
-    document.getElementById('pg-pricing').hidden  = false;
-    document.getElementById('bundle-desc').innerHTML =
-      'One file, seven pages — welcome letter, driver card, contact card (per-store QR), UPC register card, basket stand insert, barcode strips, and 4-up pricing card. Click Print below and choose <b>Save as PDF</b>. Suggested filename: <code id="suggest-name">kit-' + safeName + '.pdf</code>.';
-  }
-
-  // Resolve the driver card to this store's route primary driver, then
-  // fetch their stats and rebuild the iframe URL with name + stats baked in.
-  // Fails silently to the generic driver card when any lookup fails
-  // (no primary driver set, no returns rows, logged-out preview, etc).
-  const route = (params.get('route') || '').trim().toUpperCase();
-  if (route) {
-    (async () => {
-      try {
-        const rr = await fetch('/api/schedule?resource=routes', { credentials: 'same-origin', cache: 'no-store' });
-        if (!rr.ok) return;
-        const { routes } = await rr.json();
-        const match = (routes || []).find(r => r.key === route);
-        if (!match || !match.primary_driver_id || !match.primary_driver_name) return;
-        const sr = await fetch('/api/schedule?resource=driver-stats&id=' + encodeURIComponent(match.primary_driver_id),
-          { credentials: 'same-origin', cache: 'no-store' });
-        const sj = sr.ok ? await sr.json() : { stats: {} };
-        const stats = sj.stats || {};
-        const q = new URLSearchParams({
-          driver: match.primary_driver_name,
-          route,
-          years: String(stats.tenure_years || ''),
-          delivered: String(stats.pretzels_delivered || ''),
-        });
-        document.getElementById('driver-iframe').src = '02-driver-card?' + q.toString();
-      } catch (e) { console.error('driver-card personalization:', e); }
-    })();
-  }
-})();
+const code = String(new URLSearchParams(location.search).get('store') || '')
+  .toUpperCase().replace(/[^A-Z0-9]/g, '');
+if (code) {
+  const href = `/onboarding-kit/pdfs/${encodeURIComponent(code)}.pdf`;
+  document.getElementById('link').href = href;
+  location.replace(href);
+} else {
+  document.getElementById('fallback').style.display = '';
+}
+setTimeout(() => { document.getElementById('fallback').style.display = ''; }, 1500);
 </script>
 </body>
 </html>
