@@ -492,3 +492,83 @@ a:hover { color: var(--accent-2); }
   font-family: var(--display);
 }
 .pill.is-accent { background: rgba(212, 182, 98, 0.14); color: var(--accent); border: 1px solid rgba(212, 182, 98, 0.3); }
+
+/* ─── PARTNER CARDS ─── full-bleed image or branded placeholder with overlay */
+.partner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.partner-card {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 18px;
+  isolation: isolate;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.partner-card:hover { transform: translateY(-2px); border-color: var(--line-2); }
+
+/* Scrim for cards with real photos — gradient inside overlay layer, not :before */
+.partner-card.has-mono {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(212,182,98,0.14), transparent 55%),
+    linear-gradient(145deg, var(--ppf-green-light) 0%, var(--ppf-green-deep) 100%);
+}
+.partner-card.has-mono::before {
+  content: attr(data-mono);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -62%);
+  font-family: var(--display), 'Anton', sans-serif;
+  font-size: clamp(56px, 10vw, 96px);
+  letter-spacing: 0.04em;
+  color: rgba(212, 182, 98, 0.78);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  pointer-events: none;
+  z-index: 0;
+}
+.partner-card.has-mono::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(8,53,33,0.78) 100%);
+  z-index: 0;
+}
+
+.partner-card .card-chip {
+  position: relative; z-index: 1;
+  align-self: flex-start;
+  margin-bottom: 10px;
+  background: rgba(0,0,0,0.42);
+  border: 1px solid rgba(212,182,98,0.5);
+}
+.partner-title {
+  position: relative; z-index: 1;
+  font-family: var(--display), 'Anton', sans-serif;
+  font-size: clamp(18px, 2.1vw, 24px);
+  line-height: 1.1;
+  margin: 0 0 6px;
+  color: var(--ink);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.55);
+  letter-spacing: 0.01em;
+}
+.partner-sub {
+  position: relative; z-index: 1;
+  font-size: 12px;
+  color: var(--ink-2);
+  margin: 0;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+  letter-spacing: 0.02em;
+}
+.partner-card.is-featured { grid-column: span 2; }
+@media (max-width: 640px) {
+  .partner-card.is-featured { grid-column: span 1; }
+}

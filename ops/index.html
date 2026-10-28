@@ -220,6 +220,7 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
       <div class="header-right">
         <nav class="ops-site-nav" aria-label="Primary">
           <a href="/ops" class="nav-link is-active">Dashboard</a>
+          <a href="/ops/revenue" class="nav-link">Revenue</a>
           <a href="/ops/updates" class="nav-link">Updates</a>
           <a href="/ops/time-off" class="nav-link">Time Off</a>
           <a href="/ops/stops" class="nav-link">Stops</a>
@@ -246,6 +247,12 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
   </div>
 
   <section class="tools" aria-label="Operator tools">
+    <a class="tool" href="/ops/revenue">
+      <span class="tool-chip">Gross Retail</span>
+      <h2 class="tool-title">Revenue</h2>
+      <p class="tool-sub">What drivers rang up. Weekly / 30-day / quarter / year-to-date totals, broken out by route, by driver, and per-stop drill-down. 30-day sparkline up top.</p>
+      <div class="tool-stat"><span class="tool-stat-value" id="tool-revenue-stat">&mdash;</span><span class="tool-stat-label">This Week</span></div>
+    </a>
     <a class="tool" href="/ops/updates">
       <span class="tool-chip">Broadcast</span>
       <h2 class="tool-title">Updates</h2>
@@ -442,6 +449,18 @@ function renderMetrics(s) {
       const recent = (updates || []).filter(u => new Date(u.posted_at).getTime() >= cutoff).length;
       const el = document.getElementById('tool-updates-stat');
       if (el) el.textContent = String(recent);
+    })
+    .catch(() => {});
+
+  // Revenue tile — this-week gross retail. Pulls the same endpoint the
+  // Revenue page uses so numbers never drift.
+  fetch('/api/schedule?resource=revenue&window=week', { credentials: 'same-origin', cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => {
+      const el = document.getElementById('tool-revenue-stat');
+      if (!el || !j || !j.summary) return;
+      const cents = j.summary.total_cents || 0;
+      el.textContent = '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     })
     .catch(() => {});
 

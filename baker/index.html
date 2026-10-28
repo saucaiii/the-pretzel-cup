@@ -130,14 +130,27 @@ h2.sect { font: 400 13px var(--display); letter-spacing: 0.18em; text-transform:
 .dest {
   background: var(--panel); border: 1px solid var(--line);
   border-radius: 12px; padding: 16px 18px;
-  display: grid; grid-template-columns: 1fr auto; gap: 10px 16px;
-  align-items: start;
 }
+.dest-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .dest-name { font: 400 20px var(--display); letter-spacing: 0.02em; text-transform: uppercase; }
 .dest-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; line-height: 1.4; }
 .dest-meta b { color: var(--ink); font-weight: 700; }
-.dest-nums { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--display); font-size: 22px; line-height: 1.15; letter-spacing: 0.02em; }
-.dest-nums small { display: block; font: 600 10px var(--body); letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; margin-top: 2px; }
+/* 4-tile stats row matching the paper route sheet. Short tiles only render
+   when the route has shorts, so a route with none drops to a 2-tile row. */
+.dest-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
+.dest-stats.has-shorts { grid-template-columns: repeat(4, 1fr); }
+.dest-stat {
+  background: rgba(0,0,0,0.22); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; min-width: 0;
+}
+.dest-stat.is-short { border-color: rgba(244,194,95,0.45); background: rgba(244,194,95,0.08); }
+.dest-stat .lbl { font: 400 10px var(--display); letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; line-height: 1.1; }
+.dest-stat.is-short .lbl { color: var(--warn); }
+.dest-stat .num { font: 400 clamp(28px, 6vw, 40px) var(--display); line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.dest-stat.is-short .num { color: var(--warn); }
+@media (max-width: 480px) {
+  .dest-stats.has-shorts { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* Updates feed */
 .upd { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -428,22 +441,24 @@ async function loadToday() {
       const tag = hasShorts
         ? `<span class="shorts-tag">${d.shorts_stops.length} shorts stop${d.shorts_stops.length === 1 ? '' : 's'}</span>`
         : '';
-      const shortsLine = hasShorts
-        ? `<div class="shorts-line">Shorts: <b>${d.shorts_singles} / ${d.shorts_doubles}</b> (baked at ${esc(d.bakery)})</div>`
+      const shortTiles = hasShorts
+        ? `<div class="dest-stat is-short"><div class="lbl">Short singles</div><div class="num">${d.shorts_singles}</div></div>
+           <div class="dest-stat is-short"><div class="lbl">Short doubles</div><div class="num">${d.shorts_doubles}</div></div>`
         : '';
       return `<div class="dest">
-        <div>
-          <div class="dest-name">${esc(d.route_label)} route${tag}</div>
-          <div class="dest-meta">
-            Bakery: <b>${esc(d.bakery)}</b><br>
-            Baker on: <b>${d.bakers.length ? d.bakers.map(esc).join(', ') : '—'}</b><br>
-            Driver on: <b>${d.drivers.length ? d.drivers.map(esc).join(', ') : '—'}</b>
-            ${shortsLine}
-          </div>
+        <div class="dest-head">
+          <div class="dest-name">${esc(d.route_label)} route (${esc(d.route_key)})</div>
+          ${tag}
         </div>
-        <div class="dest-nums">
-          ${d.singles} <small>singles</small>
-          ${d.doubles} <small>doubles</small>
+        <div class="dest-meta">
+          Bakery: <b>${esc(d.bakery)}</b><br>
+          Baker on: <b>${d.bakers.length ? d.bakers.map(esc).join(', ') : '—'}</b><br>
+          Driver on: <b>${d.drivers.length ? d.drivers.map(esc).join(', ') : '—'}</b>
+        </div>
+        <div class="dest-stats${hasShorts ? ' has-shorts' : ''}">
+          <div class="dest-stat"><div class="lbl">Total singles</div><div class="num">${d.singles}</div></div>
+          <div class="dest-stat"><div class="lbl">Total doubles</div><div class="num">${d.doubles}</div></div>
+          ${shortTiles}
         </div>
       </div>`;
     }).join('');

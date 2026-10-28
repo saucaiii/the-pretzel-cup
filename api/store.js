@@ -38,8 +38,15 @@ const {
   singlePriceCents, doublePriceCents,
 } = require('./_lib/stripe');
 
+// Wholesale (what Pretzel Cup charges the store).
 const PRICE_SINGLE = 215; // cents per single, matches driver pricing
 const PRICE_DOUBLE = 385;
+// Retail (what the store charges customers at the register).
+const RETAIL_SINGLE = 400;
+const RETAIL_DOUBLE = 600;
+// Per-unit profit = retail - wholesale.
+const PROFIT_SINGLE = RETAIL_SINGLE - PRICE_SINGLE;  // 185
+const PROFIT_DOUBLE = RETAIL_DOUBLE - PRICE_DOUBLE;  // 215
 // Chris's cell — fallback when OPERATOR_PHONE env var is unset so the
 // Call/Text buttons always work on day 1. Can be overridden per-env.
 const DEFAULT_OPERATOR_PHONE = '+16466681882';
@@ -295,16 +302,26 @@ async function handleDashboard(req, res, sess) {
     const routeLabel = (routeR.data || []).find(r => r.key === stop.route_key)?.label || stop.route_key;
 
     const sum = (rows, from, to) => {
-      let gross = 0, singles = 0, doubles = 0, deliveries = 0;
+      let cogs = 0, singles = 0, doubles = 0, deliveries = 0;
       for (const r of rows) {
         if (from && r.for_date < from) continue;
         if (to   && r.for_date > to)   continue;
-        if (r.sold_cents != null)   gross   += r.sold_cents;
+        if (r.sold_cents != null)   cogs    += r.sold_cents;
         if (r.sold_singles != null) singles += r.sold_singles;
         if (r.sold_doubles != null) doubles += r.sold_doubles;
         deliveries += 1;
       }
-      return { gross_cents: gross, singles_sold: singles, doubles_sold: doubles, deliveries };
+      const revenue = singles * RETAIL_SINGLE + doubles * RETAIL_DOUBLE;
+      const profit  = singles * PROFIT_SINGLE + doubles * PROFIT_DOUBLE;
+      return {
+        gross_cents:    cogs,       // kept for back-compat; same as cogs_cents
+        cogs_cents:     cogs,       // what the store owes Pretzel Cup
+        revenue_cents:  revenue,    // what the store collected at the register
+        profit_cents:   profit,     // revenue - cogs
+        singles_sold:   singles,
+        doubles_sold:   doubles,
+        deliveries,
+      };
     };
 
     const totals = {
@@ -360,7 +377,14 @@ async function handleDashboard(req, res, sess) {
       issues: issuesR.data || [],
       change_requests: reqsR.data || [],
       operator_phone: process.env.OPERATOR_PHONE || DEFAULT_OPERATOR_PHONE,
-      pricing: { single_cents: PRICE_SINGLE, double_cents: PRICE_DOUBLE },
+      pricing: {
+        single_cents:        PRICE_SINGLE,
+        double_cents:        PRICE_DOUBLE,
+        retail_single_cents: RETAIL_SINGLE,
+        retail_double_cents: RETAIL_DOUBLE,
+        profit_single_cents: PROFIT_SINGLE,
+        profit_double_cents: PROFIT_DOUBLE,
+      },
     });
   } catch (err) {
     console.error('store dashboard:', err && (err.stack || err.message || err));
@@ -536,18 +560,35 @@ async function handleInvoice(req, res, sess) {
         sold_cents: r.sold_cents,
       };
     });
-    let gross = 0, singles = 0, doubles = 0;
+    let cogs = 0, singles = 0, doubles = 0;
     for (const r of rows) {
-      if (r.sold_cents   != null) gross   += r.sold_cents;
+      if (r.sold_cents   != null) cogs    += r.sold_cents;
       if (r.sold_singles != null) singles += r.sold_singles;
       if (r.sold_doubles != null) doubles += r.sold_doubles;
     }
+    const revenue = singles * RETAIL_SINGLE + doubles * RETAIL_DOUBLE;
+    const profit  = singles * PROFIT_SINGLE + doubles * PROFIT_DOUBLE;
     return res.status(200).json({
       month,
       stop: { id: stop.id, display_name: displayFor(stop), address: stop.address || null },
       rows,
-      totals: { gross_cents: gross, singles_sold: singles, doubles_sold: doubles, deliveries: rows.length },
-      pricing: { single_cents: PRICE_SINGLE, double_cents: PRICE_DOUBLE },
+      totals: {
+        gross_cents:   cogs,     // back-compat alias
+        cogs_cents:    cogs,
+        revenue_cents: revenue,
+        profit_cents:  profit,
+        singles_sold:  singles,
+        doubles_sold:  doubles,
+        deliveries:    rows.length,
+      },
+      pricing: {
+        single_cents:        PRICE_SINGLE,
+        double_cents:        PRICE_DOUBLE,
+        retail_single_cents: RETAIL_SINGLE,
+        retail_double_cents: RETAIL_DOUBLE,
+        profit_single_cents: PROFIT_SINGLE,
+        profit_double_cents: PROFIT_DOUBLE,
+      },
     });
   } catch (err) {
     console.error('store invoice:', err && (err.stack || err.message || err));

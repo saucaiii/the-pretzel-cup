@@ -1307,6 +1307,151 @@ async function handleReconciliation(req, res, sess) {
   }
 }
 
+// ─── REVENUE ─────────────────────────────────────────────────────────
+// Gross retail revenue: what drivers rang up at per-stop pricing.
+// Falls back to the global $2.15 / $3.85 if a stop has no per-stop override.
+async function handleRevenueGet(req, res, sess) {
+  if (sess.role !== 'operator') return res.status(403).json({ error: 'operator only' });
+  try {
+    const sb = supabase();
+    const windowKey = typeof req.query.window === 'string' ? req.query.window : 'week';
+    const customFrom = typeof req.query.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.from) ? req.query.from : null;
+    const customTo   = typeof req.query.to   === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.to)   ? req.query.to   : null;
+
+    // All date math in America/New_York so a 9pm submission counts for today
+    // even when the Vercel node is on UTC.
+    const nyNow = () => {
+      const s = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+      const d = new Date(s);
+      return d;
+    };
+    const iso = d => {
+      const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    };
+    const now = nyNow();
+    const todayIso = iso(now);
+
+    let fromIso, toIso = todayIso, label;
+    if (windowKey === 'custom' && customFrom && customTo) {
+      fromIso = customFrom; toIso = customTo; label = `${customFrom} to ${customTo}`;
+    } else if (windowKey === '30d') {
+      const d = new Date(now); d.setDate(d.getDate() - 29);
+      fromIso = iso(d); label = 'Last 30 days';
+    } else if (windowKey === 'quarter') {
+      const qStartMonth = Math.floor(now.getMonth() / 3) * 3;
+      fromIso = iso(new Date(now.getFullYear(), qStartMonth, 1));
+      label = 'Quarter-to-date';
+    } else if (windowKey === 'ytd') {
+      fromIso = iso(new Date(now.getFullYear(), 0, 1));
+      label = 'Year-to-date';
+    } else { // week — Monday through today
+      const d = new Date(now); const dow = d.getDay();
+      const back = dow === 0 ? 6 : dow - 1; // Monday = 0 back
+      d.setDate(d.getDate() - back);
+      fromIso = iso(d); label = 'This week';
+    }
+
+    // Always compute a 30-day daily series for the sparkline, regardless of
+    // the selected window.
+    const sparkFrom = (() => { const d = new Date(now); d.setDate(d.getDate() - 29); return iso(d); })();
+    const minFrom = fromIso < sparkFrom ? fromIso : sparkFrom;
+
+    const [returnsR, stopsR, peopleR] = await Promise.all([
+      sb.from('returns').select('for_date,route_key,stop_id,sold_singles,sold_doubles,sold_cents,submitted_by,submitted_at').gte('for_date', minFrom).lte('for_date', toIso),
+      sb.from('stops').select('id,name,route_key,shorts,price_single_cents,price_double_cents').order('route_key').order('stop_order'),
+      sb.from('people').select('id,name,role'),
+    ]);
+    if (returnsR.error) throw returnsR.error;
+    if (stopsR.error) throw stopsR.error;
+    if (peopleR.error) throw peopleR.error;
+
+    const stopById = Object.create(null);
+    stopsR.data.forEach(s => { stopById[s.id] = s; });
+    const nameBySub = Object.create(null);
+    peopleR.data.forEach(p => { nameBySub[p.id] = p.name; });
+
+    // Filter to the selected window (we fetched a superset to also feed the
+    // 30-day sparkline).
+    const inWindow = returnsR.data.filter(r => r.for_date >= fromIso && r.for_date <= toIso);
+
+    const summary = { total_cents: 0, total_units: 0, total_singles: 0, total_doubles: 0, total_shorts_units: 0, submissions: 0, days_covered: 0 };
+    const daySet = new Set();
+    const byRoute = Object.create(null);
+    const byDriver = Object.create(null);
+    const byStop = Object.create(null);
+
+    for (const r of inWindow) {
+      const s = r.sold_singles || 0, d = r.sold_doubles || 0, c = r.sold_cents || 0;
+      summary.total_cents   += c;
+      summary.total_singles += s;
+      summary.total_doubles += d;
+      summary.total_units   += s + d;
+      summary.submissions++;
+      daySet.add(r.for_date);
+      const stop = stopById[r.stop_id];
+      if (stop && stop.shorts) summary.total_shorts_units += s + d;
+
+      // Per-route
+      const rk = r.route_key || (stop && stop.route_key) || '?';
+      if (!byRoute[rk]) byRoute[rk] = { route_key: rk, singles: 0, doubles: 0, units: 0, shorts_units: 0, revenue_cents: 0, submissions: 0, stop_ids: new Set() };
+      byRoute[rk].singles += s; byRoute[rk].doubles += d; byRoute[rk].units += s + d;
+      byRoute[rk].revenue_cents += c; byRoute[rk].submissions++;
+      if (stop && stop.shorts) byRoute[rk].shorts_units += s + d;
+      byRoute[rk].stop_ids.add(r.stop_id);
+
+      // Per-driver (operator submissions have a sub too)
+      const sub = r.submitted_by || 'unknown';
+      if (!byDriver[sub]) byDriver[sub] = { sub, name: nameBySub[sub] || 'Unknown', submissions: 0, singles: 0, doubles: 0, units: 0, revenue_cents: 0 };
+      byDriver[sub].submissions++; byDriver[sub].singles += s; byDriver[sub].doubles += d;
+      byDriver[sub].units += s + d; byDriver[sub].revenue_cents += c;
+
+      // Per-stop
+      const sid = r.stop_id;
+      if (!byStop[sid]) byStop[sid] = { stop_id: sid, name: (stop && stop.name) || '?', route_key: rk, singles: 0, doubles: 0, units: 0, revenue_cents: 0, shorts: !!(stop && stop.shorts) };
+      byStop[sid].singles += s; byStop[sid].doubles += d; byStop[sid].units += s + d; byStop[sid].revenue_cents += c;
+    }
+    summary.days_covered = daySet.size;
+
+    // 30-day daily series (always, regardless of selected window).
+    const dailyMap = Object.create(null);
+    for (const r of returnsR.data) {
+      if (r.for_date < sparkFrom) continue;
+      if (!dailyMap[r.for_date]) dailyMap[r.for_date] = { for_date: r.for_date, revenue_cents: 0, units: 0 };
+      dailyMap[r.for_date].revenue_cents += r.sold_cents || 0;
+      dailyMap[r.for_date].units += (r.sold_singles || 0) + (r.sold_doubles || 0);
+    }
+    const daily = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      const k = iso(d);
+      daily.push(dailyMap[k] || { for_date: k, revenue_cents: 0, units: 0 });
+    }
+
+    // Finalize collections
+    const byRouteArr = Object.values(byRoute).map(r => ({
+      route_key: r.route_key, singles: r.singles, doubles: r.doubles, units: r.units,
+      shorts_units: r.shorts_units, revenue_cents: r.revenue_cents, submissions: r.submissions,
+      stops_submitted: r.stop_ids.size,
+    })).sort((a, b) => b.revenue_cents - a.revenue_cents);
+
+    const byDriverArr = Object.values(byDriver).sort((a, b) => b.revenue_cents - a.revenue_cents);
+    const byStopArr   = Object.values(byStop).sort((a, b) => b.revenue_cents - a.revenue_cents);
+
+    return res.status(200).json({
+      window: { key: windowKey, label, from: fromIso, to: toIso },
+      summary,
+      by_route: byRouteArr,
+      by_driver: byDriverArr,
+      by_stop: byStopArr,
+      daily, // last 30 days for sparkline
+    });
+  } catch (err) {
+    console.error('revenue GET:', err && (err.stack || err.message || err));
+    return res.status(500).json({ error: 'server error' });
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const resource = typeof (req.query && req.query.resource) === 'string' ? req.query.resource : '';
@@ -1406,6 +1551,14 @@ module.exports = async function handler(req, res) {
     if (!sess) return;
     if (req.method === 'POST') return handleOnboardCreate(req, res, sess);
     res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'method not allowed' });
+  }
+
+  if (resource === 'revenue') {
+    const sess = await requireRole(req, res, ['operator']);
+    if (!sess) return;
+    if (req.method === 'GET') return handleRevenueGet(req, res, sess);
+    res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'method not allowed' });
   }
 

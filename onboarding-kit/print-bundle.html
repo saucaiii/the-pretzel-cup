@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Store Kit Bundle — Loading&hellip;</title>
+<base href="/onboarding-kit/">
+<meta name="robots" content="noindex,nofollow">
+<style>
+  /* Iframe-based per-store print bundle. Driven by URL:
+     ?store=<slug>&name=<display name>&route=<FSQ|LYN|FBW>
+     &driver=<name>&years=<n>&delivered=<n>&full=<0|1>
+     Used by scripts/gen-print-kits.mjs to batch-print per-store PDFs
+     via Chrome headless. All personalization is read from the URL —
+     no API calls, so this works with no auth. */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: white; }
+  body { font-family: system-ui, -apple-system, sans-serif; color: #0E2918; }
+
+  @page { size: letter portrait; margin: 0.4in; }
+
+  .pg {
+    page-break-after: always;
+    break-after: page;
+    height: 10.2in;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pg:last-child { page-break-after: avoid; break-after: auto; }
+
+  iframe { border: 0; display: block; }
+
+  /* Screen-only chrome so you can preview this URL in a normal tab */
+  @media screen {
+    body { background: #f3efe6; }
+    .pg { background: white; margin-bottom: 20px; height: auto; padding: 24px; border-radius: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="pg">
+  <iframe src="01-welcome-letter" width="816" height="1056" title="Welcome letter"></iframe>
+</div>
+
+<div class="pg">
+  <iframe id="driver-iframe" src="02-driver-card" width="480" height="672" title="Driver card"></iframe>
+</div>
+
+<div class="pg">
+  <iframe id="contact-iframe" src="03-contact-card" width="576" height="384" title="Contact card"></iframe>
+</div>
+
+<div class="pg">
+  <iframe src="04-upc-card" width="480" height="336" title="UPC register card"></iframe>
+</div>
+
+<div class="pg">
+  <iframe src="05-basket-stand-insert" width="576" height="384" title="Basket stand insert"></iframe>
+</div>
+
+<div class="pg" id="pg-barcodes" hidden>
+  <iframe src="07-barcodes" width="672" height="326" title="Barcode strips"></iframe>
+</div>
+
+<div class="pg" id="pg-pricing" hidden>
+  <iframe src="08-pricing-card" width="1056" height="816" title="Pricing card 4-up"></iframe>
+</div>
+
+<script>
+(function () {
+  const params = new URLSearchParams(location.search);
+  const slug = (params.get('store') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const route = (params.get('route') || '').trim().toUpperCase();
+  const driver = (params.get('driver') || '').trim();
+  const years = (params.get('years') || '').trim();
+  const delivered = (params.get('delivered') || '').trim();
+  const full = params.get('full') === '1';
+  const name = params.get('name') || slug || 'Store';
+
+  document.title = 'Kit — ' + name;
+
+  // Contact card gets per-store slug for QR
+  if (slug) {
+    document.getElementById('contact-iframe').src =
+      '03-contact-card?store=' + encodeURIComponent(slug);
+  }
+
+  // Driver card: bake in whatever the URL carried
+  if (route || driver) {
+    const q = new URLSearchParams();
+    if (driver)    q.set('driver', driver);
+    if (route)     q.set('route', route);
+    if (years)     q.set('years', years);
+    if (delivered) q.set('delivered', delivered);
+    document.getElementById('driver-iframe').src = '02-driver-card?' + q.toString();
+  }
+
+  if (full) {
+    document.getElementById('pg-barcodes').hidden = false;
+    document.getElementById('pg-pricing').hidden  = false;
+  }
+})();
+</script>
+</body>
+</html>

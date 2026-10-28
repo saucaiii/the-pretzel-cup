@@ -82,6 +82,8 @@ module.exports = async function handler(req, res) {
         drop_label: `${singlesFor(s)} / ${doublesFor(s)}`,
         singles_drop: singlesFor(s),
         doubles_drop: doublesFor(s),
+        price_single_cents: s.price_single_cents != null ? s.price_single_cents : null,
+        price_double_cents: s.price_double_cents != null ? s.price_double_cents : null,
         sold_singles: r && r.sold_singles != null ? r.sold_singles : null,
         sold_doubles: r && r.sold_doubles != null ? r.sold_doubles : null,
         sold_cents:   r && r.sold_cents   != null ? r.sold_cents   : null,

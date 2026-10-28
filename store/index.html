@@ -169,31 +169,45 @@ table.recent { width: 100%; border-collapse: collapse; font-size: 13px; }
   <!-- Totals -->
   <section class="card">
     <h2>Your sales</h2>
+    <div class="legend" style="color:var(--ink-3);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:-4px 0 10px;font-weight:700;">
+      <span style="color:var(--gold);">Profit</span> = Revenue − Pretzel Cup wholesale
+    </div>
     <div class="totals">
       <div class="k">
         <div class="lab">This week</div>
         <div class="v" id="t-week">$0</div>
+        <div class="meta" id="t-week-rev" style="color:var(--ink-2);">$0 revenue</div>
+        <div class="meta" id="t-week-cogs" style="color:var(--ink-3);">$0 wholesale</div>
         <div class="meta" id="t-week-sub">— singles · — doubles</div>
         <div class="meta" id="t-week-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
       </div>
       <div class="k">
         <div class="lab">This month</div>
         <div class="v" id="t-month">$0</div>
+        <div class="meta" id="t-month-rev" style="color:var(--ink-2);">$0 revenue</div>
+        <div class="meta" id="t-month-cogs" style="color:var(--ink-3);">$0 wholesale</div>
         <div class="meta" id="t-month-sub">— singles · — doubles</div>
         <div class="meta" id="t-month-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
       </div>
       <div class="k">
         <div class="lab">This quarter</div>
         <div class="v" id="t-quarter">$0</div>
+        <div class="meta" id="t-quarter-rev" style="color:var(--ink-2);">$0 revenue</div>
+        <div class="meta" id="t-quarter-cogs" style="color:var(--ink-3);">$0 wholesale</div>
         <div class="meta" id="t-quarter-sub">— singles · — doubles</div>
         <div class="meta" id="t-quarter-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
       </div>
       <div class="k">
         <div class="lab">Year to date</div>
         <div class="v" id="t-ytd">$0</div>
+        <div class="meta" id="t-ytd-rev" style="color:var(--ink-2);">$0 revenue</div>
+        <div class="meta" id="t-ytd-cogs" style="color:var(--ink-3);">$0 wholesale</div>
         <div class="meta" id="t-ytd-sub">— singles · — doubles</div>
         <div class="meta" id="t-ytd-deliv" style="margin-top:2px;color:var(--ink-3)">0 deliveries</div>
       </div>
+    </div>
+    <div style="color:var(--ink-3);font-size:11px;letter-spacing:.08em;margin-top:10px;text-align:right;">
+      Assumes retail: $4.00 single · $6.00 double
     </div>
   </section>
 
@@ -215,7 +229,7 @@ table.recent { width: 100%; border-collapse: collapse; font-size: 13px; }
     <div id="recent-wrap">
       <table class="recent" id="recent-table" style="display:none">
         <thead>
-          <tr><th>Date</th><th>Dropped</th><th>Sold</th><th>$</th><th>Driver</th></tr>
+          <tr><th>Date</th><th>Dropped</th><th>Sold</th><th>Revenue</th><th>Profit</th><th>Driver</th></tr>
         </thead>
         <tbody id="recent-body"></tbody>
       </table>
@@ -299,8 +313,10 @@ function render(d) {
 
   const T = d.totals || {};
   const setT = (id, t) => {
-    t = t || { gross_cents: 0, singles_sold: 0, doubles_sold: 0, deliveries: 0 };
-    document.getElementById(id).textContent = money(t.gross_cents);
+    t = t || { profit_cents: 0, revenue_cents: 0, cogs_cents: 0, singles_sold: 0, doubles_sold: 0, deliveries: 0 };
+    document.getElementById(id).textContent = money(t.profit_cents);
+    document.getElementById(id + '-rev').textContent  = `${money(t.revenue_cents)} revenue`;
+    document.getElementById(id + '-cogs').textContent = `${money(t.cogs_cents)} wholesale`;
     document.getElementById(id + '-sub').textContent = `${t.singles_sold || 0} singles · ${t.doubles_sold || 0} doubles`;
     document.getElementById(id + '-deliv').textContent = `${t.deliveries || 0} ${t.deliveries === 1 ? 'delivery' : 'deliveries'}`;
   };
@@ -312,14 +328,21 @@ function render(d) {
   const body = document.getElementById('recent-body');
   const rows = d.recent || [];
   if (rows.length) {
-    body.innerHTML = rows.map(r => `
+    const P = d.pricing || { retail_single_cents: 400, retail_double_cents: 600, profit_single_cents: 185, profit_double_cents: 215 };
+    body.innerHTML = rows.map(r => {
+      const s = r.sold_singles || 0, db = r.sold_doubles || 0;
+      const rev    = r.sold_singles != null ? s * P.retail_single_cents + db * P.retail_double_cents : null;
+      const profit = r.sold_singles != null ? s * P.profit_single_cents + db * P.profit_double_cents : null;
+      return `
       <tr>
         <td class="date">${esc(fmtDate(r.for_date))}</td>
         <td>${r.singles_drop ?? '—'} / ${r.doubles_drop ?? '—'}</td>
         <td>${r.sold_singles ?? '—'} / ${r.sold_doubles ?? '—'}</td>
-        <td class="cents">${r.sold_cents != null ? money(r.sold_cents) : '—'}</td>
+        <td>${rev != null ? money(rev) : '—'}</td>
+        <td class="cents">${profit != null ? money(profit) : '—'}</td>
         <td>${esc(r.submitted_by_name || '—')}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
     document.getElementById('recent-table').style.display = '';
     document.getElementById('recent-empty').style.display = 'none';
   }
