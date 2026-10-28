@@ -473,6 +473,55 @@ async function loadRoute(opts) {
 const PRICE_SINGLE_CENTS = 215;
 const PRICE_DOUBLE_CENTS = 385;
 
+// Draft persistence: typed values survive a refresh / phone close until the
+// driver successfully submits. Keyed by driver + for_date + route so a late-
+// night-into-morning session doesn't bleed values across dates or routes.
+// localStorage can throw in private mode, so every call is guarded.
+const DRAFT_PREFIX = 'ppf_draft_v1';
+function draftKey() {
+  if (!_me || !_me.sub || !_date || !_plan || !_plan.route) return null;
+  return `${DRAFT_PREFIX}:${_me.sub}:${_date}:${_plan.route.key}`;
+}
+function loadDraft() {
+  try {
+    const k = draftKey(); if (!k) return {};
+    const raw = localStorage.getItem(k);
+    return raw ? (JSON.parse(raw) || {}) : {};
+  } catch (e) { return {}; }
+}
+function saveDraft(obj) {
+  try {
+    const k = draftKey(); if (!k) return;
+    if (!obj || Object.keys(obj).length === 0) { localStorage.removeItem(k); return; }
+    localStorage.setItem(k, JSON.stringify(obj));
+  } catch (e) {}
+}
+function updateDraftFor(stopId, sVal, dVal) {
+  const draft = loadDraft();
+  const s = (sVal == null || sVal === '') ? '' : String(sVal);
+  const d = (dVal == null || dVal === '') ? '' : String(dVal);
+  if (s === '' && d === '') { delete draft[stopId]; }
+  else { draft[stopId] = { s, d }; }
+  saveDraft(draft);
+}
+function clearDraft() { saveDraft({}); }
+// One-time cleanup: drop any draft blob older than 30 days to keep storage small.
+(function pruneOldDrafts() {
+  try {
+    const cutoff = Date.now() - 30 * 86400000;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(DRAFT_PREFIX + ':')) continue;
+      // key shape: ppf_draft_v1:{sub}:{YYYY-MM-DD}:{route}
+      const parts = k.split(':');
+      const d = parts[3]; // ISO date
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+      const ts = new Date(d + 'T12:00:00').getTime();
+      if (ts < cutoff) localStorage.removeItem(k);
+    }
+  } catch (e) {}
+})();
+
 function renderRoute() {
   // Route picker
   $('#route-row').innerHTML = _plan.routes.map(r => `
@@ -489,7 +538,28 @@ function renderRoute() {
   `;
 
   $('#stops').innerHTML = _plan.stops.map(stopHTML).join('');
+  // Hydrate inputs from the local draft BEFORE binding, so bind sees the
+  // right initial state and the UI (sub-bills, totals, edit chips) matches.
+  const draft = loadDraft();
+  if (draft && Object.keys(draft).length) {
+    document.querySelectorAll('.stop').forEach(card => {
+      const stopId = card.dataset.stop;
+      const d = draft[stopId];
+      if (!d) return;
+      const sIn = card.querySelector('input[data-f="s"]');
+      const dIn = card.querySelector('input[data-f="d"]');
+      if (sIn && d.s !== undefined) sIn.value = d.s;
+      if (dIn && d.d !== undefined) dIn.value = d.d;
+    });
+  }
   bindStopInputs();
+  // Make sub-bills + edit/posted chips reflect the hydrated values.
+  document.querySelectorAll('.stop').forEach(card => {
+    const sIn = card.querySelector('input[data-f="s"]');
+    const dIn = card.querySelector('input[data-f="d"]');
+    sIn.dispatchEvent(new Event('input', { bubbles: true }));
+    dIn.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   refreshTotalFromDOM();
   setStatus('');
 
@@ -532,7 +602,9 @@ function stopHTML(s) {
   const mapHref = `https://maps.apple.com/?q=${q}`;
   const shortsClass = s.shorts ? ' is-shorts' : '';
   const shortsPill = s.shorts ? '<span class="shorts-pill">Shorts</span> ' : '';
-  return `<article class="stop${alreadyPosted ? ' posted' : ''}${shortsClass}" data-stop="${s.id}" data-prior-s="${s.sold_singles == null ? '' : s.sold_singles}" data-prior-d="${s.sold_doubles == null ? '' : s.sold_doubles}">
+  const psCents = (s.price_single_cents != null) ? s.price_single_cents : PRICE_SINGLE_CENTS;
+  const pdCents = (s.price_double_cents != null) ? s.price_double_cents : PRICE_DOUBLE_CENTS;
+  return `<article class="stop${alreadyPosted ? ' posted' : ''}${shortsClass}" data-stop="${s.id}" data-ps="${psCents}" data-pd="${pdCents}" data-prior-s="${s.sold_singles == null ? '' : s.sold_singles}" data-prior-d="${s.sold_doubles == null ? '' : s.sold_doubles}">
     <div class="num">${s.order}</div>
     <div class="body">
       <div class="name-row">
@@ -557,16 +629,18 @@ function stopHTML(s) {
           <input id="d-${s.id}" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" min="0" max="${maxD}" step="1" data-f="d" value="${dVal}" placeholder="0">
         </div>
       </div>
-      <div class="sub-bill" data-sub="${s.id}">${subBillText(sVal, dVal)}</div>
+      <div class="sub-bill" data-sub="${s.id}">${subBillText(sVal, dVal, psCents, pdCents)}</div>
     </div>
   </article>`;
 }
 
-function subBillText(sVal, dVal) {
+function subBillText(sVal, dVal, psCents, pdCents) {
   const s = Math.max(0, parseInt(sVal || 0, 10) || 0);
   const d = Math.max(0, parseInt(dVal || 0, 10) || 0);
   if (!s && !d) return '<span style="color:var(--ink-3)">No sales entered</span>';
-  const cents = s * PRICE_SINGLE_CENTS + d * PRICE_DOUBLE_CENTS;
+  const ps = Number.isFinite(psCents) ? psCents : PRICE_SINGLE_CENTS;
+  const pd = Number.isFinite(pdCents) ? pdCents : PRICE_DOUBLE_CENTS;
+  const cents = s * ps + d * pd;
   return `${s} single · ${d} double <b>${money(cents)}</b>`;
 }
 
@@ -589,9 +663,13 @@ function bindStopInputs() {
     const priorS = card.dataset.priorS;
     const priorD = card.dataset.priorD;
     const hasPrior = priorS !== '' || priorD !== '';
+    const psCents = parseInt(card.dataset.ps, 10) || PRICE_SINGLE_CENTS;
+    const pdCents = parseInt(card.dataset.pd, 10) || PRICE_DOUBLE_CENTS;
+    const stopId = card.dataset.stop;
     const onInput = (inp, max) => {
       clamp(inp, max);
-      sub.innerHTML = subBillText(sIn.value, dIn.value);
+      sub.innerHTML = subBillText(sIn.value, dIn.value, psCents, pdCents);
+      updateDraftFor(stopId, sIn.value, dIn.value);
       if (hasPrior) {
         // Flip between "saved" (green) and "edited" (yellow) based on
         // whether the current input matches what was saved.
@@ -620,7 +698,9 @@ function refreshTotalFromDOM() {
     const d = parseInt(card.querySelector('input[data-f="d"]').value || 0, 10) || 0;
     if (s === 0 && d === 0) return;
     logged++;
-    total += s * PRICE_SINGLE_CENTS + d * PRICE_DOUBLE_CENTS;
+    const ps = parseInt(card.dataset.ps, 10) || PRICE_SINGLE_CENTS;
+    const pd = parseInt(card.dataset.pd, 10) || PRICE_DOUBLE_CENTS;
+    total += s * ps + d * pd;
   });
   const strip = $('#total-strip');
   const head  = $('#head-total');
@@ -691,6 +771,9 @@ async function submitRoute() {
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || r.status);
+    // Clear the local draft — the authoritative copy now lives in Supabase +
+    // the Google Sheet, so a future refresh will re-populate from the server.
+    clearDraft();
     // Clear every input on the sheet so the driver sees a clean slate.
     // Values stay in Supabase + the Google Sheet; reloading the page will
     // pull them back if someone needs to double-check what was sent.

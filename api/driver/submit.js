@@ -11,6 +11,10 @@ const { supabase, requireRole } = require('../_lib/auth');
 
 const PRICE_SINGLE_CENTS = 215;
 const PRICE_DOUBLE_CENTS = 385;
+// Per-stop overrides live on stops.price_single_cents / stops.price_double_cents
+// (nullable). Null falls back to the globals above.
+const priceSingleFor = s => (s && s.price_single_cents != null) ? s.price_single_cents : PRICE_SINGLE_CENTS;
+const priceDoubleFor = s => (s && s.price_double_cents != null) ? s.price_double_cents : PRICE_DOUBLE_CENTS;
 
 // Optional sheet writer — present once P6 is wired. The module is loaded
 // lazily so a missing file doesn't take submits down.
@@ -54,22 +58,14 @@ module.exports = async function handler(req, res) {
     targetDate = toIso(y);
   }
 
-  // Normalize + sanity-check every entry before touching the DB.
-  const rows = [];
+  // Normalize + sanity-check every entry before touching the DB. sold_cents is
+  // computed below, after we fetch each stop's price override.
+  const inputs = [];
   for (const e of entries) {
     if (!e || typeof e.stopId !== 'string') return res.status(400).json({ error: 'bad entry: stopId required' });
     const s = Math.max(0, Math.round(Number(e.soldSingles) || 0));
     const d = Math.max(0, Math.round(Number(e.soldDoubles) || 0));
-    rows.push({
-      for_date:     targetDate,
-      route_key:    routeKey,
-      stop_id:      e.stopId,
-      sold_singles: s,
-      sold_doubles: d,
-      sold_cents:   s * PRICE_SINGLE_CENTS + d * PRICE_DOUBLE_CENTS,
-      submitted_by: sess.sub,
-      submitted_at: new Date().toISOString(),
-    });
+    inputs.push({ stopId: e.stopId, soldSingles: s, soldDoubles: d });
   }
 
   try {
@@ -77,10 +73,10 @@ module.exports = async function handler(req, res) {
 
     // Guard: only accept stop_ids that belong to this route and are active.
     // Also hard-cap sold counts at the drop size for the target weekday.
-    const stopIds = rows.map(r => r.stop_id);
+    const stopIds = inputs.map(r => r.stopId);
     const { data: stops, error: se } = await sb
       .from('stops')
-      .select('id,route_key,active,name,town,stop_order,singles_drop,doubles_drop,singles_drop_wknd,doubles_drop_wknd')
+      .select('id,route_key,active,name,town,stop_order,singles_drop,doubles_drop,singles_drop_wknd,doubles_drop_wknd,price_single_cents,price_double_cents')
       .in('id', stopIds);
     if (se) throw se;
     const stopById = Object.create(null);
@@ -92,14 +88,25 @@ module.exports = async function handler(req, res) {
     const singlesFor = s => isWeekend && s.singles_drop_wknd != null ? s.singles_drop_wknd : s.singles_drop;
     const doublesFor = s => isWeekend && s.doubles_drop_wknd != null ? s.doubles_drop_wknd : s.doubles_drop;
 
-    for (const r of rows) {
-      const s = stopById[r.stop_id];
-      if (!s)                     return res.status(404).json({ error: `stop not found: ${r.stop_id}` });
+    const rows = [];
+    for (const r of inputs) {
+      const s = stopById[r.stopId];
+      if (!s)                     return res.status(404).json({ error: `stop not found: ${r.stopId}` });
       if (s.route_key !== routeKey) return res.status(400).json({ error: `stop ${s.name} not in route ${routeKey}` });
       if (!s.active)              return res.status(409).json({ error: `stop ${s.name} is inactive` });
       const maxS = singlesFor(s), maxD = doublesFor(s);
-      if (r.sold_singles > maxS) return res.status(400).json({ error: `${s.name}: ${r.sold_singles} singles sold exceeds drop of ${maxS}` });
-      if (r.sold_doubles > maxD) return res.status(400).json({ error: `${s.name}: ${r.sold_doubles} doubles sold exceeds drop of ${maxD}` });
+      if (r.soldSingles > maxS) return res.status(400).json({ error: `${s.name}: ${r.soldSingles} singles sold exceeds drop of ${maxS}` });
+      if (r.soldDoubles > maxD) return res.status(400).json({ error: `${s.name}: ${r.soldDoubles} doubles sold exceeds drop of ${maxD}` });
+      rows.push({
+        for_date:     targetDate,
+        route_key:    routeKey,
+        stop_id:      r.stopId,
+        sold_singles: r.soldSingles,
+        sold_doubles: r.soldDoubles,
+        sold_cents:   r.soldSingles * priceSingleFor(s) + r.soldDoubles * priceDoubleFor(s),
+        submitted_by: sess.sub,
+        submitted_at: new Date().toISOString(),
+      });
     }
 
     const { error: ue } = await sb.from('returns').upsert(rows, { onConflict: 'for_date,stop_id' });
