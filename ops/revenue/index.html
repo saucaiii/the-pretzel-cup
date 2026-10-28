@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Revenue — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 56px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 60ch; margin: 0 0 24px; line-height: 1.5; }
+
+.toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+.filter { font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-2); background: transparent; cursor: pointer; }
+.filter[aria-pressed="true"] { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); }
+.window-label { font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-left: 8px; }
+.window-label b { color: var(--accent); font-weight: 400; }
+
+/* Sparkline card */
+.spark-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; margin: 14px 0 24px; }
+.spark-head { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+.spark-title { font-family: var(--display); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); }
+.spark-sub { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+.spark { width: 100%; height: 80px; display: block; }
+
+/* Summary strip */
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.sum-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; }
+.sum-label { font-family: var(--display); font-size: 11px; letter-spacing: 0.18em; color: var(--ink-3); text-transform: uppercase; margin-bottom: 8px; }
+.sum-value { font-family: var(--display); font-size: 36px; color: var(--ink); letter-spacing: 0.01em; line-height: 1; }
+.sum-value.money { color: var(--accent); }
+.sum-detail { font-size: 12px; color: var(--ink-3); margin-top: 8px; font-family: var(--display); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Tables */
+.sect { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 28px 0 10px; display: flex; justify-content: space-between; align-items: baseline; }
+.sect .meta { font-size: 11px; color: var(--ink-3); letter-spacing: 0.14em; }
+.tbl { width: 100%; border-collapse: collapse; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+.tbl th, .tbl td { padding: 11px 14px; text-align: left; font-size: 14px; }
+.tbl th { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); background: rgba(0,0,0,0.18); border-bottom: 1px solid var(--line); }
+.tbl td { border-bottom: 1px solid var(--line); color: var(--ink); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl td.num, .tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tbl td.money { color: var(--accent); font-weight: 700; }
+.tbl td.route { font-family: var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-size: 13px; }
+.tbl tr.totals td { background: rgba(0,0,0,0.22); font-family: var(--display); letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
+.tbl tr.totals td.money { font-size: 14px; }
+
+.stop-toggle { display: inline-flex; align-items: center; background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.stop-toggle:hover { color: var(--ink); border-color: var(--line); }
+
+.empty { padding: 32px 10px; text-align: center; color: var(--ink-3); font-size: 14px; border: 1px dashed var(--line); border-radius: var(--radius-md); }
+.shorts-chip { display: inline-block; padding: 1px 7px; border-radius: 999px; background: rgba(244,194,95,0.14); color: #f4c25f; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary">
+          <a href="/ops" class="nav-link">Dashboard</a>
+          <a href="/ops/revenue" class="nav-link is-active">Revenue</a>
+          <a href="/ops/updates" class="nav-link">Updates</a>
+          <a href="/ops/time-off" class="nav-link">Time Off</a>
+          <a href="/ops/stops" class="nav-link">Stops</a>
+          <a href="/ops/shifts" class="nav-link">Shifts</a>
+          <a href="/ops/people" class="nav-link">People</a>
+          <a href="/ops/plan" class="nav-link">Plan</a>
+        </nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Gross retail sold</div>
+    <h1 class="page-title">Revenue</h1>
+    <p class="page-sub">What drivers rang up at per-stop pricing. Totals, breakdown by route, by driver, and per-stop drill-down.</p>
+
+    <div class="toolbar">
+      <button type="button" class="filter" data-w="week"    aria-pressed="true">Weekly</button>
+      <button type="button" class="filter" data-w="30d"     aria-pressed="false">30 days</button>
+      <button type="button" class="filter" data-w="quarter" aria-pressed="false">Quarter</button>
+      <button type="button" class="filter" data-w="ytd"     aria-pressed="false">Year-to-date</button>
+      <span class="window-label">Range · <b id="win-label">&mdash;</b></span>
+    </div>
+
+    <div class="spark-card">
+      <div class="spark-head">
+        <span class="spark-title">Last 30 days · daily revenue</span>
+        <span class="spark-sub" id="spark-sub">&mdash;</span>
+      </div>
+      <svg class="spark" id="spark" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+
+    <div class="summary" id="summary"></div>
+
+    <h2 class="sect">By route <span class="meta" id="route-meta">&mdash;</span></h2>
+    <table class="tbl" id="route-tbl"><thead><tr>
+      <th>Route</th><th class="num">Singles</th><th class="num">Doubles</th><th class="num">Units</th><th class="num">Shorts</th><th class="num">Submissions</th><th class="num">Revenue</th>
+    </tr></thead><tbody></tbody></table>
+
+    <h2 class="sect">By driver <span class="meta" id="driver-meta">&mdash;</span></h2>
+    <table class="tbl" id="driver-tbl"><thead><tr>
+      <th>Driver</th><th class="num">Submissions</th><th class="num">Singles</th><th class="num">Doubles</th><th class="num">Units</th><th class="num">Revenue</th>
+    </tr></thead><tbody></tbody></table>
+
+    <h2 class="sect">
+      <span>By stop <span class="meta" id="stop-meta">&mdash;</span></span>
+      <button type="button" class="stop-toggle" id="stop-toggle">Show all</button>
+    </h2>
+    <table class="tbl" id="stop-tbl"><thead><tr>
+      <th>Stop</th><th>Route</th><th class="num">Singles</th><th class="num">Doubles</th><th class="num">Units</th><th class="num">Revenue</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = c => '$' + (Number(c || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const n = v => Number(v || 0).toLocaleString('en-US');
+const fmtDate = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+let _window = 'week';
+let _data = null;
+let _showAllStops = false;
+
+async function boot() {
+  const next = encodeURIComponent(location.pathname + location.search);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (me.role !== 'operator') { location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin'); return; }
+    document.getElementById('boot').style.display = 'none';
+    document.getElementById('app').hidden = false;
+    $('#user-tag').textContent = me.name;
+    initApp();
+  } catch (e) { location.replace('/signin?next=' + next); }
+}
+boot();
+
+function initApp() {
+  document.querySelectorAll('.filter').forEach(b => b.onclick = () => {
+    _window = b.dataset.w;
+    document.querySelectorAll('.filter').forEach(x => x.setAttribute('aria-pressed', x === b));
+    load();
+  });
+  $('#stop-toggle').onclick = () => {
+    _showAllStops = !_showAllStops;
+    $('#stop-toggle').textContent = _showAllStops ? 'Show top 15' : 'Show all';
+    renderStops();
+  };
+  $('#logout-btn').onclick = async () => {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  load();
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/schedule?resource=revenue&window=' + encodeURIComponent(_window), { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    _data = await r.json();
+    render();
+  } catch (e) {
+    $('#summary').innerHTML = '<div class="empty">Could not load revenue.</div>';
+  }
+}
+
+function render() {
+  if (!_data) return;
+  $('#win-label').textContent = `${_data.window.label} · ${fmtDate(_data.window.from)} to ${fmtDate(_data.window.to)}`;
+  renderSpark();
+  renderSummary();
+  renderRoutes();
+  renderDrivers();
+  renderStops();
+}
+
+function renderSpark() {
+  const d = _data.daily || [];
+  if (!d.length) { $('#spark').innerHTML = ''; return; }
+  const max = Math.max(1, ...d.map(x => x.revenue_cents));
+  const w = 600, h = 80, pad = 2;
+  const step = (w - pad * 2) / Math.max(1, d.length - 1);
+  const pts = d.map((x, i) => `${pad + i * step},${h - pad - (x.revenue_cents / max) * (h - pad * 2)}`).join(' ');
+  const areaPts = `${pad},${h} ${pts} ${w - pad},${h}`;
+  $('#spark').innerHTML = `
+    <polygon points="${areaPts}" fill="rgba(212,182,98,0.14)"></polygon>
+    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>
+  `;
+  const total30 = d.reduce((a, x) => a + x.revenue_cents, 0);
+  $('#spark-sub').innerHTML = `30-day · <b style="color:var(--accent)">${esc(money(total30))}</b>`;
+}
+
+function renderSummary() {
+  const s = _data.summary || {};
+  const card = (label, value, detail, moneyClass) => `
+    <div class="sum-card">
+      <div class="sum-label">${esc(label)}</div>
+      <div class="sum-value${moneyClass ? ' money' : ''}">${esc(value)}</div>
+      <div class="sum-detail">${esc(detail || '')}</div>
+    </div>`;
+  const avg = s.days_covered ? money(Math.round(s.total_cents / s.days_covered)) : money(0);
+  $('#summary').innerHTML = [
+    card('Revenue', money(s.total_cents), `${n(s.submissions)} submissions · ${n(s.days_covered)} days`, true),
+    card('Total units', n(s.total_units), `${n(s.total_singles)} singles · ${n(s.total_doubles)} doubles`),
+    card('Shorts units', n(s.total_shorts_units), 'Baked at Lynbrook only'),
+    card('Daily average', avg, s.days_covered ? `${n(Math.round(s.total_units / Math.max(1, s.days_covered)))} units / day` : '—', true),
+  ].join('');
+}
+
+function renderRoutes() {
+  const rows = _data.by_route || [];
+  $('#route-meta').textContent = rows.length ? `${rows.length} route${rows.length === 1 ? '' : 's'}` : '';
+  const tot = rows.reduce((a, r) => ({ singles: a.singles + r.singles, doubles: a.doubles + r.doubles, units: a.units + r.units, shorts: a.shorts + r.shorts_units, subs: a.subs + r.submissions, cents: a.cents + r.revenue_cents }), { singles: 0, doubles: 0, units: 0, shorts: 0, subs: 0, cents: 0 });
+  const body = rows.map(r => `
+    <tr>
+      <td class="route">${esc(r.route_key)}</td>
+      <td class="num">${n(r.singles)}</td>
+      <td class="num">${n(r.doubles)}</td>
+      <td class="num">${n(r.units)}</td>
+      <td class="num">${n(r.shorts_units)}</td>
+      <td class="num">${n(r.submissions)}</td>
+      <td class="num money">${esc(money(r.revenue_cents))}</td>
+    </tr>`).join('');
+  const totalRow = rows.length ? `
+    <tr class="totals">
+      <td>Total</td>
+      <td class="num">${n(tot.singles)}</td>
+      <td class="num">${n(tot.doubles)}</td>
+      <td class="num">${n(tot.units)}</td>
+      <td class="num">${n(tot.shorts)}</td>
+      <td class="num">${n(tot.subs)}</td>
+      <td class="num money">${esc(money(tot.cents))}</td>
+    </tr>` : '';
+  $('#route-tbl tbody').innerHTML = (body || `<tr><td colspan="7" style="padding:28px 10px;color:var(--ink-3);text-align:center;">No submissions in this window.</td></tr>`) + totalRow;
+}
+
+function renderDrivers() {
+  const rows = _data.by_driver || [];
+  $('#driver-meta').textContent = rows.length ? `${rows.length} driver${rows.length === 1 ? '' : 's'}` : '';
+  const body = rows.map(r => `
+    <tr>
+      <td><b>${esc(r.name)}</b></td>
+      <td class="num">${n(r.submissions)}</td>
+      <td class="num">${n(r.singles)}</td>
+      <td class="num">${n(r.doubles)}</td>
+      <td class="num">${n(r.units)}</td>
+      <td class="num money">${esc(money(r.revenue_cents))}</td>
+    </tr>`).join('');
+  $('#driver-tbl tbody').innerHTML = body || `<tr><td colspan="6" style="padding:28px 10px;color:var(--ink-3);text-align:center;">No submissions in this window.</td></tr>`;
+}
+
+function renderStops() {
+  const all = _data.by_stop || [];
+  const rows = _showAllStops ? all : all.slice(0, 15);
+  $('#stop-meta').textContent = all.length ? `${_showAllStops ? all.length : Math.min(15, all.length)} of ${all.length}` : '';
+  const body = rows.map(r => `
+    <tr>
+      <td>${esc(r.name)}${r.shorts ? '<span class="shorts-chip">Shorts</span>' : ''}</td>
+      <td class="route">${esc(r.route_key)}</td>
+      <td class="num">${n(r.singles)}</td>
+      <td class="num">${n(r.doubles)}</td>
+      <td class="num">${n(r.units)}</td>
+      <td class="num money">${esc(money(r.revenue_cents))}</td>
+    </tr>`).join('');
+  $('#stop-tbl tbody').innerHTML = body || `<tr><td colspan="6" style="padding:28px 10px;color:var(--ink-3);text-align:center;">No submissions in this window.</td></tr>`;
+}
+</script>
+</body>
+</html>
