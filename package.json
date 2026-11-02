@@ -5,7 +5,8 @@
   "description": "The Pretzel Cup — PPF brand site + ops dashboard. Serverless functions live under /api/.",
   "scripts": {
     "deploy": "bash scripts/deploy.sh",
-    "deploy:preview": "bash scripts/deploy.sh preview"
+    "deploy:preview": "bash scripts/deploy.sh preview",
+    "contacts:import": "node --env-file=.env scripts/import-store-contacts.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
