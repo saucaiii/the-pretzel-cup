@@ -27,6 +27,19 @@ This file is guidance. Enforcement lives in `.agent-policy/policy.sh` (called by
 9. **Propose.** Push the branch, open a **draft** PR with the template filled in, including Evidence. Never merge, never approve.
 10. **Close.** The human runs `scripts/agent/close-task.sh`, which archives and resets short-term memory.
 
+## Branches and commits
+
+Everyday repo hygiene, applied to humans and agents alike. The guardrails elsewhere in this file still enforce agent-specific rules on top of this.
+
+- **Branch prefixes.**
+  - Humans use `feature/`, `fix/`, `chore/`, `docs/` (one topic per branch).
+  - Agents stay on `agent/<task>` (see step 5 above). Claude Code may also use `claude/*` and Copilot may also use `copilot/*`; those prefixes keep agent origin visible per the Transparency bullet in Responsible AI.
+  - `main` is the integration branch. Nothing is committed directly to `main`.
+- **Short-lived.** One feature per branch. Open a PR as soon as there is something to review, merge when it is green, and delete the branch after merge.
+- **Conventional Commits for everyone.** Message format: `type: imperative summary`, where `type` is one of `feat`, `fix`, `refactor`, `chore`, `docs`, or `test`. The summary line is under 72 characters. No `wip`, `updates`, `stuff`, or similar. A breaking change adds `!` after the type (for example `feat!: rename public config key`) and explains it in the body.
+- **Tags are human-only.** Stable versions get an annotated tag through `scripts/release.sh <version>` (default branch, clean tree, up to date, `vX.Y.Z`). The script prints the push command rather than pushing. Agents must not run it; the policy and this file both block it.
+- **Downstream sync.** A project repo created from this kit pulls kit updates with `scripts/setup/sync-kit.sh <path-to-kit>`, which opens a `chore/sync-kit-<date>` branch and copies only guardrail and agent files. It never touches the project's `README.md`, `CODEOWNERS`, or source. Human-only like `release.sh`.
+
 ## Risk and autonomy
 
 Classify every action on three axes and take the **highest**:
@@ -53,7 +66,7 @@ Gates exist only where they reduce real risk: low and medium work is not held fo
 - Never read, print, or write secrets (`.env*`, `*.pem`, `*.key`, `secrets/`). Refer to them by variable name only.
 - Never edit `.claude/settings*.json`, `.claude/hooks/`, `.agent-policy/`, or `.agent-control/`, by any tool including the shell.
 - Never use `--force`, `--no-verify`, `reset --hard`, `rebase`, `gh pr merge`, `gh secret set`, or start a deploy.
-- Never run the human-only scripts: `approve-plan.sh`, `close-task.sh`, `apply-github-settings.sh`.
+- Never run the human-only scripts: `approve-plan.sh`, `close-task.sh`, `apply-github-settings.sh`, `release.sh`, `sync-kit.sh`.
 - Never pipe a download into a shell.
 - Cloud agent environments are prepared by `.github/workflows/copilot-setup-steps.yml` and have their own secrets (the `copilot` environment). Do not assume CI secrets exist there.
 
