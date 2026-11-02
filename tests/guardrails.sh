@@ -10,8 +10,17 @@ tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 repo="$tmp/repo"; mkdir -p "$repo"
 (cd "$kit" && tar --exclude=.git -cf - .) | (cd "$repo" && tar -xf -)
 cd "$repo"
-chmod +x .agent-policy/*.sh .claude/hooks/*.sh .github/hooks/scripts/*.sh scripts/agent/*.sh scripts/setup/*.sh
-git init -q -b main && git -c user.name=t -c user.email=t@t add -A && git -c user.name=t -c user.email=t@t commit -qm init
+# Scrub transient agent files that new-task.sh creates in an active worktree.
+# Without this the fixture inherits that worktree's scope.txt / approval / plan,
+# which is not representative of a fresh kit.
+rm -f .agent/plan.md .agent/state.md .agent/eval.md
+rm -f .agent-control/scope.txt .agent-control/approval
+rm -rf .agent-control/archive
+chmod +x .agent-policy/*.sh .claude/hooks/*.sh .github/hooks/scripts/*.sh scripts/*.sh scripts/agent/*.sh scripts/setup/*.sh 2>/dev/null || true
+git init -q -b main
+git config user.name t
+git config user.email t@t
+git add -A && git commit -qm init
 export CLAUDE_PROJECT_DIR="$repo"
 
 pass=0; fail=0
@@ -133,9 +142,55 @@ echo "## Config files parse"
 for f in .claude/settings.json .mcp.json .github/hooks/guardrails.json github/*.json copilot/*.json; do
   check "valid JSON: $f" 0 "$(jq empty "$f" >/dev/null 2>&1; echo $?)"
 done
-for f in .agent-policy/*.sh .claude/hooks/*.sh .github/hooks/scripts/*.sh scripts/agent/*.sh scripts/setup/*.sh; do
+for f in .agent-policy/*.sh .claude/hooks/*.sh .github/hooks/scripts/*.sh scripts/*.sh scripts/agent/*.sh scripts/setup/*.sh; do
   check "bash syntax: $f" 0 "$(bash -n "$f" 2>/dev/null; echo $?)"
 done
+
+echo "## Release and sync"
+# Earlier tests leave untracked state files behind; clean them so release.sh
+# sees a genuinely clean tree. The fixture is throwaway, so git clean is safe.
+git switch -q main
+git clean -fdq
+
+# release.sh version pattern and arg handling
+check "release: no args"               2 "$(scripts/release.sh >/dev/null 2>&1; echo $?)"
+check "release: bad version"           2 "$(scripts/release.sh v1.2 >/dev/null 2>&1; echo $?)"
+
+# release.sh dirty tree
+date > dirty-release-check
+check "release: dirty tree"            4 "$(scripts/release.sh v9.9.9 >/dev/null 2>&1; echo $?)"
+rm -f dirty-release-check
+
+# release.sh existing tag
+git tag v0.0.1
+check "release: tag exists"            6 "$(GUARDRAIL_TEST=1 RELEASE_SKIP_FETCH=1 scripts/release.sh v0.0.1 >/dev/null 2>&1; echo $?)"
+git tag -d v0.0.1 >/dev/null
+
+# release.sh happy path (fixture has no remote, so skip the up-to-date check)
+check "release: creates tag"           0 "$(GUARDRAIL_TEST=1 RELEASE_SKIP_FETCH=1 scripts/release.sh v9.9.9 >/dev/null 2>&1; echo $?)"
+check "release: tag is annotated"      0 "$(git for-each-ref refs/tags/v9.9.9 --format='%(objecttype)' | grep -q '^tag$'; echo $?)"
+git tag -d v9.9.9 >/dev/null
+
+# sync-kit.sh fixture: fresh project repo with its own README and CODEOWNERS.
+proj="$tmp/project"; mkdir -p "$proj/.github"
+echo "# Project README that must stay" > "$proj/README.md"
+echo "* @project-owner"                > "$proj/.github/CODEOWNERS"
+(cd "$proj" && git init -q -b main && \
+   git -c user.name=t -c user.email=t@t add -A && \
+   git -c user.name=t -c user.email=t@t commit -qm init)
+
+sha_of() { { sha256sum "$1" 2>/dev/null || shasum -a 256 "$1"; } | awk '{print $1}'; }
+readme_before="$(sha_of "$proj/README.md")"
+codeowners_before="$(sha_of "$proj/.github/CODEOWNERS")"
+
+# "$tmp" is not a kit: no .agent-policy/policy.sh / CLAUDE.md / new-task.sh there.
+check "sync-kit: not a kit path"       3 "$(cd "$proj" && "$repo/scripts/setup/sync-kit.sh" "$tmp" >/dev/null 2>&1; echo $?)"
+check "sync-kit: happy path"           0 "$(cd "$proj" && "$repo/scripts/setup/sync-kit.sh" "$repo" >/dev/null 2>&1; echo $?)"
+
+readme_after="$(sha_of "$proj/README.md")"
+codeowners_after="$(sha_of "$proj/.github/CODEOWNERS")"
+check "sync-kit: README untouched"     0 "$([[ \"$readme_before\" == \"$readme_after\" ]]; echo $?)"
+check "sync-kit: CODEOWNERS untouched" 0 "$([[ \"$codeowners_before\" == \"$codeowners_after\" ]]; echo $?)"
 
 echo
 echo "Passed: $pass  Failed: $fail  (bash $BASH_VERSION, $(uname -s))"
