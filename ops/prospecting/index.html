@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0D5237">
 <title>Prospecting — PPF Operator</title>
-<meta name="description" content="Route-density prospecting: delis + supermarkets within 1.5 mi of a current stop.">
+<meta name="description" content="Wholesale prospecting: delis + markets, schools, churches, daycares.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
@@ -47,9 +47,9 @@ a.nav-link, a.public-link { -webkit-tap-highlight-color: transparent; touch-acti
 .metric-value { font-family: var(--display); font-size: 32px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
 .metric-label { font-family: var(--display); font-size: 11px; letter-spacing: 0.16em; color: var(--ink-3); text-transform: uppercase; }
 
-.tabs { display: flex; gap: 6px; margin: 0 0 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.tab { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; }
-.tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
+.seg-tabs { display: flex; gap: 6px; margin: 0 0 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.seg-tab { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; }
+.seg-tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
 
 .filters { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); margin: 0 0 14px; }
 .filter { display: flex; flex-direction: column; gap: 4px; }
@@ -80,6 +80,11 @@ table.leads td.center { text-align: center; }
 .pill.chain-chain { background: rgba(244,117,114,0.12); color: #f47572; }
 .pill.chain-chain-corporate { background: rgba(244,117,114,0.2); color: #f47572; }
 .pill.chain-independent { background: rgba(130,210,180,0.1); color: #82d2b4; }
+.pill.sub-public_nces { background: rgba(95,213,140,0.12); color: #5fd58c; }
+.pill.sub-private_nces, .pill.sub-private { background: rgba(248,186,112,0.14); color: #f0b56a; }
+.pill.sub-parochial_private { background: rgba(190,160,255,0.12); color: #bea0ff; }
+.pill.sub-unknown { background: rgba(180,180,180,0.14); color: var(--ink-2); }
+.pill.denom { background: rgba(190,160,255,0.12); color: #bea0ff; }
 .map-link { color: var(--accent); text-decoration: none; font-family: var(--display); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
 .map-link:hover { color: var(--accent-2); text-decoration: underline; }
 .empty { padding: 40px; text-align: center; color: var(--ink-3); font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
@@ -128,38 +133,35 @@ table.leads td.center { text-align: center; }
     <div class="page-eyebrow">Growth</div>
     <h1 class="page-title">Prospecting</h1>
     <p class="page-sub">
-      Delis, supermarkets and grocery stores within <strong>1.5&nbsp;mi</strong> of a current route stop.
-      Non-buyer chains (7-Eleven, pharmacy, big-box, dollar) and existing accounts are already filtered out.
-      Pulled from OpenStreetMap on <span id="pull-date">&mdash;</span>.
+      Wholesale prospects across four segments. <strong>Delis &amp; Markets</strong> is route-density
+      (slot into the daily drive). <strong>Schools, Churches, Daycares</strong> are foot-in-the-door
+      event / fundraiser orders that lead to standing wholesale. Pulled from OpenStreetMap on
+      <span id="pull-date">&mdash;</span>, schools enriched with NCES public + private + enrollment.
     </p>
 
-    <section class="metrics" aria-label="Prospect counts">
-      <div class="metric"><div class="metric-value" id="m-total">&mdash;</div><div class="metric-label">Total prospects</div></div>
-      <div class="metric"><div class="metric-value" id="m-fsq">&mdash;</div><div class="metric-label">FSQ route</div></div>
-      <div class="metric"><div class="metric-value" id="m-lyn">&mdash;</div><div class="metric-label">LYN route</div></div>
-      <div class="metric"><div class="metric-value" id="m-fbw">&mdash;</div><div class="metric-label">FBW route</div></div>
-      <div class="metric"><div class="metric-value" id="m-close">&mdash;</div><div class="metric-label">Under 0.5 mi</div></div>
-    </section>
+    <section class="metrics" id="metrics" aria-label="Prospect counts"></section>
 
-    <div class="tabs" role="tablist">
-      <button class="tab is-active" role="tab" data-tab="leads" aria-selected="true">Leads</button>
-      <button class="tab" role="tab" data-tab="density" aria-selected="false">Per-stop density</button>
+    <div class="seg-tabs" role="tablist">
+      <button class="seg-tab is-active" role="tab" data-seg="delis"    aria-selected="true">Delis &amp; Markets</button>
+      <button class="seg-tab" role="tab" data-seg="schools"  aria-selected="false">Schools</button>
+      <button class="seg-tab" role="tab" data-seg="churches" aria-selected="false">Churches</button>
+      <button class="seg-tab" role="tab" data-seg="daycares" aria-selected="false">Daycares</button>
+      <button class="seg-tab" role="tab" data-seg="density"  aria-selected="false">Per-stop density</button>
     </div>
 
-    <section id="tab-leads">
+    <!-- ─── DELIS & MARKETS ─── -->
+    <section id="seg-delis">
       <div class="filters">
         <div class="filter">
-          <label for="f-route" class="filter-label">Route</label>
-          <select id="f-route">
+          <label for="d-route" class="filter-label">Route</label>
+          <select id="d-route">
             <option value="">All routes</option>
-            <option value="FSQ">FSQ</option>
-            <option value="LYN">LYN</option>
-            <option value="FBW">FBW</option>
+            <option value="FSQ">FSQ</option><option value="LYN">LYN</option><option value="FBW">FBW</option>
           </select>
         </div>
         <div class="filter">
-          <label for="f-cat" class="filter-label">Category</label>
-          <select id="f-cat">
+          <label for="d-cat" class="filter-label">Category</label>
+          <select id="d-cat">
             <option value="">All categories</option>
             <option value="deli">Deli</option>
             <option value="supermarket">Supermarket</option>
@@ -169,8 +171,8 @@ table.leads td.center { text-align: center; }
           </select>
         </div>
         <div class="filter">
-          <label for="f-chain" class="filter-label">Chain</label>
-          <select id="f-chain">
+          <label for="d-chain" class="filter-label">Chain</label>
+          <select id="d-chain">
             <option value="">All</option>
             <option value="independent">Independent only</option>
             <option value="chain">Chain</option>
@@ -178,64 +180,232 @@ table.leads td.center { text-align: center; }
           </select>
         </div>
         <div class="filter">
-          <label for="f-mi" class="filter-label">Max mi to stop</label>
-          <select id="f-mi">
-            <option value="1.5">1.5</option>
-            <option value="1.0">1.0</option>
-            <option value="0.5">0.5</option>
-            <option value="0.25">0.25</option>
+          <label for="d-mi" class="filter-label">Max mi to stop</label>
+          <select id="d-mi">
+            <option value="1.5">1.5</option><option value="1.0">1.0</option>
+            <option value="0.5">0.5</option><option value="0.25">0.25</option>
           </select>
         </div>
         <div class="filter">
-          <label for="f-q" class="filter-label">Search</label>
-          <input id="f-q" type="search" placeholder="Name, town, street">
+          <label for="d-q" class="filter-label">Search</label>
+          <input id="d-q" type="search" placeholder="Name, town, street">
         </div>
         <div class="filter-row-end">
-          <span class="count" id="row-count">&mdash;</span>
-          <button class="export-btn" id="export-csv" type="button">Export CSV</button>
+          <span class="count" id="d-count">&mdash;</span>
+          <button class="export-btn" data-export="delis" type="button">Export CSV</button>
         </div>
       </div>
-
       <div class="table-wrap">
-        <table class="leads" id="leads-table">
-          <thead>
-            <tr>
-              <th data-sort="name">Name<span class="arrow"></span></th>
-              <th data-sort="category">Type<span class="arrow"></span></th>
-              <th data-sort="chain_type">Chain<span class="arrow"></span></th>
-              <th data-sort="nearest_route">Route<span class="arrow"></span></th>
-              <th data-sort="nearest_stop_name">Nearest stop<span class="arrow"></span></th>
-              <th data-sort="nearest_stop_mi" class="num">Mi<span class="arrow">↑</span></th>
-              <th data-sort="street">Address<span class="arrow"></span></th>
-              <th data-sort="phone">Phone<span class="arrow"></span></th>
-              <th>Web / Map</th>
-            </tr>
-          </thead>
-          <tbody id="leads-body"></tbody>
+        <table class="leads" id="d-table">
+          <thead><tr>
+            <th data-sort="name">Name<span class="arrow"></span></th>
+            <th data-sort="category">Type<span class="arrow"></span></th>
+            <th data-sort="chain_type">Chain<span class="arrow"></span></th>
+            <th data-sort="nearest_route">Route<span class="arrow"></span></th>
+            <th data-sort="nearest_stop_name">Nearest stop<span class="arrow"></span></th>
+            <th data-sort="nearest_stop_mi" class="num">Mi<span class="arrow">↑</span></th>
+            <th data-sort="street">Address<span class="arrow"></span></th>
+            <th data-sort="phone">Phone<span class="arrow"></span></th>
+            <th>Web / Map</th>
+          </tr></thead>
+          <tbody id="d-body"></tbody>
         </table>
-        <div class="empty" id="leads-empty" hidden>No prospects match these filters.</div>
+        <div class="empty" id="d-empty" hidden>No prospects match these filters.</div>
       </div>
-      <p class="src-note">Source: OpenStreetMap via Overpass. Not an exhaustive directory &mdash; small corner delis are mapped inconsistently.</p>
+      <p class="src-note">Source: OpenStreetMap. Non-buyer chains (7-Eleven, pharmacy, big-box, dollar) and existing accounts already filtered.</p>
     </section>
 
-    <section id="tab-density" hidden>
+    <!-- ─── SCHOOLS ─── -->
+    <section id="seg-schools" hidden>
+      <div class="filters">
+        <div class="filter">
+          <label for="s-route" class="filter-label">Nearest route</label>
+          <select id="s-route">
+            <option value="">All routes</option>
+            <option value="FSQ">FSQ</option><option value="LYN">LYN</option><option value="FBW">FBW</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="s-sub" class="filter-label">Type</label>
+          <select id="s-sub">
+            <option value="">All types</option>
+            <option value="public_nces">Public (NCES)</option>
+            <option value="private_nces">Private (NCES)</option>
+            <option value="private">Private (OSM)</option>
+            <option value="parochial_private">Parochial / religious</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="s-enroll" class="filter-label">Min enrollment</label>
+          <select id="s-enroll">
+            <option value="0">Any</option>
+            <option value="500">500+</option>
+            <option value="1000">1,000+</option>
+            <option value="1500">1,500+</option>
+            <option value="2000">2,000+</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="s-level" class="filter-label">Level</label>
+          <select id="s-level">
+            <option value="">All levels</option>
+            <option value="Elementary">Elementary</option>
+            <option value="Middle">Middle</option>
+            <option value="High">High</option>
+            <option value="Prekindergarten">Pre-K</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="s-mi" class="filter-label">Max mi to bakery</label>
+          <select id="s-mi">
+            <option value="10">10</option>
+            <option value="5">5</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="s-q" class="filter-label">Search</label>
+          <input id="s-q" type="search" placeholder="Name, city, district">
+        </div>
+        <div class="filter-row-end">
+          <span class="count" id="s-count">&mdash;</span>
+          <button class="export-btn" data-export="schools" type="button">Export CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="leads" id="s-table">
+          <thead><tr>
+            <th data-sort="name">Name<span class="arrow"></span></th>
+            <th data-sort="enrollment" class="num">Enroll<span class="arrow">↓</span></th>
+            <th data-sort="subtype">Type<span class="arrow"></span></th>
+            <th data-sort="grade_lo">Grades<span class="arrow"></span></th>
+            <th data-sort="nces_district">District<span class="arrow"></span></th>
+            <th data-sort="nearest_route">Route<span class="arrow"></span></th>
+            <th data-sort="mi_to_nearest_bakery" class="num">Mi<span class="arrow"></span></th>
+            <th data-sort="street">Address<span class="arrow"></span></th>
+            <th data-sort="phone">Phone<span class="arrow"></span></th>
+            <th>Web / Map</th>
+          </tr></thead>
+          <tbody id="s-body"></tbody>
+        </table>
+        <div class="empty" id="s-empty" hidden>No schools match these filters.</div>
+      </div>
+      <p class="src-note">Source: OSM + NCES EDGE (public 2024-25, private 2023-24) + NCES CCD characteristics (enrollment). Default sort is by enrollment desc. 546 schools are OSM-only (didn't match an NCES entry) and show subtype <code>unknown</code> or the OSM-inferred category.</p>
+    </section>
+
+    <!-- ─── CHURCHES ─── -->
+    <section id="seg-churches" hidden>
+      <div class="filters">
+        <div class="filter">
+          <label for="c-route" class="filter-label">Nearest route</label>
+          <select id="c-route">
+            <option value="">All routes</option>
+            <option value="FSQ">FSQ</option><option value="LYN">LYN</option><option value="FBW">FBW</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="c-denom" class="filter-label">Denomination</label>
+          <select id="c-denom"><option value="">All</option></select>
+        </div>
+        <div class="filter">
+          <label for="c-mi" class="filter-label">Max mi to bakery</label>
+          <select id="c-mi">
+            <option value="10">10</option>
+            <option value="5">5</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="c-q" class="filter-label">Search</label>
+          <input id="c-q" type="search" placeholder="Name, city, denomination">
+        </div>
+        <div class="filter-row-end">
+          <span class="count" id="c-count">&mdash;</span>
+          <button class="export-btn" data-export="churches" type="button">Export CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="leads" id="c-table">
+          <thead><tr>
+            <th data-sort="name">Name<span class="arrow"></span></th>
+            <th data-sort="subtype">Denomination<span class="arrow"></span></th>
+            <th data-sort="nearest_route">Route<span class="arrow"></span></th>
+            <th data-sort="nearest_stop_name">Nearest stop<span class="arrow"></span></th>
+            <th data-sort="mi_to_nearest_bakery" class="num">Mi<span class="arrow">↑</span></th>
+            <th data-sort="street">Address<span class="arrow"></span></th>
+            <th data-sort="phone">Phone<span class="arrow"></span></th>
+            <th>Web / Map</th>
+          </tr></thead>
+          <tbody id="c-body"></tbody>
+        </table>
+        <div class="empty" id="c-empty" hidden>No churches match these filters.</div>
+      </div>
+      <p class="src-note">Source: OpenStreetMap, Christian denominations only (religion=christian OR Christian denomination tag OR Christian-named inferred). No size dataset in OSM — Google Places ratings are the follow-up proxy.</p>
+    </section>
+
+    <!-- ─── DAYCARES ─── -->
+    <section id="seg-daycares" hidden>
+      <div class="filters">
+        <div class="filter">
+          <label for="y-route" class="filter-label">Nearest route</label>
+          <select id="y-route">
+            <option value="">All routes</option>
+            <option value="FSQ">FSQ</option><option value="LYN">LYN</option><option value="FBW">FBW</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="y-mi" class="filter-label">Max mi to bakery</label>
+          <select id="y-mi">
+            <option value="10">10</option>
+            <option value="5">5</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="y-q" class="filter-label">Search</label>
+          <input id="y-q" type="search" placeholder="Name, city">
+        </div>
+        <div class="filter-row-end">
+          <span class="count" id="y-count">&mdash;</span>
+          <button class="export-btn" data-export="daycares" type="button">Export CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="leads" id="y-table">
+          <thead><tr>
+            <th data-sort="name">Name<span class="arrow"></span></th>
+            <th data-sort="nearest_route">Route<span class="arrow"></span></th>
+            <th data-sort="nearest_stop_name">Nearest stop<span class="arrow"></span></th>
+            <th data-sort="mi_to_nearest_bakery" class="num">Mi<span class="arrow">↑</span></th>
+            <th data-sort="street">Address<span class="arrow"></span></th>
+            <th data-sort="phone">Phone<span class="arrow"></span></th>
+            <th>Web / Map</th>
+          </tr></thead>
+          <tbody id="y-body"></tbody>
+        </table>
+        <div class="empty" id="y-empty" hidden>No daycares match these filters.</div>
+      </div>
+      <p class="src-note">Source: OpenStreetMap <code>amenity=kindergarten</code>. Coverage is thin — most independent in-home daycares aren't mapped. NY State OCFS licensed-childcare database is the authoritative source.</p>
+    </section>
+
+    <!-- ─── PER-STOP DENSITY (DELIS) ─── -->
+    <section id="seg-density" hidden>
       <div class="table-wrap">
         <table class="leads">
-          <thead>
-            <tr>
-              <th>Route</th>
-              <th class="num">#</th>
-              <th>Stop</th>
-              <th>Town</th>
-              <th class="num">Prospects ≤ 1.5 mi</th>
-              <th class="num">Delis</th>
-              <th class="num">Supermarkets</th>
-              <th class="num">Other</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th>Route</th><th class="num">#</th><th>Stop</th><th>Town</th>
+            <th class="num">Prospects ≤ 1.5 mi</th><th class="num">Delis</th>
+            <th class="num">Supermarkets</th><th class="num">Other</th>
+          </tr></thead>
           <tbody id="density-body"></tbody>
         </table>
       </div>
+      <p class="src-note">Per-stop deli / market density within 1.5 mi of each current route stop.</p>
     </section>
   </main>
 </div>
@@ -244,10 +414,14 @@ table.leads td.center { text-align: center; }
 const $ = (s, el) => (el || document).querySelector(s);
 const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
 
-let LEADS = [];
-let DENSITY = [];
-let sortCol = 'nearest_stop_mi';
-let sortDir = 1; // 1 asc, -1 desc
+const DATA = { delis: [], schools: [], churches: [], daycares: [], density: [] };
+const SORT = {
+  delis:    { col: 'nearest_stop_mi',       dir: 1 },
+  schools:  { col: 'enrollment',            dir: -1 },
+  churches: { col: 'mi_to_nearest_bakery',  dir: 1 },
+  daycares: { col: 'mi_to_nearest_bakery',  dir: 1 },
+};
+let ACTIVE_SEG = 'delis';
 
 async function boot() {
   const next = encodeURIComponent(location.pathname + location.search);
@@ -270,13 +444,30 @@ async function boot() {
 }
 
 async function loadData() {
-  const [a, b] = await Promise.all([
-    fetch('/ops/prospecting/data.json',    { cache: 'no-cache' }).then(r => r.json()),
-    fetch('/ops/prospecting/density.json', { cache: 'no-cache' }).then(r => r.json()),
+  const [a, b, c, d, e] = await Promise.all([
+    fetch('/ops/prospecting/data.json',     { cache: 'no-cache' }).then(r => r.json()),
+    fetch('/ops/prospecting/density.json',  { cache: 'no-cache' }).then(r => r.json()),
+    fetch('/ops/prospecting/schools.json',  { cache: 'no-cache' }).then(r => r.json()),
+    fetch('/ops/prospecting/churches.json', { cache: 'no-cache' }).then(r => r.json()),
+    fetch('/ops/prospecting/daycares.json', { cache: 'no-cache' }).then(r => r.json()),
   ]);
-  LEADS = a.rows || [];
-  DENSITY = b.rows || [];
-  $('#pull-date').textContent = a.generated_at || '';
+  DATA.delis    = a.rows || [];
+  DATA.density  = b.rows || [];
+  DATA.schools  = c.rows || [];
+  DATA.churches = d.rows || [];
+  DATA.daycares = e.rows || [];
+  $('#pull-date').textContent = c.generated_at || a.generated_at || '';
+
+  // Build the Churches denomination dropdown from data
+  const denomCounts = {};
+  for (const r of DATA.churches) denomCounts[r.subtype] = (denomCounts[r.subtype] || 0) + 1;
+  const denoms = Object.keys(denomCounts).sort((a, b) => denomCounts[b] - denomCounts[a]);
+  const sel = $('#c-denom');
+  for (const d of denoms) {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = `${d} (${denomCounts[d]})`;
+    sel.appendChild(opt);
+  }
 }
 
 function initUI() {
@@ -285,70 +476,182 @@ function initUI() {
     location.replace('/signin');
   };
 
-  // Tabs
-  $$('.tab').forEach(t => {
-    t.onclick = () => {
-      $$('.tab').forEach(x => { x.classList.remove('is-active'); x.setAttribute('aria-selected', 'false'); });
-      t.classList.add('is-active'); t.setAttribute('aria-selected', 'true');
-      const which = t.dataset.tab;
-      $('#tab-leads').hidden = which !== 'leads';
-      $('#tab-density').hidden = which !== 'density';
-    };
+  // Segment tabs
+  $$('.seg-tab').forEach(t => {
+    t.onclick = () => switchSegment(t.dataset.seg);
   });
 
-  // Filters
-  ['#f-route', '#f-cat', '#f-chain', '#f-mi', '#f-q'].forEach(sel => {
+  // Delis
+  ['#d-route', '#d-cat', '#d-chain', '#d-mi', '#d-q'].forEach(sel => {
     const el = $(sel);
-    const evt = el.tagName === 'INPUT' ? 'input' : 'change';
-    el.addEventListener(evt, renderLeads);
+    el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', () => renderSeg('delis'));
+  });
+  // Schools
+  ['#s-route', '#s-sub', '#s-enroll', '#s-level', '#s-mi', '#s-q'].forEach(sel => {
+    const el = $(sel);
+    el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', () => renderSeg('schools'));
+  });
+  // Churches
+  ['#c-route', '#c-denom', '#c-mi', '#c-q'].forEach(sel => {
+    const el = $(sel);
+    el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', () => renderSeg('churches'));
+  });
+  // Daycares
+  ['#y-route', '#y-mi', '#y-q'].forEach(sel => {
+    const el = $(sel);
+    el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', () => renderSeg('daycares'));
   });
 
-  // Sort
-  $$('#leads-table thead th[data-sort]').forEach(th => {
-    th.addEventListener('click', () => {
-      const col = th.dataset.sort;
-      sortDir = (sortCol === col) ? -sortDir : 1;
-      sortCol = col;
-      $$('#leads-table thead th .arrow').forEach(a => a.textContent = '');
-      $('.arrow', th).textContent = sortDir === 1 ? '↑' : '↓';
-      renderLeads();
+  // Sort headers (per segment table)
+  for (const [seg, tableId] of [['delis', '#d-table'], ['schools', '#s-table'], ['churches', '#c-table'], ['daycares', '#y-table']]) {
+    $$(`${tableId} thead th[data-sort]`).forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (SORT[seg].col === col) SORT[seg].dir = -SORT[seg].dir;
+        else { SORT[seg].col = col; SORT[seg].dir = 1; }
+        $$(`${tableId} thead th .arrow`).forEach(a => a.textContent = '');
+        $('.arrow', th).textContent = SORT[seg].dir === 1 ? '↑' : '↓';
+        renderSeg(seg);
+      });
     });
-  });
+  }
 
-  $('#export-csv').onclick = exportFiltered;
+  // Export buttons
+  $$('.export-btn').forEach(b => b.onclick = () => exportSeg(b.dataset.export));
 
   renderMetrics();
-  renderLeads();
+  renderSeg('delis');
+  renderSeg('schools');
+  renderSeg('churches');
+  renderSeg('daycares');
   renderDensity();
 }
 
-function renderMetrics() {
-  const total = LEADS.length;
-  const by = r => LEADS.filter(x => x.nearest_route === r).length;
-  $('#m-total').textContent = total;
-  $('#m-fsq').textContent = by('FSQ');
-  $('#m-lyn').textContent = by('LYN');
-  $('#m-fbw').textContent = by('FBW');
-  $('#m-close').textContent = LEADS.filter(x => Number(x.nearest_stop_mi) <= 0.5).length;
+function switchSegment(seg) {
+  ACTIVE_SEG = seg;
+  $$('.seg-tab').forEach(t => {
+    const on = t.dataset.seg === seg;
+    t.classList.toggle('is-active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  for (const s of ['delis', 'schools', 'churches', 'daycares', 'density']) {
+    $('#seg-' + s).hidden = s !== seg;
+  }
+  renderMetrics();
 }
 
-function filtered() {
-  const route = $('#f-route').value;
-  const cat = $('#f-cat').value;
-  const chain = $('#f-chain').value;
-  const maxMi = Number($('#f-mi').value);
-  const q = $('#f-q').value.trim().toLowerCase();
-  return LEADS.filter(r => {
-    if (route && r.nearest_route !== route) return false;
-    if (cat && r.category !== cat) return false;
-    if (chain && r.chain_type !== chain) return false;
-    if (Number(r.nearest_stop_mi) > maxMi) return false;
-    if (q) {
-      const hay = [r.name, r.city, r.street, r.nearest_stop_town, r.nearest_stop_name].join(' ').toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
+function renderMetrics() {
+  const m = $('#metrics');
+  m.innerHTML = '';
+  const add = (value, label, cls) => {
+    const div = document.createElement('div');
+    div.className = 'metric';
+    div.innerHTML = `<div class="metric-value ${cls || ''}">${value}</div><div class="metric-label">${label}</div>`;
+    m.appendChild(div);
+  };
+  if (ACTIVE_SEG === 'delis' || ACTIVE_SEG === 'density') {
+    const rows = DATA.delis;
+    add(rows.length, 'Total prospects');
+    add(rows.filter(r => r.nearest_route === 'FSQ').length, 'FSQ route');
+    add(rows.filter(r => r.nearest_route === 'LYN').length, 'LYN route');
+    add(rows.filter(r => r.nearest_route === 'FBW').length, 'FBW route');
+    add(rows.filter(r => Number(r.nearest_stop_mi) <= 0.5).length, 'Under 0.5 mi');
+    return;
+  }
+  if (ACTIVE_SEG === 'schools') {
+    const rows = DATA.schools;
+    const pub = rows.filter(r => r.subtype === 'public_nces').length;
+    const prv = rows.filter(r => r.subtype === 'private_nces' || r.subtype === 'private' || r.subtype === 'parochial_private').length;
+    const bigEnr = rows.filter(r => typeof r.enrollment === 'number' && r.enrollment >= 1000).length;
+    const top = rows.reduce((best, r) => (typeof r.enrollment === 'number' && (!best || r.enrollment > best.enrollment)) ? r : best, null);
+    add(rows.length, 'Total schools');
+    add(pub, 'Public (NCES)');
+    add(prv, 'Private / parochial');
+    add(bigEnr, 'Enrollment ≥ 1,000');
+    add(top ? top.enrollment.toLocaleString() : '—', top ? `Top: ${top.name.slice(0, 24)}` : 'Top');
+    return;
+  }
+  if (ACTIVE_SEG === 'churches') {
+    const rows = DATA.churches;
+    const counts = {};
+    for (const r of rows) counts[r.subtype] = (counts[r.subtype] || 0) + 1;
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    add(rows.length, 'Total churches');
+    for (const [d, n] of top) add(n, d);
+    return;
+  }
+  if (ACTIVE_SEG === 'daycares') {
+    const rows = DATA.daycares;
+    add(rows.length, 'Total daycares');
+    add(rows.filter(r => r.nearest_route === 'FSQ').length, 'FSQ route');
+    add(rows.filter(r => r.nearest_route === 'LYN').length, 'LYN route');
+    add(rows.filter(r => r.nearest_route === 'FBW').length, 'FBW route');
+    return;
+  }
+}
+
+function filterRows(seg) {
+  const rows = DATA[seg];
+  if (seg === 'delis') {
+    const route = $('#d-route').value, cat = $('#d-cat').value, chain = $('#d-chain').value;
+    const maxMi = Number($('#d-mi').value), q = $('#d-q').value.trim().toLowerCase();
+    return rows.filter(r => {
+      if (route && r.nearest_route !== route) return false;
+      if (cat && r.category !== cat) return false;
+      if (chain && r.chain_type !== chain) return false;
+      if (Number(r.nearest_stop_mi) > maxMi) return false;
+      if (q) {
+        const hay = [r.name, r.city, r.street, r.nearest_stop_town, r.nearest_stop_name].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+  if (seg === 'schools') {
+    const route = $('#s-route').value, sub = $('#s-sub').value;
+    const minE = Number($('#s-enroll').value), level = $('#s-level').value;
+    const maxMi = Number($('#s-mi').value), q = $('#s-q').value.trim().toLowerCase();
+    return rows.filter(r => {
+      if (route && r.nearest_route !== route) return false;
+      if (sub && r.subtype !== sub) return false;
+      if (minE > 0 && !(typeof r.enrollment === 'number' && r.enrollment >= minE)) return false;
+      if (level && !(r.school_level || '').toLowerCase().includes(level.toLowerCase())) return false;
+      if (Number(r.mi_to_nearest_bakery) > maxMi) return false;
+      if (q) {
+        const hay = [r.name, r.city, r.street, r.nces_district].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+  if (seg === 'churches') {
+    const route = $('#c-route').value, denom = $('#c-denom').value;
+    const maxMi = Number($('#c-mi').value), q = $('#c-q').value.trim().toLowerCase();
+    return rows.filter(r => {
+      if (route && r.nearest_route !== route) return false;
+      if (denom && r.subtype !== denom) return false;
+      if (Number(r.mi_to_nearest_bakery) > maxMi) return false;
+      if (q) {
+        const hay = [r.name, r.city, r.street, r.subtype].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+  if (seg === 'daycares') {
+    const route = $('#y-route').value;
+    const maxMi = Number($('#y-mi').value), q = $('#y-q').value.trim().toLowerCase();
+    return rows.filter(r => {
+      if (route && r.nearest_route !== route) return false;
+      if (Number(r.mi_to_nearest_bakery) > maxMi) return false;
+      if (q) {
+        const hay = [r.name, r.city, r.street].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+  return rows;
 }
 
 function cmp(a, b) {
@@ -359,44 +662,105 @@ function cmp(a, b) {
   return String(a).localeCompare(String(b));
 }
 
-function renderLeads() {
-  const rows = filtered().slice().sort((a, b) => cmp(a[sortCol], b[sortCol]) * sortDir);
-  const body = $('#leads-body');
+function renderSeg(seg) {
+  const { col, dir } = SORT[seg];
+  const rows = filterRows(seg).slice().sort((a, b) => cmp(a[col], b[col]) * dir);
+  const bodyIds = { delis: '#d-body', schools: '#s-body', churches: '#c-body', daycares: '#y-body' };
+  const countIds = { delis: '#d-count', schools: '#s-count', churches: '#c-count', daycares: '#y-count' };
+  const emptyIds = { delis: '#d-empty', schools: '#s-empty', churches: '#c-empty', daycares: '#y-empty' };
+  const body = $(bodyIds[seg]);
   body.innerHTML = '';
   const frag = document.createDocumentFragment();
-  for (const r of rows) {
-    const tr = document.createElement('tr');
-    const addr = [r.street, r.city].filter(Boolean).join(', ');
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ' ' + addr)}&query_place=${r.lat},${r.lon}`;
-    const osm = `https://www.openstreetmap.org/${r.osm_type}/${r.osm_id}`;
-    tr.innerHTML = `
-      <td><strong>${escapeHtml(r.name)}</strong></td>
-      <td><span class="pill cat-${r.category}">${labelCat(r.category)}</span></td>
-      <td><span class="pill chain-${r.chain_type}">${escapeHtml(r.chain_type || '')}</span></td>
-      <td><span class="pill route-${r.nearest_route}">${r.nearest_route}</span></td>
-      <td>${escapeHtml(r.nearest_stop_name)} <span style="color:var(--ink-3)">(${escapeHtml(r.nearest_stop_town)})</span></td>
-      <td class="num">${Number(r.nearest_stop_mi).toFixed(2)}</td>
-      <td>${escapeHtml(addr) || '<span style="color:var(--ink-3)">—</span>'}</td>
-      <td>${r.phone ? `<a class="map-link" href="tel:${escapeAttr(r.phone)}">${escapeHtml(String(r.phone))}</a>` : '<span style="color:var(--ink-3)">—</span>'}</td>
-      <td>
-        ${r.website ? `<a class="map-link" href="${escapeAttr(r.website)}" target="_blank" rel="noopener">site</a> ` : ''}
-        <a class="map-link" href="${mapsUrl}" target="_blank" rel="noopener">map</a>
-        <a class="map-link" href="${osm}" target="_blank" rel="noopener" title="OpenStreetMap entry">osm</a>
-      </td>
-    `;
-    frag.appendChild(tr);
-  }
+  const renderer = { delis: deliRow, schools: schoolRow, churches: churchRow, daycares: daycareRow }[seg];
+  for (const r of rows) frag.appendChild(renderer(r));
   body.appendChild(frag);
-  $('#leads-empty').hidden = rows.length > 0;
-  $('#row-count').textContent = `${rows.length} / ${LEADS.length}`;
+  $(emptyIds[seg]).hidden = rows.length > 0;
+  $(countIds[seg]).textContent = `${rows.length} / ${DATA[seg].length}`;
+}
+
+function makeTr(html) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = html;
+  return tr;
+}
+
+function mapsLink(r) {
+  const addr = [r.street, r.city].filter(Boolean).join(', ');
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ' ' + addr)}&query_place=${r.lat},${r.lon}`;
+}
+function osmLink(r) { return `https://www.openstreetmap.org/${r.osm_type}/${r.osm_id}`; }
+
+function phoneCell(p) {
+  return p ? `<a class="map-link" href="tel:${escapeAttr(p)}">${escapeHtml(String(p))}</a>` : '<span style="color:var(--ink-3)">—</span>';
+}
+function webMapCell(r) {
+  const web = r.website ? `<a class="map-link" href="${escapeAttr(r.website)}" target="_blank" rel="noopener">site</a> ` : '';
+  const map = `<a class="map-link" href="${mapsLink(r)}" target="_blank" rel="noopener">map</a>`;
+  const osm = `<a class="map-link" href="${osmLink(r)}" target="_blank" rel="noopener" title="OpenStreetMap entry">osm</a>`;
+  return web + map + ' ' + osm;
+}
+
+function deliRow(r) {
+  const addr = [r.street, r.city].filter(Boolean).join(', ');
+  return makeTr(`
+    <td><strong>${escapeHtml(r.name)}</strong></td>
+    <td><span class="pill cat-${r.category}">${labelCat(r.category)}</span></td>
+    <td><span class="pill chain-${r.chain_type}">${escapeHtml(r.chain_type || '')}</span></td>
+    <td><span class="pill route-${r.nearest_route}">${r.nearest_route}</span></td>
+    <td>${escapeHtml(r.nearest_stop_name)} <span style="color:var(--ink-3)">(${escapeHtml(r.nearest_stop_town)})</span></td>
+    <td class="num">${Number(r.nearest_stop_mi).toFixed(2)}</td>
+    <td>${escapeHtml(addr) || '<span style="color:var(--ink-3)">—</span>'}</td>
+    <td>${phoneCell(r.phone)}</td>
+    <td>${webMapCell(r)}</td>`);
+}
+
+function schoolRow(r) {
+  const addr = [r.street, r.city].filter(Boolean).join(', ');
+  const enr = (typeof r.enrollment === 'number') ? r.enrollment.toLocaleString() : '—';
+  const grades = (r.grade_lo || r.grade_hi) ? `${r.grade_lo || '?'}-${r.grade_hi || '?'}` : '—';
+  return makeTr(`
+    <td><strong>${escapeHtml(r.name)}</strong></td>
+    <td class="num">${enr}</td>
+    <td><span class="pill sub-${r.subtype}">${labelSub(r.subtype)}</span></td>
+    <td class="num">${grades}</td>
+    <td>${escapeHtml(r.nces_district || '')}</td>
+    <td>${r.nearest_route ? `<span class="pill route-${r.nearest_route}">${r.nearest_route}</span>` : ''}</td>
+    <td class="num">${Number(r.mi_to_nearest_bakery).toFixed(2)}</td>
+    <td>${escapeHtml(addr) || '<span style="color:var(--ink-3)">—</span>'}</td>
+    <td>${phoneCell(r.phone)}</td>
+    <td>${webMapCell(r)}</td>`);
+}
+
+function churchRow(r) {
+  const addr = [r.street, r.city].filter(Boolean).join(', ');
+  return makeTr(`
+    <td><strong>${escapeHtml(r.name)}</strong></td>
+    <td><span class="pill denom">${escapeHtml(r.subtype || '')}</span></td>
+    <td>${r.nearest_route ? `<span class="pill route-${r.nearest_route}">${r.nearest_route}</span>` : ''}</td>
+    <td>${escapeHtml(r.nearest_stop_name || '')} <span style="color:var(--ink-3)">${r.nearest_stop_town ? '(' + escapeHtml(r.nearest_stop_town) + ')' : ''}</span></td>
+    <td class="num">${Number(r.mi_to_nearest_bakery).toFixed(2)}</td>
+    <td>${escapeHtml(addr) || '<span style="color:var(--ink-3)">—</span>'}</td>
+    <td>${phoneCell(r.phone)}</td>
+    <td>${webMapCell(r)}</td>`);
+}
+
+function daycareRow(r) {
+  const addr = [r.street, r.city].filter(Boolean).join(', ');
+  return makeTr(`
+    <td><strong>${escapeHtml(r.name)}</strong></td>
+    <td>${r.nearest_route ? `<span class="pill route-${r.nearest_route}">${r.nearest_route}</span>` : ''}</td>
+    <td>${escapeHtml(r.nearest_stop_name || '')} <span style="color:var(--ink-3)">${r.nearest_stop_town ? '(' + escapeHtml(r.nearest_stop_town) + ')' : ''}</span></td>
+    <td class="num">${Number(r.mi_to_nearest_bakery).toFixed(2)}</td>
+    <td>${escapeHtml(addr) || '<span style="color:var(--ink-3)">—</span>'}</td>
+    <td>${phoneCell(r.phone)}</td>
+    <td>${webMapCell(r)}</td>`);
 }
 
 function renderDensity() {
   const body = $('#density-body');
   const frag = document.createDocumentFragment();
-  for (const r of DENSITY) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
+  for (const r of DATA.density) {
+    frag.appendChild(makeTr(`
       <td><span class="pill route-${r.route}">${r.route}</span></td>
       <td class="num">${r.order}</td>
       <td><strong>${escapeHtml(r.stop_name)}</strong></td>
@@ -404,19 +768,31 @@ function renderDensity() {
       <td class="num">${r.prospects_within_1_5mi}</td>
       <td class="num">${r.delis}</td>
       <td class="num">${r.supermarkets}</td>
-      <td class="num">${r.other}</td>
-    `;
-    frag.appendChild(tr);
+      <td class="num">${r.other}</td>`));
   }
   body.appendChild(frag);
 }
 
-function exportFiltered() {
-  const rows = filtered();
+function exportSeg(seg) {
+  const colsBySeg = {
+    delis:    ['name', 'category', 'chain_type', 'street', 'city', 'state', 'zip',
+               'nearest_route', 'nearest_stop_name', 'nearest_stop_town', 'nearest_stop_mi',
+               'phone', 'website', 'opening_hours', 'lat', 'lon'],
+    schools:  ['name', 'subtype', 'enrollment', 'grade_lo', 'grade_hi', 'school_level',
+               'school_type', 'free_lunch_pct', 'nces_district', 'nces_id',
+               'street', 'city', 'state', 'zip', 'phone', 'website',
+               'nearest_route', 'nearest_stop_name', 'nearest_stop_town', 'nearest_stop_mi',
+               'mi_to_nearest_bakery', 'mi_to_FSQ_bakery', 'mi_to_LYN_bakery', 'lat', 'lon'],
+    churches: ['name', 'subtype', 'street', 'city', 'state', 'zip', 'phone', 'website',
+               'nearest_route', 'nearest_stop_name', 'nearest_stop_town', 'nearest_stop_mi',
+               'mi_to_nearest_bakery', 'mi_to_FSQ_bakery', 'mi_to_LYN_bakery', 'lat', 'lon'],
+    daycares: ['name', 'subtype', 'street', 'city', 'state', 'zip', 'phone', 'website',
+               'nearest_route', 'nearest_stop_name', 'nearest_stop_town', 'nearest_stop_mi',
+               'mi_to_nearest_bakery', 'mi_to_FSQ_bakery', 'mi_to_LYN_bakery', 'lat', 'lon'],
+  };
+  const cols = colsBySeg[seg];
+  const rows = filterRows(seg);
   if (!rows.length) return;
-  const cols = ['name', 'category', 'chain_type', 'street', 'city', 'state', 'zip',
-    'nearest_route', 'nearest_stop_name', 'nearest_stop_town', 'nearest_stop_mi',
-    'phone', 'website', 'opening_hours', 'lat', 'lon'];
   const csvEscape = v => {
     const s = v == null ? '' : String(v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -426,7 +802,7 @@ function exportFiltered() {
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `ppf-prospects-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `ppf-prospects-${seg}-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
@@ -434,6 +810,16 @@ function exportFiltered() {
 function labelCat(c) {
   if (c === 'convenience-named-deli-or-market') return 'Deli-conv';
   return (c || '').charAt(0).toUpperCase() + (c || '').slice(1);
+}
+function labelSub(s) {
+  const map = {
+    'public_nces': 'Public',
+    'private_nces': 'Private',
+    'private': 'Private (OSM)',
+    'parochial_private': 'Parochial',
+    'unknown': 'Unknown',
+  };
+  return map[s] || s || '';
 }
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
