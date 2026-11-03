@@ -293,8 +293,8 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
     <a class="tool" href="/ops/prospecting">
       <span class="tool-chip">Growth</span>
       <h2 class="tool-title">Prospecting</h2>
-      <p class="tool-sub">Delis, supermarkets and grocery stores within 1.5&nbsp;mi of a current route stop &mdash; route-density leads filtered down from a 20-mi OSM pull. Non-buyer chains and existing accounts already excluded. Filter by route, chain type and distance; export the filtered subset to CSV.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-prospect-stat">&mdash;</span><span class="tool-stat-label">Route-Adjacent Leads</span></div>
+      <p class="tool-sub">Wholesale prospects across four segments: delis &amp; markets (route-density), schools (PTA / fundraiser, NCES-enriched with enrollment + public/private), Christian churches (functions / coffee hour), and daycares. Filter, sort, and export CSV per segment.</p>
+      <div class="tool-stat"><span class="tool-stat-value" id="tool-prospect-stat">&mdash;</span><span class="tool-stat-label">Prospects (all segments)</span></div>
     </a>
     <a class="tool" href="/ops/print-kits">
       <span class="tool-chip">Printing</span>
@@ -319,30 +319,6 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
       <h2 class="tool-title">Standings</h2>
       <p class="tool-sub">Weekly leaderboard with dollar values, week-over-week deltas, biggest mover, and the quarter grand-prize race.</p>
       <div class="tool-stat"><span class="tool-stat-value" id="tool-standings-stat">Live</span><span class="tool-stat-label">Season Running</span></div>
-    </a>
-    <a class="tool" href="/ops/plan#v-sh">
-      <span class="tool-chip">Store Health</span>
-      <h2 class="tool-title">Routes</h2>
-      <p class="tool-sub">Per-route baseline sales, drop counts, sell-through, and the urgent-push queue for stores under the $120/week minimum.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-routes-stat">&mdash;</span><span class="tool-stat-label">Urgent Not Pushed</span></div>
-    </a>
-    <a class="tool" href="/ops/plan#v-sh">
-      <span class="tool-chip">Account Pipeline</span>
-      <h2 class="tool-title">Stores</h2>
-      <p class="tool-sub">Dead stops to win back, watch-list stores, and the gap-town target list for West Hempstead and Hempstead.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-stores-stat">&mdash;</span><span class="tool-stat-label">Signed / 6</span></div>
-    </a>
-    <a class="tool" href="/ops/plan#v-su">
-      <span class="tool-chip">Procurement</span>
-      <h2 class="tool-title">Suppliers</h2>
-      <p class="tool-sub">Window cling quotes, print suppliers, and pre-print approvals from 7-Eleven franchisees and PPF corporate.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-sup-stat">&mdash;</span><span class="tool-stat-label">Approvals Done</span></div>
-    </a>
-    <a class="tool" href="/ops/plan#v-br">
-      <span class="tool-chip">Pretzels &amp; Pints</span>
-      <h2 class="tool-title">Bars</h2>
-      <p class="tool-sub">24 Long Island bars and breweries lined up for the Rivet frozen-tray program &mdash; tier, status, and nearest route stop.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-bars-stat">&mdash;</span><span class="tool-stat-label">Venues Signed / 3</span></div>
     </a>
   </section>
 
@@ -442,10 +418,6 @@ function renderMetrics(s) {
 
   // Per-tile stats
   document.getElementById('tool-plan-stat').textContent      = doneCount + ' / ' + TOTALS.tasks;
-  document.getElementById('tool-routes-stat').textContent    = urgentOutstanding;
-  document.getElementById('tool-stores-stat').textContent    = signedCount;
-  document.getElementById('tool-sup-stat').textContent       = approvalsDone + ' / ' + TOTALS.approvals;
-  document.getElementById('tool-bars-stat').textContent      = barsSigned;
 
   // Updates tile — count of updates posted in the last 30 days. Lives on
   // the same /api/updates feed every role already reads; we just filter.
@@ -512,14 +484,19 @@ function renderMetrics(s) {
     })
     .catch(() => {});
 
-  // Prospecting tile — count of route-adjacent prospects shipped with the
-  // repo at /ops/prospecting/data.json. See ops/prospecting/README.md for
-  // the refresh script.
-  fetch('/ops/prospecting/data.json', { cache: 'no-cache' })
-    .then(r => r.ok ? r.json() : { rows: [] })
-    .then(({ rows }) => {
+  // Prospecting tile — total prospects across all four segments. Each JSON
+  // file is a static asset under /ops/prospecting/; see ops/prospecting/README.md
+  // for the refresh script.
+  Promise.all([
+    fetch('/ops/prospecting/data.json',     { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+    fetch('/ops/prospecting/schools.json',  { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+    fetch('/ops/prospecting/churches.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+    fetch('/ops/prospecting/daycares.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+  ])
+    .then(all => {
+      const total = all.reduce((n, { rows }) => n + (rows || []).length, 0);
       const el = document.getElementById('tool-prospect-stat');
-      if (el) el.textContent = String((rows || []).length);
+      if (el) el.textContent = total.toLocaleString();
     })
     .catch(() => {});
 }
