@@ -112,18 +112,7 @@ table.leads td.center { text-align: center; }
         </div>
       </a>
       <div class="header-right">
-        <nav class="ops-site-nav">
-          <a href="/ops" class="nav-link">Dashboard</a>
-          <a href="/ops/revenue" class="nav-link">Revenue</a>
-          <a href="/ops/updates" class="nav-link">Updates</a>
-          <a href="/ops/time-off" class="nav-link">Time Off</a>
-          <a href="/ops/stops" class="nav-link">Stops</a>
-          <a href="/ops/prospecting" class="nav-link is-active">Prospecting</a>
-          <a href="/ops/shifts" class="nav-link">Shifts</a>
-          <a href="/ops/people" class="nav-link">People</a>
-          <a href="/ops/plan" class="nav-link">Plan</a>
-          <a href="/ops/standings" class="nav-link">Standings</a>
-        </nav>
+        <nav class="ops-site-nav"></nav>
         <button id="logout-btn" class="logout-btn" type="button">Sign out</button>
       </div>
     </header>
@@ -828,5 +817,6 @@ function escapeAttr(s) { return escapeHtml(s); }
 
 boot();
 </script>
+  <script src="/assets/ops-nav.js" defer></script>
 </body>
 </html>
