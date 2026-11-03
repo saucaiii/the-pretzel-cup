@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0D5237" />
+<title>Wholesale Orders — Philly Pretzel Factory</title>
+<meta name="description" content="Order wholesale pretzels for your school, business, or event. Fresh-baked, hand-twisted that morning in Franklin Square or Lynbrook." />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" />
+<link rel="stylesheet" href="/brand.css" />
+<style>
+  /* Form styles — scoped to this page. brand.css covers the shell. */
+  .form-shell { max-width: 760px; margin: 0 auto; padding: 32px 24px 60px; }
+  .form-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+  .form-h { font-family: var(--display); font-size: clamp(36px, 6vw, 56px); line-height: 0.95; margin: 0 0 16px; text-transform: uppercase; letter-spacing: 0.01em; }
+  .form-h .crave-script { font-family: 'Caveat', cursive; font-weight: 700; color: var(--accent); text-transform: none; font-size: 1.1em; letter-spacing: 0.01em; }
+  .form-sub { font-size: 17px; color: var(--ink-2); max-width: 60ch; margin: 0 0 32px; line-height: 1.5; }
+  .form-sub strong { color: var(--ink); }
+  fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 20px 20px 24px; margin: 0 0 20px; background: var(--bg-2); }
+  legend { font-family: var(--display); font-size: 12px; letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; padding: 0 8px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 540px) { .row { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+  .field label { font-family: var(--display); font-size: 11px; letter-spacing: 0.16em; color: var(--ink-3); text-transform: uppercase; }
+  .field input, .field select, .field textarea {
+    background: var(--bg); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px;
+    padding: 10px 12px; font: 15px/1.4 var(--body); outline: none;
+    transition: border-color 120ms ease, background 120ms ease;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); background: #0a2317; }
+  .field.required label::after { content: ' *'; color: var(--accent); }
+  .field .hint { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .items { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .items .line { display: grid; grid-template-columns: 1fr 88px 36px; gap: 8px; align-items: center; }
+  .items .line select, .items .line input { height: 40px; }
+  .items .line .rm { background: transparent; color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 6px; padding: 0; cursor: pointer; font: 400 20px var(--display); }
+  .items .line .rm:hover { color: var(--accent); border-color: var(--accent); }
+  .add-line { background: transparent; color: var(--ink-2); border: 1px dashed var(--line-2); border-radius: 8px; padding: 10px; cursor: pointer; font: 400 12px/1 var(--display); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px; }
+  .add-line:hover { color: var(--accent); border-color: var(--accent); }
+  .totals { background: rgba(212,182,98,0.08); border: 1px solid rgba(212,182,98,0.35); border-radius: 10px; padding: 14px 16px; margin: 18px 0 0; }
+  .totals .line { display: flex; justify-content: space-between; padding: 2px 0; font-size: 15px; color: var(--ink-2); }
+  .totals .line.total { font-size: 20px; color: var(--ink); font-family: var(--display); letter-spacing: 0.02em; padding-top: 6px; margin-top: 6px; border-top: 1px solid rgba(212,182,98,0.25); }
+  .totals .line.bonus { color: var(--accent-2, #F2E7A4); font-weight: 600; }
+  .cta-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; align-items: center; }
+  .cta-row .err { color: #f47572; font-size: 14px; flex: 1; min-width: 100%; }
+  .cta-btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+  .cta-btn[disabled]:hover { background: var(--ppf-green); transform: none; }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+<div class="header-wrap">
+  <div class="diamond-strip" aria-hidden="true"></div>
+  <header class="header">
+    <a class="brand-link" href="/" aria-label="Philly Pretzel Factory home">
+      <img src="/ppf-logo.jpg" alt="" class="brand-logo" width="68" height="60" fetchpriority="high" />
+      <span class="brand-text">
+        <span class="top">Philly Pretzel Factory</span>
+        <span class="bot">Made To Crave</span>
+      </span>
+    </a>
+    <div class="nav-cluster">
+      <nav class="site-nav" aria-label="Primary"><a href="/products" class="nav-link">Products</a><a href="/deliveries" class="nav-link">Deliveries</a><a href="/partners" class="nav-link">Partners</a></nav>
+    </div>
+  </header>
+</div>
+
+<main id="main">
+  <div class="form-shell">
+    <div class="form-eyebrow">Wholesale Orders · Franklin Square · Lynbrook</div>
+    <h1 class="form-h">Order up.<br/>Fresh in <span class="crave-script">bulk.</span></h1>
+    <p class="form-sub">Hand-twisted that morning for schools, offices, and events. Enter the details below and we'll walk you through secure checkout. <strong>Pay by card, pick up (or arrange delivery) at your scheduled time.</strong></p>
+
+    <form id="order-form" novalidate>
+      <fieldset>
+        <legend>Who's ordering</legend>
+        <div class="row">
+          <div class="field required">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required autocomplete="email" />
+          </div>
+          <div class="field required">
+            <label for="first_name">First name</label>
+            <input id="first_name" name="first_name" type="text" required autocomplete="given-name" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field required">
+            <label for="organization">Organization</label>
+            <input id="organization" name="organization" type="text" required autocomplete="organization" placeholder="School, business, or event" />
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Pickup</legend>
+        <div class="row">
+          <div class="field required">
+            <label for="pickup_location">Location</label>
+            <select id="pickup_location" name="pickup_location" required>
+              <option value="">— Choose —</option>
+              <option value="Franklin Square">Franklin Square</option>
+              <option value="Lynbrook">Lynbrook</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pickup_date">Date</label>
+            <input id="pickup_date" name="pickup_date" type="date" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="pickup_time">Time window</label>
+            <input id="pickup_time" name="pickup_time" type="text" placeholder="e.g. 10:00–11:00 AM" />
+          </div>
+          <div class="field">
+            <label for="pickup_address">Address (if delivery)</label>
+            <input id="pickup_address" name="pickup_address" type="text" placeholder="Leave blank for pickup" />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Items</legend>
+        <div id="items" class="items"></div>
+        <button type="button" class="add-line" id="add-line">+ Add another item</button>
+
+        <div class="row" style="margin-top:20px">
+          <div class="field">
+            <label for="promo_code">Promo code</label>
+            <input id="promo_code" name="promo_code" type="text" placeholder="e.g. HOLIDAY25" autocomplete="off" />
+            <div class="hint">Every full 100 pretzels (any style) → 25 of the same free. Stackable per item.</div>
+          </div>
+          <div class="field">
+            <label for="notes">Notes</label>
+            <input id="notes" name="notes" type="text" placeholder="Allergies, special timing, etc." />
+          </div>
+        </div>
+
+        <div class="totals" id="totals">
+          <div class="line"><span>Subtotal</span><span id="t-sub">$0.00</span></div>
+          <div class="line bonus" id="t-bonus-row" hidden><span>Bonus (free)</span><span id="t-bonus">—</span></div>
+          <div class="line total"><span>Total</span><span id="t-total">$0.00</span></div>
+        </div>
+      </fieldset>
+
+      <div class="cta-row">
+        <button type="submit" class="cta-btn" id="submit-btn">Continue to secure checkout</button>
+        <span class="err" id="err" aria-live="polite"></span>
+      </div>
+    </form>
+  </div>
+</main>
+
+<footer class="footer">
+  <p class="footer-tagline">Made To Crave<sup>®</sup></p>
+  <p class="footer-meta">Franklin Square · Lynbrook · Serving Nassau County</p>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/products">Products</a>
+    <a href="/deliveries">Deliveries</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ─── Query params ───────────────────────────────────────────────
+  const qs = new URLSearchParams(location.search);
+  const contactId = qs.get('contact');
+  const srcTag    = qs.get('src') || '';
+
+  // Products — rendered server-side via /api/wholesale/customer bootstrap.
+  // Fallback matches the seed in case the fetch fails.
+  const FALLBACK_PRODUCTS = [
+    { sku: 'pretzel-unwrapped', name: 'Pretzel (unwrapped)', unit_price_cents:   90 },
+    { sku: 'pretzel-wrapped',   name: 'Wrapped Pretzel',     unit_price_cents:  110 },
+    { sku: 'twist-wrapped',     name: 'Wrapped Twist',       unit_price_cents:  120 },
+    { sku: 'dip-small',         name: 'Small Dip',           unit_price_cents:   60 },
+    { sku: 'dip-large',         name: 'Large Dip',           unit_price_cents:  300 },
+    { sku: 'rivet-shaker',      name: 'Rivet Shaker',        unit_price_cents:  200 },
+    { sku: 'rivet-tray-small',  name: 'Small Rivet Tray',    unit_price_cents: 3000 },
+  ];
+  // Pretzel SKUs — the only ones the 100-for-25 promo applies to.
+  const PRETZEL_SKUS = new Set(['pretzel-unwrapped', 'pretzel-wrapped', 'twist-wrapped']);
+  let products = FALLBACK_PRODUCTS.slice();
+
+  // ─── DOM helpers ────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const money = (c) => '$' + (c / 100).toFixed(2);
+
+  // ─── Items UI ───────────────────────────────────────────────────
+  function newLine() {
+    const row = document.createElement('div');
+    row.className = 'line';
+    const sel = document.createElement('select');
+    sel.name = 'sku';
+    sel.innerHTML = '<option value="">— Choose item —</option>' +
+      products.map(p => `<option value="${p.sku}">${p.name} — ${money(p.unit_price_cents)} ea</option>`).join('');
+    const qty = document.createElement('input');
+    qty.type = 'number'; qty.name = 'qty'; qty.min = '0'; qty.step = '1'; qty.placeholder = 'Qty';
+    const rm = document.createElement('button');
+    rm.type = 'button'; rm.className = 'rm'; rm.textContent = '×'; rm.title = 'Remove line';
+    rm.addEventListener('click', () => { row.remove(); recalc(); });
+    sel.addEventListener('change', recalc);
+    qty.addEventListener('input', recalc);
+    row.appendChild(sel); row.appendChild(qty); row.appendChild(rm);
+    $('items').appendChild(row);
+    return row;
+  }
+
+  function readItems() {
+    const out = [];
+    for (const row of $('items').querySelectorAll('.line')) {
+      const sku = row.querySelector('select[name="sku"]').value;
+      const qty = parseInt(row.querySelector('input[name="qty"]').value, 10);
+      if (!sku || !qty || qty <= 0) continue;
+      const p = products.find(pp => pp.sku === sku);
+      if (!p) continue;
+      out.push({ sku, name: p.name, qty, unit_price_cents: p.unit_price_cents });
+    }
+    return out;
+  }
+
+  // Informational preview — authoritative promo is computed server-side.
+  function recalc() {
+    const items = readItems();
+    let sub = 0;
+    const bonuses = [];
+    for (const it of items) {
+      sub += it.qty * it.unit_price_cents;
+      if (PRETZEL_SKUS.has(it.sku)) {
+        const freePacks = Math.floor(it.qty / 100);
+        if (freePacks > 0) bonuses.push({ name: it.name, free: freePacks * 25 });
+      }
+    }
+    $('t-sub').textContent = money(sub);
+    $('t-total').textContent = money(sub);
+    if (bonuses.length) {
+      $('t-bonus-row').hidden = false;
+      $('t-bonus').textContent = bonuses.map(b => `+${b.free} ${b.name}`).join(', ');
+    } else {
+      $('t-bonus-row').hidden = true;
+    }
+  }
+
+  // ─── Bootstrap: pre-fill from ?contact= ────────────────────────
+  async function bootstrap() {
+    const url = contactId ? `/api/wholesale/customer?id=${encodeURIComponent(contactId)}` : '/api/wholesale/customer';
+    try {
+      const r = await fetch(url);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d.products) && d.products.length) products = d.products;
+        const c = d.customer || null;
+        if (c) {
+          if (c.first_name)      $('first_name').value = c.first_name;
+          if (c.organization)    $('organization').value = c.organization;
+          if (c.pickup_location) $('pickup_location').value = c.pickup_location;
+          if (c.pickup_address)  $('pickup_address').value = c.pickup_address;
+        }
+      }
+    } catch (_) { /* use fallback products */ }
+    if (srcTag && !$('promo_code').value) {
+      // Promo code embedded in src tag like "winter26-e1-holiday25" → HOLIDAY25.
+      const m = /-([a-z]+\d*)$/i.exec(srcTag);
+      if (m) $('promo_code').value = m[1].toUpperCase();
+    }
+    newLine();
+    recalc();
+  }
+
+  // ─── Submit ─────────────────────────────────────────────────────
+  $('add-line').addEventListener('click', () => { newLine(); recalc(); });
+
+  $('order-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('submit-btn');
+    const err = $('err');
+    err.textContent = '';
+    const items = readItems();
+    if (!items.length) { err.textContent = 'Add at least one item.'; return; }
+    const body = {
+      email:           $('email').value.trim(),
+      first_name:      $('first_name').value.trim(),
+      organization:    $('organization').value.trim(),
+      phone:           $('phone').value.trim() || null,
+      pickup_location: $('pickup_location').value,
+      pickup_address:  $('pickup_address').value.trim() || null,
+      pickup_date:     $('pickup_date').value || null,
+      pickup_time:     $('pickup_time').value.trim() || null,
+      promo_code:      $('promo_code').value.trim().toUpperCase() || null,
+      notes:           $('notes').value.trim() || null,
+      src_tag:         srcTag || null,
+      items,
+    };
+    if (!body.email || !body.first_name || !body.organization || !body.pickup_location) {
+      err.textContent = 'Fill in email, first name, organization, and pickup location.';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Starting checkout…';
+    try {
+      const r = await fetch('/api/wholesale/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.checkout_url) {
+        err.textContent = j.error || 'Something went wrong. Please try again.';
+        btn.disabled = false;
+        btn.textContent = 'Continue to secure checkout';
+        return;
+      }
+      location.href = j.checkout_url;
+    } catch (ex) {
+      err.textContent = 'Network error. Please try again.';
+      btn.disabled = false;
+      btn.textContent = 'Continue to secure checkout';
+    }
+  });
+
+  bootstrap();
+})();
+</script>
+</body>
+</html>
