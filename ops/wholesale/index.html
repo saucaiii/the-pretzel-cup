@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Wholesale — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<style>
+  .ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); }
+  .ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+  .page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 80px; }
+  .page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+  .page-title { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 6vw, 56px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 10px; text-transform: uppercase; }
+  .page-sub { color: var(--ink-2); font-size: 15px; max-width: 72ch; margin: 0 0 24px; line-height: 1.5; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+  .tabs button { background: transparent; border: 0; color: var(--ink-2); font-family: var(--display); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; padding: 12px 18px; cursor: pointer; border-bottom: 3px solid transparent; }
+  .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  section.view { display: none; }
+  section.view.is-active { display: block; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .stat .lbl { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+  .stat .val { font-family: var(--display); font-size: 32px; color: var(--accent); font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .stat .sub { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: end; }
+  .filters .f { display: flex; flex-direction: column; gap: 4px; }
+  .filters .f label { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+  .filters .f input, .filters .f select { background: var(--bg); color: var(--ink); border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 10px; font: 14px var(--body); min-width: 150px; }
+  .btn-sm { background: var(--accent); color: var(--ppf-black); border: 0; border-radius: 6px; padding: 7px 14px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+  .btn-sm.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); }
+
+  .tbl-wrap { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 820px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; background: rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 1; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.row-clickable { cursor: pointer; }
+  tr.row-clickable:hover { background: rgba(212,182,98,0.05); }
+  .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font: 600 10px var(--display); letter-spacing: 0.12em; text-transform: uppercase; }
+  .status-pill.paid       { background: rgba(95,213,140,0.18); color: #5fd58c; }
+  .status-pill.awaiting   { background: rgba(244,194,95,0.18); color: #f4c25f; }
+  .status-pill.cancelled  { background: rgba(244,117,114,0.18); color: #f47572; }
+  .status-pill.draft      { background: rgba(255,255,255,0.08); color: var(--ink-3); }
+  .status-pill.refunded   { background: rgba(127,179,213,0.18); color: #7fb3d5; }
+
+  .promo-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .promo-bar .b { display: grid; grid-template-columns: 120px 1fr 100px 80px; gap: 10px; align-items: center; font-size: 14px; }
+  .promo-bar .b .name { font-family: var(--display); font-size: 12px; letter-spacing: 0.1em; color: var(--ink); }
+  .promo-bar .b .bar { height: 10px; background: rgba(255,255,255,0.05); border-radius: 999px; overflow: hidden; }
+  .promo-bar .b .bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .promo-bar .b .amt { font-variant-numeric: tabular-nums; color: var(--ink); text-align: right; }
+  .promo-bar .b .cnt { color: var(--ink-3); font-size: 12px; text-align: right; }
+
+  /* Drawer */
+  .drawer-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 30; padding: 20px; }
+  .drawer-bg.is-open { display: flex; }
+  .drawer { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 24px; }
+  .drawer h3 { font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; margin: 0 0 12px; }
+  .drawer .close { float: right; background: transparent; border: 0; color: var(--ink-3); font-size: 22px; cursor: pointer; line-height: 1; }
+  .drawer dl { display: grid; grid-template-columns: 140px 1fr; gap: 6px 14px; font-size: 14px; }
+  .drawer dt { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .drawer dd { margin: 0; color: var(--ink); }
+  .drawer ul { margin: 10px 0 0; padding: 0; list-style: none; }
+  .drawer ul li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .drawer ul li:last-child { border-bottom: 0; }
+  .drawer ul li.bonus { color: var(--accent-2); }
+
+  .empty { padding: 40px; text-align: center; color: var(--ink-3); font-size: 14px; }
+  .err { color: #f47572; font-size: 14px; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<div id="boot" class="ops-banner">Loading operator session…</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    <span>Operator · Wholesale</span>
+    <span class="user-tag" id="user-tag"></span>
+    <a href="/ops/" style="margin-left: 20px; color: var(--ink-3);">← Ops home</a>
+    <button class="btn-sm ghost" id="logout" style="margin-left: 20px;">Sign out</button>
+  </div>
+
+  <main class="page">
+    <div class="page-eyebrow">Operator · Wholesale</div>
+    <h1 class="page-title">Wholesale Dashboard</h1>
+    <p class="page-sub">Orders, revenue, and the email funnel for the Made-to-Crave nurture.</p>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true"  data-view="orders">Orders</button>
+      <button role="tab" aria-selected="false" data-view="revenue">Revenue</button>
+      <button role="tab" aria-selected="false" data-view="funnel">Funnel</button>
+    </div>
+
+    <!-- ─── Orders ──────────────────────────────────────────────── -->
+    <section class="view is-active" id="view-orders">
+      <div class="filters">
+        <div class="f">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option value="">All</option>
+            <option value="paid">Paid</option>
+            <option value="awaiting_payment">Awaiting payment</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="refunded">Refunded</option>
+            <option value="draft">Draft</option>
+          </select>
+        </div>
+        <div class="f">
+          <label for="f-promo">Promo</label>
+          <input id="f-promo" type="text" placeholder="HOLIDAY25" />
+        </div>
+        <div class="f">
+          <label for="f-from">From</label>
+          <input id="f-from" type="date" />
+        </div>
+        <div class="f">
+          <label for="f-to">To</label>
+          <input id="f-to" type="date" />
+        </div>
+        <button class="btn-sm" id="btn-apply">Apply</button>
+        <button class="btn-sm ghost" id="btn-reset">Reset</button>
+      </div>
+      <div class="tbl-wrap">
+        <table id="tbl-orders">
+          <thead>
+            <tr>
+              <th>Created</th><th>Customer</th><th>Items</th><th class="num">Total</th>
+              <th>Promo</th><th>Status</th><th>Pickup</th><th>Src</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="8" class="empty">Loading orders…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── Revenue ─────────────────────────────────────────────── -->
+    <section class="view" id="view-revenue">
+      <div class="stat-row">
+        <div class="stat"><div class="lbl">This week</div><div class="val" id="rev-week">—</div><div class="sub">Mon→now, UTC</div></div>
+        <div class="stat"><div class="lbl">This month</div><div class="val" id="rev-month">—</div><div class="sub">1st→now, UTC</div></div>
+        <div class="stat"><div class="lbl">Campaign to date</div><div class="val" id="rev-camp">—</div><div class="sub" id="rev-camp-sub">—</div></div>
+        <div class="stat"><div class="lbl">Customers on file</div><div class="val" id="cust-count">—</div><div class="sub">All wholesale leads</div></div>
+      </div>
+
+      <h3 style="font-family:var(--display); font-size:13px; letter-spacing:0.18em; color:var(--ink-3); text-transform:uppercase; margin:28px 0 6px;">Revenue by promo code</h3>
+      <div class="promo-bar" id="promo-bars"></div>
+
+      <h3 style="font-family:var(--display); font-size:13px; letter-spacing:0.18em; color:var(--ink-3); text-transform:uppercase; margin:28px 0 6px;">Revenue by product</h3>
+      <div class="tbl-wrap">
+        <table id="tbl-products">
+          <thead><tr><th>SKU</th><th class="num">Qty</th><th class="num">Revenue</th></tr></thead>
+          <tbody><tr><td colspan="3" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn-sm" id="btn-csv">Export orders CSV</button>
+      </div>
+    </section>
+
+    <!-- ─── Funnel ──────────────────────────────────────────────── -->
+    <section class="view" id="view-funnel">
+      <p class="page-sub" style="margin-top: 8px;">Per campaign email: sent / opened / clicked / ordered. Rates are over <em>sent</em>, not over customers on file.</p>
+      <div class="tbl-wrap">
+        <table id="tbl-funnel">
+          <thead>
+            <tr>
+              <th>#</th><th>Subject</th><th>Send date</th><th>Promo</th>
+              <th class="num">Sent</th>
+              <th class="num">Opened</th>
+              <th class="num">Clicked</th>
+              <th class="num">Ordered</th>
+              <th class="num">Revenue</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Order detail drawer -->
+  <div class="drawer-bg" id="drawer-bg">
+    <div class="drawer" id="drawer" role="dialog" aria-labelledby="drawer-title">
+      <button class="close" id="drawer-close" aria-label="Close">×</button>
+      <h3 id="drawer-title">Order detail</h3>
+      <dl id="drawer-dl"></dl>
+      <h4 style="font-family:var(--display); font-size:12px; letter-spacing:0.14em; color:var(--ink-3); text-transform:uppercase; margin:14px 0 4px;">Items</h4>
+      <ul id="drawer-items"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const next = encodeURIComponent(location.pathname + location.search);
+  const $ = (id) => document.getElementById(id);
+  const money = (c) => '$' + (Number(c || 0) / 100).toFixed(2);
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleString() : '—';
+  let allOrders = [];
+
+  // ─── Boot: operator-gate ────────────────────────────────────────
+  async function boot() {
+    try {
+      const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { location.replace('/signin?next=' + next); return; }
+      const me = await r.json();
+      if (me.role !== 'operator') {
+        location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin');
+        return;
+      }
+      $('boot').style.display = 'none';
+      $('app').hidden = false;
+      $('user-tag').textContent = me.name;
+      initApp();
+    } catch (_) { location.replace('/signin?next=' + next); }
+  }
+
+  function initApp() {
+    document.querySelectorAll('[role="tab"]').forEach(b => {
+      b.addEventListener('click', () => switchView(b.dataset.view));
+    });
+    $('btn-apply').addEventListener('click', loadOrders);
+    $('btn-reset').addEventListener('click', () => {
+      $('f-status').value = ''; $('f-promo').value = ''; $('f-from').value = ''; $('f-to').value = '';
+      loadOrders();
+    });
+    $('btn-csv').addEventListener('click', downloadCsv);
+    $('drawer-close').addEventListener('click', closeDrawer);
+    $('drawer-bg').addEventListener('click', (e) => { if (e.target === $('drawer-bg')) closeDrawer(); });
+    $('logout').addEventListener('click', async () => {
+      try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
+      location.replace('/signin');
+    });
+    loadOrders();
+    loadMetrics();
+  }
+
+  function switchView(name) {
+    document.querySelectorAll('[role="tab"]').forEach(b => {
+      b.setAttribute('aria-selected', String(b.dataset.view === name));
+    });
+    document.querySelectorAll('section.view').forEach(s => {
+      s.classList.toggle('is-active', s.id === 'view-' + name);
+    });
+  }
+
+  // ─── Orders ─────────────────────────────────────────────────────
+  async function loadOrders() {
+    const params = new URLSearchParams();
+    if ($('f-status').value) params.set('status', $('f-status').value);
+    if ($('f-promo').value)  params.set('promo',  $('f-promo').value.trim().toUpperCase());
+    if ($('f-from').value)   params.set('from',   $('f-from').value);
+    if ($('f-to').value)     params.set('to',     $('f-to').value);
+    params.set('limit', '500');
+    const tbody = $('tbl-orders').querySelector('tbody');
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">Loading…</td></tr>';
+    try {
+      const r = await fetch('/api/wholesale/list?' + params.toString(), { credentials: 'same-origin' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      allOrders = d.orders || [];
+      renderOrders(allOrders);
+    } catch (ex) {
+      tbody.innerHTML = `<tr><td colspan="8" class="err">Load failed: ${ex.message}</td></tr>`;
+    }
+  }
+
+  function renderOrders(orders) {
+    const tbody = $('tbl-orders').querySelector('tbody');
+    if (!orders.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No orders match the filters.</td></tr>'; return; }
+    const rows = orders.map(o => {
+      const org = (o.customer && (o.customer.organization || o.customer.first_name)) || '(unknown)';
+      const first = (o.customer && o.customer.first_name) || '';
+      const customerCell = `<div style="font-weight:600">${esc(org)}</div><div style="font-size:12px;color:var(--ink-3)">${esc(first)}</div>`;
+      const itemsSummary = (o.items || []).filter(i => !i.is_bonus).map(i => `${i.qty}× ${i.name || i.sku}`).join(', ');
+      const statusCls = o.status === 'awaiting_payment' ? 'awaiting' : o.status;
+      return `
+        <tr class="row-clickable" data-id="${o.id}">
+          <td>${new Date(o.created_at).toLocaleDateString()}</td>
+          <td>${customerCell}</td>
+          <td style="max-width:280px">${esc(itemsSummary) || '—'}</td>
+          <td class="num">${money(o.total_cents)}</td>
+          <td>${esc(o.promo_code || '')}</td>
+          <td><span class="status-pill ${statusCls}">${o.status.replace('_', ' ')}</span></td>
+          <td>${esc(o.pickup_location || '')}<div style="font-size:12px;color:var(--ink-3)">${esc(o.pickup_date || '')} ${esc(o.pickup_time || '')}</div></td>
+          <td style="font-size:12px;color:var(--ink-3)">${esc(o.src_tag || '')}</td>
+        </tr>`;
+    }).join('');
+    tbody.innerHTML = rows;
+    tbody.querySelectorAll('tr.row-clickable').forEach(tr => {
+      tr.addEventListener('click', () => openDrawer(tr.dataset.id));
+    });
+  }
+
+  function openDrawer(id) {
+    const o = allOrders.find(x => x.id === id);
+    if (!o) return;
+    const dl = $('drawer-dl');
+    dl.innerHTML = '';
+    const rows = [
+      ['Status',    o.status.replace('_', ' ')],
+      ['Created',   fmtDate(o.created_at)],
+      ['Paid at',   fmtDate(o.paid_at)],
+      ['Customer',  (o.customer && o.customer.organization) || ''],
+      ['Contact',   (o.customer && o.customer.first_name) || ''],
+      ['Email',     (o.customer && o.customer.email) || ''],
+      ['Pickup',    [o.pickup_location, o.pickup_date, o.pickup_time].filter(Boolean).join(' · ')],
+      ['Address',   o.pickup_address || ''],
+      ['Promo',     o.promo_code || ''],
+      ['Src tag',   o.src_tag || ''],
+      ['Subtotal',  money(o.subtotal_cents)],
+      ['Discount',  money(o.discount_cents)],
+      ['Total',     money(o.total_cents)],
+      ['Stripe sid', o.stripe_session_id || ''],
+    ].filter(r => r[1]);
+    for (const [k, v] of rows) {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      dl.appendChild(dt); dl.appendChild(dd);
+    }
+    const items = $('drawer-items');
+    items.innerHTML = (o.items || []).map(it => `
+      <li class="${it.is_bonus ? 'bonus' : ''}">
+        <span>${it.is_bonus ? '+ ' : ''}${esc(it.name || it.sku)}${it.is_bonus ? ' (free)' : ''}</span>
+        <span>${it.qty} × ${money(it.unit_price_cents)}</span>
+      </li>`).join('');
+    $('drawer-bg').classList.add('is-open');
+  }
+  function closeDrawer() { $('drawer-bg').classList.remove('is-open'); }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[c])); }
+
+  // ─── Metrics ────────────────────────────────────────────────────
+  async function loadMetrics() {
+    try {
+      const r = await fetch('/api/wholesale/metrics', { credentials: 'same-origin' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      $('rev-week').textContent  = money(d.revenue.this_week_cents);
+      $('rev-month').textContent = money(d.revenue.this_month_cents);
+      $('rev-camp').textContent  = money(d.revenue.campaign_to_date_cents);
+      $('rev-camp-sub').textContent = d.meta.campaign.name;
+      $('cust-count').textContent = String(d.meta.customer_count);
+
+      // Promo bars
+      const promos = Object.entries(d.revenue.by_promo).sort((a, b) => b[1].revenue_cents - a[1].revenue_cents);
+      const max = Math.max(1, ...promos.map(([, v]) => v.revenue_cents));
+      $('promo-bars').innerHTML = promos.length
+        ? promos.map(([code, v]) => `
+            <div class="b">
+              <div class="name">${esc(code)}</div>
+              <div class="bar"><div class="bar-fill" style="width:${(v.revenue_cents / max * 100).toFixed(1)}%"></div></div>
+              <div class="amt">${money(v.revenue_cents)}</div>
+              <div class="cnt">${v.orders} order${v.orders === 1 ? '' : 's'}</div>
+            </div>`).join('')
+        : '<div class="empty">No paid orders yet.</div>';
+
+      // Product table
+      const products = Object.entries(d.revenue.by_product).sort((a, b) => b[1].revenue_cents - a[1].revenue_cents);
+      const ptbody = $('tbl-products').querySelector('tbody');
+      ptbody.innerHTML = products.length
+        ? products.map(([sku, v]) => `
+            <tr><td>${esc(sku)}</td><td class="num">${v.qty}</td><td class="num">${money(v.revenue_cents)}</td></tr>`).join('')
+        : '<tr><td colspan="3" class="empty">—</td></tr>';
+
+      // Funnel
+      const ftbody = $('tbl-funnel').querySelector('tbody');
+      ftbody.innerHTML = (d.funnel || []).length
+        ? d.funnel.map(f => `
+            <tr>
+              <td>${f.position}</td>
+              <td style="max-width:320px">${esc(f.subject)}<div style="font-size:12px;color:var(--ink-3)">${esc(f.cta_src || '')}</div></td>
+              <td>${esc(f.send_date || '')}</td>
+              <td>${esc(f.promo_code || '')}</td>
+              <td class="num">${f.sent}</td>
+              <td class="num">${f.opened}<div style="font-size:11px;color:var(--ink-3)">${f.open_rate_pct}%</div></td>
+              <td class="num">${f.clicked}<div style="font-size:11px;color:var(--ink-3)">${f.click_rate_pct}%</div></td>
+              <td class="num">${f.ordered}<div style="font-size:11px;color:var(--ink-3)">${f.order_rate_pct}%</div></td>
+              <td class="num">${money(f.revenue_cents)}</td>
+            </tr>`).join('')
+        : '<tr><td colspan="9" class="empty">No campaign emails configured.</td></tr>';
+    } catch (ex) {
+      $('promo-bars').innerHTML = `<div class="err">Metrics load failed: ${ex.message}</div>`;
+    }
+  }
+
+  // ─── CSV export (of currently-loaded orders) ───────────────────
+  function downloadCsv() {
+    if (!allOrders.length) return;
+    const headers = ['created_at','paid_at','status','promo_code','pickup_location','pickup_date','subtotal_cents','discount_cents','total_cents','src_tag','customer_org','customer_first','customer_email','items_summary'];
+    const rows = allOrders.map(o => {
+      const org = (o.customer && o.customer.organization) || '';
+      const first = (o.customer && o.customer.first_name) || '';
+      const emailAddr = (o.customer && o.customer.email) || '';
+      const items = (o.items || []).map(i => `${i.qty}x${i.sku}${i.is_bonus ? '(bonus)' : ''}`).join(' | ');
+      return [o.created_at, o.paid_at || '', o.status, o.promo_code || '', o.pickup_location || '', o.pickup_date || '', o.subtotal_cents, o.discount_cents, o.total_cents, o.src_tag || '', org, first, emailAddr, items];
+    });
+    const csv = [headers.join(',')].concat(rows.map(r => r.map(csvCell).join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `wholesale-orders-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
