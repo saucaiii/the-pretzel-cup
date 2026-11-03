@@ -256,14 +256,7 @@ html,body{overflow-x:hidden;margin:0}
       <span class="b">Operator</span>
     </span>
   </a>
-  <nav class="ops-site-nav" aria-label="Primary">
-    <a href="/ops" class="nav-link">Dashboard</a>
-    <a href="/ops/plan" class="nav-link is-active">Plan</a>
-    <a href="/ops/plan#v-sh" class="nav-link">Routes</a>
-    <a href="/ops/plan#v-sh" class="nav-link">Stores</a>
-    <a href="/ops/plan#v-su" class="nav-link">Suppliers</a>
-    <a href="/ops/standings" class="nav-link">Standings</a>
-  </nav>
+  <nav class="ops-site-nav" aria-label="Primary"></nav>
   <div class="ops-chrome-right">
     <span class="top-link save-ok" id="save-status" title="Changes are saved on the server for everyone">Saved</span>
     <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
@@ -817,5 +810,6 @@ function render(){stats();controls();timeline();panel();next();health()}
    ───────────────────────────────────────────────────────────── */
 boot();
 </script>
+  <script src="/assets/ops-nav.js" defer></script>
 </body>
 </html>

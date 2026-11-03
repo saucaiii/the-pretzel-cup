@@ -92,16 +92,7 @@
         </div>
       </a>
       <div class="header-right">
-        <nav class="ops-site-nav" aria-label="Primary">
-          <a href="/ops" class="nav-link">Dashboard</a>
-          <a href="/ops/revenue" class="nav-link is-active">Revenue</a>
-          <a href="/ops/updates" class="nav-link">Updates</a>
-          <a href="/ops/time-off" class="nav-link">Time Off</a>
-          <a href="/ops/stops" class="nav-link">Stops</a>
-          <a href="/ops/shifts" class="nav-link">Shifts</a>
-          <a href="/ops/people" class="nav-link">People</a>
-          <a href="/ops/plan" class="nav-link">Plan</a>
-        </nav>
+        <nav class="ops-site-nav" aria-label="Primary"></nav>
         <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
         <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
       </div>
@@ -307,5 +298,6 @@ function renderStops() {
   $('#stop-tbl tbody').innerHTML = body || `<tr><td colspan="6" style="padding:28px 10px;color:var(--ink-3);text-align:center;">No submissions in this window.</td></tr>`;
 }
 </script>
+  <script src="/assets/ops-nav.js" defer></script>
 </body>
 </html>

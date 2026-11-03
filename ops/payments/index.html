@@ -117,16 +117,7 @@ table.inv .select-cell input { accent-color: var(--accent); transform: scale(1.1
         </div>
       </a>
       <div class="header-right">
-        <nav class="ops-site-nav" aria-label="Primary">
-          <a href="/ops" class="nav-link">Dashboard</a>
-          <a href="/ops/updates" class="nav-link">Updates</a>
-          <a href="/ops/time-off" class="nav-link">Time Off</a>
-          <a href="/ops/stops" class="nav-link">Stops</a>
-          <a href="/ops/payments" class="nav-link is-active">Payments</a>
-          <a href="/ops/shifts" class="nav-link">Shifts</a>
-          <a href="/ops/people" class="nav-link">People</a>
-          <a href="/ops/plan" class="nav-link">Plan</a>
-        </nav>
+        <nav class="ops-site-nav" aria-label="Primary"></nav>
         <a href="/" class="public-link">View site &rarr;</a>
         <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
       </div>
@@ -501,5 +492,6 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   document.getElementById('app').hidden = false;
 })();
 </script>
+  <script src="/assets/ops-nav.js" defer></script>
 </body>
 </html>
