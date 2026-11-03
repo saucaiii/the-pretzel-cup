@@ -224,6 +224,7 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
           <a href="/ops/updates" class="nav-link">Updates</a>
           <a href="/ops/time-off" class="nav-link">Time Off</a>
           <a href="/ops/stops" class="nav-link">Stops</a>
+          <a href="/ops/prospecting" class="nav-link">Prospecting</a>
           <a href="/ops/store" class="nav-link">Store</a>
           <a href="/ops/shifts" class="nav-link">Shifts</a>
           <a href="/ops/people" class="nav-link">People</a>
@@ -288,6 +289,12 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
       <h2 class="tool-title">Invites</h2>
       <p class="tool-sub">Portal activity tracker: Needs setup, Awaiting first login, Active. Backfill manager contact per store, see which stores have rotated off the starter PIN, and open each store's per-store contact-card QR for printing.</p>
       <div class="tool-stat"><span class="tool-stat-value" id="tool-invite-stat">&mdash;</span><span class="tool-stat-label">Awaiting First Login</span></div>
+    </a>
+    <a class="tool" href="/ops/prospecting">
+      <span class="tool-chip">Growth</span>
+      <h2 class="tool-title">Prospecting</h2>
+      <p class="tool-sub">Delis, supermarkets and grocery stores within 1.5&nbsp;mi of a current route stop &mdash; route-density leads filtered down from a 20-mi OSM pull. Non-buyer chains and existing accounts already excluded. Filter by route, chain type and distance; export the filtered subset to CSV.</p>
+      <div class="tool-stat"><span class="tool-stat-value" id="tool-prospect-stat">&mdash;</span><span class="tool-stat-label">Route-Adjacent Leads</span></div>
     </a>
     <a class="tool" href="/ops/print-kits">
       <span class="tool-chip">Printing</span>
@@ -502,6 +509,17 @@ function renderMetrics(s) {
       const drafts = (kpi && kpi.drafts) || 0;
       const el = document.getElementById('tool-pay-stat');
       if (el) { el.textContent = String(drafts); if (drafts > 0) el.style.color = '#f4c25f'; }
+    })
+    .catch(() => {});
+
+  // Prospecting tile — count of route-adjacent prospects shipped with the
+  // repo at /ops/prospecting/data.json. See ops/prospecting/README.md for
+  // the refresh script.
+  fetch('/ops/prospecting/data.json', { cache: 'no-cache' })
+    .then(r => r.ok ? r.json() : { rows: [] })
+    .then(({ rows }) => {
+      const el = document.getElementById('tool-prospect-stat');
+      if (el) el.textContent = String((rows || []).length);
     })
     .catch(() => {});
 }
