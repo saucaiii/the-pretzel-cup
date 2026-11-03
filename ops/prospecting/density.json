@@ -1,0 +1,315 @@
+{
+  "generated_at": "2026-11-02",
+  "rows": [
+    {
+      "route": "FSQ",
+      "order": 6,
+      "stop_name": "Eastern Meat Farms",
+      "town": "Garden City",
+      "prospects_within_1_5mi": 30,
+      "delis": 26,
+      "supermarkets": 4,
+      "other": 0
+    },
+    {
+      "route": "FSQ",
+      "order": 7,
+      "stop_name": "IVB",
+      "town": "Garden City",
+      "prospects_within_1_5mi": 30,
+      "delis": 26,
+      "supermarkets": 4,
+      "other": 0
+    },
+    {
+      "route": "LYN",
+      "order": 4,
+      "stop_name": "7-Eleven E Merrick",
+      "town": "Valley Stream",
+      "prospects_within_1_5mi": 30,
+      "delis": 22,
+      "supermarkets": 7,
+      "other": 1
+    },
+    {
+      "route": "FSQ",
+      "order": 3,
+      "stop_name": "7-Eleven VS",
+      "town": "Valley Stream",
+      "prospects_within_1_5mi": 24,
+      "delis": 16,
+      "supermarkets": 7,
+      "other": 1
+    },
+    {
+      "route": "LYN",
+      "order": 1,
+      "stop_name": "7-Eleven Broadway",
+      "town": "Hewlett",
+      "prospects_within_1_5mi": 24,
+      "delis": 17,
+      "supermarkets": 5,
+      "other": 2
+    },
+    {
+      "route": "LYN",
+      "order": 8,
+      "stop_name": "7-Eleven Atlantic",
+      "town": "Lynbrook",
+      "prospects_within_1_5mi": 24,
+      "delis": 19,
+      "supermarkets": 3,
+      "other": 2
+    },
+    {
+      "route": "LYN",
+      "order": 2,
+      "stop_name": "7-Eleven Sunrise",
+      "town": "Valley Stream",
+      "prospects_within_1_5mi": 23,
+      "delis": 11,
+      "supermarkets": 5,
+      "other": 7
+    },
+    {
+      "route": "LYN",
+      "order": 5,
+      "stop_name": "7-Eleven Merrick",
+      "town": "Lynbrook",
+      "prospects_within_1_5mi": 22,
+      "delis": 17,
+      "supermarkets": 3,
+      "other": 2
+    },
+    {
+      "route": "LYN",
+      "order": 3,
+      "stop_name": "7-Eleven N Central",
+      "town": "Valley Stream",
+      "prospects_within_1_5mi": 21,
+      "delis": 16,
+      "supermarkets": 4,
+      "other": 1
+    },
+    {
+      "route": "LYN",
+      "order": 6,
+      "stop_name": "Kooka RVC",
+      "town": "Rockville Centre",
+      "prospects_within_1_5mi": 17,
+      "delis": 11,
+      "supermarkets": 5,
+      "other": 1
+    },
+    {
+      "route": "LYN",
+      "order": 7,
+      "stop_name": "7-Eleven RVC",
+      "town": "Rockville Centre",
+      "prospects_within_1_5mi": 17,
+      "delis": 11,
+      "supermarkets": 5,
+      "other": 1
+    },
+    {
+      "route": "LYN",
+      "order": 9,
+      "stop_name": "Bagel Gourmet",
+      "town": "East Rockaway",
+      "prospects_within_1_5mi": 16,
+      "delis": 10,
+      "supermarkets": 4,
+      "other": 2
+    },
+    {
+      "route": "FBW",
+      "order": 1,
+      "stop_name": "7-Eleven Sunrise RVC",
+      "town": "Rockville Centre",
+      "prospects_within_1_5mi": 14,
+      "delis": 7,
+      "supermarkets": 6,
+      "other": 1
+    },
+    {
+      "route": "FSQ",
+      "order": 4,
+      "stop_name": "Malverne Deli",
+      "town": "Malverne",
+      "prospects_within_1_5mi": 13,
+      "delis": 10,
+      "supermarkets": 2,
+      "other": 1
+    },
+    {
+      "route": "FSQ",
+      "order": 5,
+      "stop_name": "Kooka Malverne",
+      "town": "Malverne",
+      "prospects_within_1_5mi": 13,
+      "delis": 10,
+      "supermarkets": 2,
+      "other": 1
+    },
+    {
+      "route": "LYN",
+      "order": 10,
+      "stop_name": "7-Eleven Lawson",
+      "town": "Oceanside",
+      "prospects_within_1_5mi": 10,
+      "delis": 4,
+      "supermarkets": 5,
+      "other": 1
+    },
+    {
+      "route": "FBW",
+      "order": 2,
+      "stop_name": "7-Eleven Brooklyn",
+      "town": "Freeport",
+      "prospects_within_1_5mi": 9,
+      "delis": 5,
+      "supermarkets": 4,
+      "other": 0
+    },
+    {
+      "route": "FBW",
+      "order": 7,
+      "stop_name": "7-Eleven Grand Ave",
+      "town": "Baldwin",
+      "prospects_within_1_5mi": 9,
+      "delis": 4,
+      "supermarkets": 5,
+      "other": 0
+    },
+    {
+      "route": "FBW",
+      "order": 6,
+      "stop_name": "7-Eleven Atlantic B",
+      "town": "Baldwin",
+      "prospects_within_1_5mi": 7,
+      "delis": 2,
+      "supermarkets": 5,
+      "other": 0
+    },
+    {
+      "route": "FBW",
+      "order": 8,
+      "stop_name": "7-Eleven Nassau Rd",
+      "town": "Roosevelt",
+      "prospects_within_1_5mi": 7,
+      "delis": 4,
+      "supermarkets": 3,
+      "other": 0
+    },
+    {
+      "route": "FBW",
+      "order": 9,
+      "stop_name": "7-Eleven Sunrise F",
+      "town": "Freeport",
+      "prospects_within_1_5mi": 7,
+      "delis": 5,
+      "supermarkets": 2,
+      "other": 0
+    },
+    {
+      "route": "FSQ",
+      "order": 1,
+      "stop_name": "Brock's Deli",
+      "town": "Franklin Square",
+      "prospects_within_1_5mi": 7,
+      "delis": 4,
+      "supermarkets": 2,
+      "other": 1
+    },
+    {
+      "route": "FSQ",
+      "order": 2,
+      "stop_name": "7-Eleven FSQ",
+      "town": "Franklin Square",
+      "prospects_within_1_5mi": 7,
+      "delis": 4,
+      "supermarkets": 2,
+      "other": 1
+    },
+    {
+      "route": "FSQ",
+      "order": 8,
+      "stop_name": "7-Eleven HMP",
+      "town": "Franklin Square",
+      "prospects_within_1_5mi": 7,
+      "delis": 4,
+      "supermarkets": 2,
+      "other": 1
+    },
+    {
+      "route": "FSQ",
+      "order": 9,
+      "stop_name": "7-Eleven Holiday Farms",
+      "town": "Franklin Square",
+      "prospects_within_1_5mi": 7,
+      "delis": 4,
+      "supermarkets": 2,
+      "other": 1
+    },
+    {
+      "route": "FBW",
+      "order": 3,
+      "stop_name": "7-Eleven E Merrick F",
+      "town": "Freeport",
+      "prospects_within_1_5mi": 6,
+      "delis": 4,
+      "supermarkets": 2,
+      "other": 0
+    },
+    {
+      "route": "FBW",
+      "order": 5,
+      "stop_name": "7-Eleven Atlantic F",
+      "town": "Freeport",
+      "prospects_within_1_5mi": 6,
+      "delis": 3,
+      "supermarkets": 3,
+      "other": 0
+    },
+    {
+      "route": "LYN",
+      "order": 11,
+      "stop_name": "7-Eleven Long Beach Rd",
+      "town": "Oceanside",
+      "prospects_within_1_5mi": 6,
+      "delis": 1,
+      "supermarkets": 5,
+      "other": 0
+    },
+    {
+      "route": "FBW",
+      "order": 4,
+      "stop_name": "7-Eleven Guy Lombardo",
+      "town": "Freeport",
+      "prospects_within_1_5mi": 3,
+      "delis": 2,
+      "supermarkets": 1,
+      "other": 0
+    },
+    {
+      "route": "LYN",
+      "order": 12,
+      "stop_name": "7-Eleven LB Blvd",
+      "town": "Long Beach",
+      "prospects_within_1_5mi": 2,
+      "delis": 0,
+      "supermarkets": 0,
+      "other": 2
+    },
+    {
+      "route": "LYN",
+      "order": 13,
+      "stop_name": "7-Eleven Austin",
+      "town": "Island Park",
+      "prospects_within_1_5mi": 2,
+      "delis": 0,
+      "supermarkets": 0,
+      "other": 2
+    }
+  ]
+}
