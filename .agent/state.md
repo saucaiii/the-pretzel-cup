@@ -1,23 +1,23 @@
 # Working memory (short-term). Keep under 60 lines. Prune when a task closes.
-Branch: agent/ops-prospecting
-Task: /ops/prospecting page — route-density leads for operators
-Status: PR ready
+Branch: claude/wholesale-stack-7bd661
+Task: Wholesale ordering + email tracking stack (6 phases)
+Status: Phase 0 — plan written, Option B chosen (Vercel upgraded to Pro), blocked at plan-approval gate
 
 ## Progress
-- Branch cut from main (2 unrelated signin edits stashed as "pre-branch: existing signin edits").
-- Plan in .agent/plan.md (Medium risk — static page + static JSON, no API/auth/db changes).
-- Added ops/prospecting/{index.html, data.json, density.json, README.md}.
-- Added nav link + tile + per-tile stat loader in ops/index.html.
-- JSON parses; inline JS syntax-checks clean under node --check.
+- Loaded CLAUDE.md, state.md (stale — was for ops-prospecting, reset here), decisions.md (empty).
+- scope.txt: does NOT exist. Needs human to set with the file list in .agent/plan.md.
+- Function-count: Vercel on Pro (100-fn cap). 10 new functions planned, final count 22.
+- Risk classified HIGH (not CRITICAL — no live money moves, no deploy, env-gated live sends).
+- Plan written to .agent/plan.md with 6 phases per the brief's directory structure.
 
 ## Failures and root causes
 - (none)
 
 ## Review notes
-- Not covered: Google ratings / review counts (follow-up — needs Places API on pretzel-cup-sync).
-- Full 3,700-row 20-mi dump intentionally NOT shipped; lives at ~/pretzel-cup-prospecting/prospects_all.csv.
-- No new serverless function added — the Hobby 12-cap constraint stays safe.
-- Operator gate pattern copied from ops/stops/index.html (/api/auth/me POST → signin on reject).
+- (pending human plan approval)
 
 ## Handoff
-- Open draft PR against main. Human reviews, previews deploy, merges.
+- Human: set `.agent-control/scope.txt` to the file list under "Scope" in the plan.
+- Human: run `scripts/agent/approve-plan.sh` to bind the plan hash.
+- Confirmed: send-as `mcaiazzoppffs@gmail.com`; base URL env `WHOLESALE_BASE_URL` (fallback VERCEL_URL, then localhost).
+- Only after audit log confirms approval does Phase 1 begin.
