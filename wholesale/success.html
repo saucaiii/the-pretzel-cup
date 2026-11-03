@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0D5237" />
+<title>Thanks for your order — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" />
+<link rel="stylesheet" href="/brand.css" />
+<style>
+  .success { max-width: 700px; margin: 0 auto; padding: 40px 24px 60px; }
+  .eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+  .h { font-family: var(--display); font-size: clamp(40px, 7vw, 60px); line-height: 0.95; margin: 0 0 16px; text-transform: uppercase; letter-spacing: 0.01em; }
+  .h .crave-script { font-family: 'Caveat', cursive; font-weight: 700; color: var(--accent); text-transform: none; font-size: 1.1em; }
+  .sub { font-size: 17px; color: var(--ink-2); line-height: 1.5; }
+  .status-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font: 600 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase; margin-left: 8px; vertical-align: middle; }
+  .status-pill.paid       { background: rgba(95,213,140,0.18); color: #5fd58c; }
+  .status-pill.awaiting   { background: rgba(244,194,95,0.18); color: #f4c25f; }
+  .status-pill.cancelled  { background: rgba(244,117,114,0.18); color: #f47572; }
+  .panel { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 24px; }
+  .panel h2 { font: 400 12px var(--display); letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; margin: 0 0 14px; }
+  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; font-size: 15px; color: var(--ink-2); }
+  .kv dt { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding-top: 2px; }
+  .kv dd { margin: 0; color: var(--ink); }
+  .items { margin: 0; padding: 0; list-style: none; }
+  .items li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .items li:last-child { border-bottom: 0; }
+  .items .bonus { color: var(--accent-2, #F2E7A4); }
+  .items .qty { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .total-row { display: flex; justify-content: space-between; font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .back { margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+<div class="header-wrap">
+  <div class="diamond-strip" aria-hidden="true"></div>
+  <header class="header">
+    <a class="brand-link" href="/" aria-label="Philly Pretzel Factory home">
+      <img src="/ppf-logo.jpg" alt="" class="brand-logo" width="68" height="60" />
+      <span class="brand-text">
+        <span class="top">Philly Pretzel Factory</span>
+        <span class="bot">Made To Crave</span>
+      </span>
+    </a>
+  </header>
+</div>
+
+<main id="main">
+  <div class="success">
+    <div class="eyebrow">Order received</div>
+    <h1 class="h">Thanks for the<br/><span class="crave-script">crave.</span><span id="status-pill" class="status-pill"></span></h1>
+    <p class="sub" id="sub">Loading your order…</p>
+
+    <section class="panel" id="order-panel" hidden>
+      <h2>Items</h2>
+      <ul class="items" id="items"></ul>
+      <div class="total-row"><span>Total paid</span><span id="total">—</span></div>
+    </section>
+
+    <section class="panel" id="pickup-panel" hidden>
+      <h2>Pickup / delivery</h2>
+      <dl class="kv" id="pickup-dl"></dl>
+    </section>
+
+    <p class="back"><a href="/" class="cta-btn is-ghost">Back to the home page</a></p>
+  </div>
+</main>
+
+<footer class="footer">
+  <p class="footer-tagline">Made To Crave<sup>®</sup></p>
+  <p class="footer-meta">Franklin Square · Lynbrook · Serving Nassau County</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  const qs = new URLSearchParams(location.search);
+  const sid = qs.get('session_id') || '';
+  const money = (c) => '$' + (Number(c || 0) / 100).toFixed(2);
+  const $ = (id) => document.getElementById(id);
+
+  if (!sid) {
+    $('sub').textContent = 'No order id — check the link you followed.';
+    return;
+  }
+
+  function render(order) {
+    const status = order.status || 'awaiting_payment';
+    const pill = $('status-pill');
+    pill.textContent = status === 'paid' ? 'paid'
+                     : status === 'cancelled' ? 'cancelled'
+                     : 'awaiting payment';
+    pill.className = 'status-pill ' + (status === 'paid' ? 'paid'
+                                      : status === 'cancelled' ? 'cancelled' : 'awaiting');
+    if (status === 'paid') {
+      $('sub').innerHTML = 'Your receipt is on its way to your inbox. Hand-twisted and fresh-baked that morning at <strong>' + (order.pickup_location || 'our shop') + '</strong>. See you soon.';
+    } else if (status === 'cancelled') {
+      $('sub').textContent = 'This order was cancelled before payment went through. If that\'s a surprise, start again from the wholesale page.';
+    } else {
+      $('sub').textContent = 'Thanks — we\'re waiting on confirmation from the payment processor. This page will say "paid" within a minute or two. Feel free to close this tab; your receipt will land in your inbox.';
+    }
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    const ul = $('items');
+    ul.innerHTML = '';
+    items.forEach((it) => {
+      const li = document.createElement('li');
+      if (it.is_bonus) li.className = 'bonus';
+      const name = document.createElement('span');
+      name.textContent = (it.is_bonus ? '+ ' : '') + (it.name || it.sku) + (it.is_bonus ? ' (free)' : '');
+      const qp = document.createElement('span');
+      qp.className = 'qty';
+      qp.textContent = `${it.qty} × ${money(it.unit_price_cents)}`;
+      li.appendChild(name); li.appendChild(qp);
+      ul.appendChild(li);
+    });
+    $('total').textContent = money(order.total_cents);
+    $('order-panel').hidden = false;
+
+    const dl = $('pickup-dl');
+    dl.innerHTML = '';
+    const rows = [
+      ['Location', order.pickup_location],
+      ['Address',  order.pickup_address],
+      ['Date',     order.pickup_date],
+      ['Window',   order.pickup_time],
+      ['Promo',    order.promo_code],
+    ].filter(r => r[1]);
+    rows.forEach(([k, v]) => {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      dl.appendChild(dt); dl.appendChild(dd);
+    });
+    $('pickup-panel').hidden = rows.length === 0;
+  }
+
+  fetch('/api/wholesale/order?session_id=' + encodeURIComponent(sid))
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(d => render(d.order))
+    .catch(() => { $('sub').textContent = 'We couldn\'t load your order. Your email receipt from Stripe is the authoritative copy.'; });
+})();
+</script>
+</body>
+</html>
