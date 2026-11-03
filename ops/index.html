@@ -293,8 +293,8 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
     <a class="tool" href="/ops/prospecting">
       <span class="tool-chip">Growth</span>
       <h2 class="tool-title">Prospecting</h2>
-      <p class="tool-sub">Delis, supermarkets and grocery stores within 1.5&nbsp;mi of a current route stop &mdash; route-density leads filtered down from a 20-mi OSM pull. Non-buyer chains and existing accounts already excluded. Filter by route, chain type and distance; export the filtered subset to CSV.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-prospect-stat">&mdash;</span><span class="tool-stat-label">Route-Adjacent Leads</span></div>
+      <p class="tool-sub">Wholesale prospects across four segments: delis &amp; markets (route-density), schools (PTA / fundraiser, NCES-enriched with enrollment + public/private), Christian churches (functions / coffee hour), and daycares. Filter, sort, and export CSV per segment.</p>
+      <div class="tool-stat"><span class="tool-stat-value" id="tool-prospect-stat">&mdash;</span><span class="tool-stat-label">Prospects (all segments)</span></div>
     </a>
     <a class="tool" href="/ops/print-kits">
       <span class="tool-chip">Printing</span>
@@ -512,14 +512,19 @@ function renderMetrics(s) {
     })
     .catch(() => {});
 
-  // Prospecting tile — count of route-adjacent prospects shipped with the
-  // repo at /ops/prospecting/data.json. See ops/prospecting/README.md for
-  // the refresh script.
-  fetch('/ops/prospecting/data.json', { cache: 'no-cache' })
-    .then(r => r.ok ? r.json() : { rows: [] })
-    .then(({ rows }) => {
+  // Prospecting tile — total prospects across all four segments. Each JSON
+  // file is a static asset under /ops/prospecting/; see ops/prospecting/README.md
+  // for the refresh script.
+  Promise.all([
+    fetch('/ops/prospecting/data.json',     { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+    fetch('/ops/prospecting/schools.json',  { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+    fetch('/ops/prospecting/churches.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+    fetch('/ops/prospecting/daycares.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
+  ])
+    .then(all => {
+      const total = all.reduce((n, { rows }) => n + (rows || []).length, 0);
       const el = document.getElementById('tool-prospect-stat');
-      if (el) el.textContent = String((rows || []).length);
+      if (el) el.textContent = total.toLocaleString();
     })
     .catch(() => {});
 }
