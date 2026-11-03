@@ -39,13 +39,26 @@ function applyBonus({ products, lines }) {
     if (!p || typeof p.sku !== 'string') continue;
     bySku.set(p.sku, p);
   }
+  // Aggregate requested qty per SKU across all input lines first, so
+  // promo thresholds apply to the TOTAL ordered of each SKU and not
+  // to each UI line independently. Two rows of 60 pretzel-wrapped
+  // must still earn one 25-pack of bonus.
+  const qtyBySku = new Map();
+  for (const l of lines) {
+    const sku = l && l.sku;
+    const qty = Number.isFinite(l && l.qty) ? Math.floor(l.qty) : NaN;
+    if (!bySku.has(sku) || !(qty > 0)) continue;
+    qtyBySku.set(sku, (qtyBySku.get(sku) || 0) + qty);
+  }
   const items = [];
   let subtotal_cents = 0;
   let discount_cents = 0;
-  for (const l of lines) {
-    const p = bySku.get(l && l.sku);
-    const qty = Number.isFinite(l && l.qty) ? Math.floor(l.qty) : NaN;
-    if (!p || !(qty > 0)) continue;
+  // Iterate products (not qtyBySku) so item order is stable: it
+  // follows the order products come back from the DB, which the
+  // caller sorts by unit price asc.
+  for (const p of products) {
+    const qty = qtyBySku.get(p.sku) || 0;
+    if (qty <= 0) continue;
     const line_total = qty * p.unit_price_cents;
     items.push({
       sku: p.sku,

@@ -153,25 +153,21 @@ create index if not exists wholesale_orders_email_send_idx
 
 -- ─── RLS ───────────────────────────────────────────────────────────
 -- Default: deny all. API routes use the service role, which bypasses
--- RLS; the two anon policies on wholesale_orders are a safety net for
--- a future direct-from-browser flow and rely on the stripe_session_id
--- being unguessable (Stripe-generated cs_test_… / cs_live_…).
+-- RLS. No anon policies — all customer-facing reads/writes go through
+-- the server-side API, where the handler decides what to return (see
+-- api/wholesale/customer.js for the public-safe field whitelist and
+-- api/wholesale/order.js for the stripe_session_id → row lookup).
+--
+-- NOTE: an earlier draft added a `using (stripe_session_id is not null)`
+-- policy intending "callers can read their own order by session id,"
+-- but that policy would have returned every row with a session id to
+-- any anon SELECT (RLS USING is a per-row boolean, not a filter), so
+-- it has been dropped. If a direct-from-browser flow is needed later,
+-- re-add a policy that matches the session id against a JWT claim,
+-- e.g. `using (stripe_session_id = current_setting('request.jwt.claim.session_id', true))`.
 alter table public.wholesale_products         enable row level security;
 alter table public.wholesale_customers        enable row level security;
 alter table public.wholesale_campaigns        enable row level security;
 alter table public.wholesale_campaign_emails  enable row level security;
 alter table public.wholesale_email_sends      enable row level security;
 alter table public.wholesale_orders           enable row level security;
-
-do $$ begin
-  create policy wholesale_orders_anon_insert on public.wholesale_orders
-    for insert to anon
-    with check (status in ('draft','awaiting_payment')
-                and stripe_session_id is not null);
-exception when duplicate_object then null; end $$;
-
-do $$ begin
-  create policy wholesale_orders_anon_select on public.wholesale_orders
-    for select to anon
-    using (stripe_session_id is not null);
-exception when duplicate_object then null; end $$;

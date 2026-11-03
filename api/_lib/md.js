@@ -37,9 +37,16 @@ function inlineMd(text) {
   // Order matters: links first (they contain [](), which would otherwise
   // get mangled), then bold, then italic.
   let s = escapeHtml(text);
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, label, href) =>
-    `<a href="${href}">${label}</a>`
-  );
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label, href) => {
+    // Hard scheme allowlist: http(s) absolute or site-relative only.
+    // Anything else (javascript:, data:, vbscript:, file:, mailto:, …)
+    // leaves the original escaped text in place rather than rendering
+    // a dangerous anchor. Merge fields are substituted BEFORE this
+    // runs, so a hostile value in e.g. first_name cannot smuggle a
+    // javascript: href via a crafted [click](...)  payload.
+    if (!/^(https?:\/\/|\/[^/])/i.test(href)) return match;
+    return `<a href="${href}">${label}</a>`;
+  });
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
   return s;

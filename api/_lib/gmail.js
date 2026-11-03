@@ -21,6 +21,7 @@
 // Scope requested: https://www.googleapis.com/auth/gmail.send
 
 const { google } = require('googleapis');
+const { escapeHtml } = require('./md');
 
 const FROM_ADDRESS   = 'mcaiazzoppffs@gmail.com';
 const FROM_NAME      = 'Philly Pretzel Factory';
@@ -51,7 +52,7 @@ function buildRaw({ to, subject, html, text, preheader }) {
   const boundary = '----=_pcwh_' + Math.random().toString(36).slice(2);
   const encSubject = `=?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`;
   const htmlWithPreheader = preheader
-    ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px">${preheader}</div>\n${html}`
+    ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px">${escapeHtml(preheader)}</div>\n${html}`
     : html;
   const parts = [
     `From: "${FROM_NAME}" <${FROM_ADDRESS}>`,
