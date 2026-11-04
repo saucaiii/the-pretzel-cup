@@ -1,24 +1,38 @@
 # Working memory (short-term). Keep under 60 lines.
 Branch: agent/route-pitch
 Task: route-pitch
-Status: in progress
+Status: ready to commit + push + draft PR
 Started: 2026-11-04T13:39Z
 
 ## Progress
-- Created isolated worktree. Scope: pitch-kit scripts/gen-print-kits.mjs vercel.json
-- Read ref files: kit.css, 01-welcome-letter, 09-portal-pitch,
-  08-pricing-card, 03-contact-card, onboarding index.html,
-  print-bundle.html, scripts/gen-print-kits.mjs, vercel.json.
-- Wrote .agent/plan.md (LOW risk per task brief).
-- Built 6 sheets under pitch-kit/: 01-cover, 02-the-deal,
-  03-the-numbers, 04-portal-preview, 05-payment, 06-close. Plus
-  pitch-kit/index.html (static picker) + pitch-kit/print-bundle.html
-  (iframes, base href /pitch-kit/).
-- Policy block: vercel.json + scripts/ are HIGH_RISK per
-  .agent-policy/policy.sh (HIGH_RISK_RE). Even though the task brief
-  classified this work LOW risk, the hook denies edits until the
-  human runs scripts/agent/approve-plan.sh. Pausing on those two
-  edits; HTML alone was unblocked and will be committed.
+- Pitch-kit HTML committed earlier (4b4d185): 6 sheets + index +
+  print-bundle. Fixed Caveat-script uppercase bleed on 06-close
+  afterward (in working tree, included in next commit).
+- Sample PDF (6 pages, letter) generated via Chrome headless and
+  delivered to user from scratchpad.
+- Plan rewritten to cover full scope; scope.txt widened and plan
+  approved by the user (hash matches b7ce3e9d8300…).
+- Added `pitch-kit/(.*)` SAMEORIGIN to vercel.json.
+- Wrote scripts/gen-pitch-pdf.mjs (standalone PDF renderer).
+- Wrote supabase/migrations/p20_leads.sql (leads table, RLS on,
+  dedupe + status indexes). p20_ clears p14/p15/p16 claimed by the
+  wholesale worktrees.
+- Wrote apply/index.html (branded form, honeypot, client-side
+  validation) + apply/success.html (thank-you).
+- Wrote api/leads.js (POST public: honeypot, Upstash rate-limit,
+  dedupe, Supabase insert, Telegram notify; GET operator-gated).
+- Visual-checked /apply + /apply/success — both render cleanly in
+  the local preview server.
+- Node syntax-check passed on api/leads.js and
+  scripts/gen-pitch-pdf.mjs.
+
+## Next
+- Commit in three chunks:
+  * chore(vercel): expose pitch-kit for iframe print bundle
+  * feat(pitch-kit): add standalone print-bundle PDF generator
+    (also includes the 06-close script CSS fix)
+  * feat(apply): lead capture form + endpoint + leads schema
+- Push and open DRAFT PR.
 
 ## Handoffs
 - (agent -> agent: input, output, result)

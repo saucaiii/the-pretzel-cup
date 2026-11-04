@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Thanks — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<meta name="robots" content="noindex,nofollow" />
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--ppf-cream);
+    min-height: 100%;
+    color: var(--ppf-ink);
+  }
+
+  .page {
+    max-width: 720px; margin: 0 auto;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  .head-wrap { background: var(--ppf-green); }
+  .head {
+    padding: 40px 48px 48px;
+    color: var(--ppf-white);
+    display: flex; align-items: center; gap: 24px;
+  }
+  .head .logo-badge { width: 88px; height: 88px; flex-shrink: 0; }
+  .head .eyebrow {
+    font-family: var(--font-display); font-size: 11px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ppf-gold); margin-bottom: 8px;
+  }
+  .head .headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 44px; line-height: 0.95;
+    text-transform: uppercase; margin: 0;
+  }
+  .head .script {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 36px; display: block; margin-top: 6px; line-height: 1;
+  }
+
+  .body {
+    padding: 36px 48px;
+    font-size: 15.5px; line-height: 1.6;
+    flex: 1;
+  }
+  .body p { margin: 0 0 16px; }
+  .body strong { color: var(--ppf-green); }
+
+  .next {
+    margin: 24px 0;
+    background: var(--ppf-white);
+    border-left: 4px solid var(--ppf-gold);
+    padding: 18px 24px;
+  }
+  .next h3 {
+    margin: 0 0 10px;
+    font-family: var(--font-display);
+    font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ppf-green);
+  }
+  .next ol {
+    margin: 0; padding-left: 20px;
+    font-size: 14px; line-height: 1.6;
+  }
+  .next li { margin-bottom: 4px; }
+  .next li strong { color: var(--ppf-green); }
+
+  .phone-card {
+    margin-top: 28px;
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    padding: 20px 24px;
+    display: flex; align-items: center; gap: 20px;
+    border-left: 4px solid var(--ppf-gold);
+  }
+  .phone-card .label {
+    font-family: var(--font-display); font-size: 10px;
+    letter-spacing: 0.22em; color: var(--ppf-gold);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .phone-card .num {
+    font-family: var(--font-display);
+    font-size: 28px; letter-spacing: 0.02em;
+    color: var(--ppf-white); line-height: 1;
+  }
+  .phone-card .caveat {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 22px; line-height: 1; margin-left: auto;
+  }
+
+  .footer {
+    margin-top: auto;
+    background: var(--ppf-green-deep);
+    color: var(--ppf-white);
+    padding: 14px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .footer .gold { color: var(--ppf-gold); font-weight: 700; }
+
+  @media (max-width: 560px) {
+    .head { padding: 32px 24px 36px; gap: 18px; }
+    .head .headline { font-size: 34px; }
+    .head .script { font-size: 28px; }
+    .body { padding: 28px 24px; }
+    .footer { padding-left: 24px; padding-right: 24px; }
+    .phone-card { flex-wrap: wrap; }
+    .phone-card .caveat { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head-wrap">
+    <div class="plate-strip"></div>
+    <div class="head">
+      <span class="logo-badge"></span>
+      <div>
+        <div class="eyebrow">Got it</div>
+        <h1 class="headline">You're in the<br/>queue.</h1>
+        <span class="script">Chris calls within 24 hours.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <p>
+      Thanks &mdash; your application is in. One of us will reach out
+      from <strong>516.517.8111</strong> within the next business day
+      to confirm your address, the day you want your first drop, and
+      how your register handles UPCs.
+    </p>
+
+    <div class="next">
+      <h3>What happens next</h3>
+      <ol>
+        <li><strong>Call within 24 hours</strong> to lock in the delivery day.</li>
+        <li><strong>First drop:</strong> 10 pretzels, ready to sell. $0 out of pocket.</li>
+        <li><strong>Next day:</strong> we pick up unsold ones; you pay only for what moved.</li>
+      </ol>
+    </div>
+
+    <p>
+      If something's urgent or you want to talk through pricing before
+      the first drop, call anytime.
+    </p>
+
+    <div class="phone-card">
+      <div>
+        <div class="label">The Pretzel Cup</div>
+        <div class="num">516.517.8111</div>
+      </div>
+      <div class="caveat">ask for Chris</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Christopher Aumuller · Owner · The Pretzel Cup</span>
+    <span class="gold">the-pretzel-cup.vercel.app</span>
+  </div>
+
+</div>
+</body>
+</html>
