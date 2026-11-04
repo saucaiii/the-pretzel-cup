@@ -1,23 +1,33 @@
 # Working memory (short-term). Keep under 60 lines. Prune when a task closes.
-Branch: claude/wholesale-stack-7bd661
-Task: Wholesale ordering + email tracking stack (6 phases)
-Status: Phase 0 — plan written, Option B chosen (Vercel upgraded to Pro), blocked at plan-approval gate
+Branch: claude/eager-einstein-93e3e9
+Task: Wholesale operator control surface (status transitions, invoice send,
+      campaign send controls, email history) — follow-up to merged PR #14.
+Status: Phase 0 — scope.txt updated, plan written, waiting on
+        scripts/agent/approve-plan.sh to bind the plan hash.
 
 ## Progress
-- Loaded CLAUDE.md, state.md (stale — was for ops-prospecting, reset here), decisions.md (empty).
-- scope.txt: does NOT exist. Needs human to set with the file list in .agent/plan.md.
-- Function-count: Vercel on Pro (100-fn cap). 10 new functions planned, final count 22.
-- Risk classified HIGH (not CRITICAL — no live money moves, no deploy, env-gated live sends).
-- Plan written to .agent/plan.md with 6 phases per the brief's directory structure.
+- Worktree fast-forwarded to `origin/main` (9f67ea3, PR #14 merged) so the
+  wholesale code is here.
+- Audited the shipped stack: order.js (public GET), campaigns/send.js
+  (Bearer CRON_SECRET), ops/wholesale/index.html, auth.js (JWT cookie,
+  `sess.sub = people.id`), gmail.js, md.js, p14_wholesale.sql.
+- Vercel function-count: only ONE new function this task
+  (`api/wholesale/invoice.js`). PATCH goes on existing `order.js`;
+  operator-auth branch added inline to `campaigns/send.js`.
+- Risk: HIGH — writes `wholesale_orders` state, drives live-email path
+  (still env-gated by `EMAIL_SEND_LIVE_ENABLED=true`).
+- Plan written to `.agent/plan.md` with six phases, one commit each.
+- scope.txt reset by the human to this worktree's paths.
 
 ## Failures and root causes
-- (none)
+- (none yet)
 
 ## Review notes
-- (pending human plan approval)
+- Awaiting human `scripts/agent/approve-plan.sh` to bind the plan hash.
 
-## Handoff
-- Human: set `.agent-control/scope.txt` to the file list under "Scope" in the plan.
-- Human: run `scripts/agent/approve-plan.sh` to bind the plan hash.
-- Confirmed: send-as `mcaiazzoppffs@gmail.com`; base URL env `WHOLESALE_BASE_URL` (fallback VERCEL_URL, then localhost).
-- Only after audit log confirms approval does Phase 1 begin.
+## Handoff — needs human
+- Run `scripts/agent/approve-plan.sh` from the main-repo root to bind the
+  current plan hash to `.agent-control/approval`. Any later edit to
+  plan.md voids approval.
+
+After approval, Phase 1 (p15 migration) starts.
