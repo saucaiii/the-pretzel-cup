@@ -233,6 +233,14 @@ bearer path is unchanged and still powers scheduled sends.
   filtering client-side. When list.js is next touched, add
   `'invoiced'` to its STATUS Set to let server-side filtering do the
   work.
+- Persistent audit trail for **invoice sends**. Today an invoice send
+  only leaves a mark on `wholesale_orders.invoiced_at` /
+  `invoiced_by` (one per order). Bounces, retries, and sends that
+  the status flip missed are not individually auditable the way
+  campaign sends are through `wholesale_email_sends`. A follow-up
+  migration could either add a dedicated `wholesale_invoice_sends`
+  table or repurpose `wholesale_email_sends` with a nullable
+  `campaign_email_id` and a `kind` discriminator.
 
 ## Rollback
 

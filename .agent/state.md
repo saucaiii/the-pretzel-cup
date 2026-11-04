@@ -1,33 +1,46 @@
 # Working memory (short-term). Keep under 60 lines. Prune when a task closes.
 Branch: claude/eager-einstein-93e3e9
-Task: Wholesale operator control surface (status transitions, invoice send,
-      campaign send controls, email history) — follow-up to merged PR #14.
-Status: Phase 0 — scope.txt updated, plan written, waiting on
-        scripts/agent/approve-plan.sh to bind the plan hash.
+Task: Wholesale operator control surface (follow-up to merged PR #14).
+Status: All phases implemented + reviewer fixes applied. Ready for draft PR.
 
 ## Progress
-- Worktree fast-forwarded to `origin/main` (9f67ea3, PR #14 merged) so the
-  wholesale code is here.
-- Audited the shipped stack: order.js (public GET), campaigns/send.js
-  (Bearer CRON_SECRET), ops/wholesale/index.html, auth.js (JWT cookie,
-  `sess.sub = people.id`), gmail.js, md.js, p14_wholesale.sql.
-- Vercel function-count: only ONE new function this task
-  (`api/wholesale/invoice.js`). PATCH goes on existing `order.js`;
-  operator-auth branch added inline to `campaigns/send.js`.
-- Risk: HIGH — writes `wholesale_orders` state, drives live-email path
-  (still env-gated by `EMAIL_SEND_LIVE_ENABLED=true`).
-- Plan written to `.agent/plan.md` with six phases, one commit each.
-- scope.txt reset by the human to this worktree's paths.
+- All six phases committed on the branch (8 feature commits + 2
+  pre-review fixes + 1 review-fix commit = 11 total this task).
+- Migration applied in dev via Supabase MCP; enum range + column
+  shape verified.
+
+## Review 2026-11-04
+Verdict: pass (with findings — fixes committed in 99c5c80)
+Quantitative: tests n/a, scope pass (against origin/main), new alerts
+  unknown (github MCP not available in this env).
+Intent: met — operator can advance orders, invoice modal + email
+  history + campaign ops surfaces all work; env gate is strict and
+  CAS on PATCH is correct.
+Unexpected files: none.
+Findings addressed:
+  - MEDIUM 1: invoice.js reported status_updated:true on CAS miss →
+    row-count check, explicit false on miss.
+  - MEDIUM 2: invoice-send double-send race → pre-send CAS claim with
+    rollback on send failure; non-awaiting callers refused up front.
+  - LOW 4: email_history included dry-run rows → filter sent_at
+    IS NOT NULL in the query.
+  - LOW 5: openDrawer out-of-order fetches → drawerFetchSeq guard.
+  - LOW 6: markdown-link injection via customer fields → mdSafe()
+    breaks the `](` joiner before injection.
+  - INFO 7: iframe sandbox tightened to sandbox="".
+  - INFO 8: null-position email history rows now sort last.
+  - INFO 9: patchStatus self-heals on 409 by re-opening the drawer.
+Deferred: LOW-MEDIUM 3 — persistent audit trail for invoice sends.
+  Captured in docs/wholesale.md Follow-up.
 
 ## Failures and root causes
-- (none yet)
-
-## Review notes
-- Awaiting human `scripts/agent/approve-plan.sh` to bind the plan hash.
+- Dev-DB round-trip write (insert test order + walk transitions):
+  blocked by the auto-mode classifier. Migration + static smoke +
+  node require + review all unblocked without that check.
 
 ## Handoff — needs human
-- Run `scripts/agent/approve-plan.sh` from the main-repo root to bind the
-  current plan hash to `.agent-control/approval`. Any later edit to
-  plan.md voids approval.
-
-After approval, Phase 1 (p15 migration) starts.
+1. Open draft PR with the labeled plan sections in the body (plan-
+   gate CI reads them); never un-draft from this agent.
+2. In dev, walk a test order through the UI buttons with
+   EMAIL_SEND_LIVE_ENABLED unset to confirm dry-run UX; optionally
+   set WHOLESALE_INVOICE_PAYMENT_HELP and confirm it renders.
