@@ -228,11 +228,6 @@ bearer path is unchanged and still powers scheduled sends.
 
 - Column-P/Q cleanup on the old wholesale lead form (credit-card
   cleartext — PCI exposure, out of scope here).
-- `api/wholesale/list.js` STATUS allowlist currently predates P15 and
-  does not include `invoiced`; the dashboard works around this by
-  filtering client-side. When list.js is next touched, add
-  `'invoiced'` to its STATUS Set to let server-side filtering do the
-  work.
 - Persistent audit trail for **invoice sends**. Today an invoice send
   only leaves a mark on `wholesale_orders.invoiced_at` /
   `invoiced_by` (one per order). Bounces, retries, and sends that

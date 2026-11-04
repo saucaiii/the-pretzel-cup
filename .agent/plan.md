@@ -6,7 +6,7 @@
   an optional invoice email sent in the same operator click, preview /
   dry-run / live-send controls for nurture campaigns (today a terminal
   curl), and per-customer email history inside the order drawer.
-- **Scope (paths/files):** supabase/migrations/p15_wholesale_order_audit.sql, api/wholesale/order.js, api/wholesale/invoice.js, api/campaigns/send.js, api/_lib/invoice-template.js, ops/wholesale/index.html, docs/wholesale.md
+- **Scope (paths/files):** supabase/migrations/p15_wholesale_order_audit.sql, api/wholesale/order.js, api/wholesale/invoice.js, api/wholesale/list.js, api/campaigns/send.js, api/_lib/invoice-template.js, ops/wholesale/index.html, docs/wholesale.md
 
 Scope entries for `.agent-control/scope.txt` — the main repo owns this
 file (worktree reads it through `AGENT_REPO_ROOT`). Already set by the
