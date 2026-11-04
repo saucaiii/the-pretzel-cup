@@ -1,34 +1,24 @@
-# Plan — Shared /ops nav (PR 2 of operator-dashboard cleanup)
+# Plan — Operator vocabulary rename
 
-- **Risk:** medium
-- **Goal:** Replace 11 drifting per-page nav-bar variants across 15 `/ops/*` HTML files with one shared JS include that renders a 5-section IA (Today / Operations / Money / Growth / Plan).
+- **Risk:** low (copy-only)
+- **Goal:** Make nav labels, tile titles and page headings on `/ops` read as plainly as the operator thinks about them.
 - **Scope (paths/files):**
-  - `assets/ops-nav.js` (new — the shared nav component)
-  - `ops/index.html`
-  - `ops/invite/index.html`
-  - `ops/onboard/index.html`
-  - `ops/payments/index.html`
-  - `ops/people/index.html`
-  - `ops/print-kits/index.html`
-  - `ops/prospecting/index.html`
-  - `ops/revenue/index.html`
-  - `ops/shifts/index.html`
-  - `ops/stops/index.html`
-  - `ops/store/index.html`
-  - `ops/time-off/index.html`
-  - `ops/updates/index.html`
-  - `ops/plan.html`
-  - `ops/standings.html`
-- **Steps:**
-  1. Add `assets/ops-nav.js` with the 5-section nav model (sections = Today, Operations, Money, Growth, Plan), click-to-open dropdowns, keyboard-escape close, outside-click close, current-page detection from `location.pathname`.
-  2. In each of the 15 ops HTML files: empty the body of `<nav class="ops-site-nav" aria-label="Primary">` (keep the element) and inject `<script src="/assets/ops-nav.js" defer></script>` before `</body>`.
-- **Success criteria (verifiable):**
-  - [x] Required checks pass (CI)
-  - [x] Intent signal met: every ops page shows the same 5-section nav; active section/page highlighted correctly; 11-variant drift eliminated
-  - [x] Only files in scope changed (new `assets/` dir + the 15 ops HTML files)
-  - [x] No new code scanning alerts
-- **Risks + mitigations:**
-  - FOUC risk: with `defer`, the empty nav shows briefly before injection. Acceptable for a logged-in operator surface; CSS extraction PR will add a width-reserving placeholder.
-  - JS-off browsers: nav disappears entirely. Operators run modern Chrome; acceptable for internal tool.
-  - Driver/baker regression: zero — nothing in `/driver`, `/baker`, `/api`, `brand.css`, or Supabase is touched.
-- **Rollback / escalation plan:** `git revert <sha> && npm run deploy`.
+  - `assets/ops-nav.js` — nav labels
+  - `ops/index.html` — tile titles, chips, descriptions, stat labels
+  - `ops/updates/index.html`, `ops/stops/index.html`, `ops/onboard/index.html`, `ops/invite/index.html`, `ops/store/index.html` — `<title>` + `<h1>` + eyebrow
+- **Renames (URLs unchanged):**
+  - Updates → Announcements
+  - Stops → Delivery Stops
+  - Onboard → New Store Setup
+  - Invite → Account Portal Access
+  - Store Comms → Account Requests
+  - Standings → Leaderboard (nav + dashboard tile; page keeps its "Season Live" hero)
+- **Descriptions touched (no rename):**
+  - Plan — now described as an older reference doc, not actively maintained
+  - Print Kits — mentions existing-account kits today, prospecting kits coming
+- **Success criteria:**
+  - [x] Every renamed label is consistent across nav, dashboard tile, page `<title>`, and `<h1>`
+  - [x] URLs unchanged (no deep-link breakage)
+  - [x] No logic / API / CSS changes
+- **Risks + mitigations:** None functional. Operators may be briefly disoriented by the label change — the renames are explicit and more descriptive, so net-positive.
+- **Rollback:** `git revert <sha> && npm run deploy`.

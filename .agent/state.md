@@ -1,13 +1,12 @@
-# State — agent/ops-ia-nav
+# State — agent/ops-rename
 
-Task: operator-dashboard IA rebuild, PR 1 of 3 (shared nav).
+Task: PR 3 of operator-dashboard cleanup — vocabulary rename (copy-only, no logic).
 
 Progress:
-- Branch cut from latest `main` (`0d950b5`, has PR #13 sweep merged).
-- `assets/ops-nav.js` written: 5-section IA, click dropdowns, Escape/outside-click close, auto-active from pathname.
-- 15 `/ops/*` HTML files: nav body emptied + `<script src="/assets/ops-nav.js" defer>` injected.
-- Driver/baker/API/Supabase untouched (verified by scope).
+- Branch cut from latest `main` (`b29bc9b`, includes PR #15 shared-nav merge).
+- Nav labels updated in `assets/ops-nav.js`.
+- Dashboard tile titles/chips/descriptions updated in `ops/index.html`.
+- Sub-page `<title>` + `<h1>` + eyebrow updated on the 5 renamed pages.
+- URLs unchanged.
 
-Follow-ups (separate PRs):
-- Extract shared ops chrome CSS → `assets/ops-chrome.css` (kills ~80 duplicate lines/file × 15).
-- Rebuild `/ops` dashboard: Today metrics (live operator numbers, not plan metrics) + 5 category cards.
+Follow-ups: PR 4 extracts shared ops chrome CSS; PR 5 rebuilds the `/ops` dashboard into 5 category cards with live Today metrics.
