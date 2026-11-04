@@ -8,26 +8,26 @@
   var SECTIONS = [
     { label: "Today", href: "/ops" },
     { label: "Operations", children: [
-      { label: "Updates",     href: "/ops/updates"  },
-      { label: "Time Off",    href: "/ops/time-off" },
-      { label: "Stops",       href: "/ops/stops"    },
-      { label: "Shifts",      href: "/ops/shifts"   },
-      { label: "People",      href: "/ops/people"   },
-      { label: "Store Comms", href: "/ops/store"    }
+      { label: "Announcements",    href: "/ops/updates"  },
+      { label: "Time Off",         href: "/ops/time-off" },
+      { label: "Delivery Stops",   href: "/ops/stops"    },
+      { label: "Shifts",           href: "/ops/shifts"   },
+      { label: "People",           href: "/ops/people"   },
+      { label: "Account Requests", href: "/ops/store"    }
     ]},
     { label: "Money", children: [
       { label: "Revenue",  href: "/ops/revenue"  },
       { label: "Payments", href: "/ops/payments" }
     ]},
     { label: "Growth", children: [
-      { label: "Prospecting", href: "/ops/prospecting" },
-      { label: "Onboard",     href: "/ops/onboard"     },
-      { label: "Invite",      href: "/ops/invite"      },
-      { label: "Print Kits",  href: "/ops/print-kits"  }
+      { label: "Prospecting",         href: "/ops/prospecting" },
+      { label: "New Store Setup",     href: "/ops/onboard"     },
+      { label: "Account Portal Access", href: "/ops/invite"    },
+      { label: "Print Kits",          href: "/ops/print-kits"  }
     ]},
     { label: "Plan", children: [
-      { label: "Plan",      href: "/ops/plan"      },
-      { label: "Standings", href: "/ops/standings" }
+      { label: "Plan",        href: "/ops/plan"      },
+      { label: "Leaderboard", href: "/ops/standings" }
     ]}
   ];
 
