@@ -17,9 +17,9 @@
   .h .crave-script { font-family: 'Caveat', cursive; font-weight: 700; color: var(--accent); text-transform: none; font-size: 1.1em; }
   .sub { font-size: 17px; color: var(--ink-2); line-height: 1.5; }
   .status-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font: 600 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase; margin-left: 8px; vertical-align: middle; }
-  .status-pill.paid       { background: rgba(95,213,140,0.18); color: #5fd58c; }
-  .status-pill.awaiting   { background: rgba(244,194,95,0.18); color: #f4c25f; }
-  .status-pill.cancelled  { background: rgba(244,117,114,0.18); color: #f47572; }
+  .status-pill.paid                { background: rgba(95,213,140,0.18); color: #5fd58c; }
+  .status-pill.awaiting-payment    { background: rgba(244,194,95,0.18); color: #f4c25f; }
+  .status-pill.cancelled           { background: rgba(244,117,114,0.18); color: #f47572; }
   .panel { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 24px; }
   .panel h2 { font: 400 12px var(--display); letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; margin: 0 0 14px; }
   .kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; font-size: 15px; color: var(--ink-2); }
@@ -59,7 +59,7 @@
     <section class="panel" id="order-panel" hidden>
       <h2>Items</h2>
       <ul class="items" id="items"></ul>
-      <div class="total-row"><span>Total paid</span><span id="total">—</span></div>
+      <div class="total-row"><span>Total</span><span id="total">—</span></div>
     </section>
 
     <section class="panel" id="pickup-panel" hidden>
@@ -80,11 +80,11 @@
 (function () {
   'use strict';
   const qs = new URLSearchParams(location.search);
-  const sid = qs.get('session_id') || '';
+  const orderId = qs.get('o') || '';
   const money = (c) => '$' + (Number(c || 0) / 100).toFixed(2);
   const $ = (id) => document.getElementById(id);
 
-  if (!sid) {
+  if (!orderId) {
     $('sub').textContent = 'No order id — check the link you followed.';
     return;
   }
@@ -94,15 +94,18 @@
     const pill = $('status-pill');
     pill.textContent = status === 'paid' ? 'paid'
                      : status === 'cancelled' ? 'cancelled'
-                     : 'awaiting payment';
-    pill.className = 'status-pill ' + (status === 'paid' ? 'paid'
-                                      : status === 'cancelled' ? 'cancelled' : 'awaiting');
+                     : 'awaiting invoice';
+    pill.className = 'status-pill ' + (
+      status === 'paid'       ? 'paid' :
+      status === 'cancelled'  ? 'cancelled' :
+                                'awaiting-payment'
+    );
     if (status === 'paid') {
-      $('sub').innerHTML = 'Your receipt is on its way to your inbox. Hand-twisted and fresh-baked that morning at <strong>' + (order.pickup_location || 'our shop') + '</strong>. See you soon.';
+      $('sub').innerHTML = 'Your order is confirmed. Hand-twisted and fresh-baked that morning at <strong>' + (order.pickup_location || 'our shop') + '</strong>. See you soon.';
     } else if (status === 'cancelled') {
-      $('sub').textContent = 'This order was cancelled before payment went through. If that\'s a surprise, start again from the wholesale page.';
+      $('sub').textContent = 'This order was cancelled. If that\'s a surprise, start again from the wholesale page.';
     } else {
-      $('sub').textContent = 'Thanks — we\'re waiting on confirmation from the payment processor. This page will say "paid" within a minute or two. Feel free to close this tab; your receipt will land in your inbox.';
+      $('sub').innerHTML = 'We\'ve got your order. An invoice will land in your inbox shortly — our team reviews each order to make sure every detail is right, then sends billing by email. Keep this page link handy if you want to review the order on your end.';
     }
 
     const items = Array.isArray(order.items) ? order.items : [];
@@ -139,10 +142,10 @@
     $('pickup-panel').hidden = rows.length === 0;
   }
 
-  fetch('/api/wholesale/order?session_id=' + encodeURIComponent(sid))
+  fetch('/api/wholesale/order?o=' + encodeURIComponent(orderId))
     .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
     .then(d => render(d.order))
-    .catch(() => { $('sub').textContent = 'We couldn\'t load your order. Your email receipt from Stripe is the authoritative copy.'; });
+    .catch(() => { $('sub').textContent = 'We couldn\'t load your order. If you need details, reply to your invoice email and we\'ll send a copy.'; });
 })();
 </script>
 </body>

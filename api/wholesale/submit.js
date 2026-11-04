@@ -1,31 +1,29 @@
 // POST /api/wholesale/submit
 //
 // Public endpoint: receives a wholesale order from /wholesale and
-// returns a Stripe Checkout URL. Flow:
+// saves it for an operator to invoice manually. Payment collection is
+// out of scope for this PR — the form is a capture + confirm flow;
+// an operator reviews orders in /ops/wholesale/ and sends an invoice
+// via whatever channel they currently use (email, mail, etc.).
 //
+// Flow:
 //   1. Validate body (email, first_name, organization, pickup_location,
 //      items[]).
-//   2. Lookup-or-create wholesale_customers by email (citext → case-
-//      insensitive). Update stale pre-fill fields in place.
+//   2. Lookup-or-create wholesale_customers by email.
 //   3. Pull active products from DB. Compute authoritative line items
-//      (including bonus lines) via _lib/promo.applyBonus.
+//      (including bonus lines) via _lib/promo.applyBonus — the bonus
+//      shows on the confirmation so customers know what to expect on
+//      the invoice; the operator honours the same math.
 //   4. Resolve email_send_id from src_tag → campaign_email.cta_src →
 //      wholesale_email_sends row for this customer. Null if none.
-//   5. Insert wholesale_orders row with status='awaiting_payment' and
-//      a placeholder stripe_session_id (we overwrite in step 6; the
-//      column has UNIQUE so we pick a random cs_wip_<uuid> here).
-//   6. Create Stripe Checkout session (one line item per non-zero line
-//      + one $0 line item per bonus line). metadata.order_id = our
-//      order id so the webhook can resolve back.
-//   7. Patch the order row with the real stripe_session_id and return
-//      { checkout_url } to the client.
-//
-// Status transitions after this: 'awaiting_payment' → 'paid' (by
-// stripe-webhook) or → 'cancelled' (by webhook on session.expired).
+//   5. Insert wholesale_orders row with status='awaiting_payment'.
+//      stripe_session_id / stripe_payment_intent_id stay null — the
+//      columns are retained for a potential future payment integration
+//      but are not populated here.
+//   6. Return { ok: true, order_id, success_url } so the client can
+//      redirect to /wholesale/success?o=<order_id>.
 
 const { createClient } = require('@supabase/supabase-js');
-const { randomUUID } = require('crypto');
-const { stripeApi } = require('../_lib/stripe');
 const { applyBonus } = require('../_lib/promo');
 
 const sb = createClient(
@@ -60,17 +58,17 @@ module.exports = async function handler(req, res) {
     : (() => { try { return JSON.parse(req.body || '{}'); } catch { return {}; } })();
 
   // ─── 1. Validate ────────────────────────────────────────────────
-  const email         = pickString(body.email, 320);
-  const first_name    = pickString(body.first_name, 80);
-  const organization  = pickString(body.organization, 200);
+  const email           = pickString(body.email, 320);
+  const first_name      = pickString(body.first_name, 80);
+  const organization    = pickString(body.organization, 200);
   const pickup_location = pickString(body.pickup_location, 80);
-  const phone         = pickString(body.phone, 40);
-  const pickup_address = pickString(body.pickup_address, 200);
-  const pickup_date   = pickString(body.pickup_date, 20);
-  const pickup_time   = pickString(body.pickup_time, 40);
-  const promo_code    = pickString(body.promo_code, 40);
-  const notes         = pickString(body.notes, 500);
-  const src_tag       = pickString(body.src_tag, 80);
+  const phone           = pickString(body.phone, 40);
+  const pickup_address  = pickString(body.pickup_address, 200);
+  const pickup_date     = pickString(body.pickup_date, 20);
+  const pickup_time     = pickString(body.pickup_time, 40);
+  const promo_code      = pickString(body.promo_code, 40);
+  const notes           = pickString(body.notes, 500);
+  const src_tag         = pickString(body.src_tag, 80);
 
   if (!email || !EMAIL_RE.test(email))           return res.status(400).json({ error: 'valid email required' });
   if (!first_name)                                return res.status(400).json({ error: 'first name required' });
@@ -111,7 +109,6 @@ module.exports = async function handler(req, res) {
   const { items, subtotal_cents, discount_cents, total_cents } = applyBonus({ products, lines: rawLines });
   if (!items.length)      return res.status(400).json({ error: 'no valid items' });
   if (total_cents <= 0)   return res.status(400).json({ error: 'total must be positive' });
-  if (total_cents < 50)   return res.status(400).json({ error: 'order total must be at least $0.50 (Stripe minimum)' });
 
   // ─── 4. Resolve email_send_id from src_tag ──────────────────────
   let email_send_id = null;
@@ -132,8 +129,10 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ─── 5. Insert draft order with placeholder session id ──────────
-  const placeholderSession = `cs_wip_${randomUUID()}`;
+  // ─── 5. Insert order awaiting invoice ───────────────────────────
+  // stripe_session_id / stripe_payment_intent_id left null; the
+  // columns are retained in the schema so a future payment-processor
+  // integration can populate them without another migration.
   const { data: order, error: ordErr } = await sb
     .from('wholesale_orders')
     .insert([{
@@ -148,7 +147,6 @@ module.exports = async function handler(req, res) {
       subtotal_cents,
       discount_cents,
       total_cents,
-      stripe_session_id: placeholderSession,
       status: 'awaiting_payment',
       notes,
     }])
@@ -157,61 +155,11 @@ module.exports = async function handler(req, res) {
   if (ordErr) {
     return res.status(500).json({ error: 'order insert failed' });
   }
-  const order_id = order.id;
 
-  // ─── 6. Create Stripe Checkout session ──────────────────────────
   const base = baseUrl();
-  const lineItems = {};
-  items.forEach((it, i) => {
-    lineItems[`${i}`] = {
-      quantity: it.qty,
-      price_data: {
-        currency: 'usd',
-        unit_amount: it.unit_price_cents,
-        product_data: {
-          name: it.is_bonus ? `${it.name} — bonus (free)` : it.name,
-        },
-      },
-    };
+  return res.status(200).json({
+    ok: true,
+    order_id: order.id,
+    success_url: `${base}/wholesale/success?o=${order.id}`,
   });
-
-  let session;
-  try {
-    session = await stripeApi('POST', '/checkout/sessions', {
-      body: {
-        mode: 'payment',
-        payment_method_types: ['card'],
-        line_items: lineItems,
-        customer_email: email,
-        metadata: {
-          order_id,
-          customer_id,
-          promo_code: promo_code || '',
-          src_tag:    src_tag    || '',
-        },
-        success_url: `${base}/wholesale/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url:  `${base}/wholesale/`,
-      },
-      idempotencyKey: `wholesale-${order_id}`,
-    });
-  } catch (ex) {
-    // Roll the order back to cancelled so stale draft rows don't linger.
-    await sb.from('wholesale_orders')
-      .update({ status: 'cancelled', notes: `stripe create failed: ${ex.message || ex}` })
-      .eq('id', order_id);
-    return res.status(502).json({ error: 'payment setup failed' });
-  }
-
-  // ─── 7. Patch order with real session id ────────────────────────
-  const { error: updErr } = await sb
-    .from('wholesale_orders')
-    .update({ stripe_session_id: session.id })
-    .eq('id', order_id);
-  if (updErr) {
-    // Non-fatal — the order still exists under the placeholder, the
-    // webhook finds it by metadata.order_id. Log server-side.
-    console.error('[wholesale/submit] session id patch failed', updErr.message);
-  }
-
-  return res.status(200).json({ checkout_url: session.url });
 };

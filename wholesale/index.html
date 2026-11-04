@@ -153,7 +153,7 @@
       </fieldset>
 
       <div class="cta-row">
-        <button type="submit" class="cta-btn" id="submit-btn">Continue to secure checkout</button>
+        <button type="submit" class="cta-btn" id="submit-btn">Place order</button>
         <span class="err" id="err" aria-live="polite"></span>
       </div>
     </form>
@@ -308,7 +308,7 @@
       return;
     }
     btn.disabled = true;
-    btn.textContent = 'Starting checkout…';
+    btn.textContent = 'Placing order…';
     try {
       const r = await fetch('/api/wholesale/submit', {
         method: 'POST',
@@ -316,17 +316,17 @@
         body: JSON.stringify(body),
       });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.checkout_url) {
+      if (!r.ok || !j.success_url) {
         err.textContent = j.error || 'Something went wrong. Please try again.';
         btn.disabled = false;
-        btn.textContent = 'Continue to secure checkout';
+        btn.textContent = 'Place order';
         return;
       }
-      location.href = j.checkout_url;
+      location.href = j.success_url;
     } catch (ex) {
       err.textContent = 'Network error. Please try again.';
       btn.disabled = false;
-      btn.textContent = 'Continue to secure checkout';
+      btn.textContent = 'Place order';
     }
   });
 
