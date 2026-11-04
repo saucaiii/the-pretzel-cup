@@ -1,11 +1,14 @@
 // POST /api/campaigns/send
 //
-// Internal campaign sender. Not customer-facing. Authenticated with
-// CRON_SECRET so only the operator (or a scheduled task) can call it.
+// Internal campaign sender. Not customer-facing. Authenticates EITHER
+// as the scheduled cron (Authorization: Bearer $CRON_SECRET) OR as a
+// signed-in operator (ppf_session cookie, role=operator). Either path
+// is enough. The latter lets the ops dashboard trigger preview /
+// dry-run / send-now flows without the operator pasting a secret.
 //
 // Body:    { campaign_slug: string, email_position: int }
 // Query:   dry_run=true (default) | dry_run=false
-// Header:  Authorization: Bearer $CRON_SECRET
+// Header:  Authorization: Bearer $CRON_SECRET  (optional if cookie set)
 //
 // Live sends are gated by two things:
 //   1. dry_run=false in the query, AND
@@ -33,6 +36,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const { renderMarkdown, mergeFields, escapeHtml } = require('../_lib/md');
 const { sendEmail } = require('../_lib/gmail');
+const { readSession } = require('../_lib/auth');
 
 const sb = createClient(
   process.env.SUPABASE_URL,
@@ -122,11 +126,20 @@ module.exports = async function handler(req, res) {
   }
 
   // ─── Auth ───────────────────────────────────────────────────────
+  // Either path is sufficient:
+  //   (a) cron: Authorization: Bearer $CRON_SECRET  (unchanged path)
+  //   (b) operator: ppf_session cookie, role=operator
+  // CRON_SECRET missing from env is no longer fatal — the handler can
+  // still serve an operator-authed caller — but the cron path then has
+  // no way to succeed, which the caller will see as 401.
   const expected = process.env.CRON_SECRET;
-  if (!expected) return res.status(500).json({ error: 'CRON_SECRET not set' });
   const auth = String(req.headers.authorization || '');
-  if (auth !== `Bearer ${expected}`) {
-    return res.status(401).json({ error: 'unauthorized' });
+  const bearerOk = !!(expected && auth === `Bearer ${expected}`);
+  if (!bearerOk) {
+    const sess = await readSession(req);
+    if (!sess || sess.role !== 'operator') {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
   }
 
   // ─── Body / mode ────────────────────────────────────────────────

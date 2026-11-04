@@ -20,10 +20,12 @@ without another migration.
 | `/wholesale/success?o=<order_id>` | public (order-id gated) | Receipt. "Invoice coming shortly" copy. |
 | `POST /api/wholesale/submit` | public | Validates → upserts customer → applies 100-for-25 promo server-side → inserts order (status `awaiting_payment`) → returns `{ ok, order_id, success_url }`. |
 | `GET /api/wholesale/customer[?id=<uuid>]` | public | Form bootstrap: active product list + public-safe pre-fill fields only. |
-| `GET /api/wholesale/order?o=<order_id>` | public (unguessable uuid) | Receipt payload for `/wholesale/success`. |
+| `GET /api/wholesale/order?o=<order_id>` | public (unguessable uuid); operator session upgrades payload | Receipt payload for `/wholesale/success`. Operator caller gets audit columns + an `email_history` array (campaign sends this customer has received). |
+| `PATCH /api/wholesale/order?o=<order_id>` | operator | Advance a wholesale order's status. Body `{status}`. Server-side transition table rejects invalid moves with 409. Stamps the matching audit column + operator id. |
+| `POST /api/wholesale/invoice?o=<order_id>` | operator | Build + preview or send the invoice email. Body `{dry_run: true\|false}`. Dry-run returns `rendered_html`; live is refused unless `EMAIL_SEND_LIVE_ENABLED=true` and advances the order to `invoiced` on success (only when it was still `awaiting_payment`). |
 | `GET /api/wholesale/list` | operator | Recent orders + filters. |
 | `GET /api/wholesale/metrics` | operator | Revenue + funnel (revenue is based on orders operators have marked `paid`). |
-| `POST /api/campaigns/send` | internal (`CRON_SECRET`) | Dry-run or live-send a specific campaign email. |
+| `POST /api/campaigns/send` | internal (`CRON_SECRET`) **or** operator (session cookie) | Dry-run or live-send a specific campaign email. Operator-auth path powers the dashboard's Preview / Dry-run / Send-now buttons. |
 | `GET /api/track/open?s=` | public | 1×1 GIF, stamps `opened_at` once. |
 | `GET /api/track/click?s=&u=` | public | Click redirect with hard destination allowlist. |
 | `/ops/wholesale/` | operator | Three-tab dashboard: Orders · Revenue · Funnel. |
@@ -36,6 +38,13 @@ Six tables in `supabase/migrations/p14_wholesale.sql`:
 All uuid PK, `timestamptz`, `citext` emails. RLS on every table, no
 anon policies — API routes use the service role.
 
+`supabase/migrations/p15_wholesale_order_audit.sql` adds the
+`invoiced` status value and five nullable audit columns on
+`wholesale_orders`: `invoiced_at`, `invoiced_by`, `cancelled_at`,
+`cancelled_by`, `paid_by`. Each `_by` is a nullable FK to
+`public.people(id)` with `ON DELETE SET NULL` so audit rows outlive an
+operator removal.
+
 ## Order lifecycle (manual invoicing)
 
 ```
@@ -44,19 +53,27 @@ customer submits /wholesale/
             ▼
     status = 'awaiting_payment'   ← default after submit
             │
-            │  operator reviews in /ops/wholesale/, sends invoice
-            │  via their usual channel (email, mail, …)
+            │  operator reviews in /ops/wholesale/
+            │  ↳ "Mark invoiced" → optional live email (dry-run default)
             ▼
-    status = 'paid'               ← operator marks after check / ACH clears
-                                    (dashboard action — follow-up PR)
+    status = 'invoiced'           ← operator has invoiced the customer
+            │
+            │  customer sends payment via their usual channel
+            ▼
+    status = 'paid'               ← operator "Mark paid" after check/ACH
 
-    status = 'cancelled'          ← operator cancels at any point
+    status = 'cancelled'          ← operator "Cancel" from any live state
 ```
 
-The dashboard today **displays** orders at every status but does not
-yet include UI buttons for the operator to transition state — that
-lands in a follow-up PR (along with the invoice-template workflow).
-Operators can transition status directly in Supabase as a stopgap.
+Dashboard supports all transitions directly from the order drawer.
+Each transition stamps `<state>_at` + `<state>_by` (operator's
+`people.id`). The server-side table rejects invalid moves with 409:
+
+| From               | Allowed next                        |
+| ------------------ | ----------------------------------- |
+| `awaiting_payment` | `invoiced`, `paid`, `cancelled`     |
+| `invoiced`         | `paid`, `cancelled`                 |
+| other              | none (via this endpoint)            |
 
 ## Environment
 
@@ -66,8 +83,9 @@ Operators can transition status directly in Supabase as a stopgap.
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Shared. |
 | `GOOGLE_SHEET_KEY_B64` | yes | Shared with `_lib/sheet.js`. Also used by the Gmail sender. |
 | `CRON_SECRET` | yes (for sends) | Bearer token for `/api/campaigns/send`. |
-| `EMAIL_SEND_LIVE_ENABLED` | optional | Set to the literal string `true` to allow live sends. Default: refused. |
+| `EMAIL_SEND_LIVE_ENABLED` | optional | Set to the literal string `true` to allow live sends (campaign nurture AND operator-triggered invoice emails). Default: refused. |
 | `WHOLESALE_BASE_URL` | optional | Overrides base URL in tracking links / success-page redirects. Falls back to `https://${VERCEL_URL}`, then `http://localhost:3000`. |
+| `WHOLESALE_INVOICE_PAYMENT_HELP` | optional | Free-form markdown that renders inside the invoice email's "Payment" block (where to send payment, who to make the check out to, etc.). Default: `"We'll follow up with payment details shortly."` so an unconfigured install never implies wire details that aren't there. |
 
 The env template in the repo root doesn't yet include the two new
 `EMAIL_SEND_LIVE_ENABLED=` / `WHOLESALE_BASE_URL=` variables because
@@ -183,18 +201,56 @@ Once (a) and (b) are both in place, re-run the same curl with
 upgraded in place (sent_at stamped, notes cleared on success; or
 bounced_at stamped with the error reason on failure, no retry).
 
+## Operator UI (dashboard)
+
+`/ops/wholesale/` has three tabs — Orders, Revenue, Funnel.
+
+- **Orders** → row click opens the drawer. The drawer carries three
+  action buttons (Mark invoiced / Mark paid / Cancel), each disabled
+  when the current status doesn't allow the move, plus the customer's
+  **Email history** (every campaign send they've received, with send /
+  open / click timestamps).
+- **Mark invoiced** opens an invoice modal: a sandboxed iframe preview
+  of the rendered HTML, the destination email, and two buttons —
+  **Send invoice** (live) or **Just mark invoiced** (status change only,
+  no email). The live path is refused unless
+  `EMAIL_SEND_LIVE_ENABLED=true` and the modal surfaces the reason.
+- **Funnel** → per campaign-email row: **Preview** (opens a sandboxed
+  iframe with the rendered HTML for the first eligible customer),
+  **Dry-run** (writes placeholder send rows and reports counts inline),
+  **Send now** (type-the-slug confirmation modal, then live send).
+
+The dashboard calls `/api/campaigns/send` with the operator's session
+cookie — no bearer token needed from the browser. The cron
+bearer path is unchanged and still powers scheduled sends.
+
 ## Follow-up
 
-- Operator UI for status transitions in `/ops/wholesale/` (buttons
-  for Mark invoiced / Mark paid / Cancel on the row drawer).
-- Invoice template + automated send via Gmail using the same delegation
-  setup as the nurture emails.
 - Column-P/Q cleanup on the old wholesale lead form (credit-card
   cleartext — PCI exposure, out of scope here).
+- Persistent audit trail for **invoice sends**. Today an invoice send
+  only leaves a mark on `wholesale_orders.invoiced_at` /
+  `invoiced_by` (one per order). Bounces, retries, and sends that
+  the status flip missed are not individually auditable the way
+  campaign sends are through `wholesale_email_sends`. A follow-up
+  migration could either add a dedicated `wholesale_invoice_sends`
+  table or repurpose `wholesale_email_sends` with a nullable
+  `campaign_email_id` and a `kind` discriminator.
 
 ## Rollback
 
-- Phase 1 migration: `drop table` the six new tables (no FK into
+- P14 migration: `drop table` the six new tables (no FK into
   existing data).
+- P15 migration: drop the five audit columns; the `'invoiced'` enum
+  value cannot be removed in Postgres without a type rebuild and can
+  safely stay in place after rollback.
+  ```sql
+  alter table wholesale_orders
+    drop column invoiced_at,
+    drop column invoiced_by,
+    drop column cancelled_at,
+    drop column cancelled_by,
+    drop column paid_by;
+  ```
 - Code: `git revert` the PR merge commit; Vercel redeploys the
   previous SHA.

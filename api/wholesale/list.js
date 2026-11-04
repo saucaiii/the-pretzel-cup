@@ -13,7 +13,7 @@ const sb = createClient(
   { auth: { persistSession: false } },
 );
 
-const STATUS = new Set(['draft', 'awaiting_payment', 'paid', 'cancelled', 'refunded']);
+const STATUS = new Set(['draft', 'awaiting_payment', 'invoiced', 'paid', 'cancelled', 'refunded']);
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 module.exports = async function handler(req, res) {
@@ -28,12 +28,18 @@ module.exports = async function handler(req, res) {
   if (!Number.isFinite(limit) || limit < 1) limit = 100;
   if (limit > 500) limit = 500;
 
+  // `pickup_address` lives on wholesale_customers, not wholesale_orders —
+  // selecting it here as a top-level column 500'd PostgREST and left the
+  // Orders table blank. P15 also added invoiced_* / cancelled_* / paid_by;
+  // include them so the drawer can show "Invoiced by …" without a second
+  // query.
   let query = sb.from('wholesale_orders').select(`
     id, created_at, paid_at, status, promo_code, src_tag,
-    pickup_location, pickup_address, pickup_date, pickup_time,
+    pickup_location, pickup_date, pickup_time,
     items, subtotal_cents, discount_cents, total_cents,
     stripe_session_id,
-    customer:wholesale_customers ( id, first_name, organization, email )
+    invoiced_at, invoiced_by, cancelled_at, cancelled_by, paid_by,
+    customer:wholesale_customers ( id, first_name, organization, email, pickup_address )
   `).order('created_at', { ascending: false }).limit(limit);
 
   if (q.status && STATUS.has(q.status))  query = query.eq('status', q.status);

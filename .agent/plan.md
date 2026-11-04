@@ -1,144 +1,196 @@
-# Plan — Wholesale ordering + email tracking stack
+# Plan — Wholesale operator control surface
 
-**Risk: HIGH** (not critical; see below).
-- *Operational:* new public API surface, Stripe webhook, DB migration. Reversible by `git revert` + `drop … cascade` (migration is additive). Deploys stay human-only.
-- *Security:* new PII table (`wholesale_customers.email`, phone), Stripe payment session creation, Gmail API send scope expansion. No change to auth middleware. RLS limits anon reads to the caller's own `stripe_session_id`.
-- *Compliance:* customer emails and names handled under existing privacy posture. **No real customer emails in prompts/plans/memory/logs** — redacted counts only. Gmail scope requires domain-wide delegation (human-side Google admin step, documented in runbook, not performed by this task).
+- **Risk:** high
+- **Goal:** Give operators a complete control surface over wholesale order
+  status (`awaiting_payment` → `invoiced` → `paid`, plus `cancelled`), with
+  an optional invoice email sent in the same operator click, preview /
+  dry-run / live-send controls for nurture campaigns (today a terminal
+  curl), and per-customer email history inside the order drawer.
+- **Scope (paths/files):** supabase/migrations/p15_wholesale_order_audit.sql, api/wholesale/order.js, api/wholesale/invoice.js, api/wholesale/list.js, api/campaigns/send.js, api/_lib/invoice-template.js, ops/wholesale/index.html, docs/wholesale.md
 
-**Not CRITICAL** per the kit's table: no live money movement without a human (Stripe stays in test mode for this task), no deploy step, no automated decisions about people. The one critical-adjacent action — enabling live email sends — is env-flag-gated (`EMAIL_SEND_LIVE_ENABLED=true`) and requires a separate human-only Google admin delegation. Flipping that flag is out of scope for this task.
-
-## Function cap — resolved
-
-Vercel upgraded to **Pro**. The 12-fn Hobby cap no longer applies. Shipping the brief's per-endpoint file structure as-written: 10 new serverless functions.
-
-CLAUDE.md's Pretzel Cup specifics still mention the Hobby cap; its "fold into `?resource=`" rule is now historical for this task but should stay in CLAUDE.md as the pattern of record for anyone back on Hobby. No doc edit in this task.
-
-## Goal
-
-Replace the external Google Form wholesale flow with an in-house system that attributes orders to specific email sends, computes authoritative promo bonuses server-side, and surfaces revenue + funnel in `/ops/wholesale/`. Enables the Winter 2026-27 "Made to Crave" nurture (6 emails, 3 promos).
-
-## Scope (file list proposed for `.agent-control/scope.txt`)
+Scope entries for `.agent-control/scope.txt` — the main repo owns this
+file (worktree reads it through `AGENT_REPO_ROOT`). Already set by the
+human to the list below:
 
 ```
-supabase/migrations/p14_wholesale.sql
-scripts/seed-wholesale.mjs
-wholesale/index.html
-wholesale/success.html
-api/wholesale/submit.js
-api/wholesale/customer.js
-api/wholesale/order.js
-api/wholesale/stripe-webhook.js
-api/wholesale/list.js
-api/wholesale/metrics.js
-api/campaigns/send.js
-api/track/open.js
-api/track/click.js
-api/_lib/gmail.js
-api/_lib/md.js
-api/_lib/promo.js
-ops/wholesale/index.html
-docs/wholesale.md
-.env.example
+.claude/worktrees/eager-einstein-93e3e9/.agent/
+.claude/worktrees/eager-einstein-93e3e9/supabase/migrations/p15_wholesale_order_audit.sql
+.claude/worktrees/eager-einstein-93e3e9/api/wholesale/order.js
+.claude/worktrees/eager-einstein-93e3e9/api/wholesale/invoice.js
+.claude/worktrees/eager-einstein-93e3e9/api/campaigns/send.js
+.claude/worktrees/eager-einstein-93e3e9/api/_lib/invoice-template.js
+.claude/worktrees/eager-einstein-93e3e9/ops/wholesale/index.html
+.claude/worktrees/eager-einstein-93e3e9/docs/wholesale.md
 ```
 
-**scope.txt does not currently exist.** Human sets it to the above before approving.
+## Steps
 
-## Steps — 6 phases
+### Phase 1 — Migration
+File: `supabase/migrations/p15_wholesale_order_audit.sql`
+- `ALTER TYPE wholesale_order_status ADD VALUE IF NOT EXISTS 'invoiced'
+  BEFORE 'paid';` — must run outside a transaction (Postgres constraint).
+  The Supabase MCP `apply_migration` handles the transaction mode.
+- Add nullable columns to `wholesale_orders`:
+  `invoiced_at timestamptz`,
+  `invoiced_by uuid references public.people(id) on delete set null`,
+  `cancelled_at timestamptz`,
+  `cancelled_by uuid references public.people(id) on delete set null`,
+  `paid_by     uuid references public.people(id) on delete set null`.
+- Safe to re-run — `ADD VALUE IF NOT EXISTS` + `ADD COLUMN IF NOT EXISTS`.
+- Commit: `feat(wholesale): add order-audit columns and 'invoiced' status`.
 
-### Phase 1 — Supabase schema + seed script
-- Migration `p14_wholesale.sql`: 6 tables (`wholesale_products`, `wholesale_customers`, `wholesale_campaigns`, `wholesale_campaign_emails`, `wholesale_email_sends`, `wholesale_orders`), RLS policies, indexes exactly as specified in the brief. All uuid PK, `timestamptz`, `citext` emails. Enable `pgcrypto` + `citext` extensions if not present.
-- `scripts/seed-wholesale.mjs` (modeled on `scripts/import-store-contacts.mjs`): idempotent upsert of 7 products, 1 campaign (`winter-2026-27`), 6 campaign emails. Reads customers from Google Sheet `1Br-…` tab Wholesale (gid 164530681) using existing `googleapis` + `GOOGLE_SA_EMAIL`. Dedupe by lowercased email (col R). Logs redacted counts only.
-- **Commit:** `feat: add wholesale supabase schema and seed script`
+### Phase 2 — Order PATCH + email-history on GET
+File: `api/wholesale/order.js` (modified)
+- Keep the public GET (receipt view) unchanged in payload and auth.
+- Add method dispatch: `PATCH /api/wholesale/order?o=<id>`, operator-gated
+  via `requireRole(req, res, ['operator'])`. Body: `{status}`.
+- Server-side transition table (anything else → 409):
+  - `awaiting_payment` → `invoiced`, `paid`, `cancelled`
+  - `invoiced`         → `paid`, `cancelled`
+  - `paid` / `cancelled` / `refunded` / `draft` → no transitions here.
+- On transition, stamp the matching audit column + operator id from
+  `sess.sub`: invoiced_at/by, paid_at/by, cancelled_at/by. Return the
+  updated order payload (operator-shape; see below).
+- GET upgrade: if the caller has a valid operator session (the UUID-gated
+  public receipt path is preserved for `/wholesale/success`), include an
+  `email_history` array pulled from `wholesale_email_sends` joined to
+  `wholesale_campaign_emails` keyed on the order's `customer_id`.
+  Fields per row: `position, subject, send_date, sent_at, opened_at,
+  first_clicked_at, click_count`. Order by `position asc`.
+- Commit: `feat(wholesale): add order PATCH endpoint and operator email history`.
 
-### Phase 2 — Public form + submit API
-- `wholesale/index.html`: brand-matched (diamond-plate top strip, #0D5237 CTA, Made to Crave® footer). Pre-fills from `?contact=<id>&src=<tag>` via `GET /api/wholesale/customer?id=<uuid>` (returns public-safe fields only — first_name, organization, pickup_location, pickup_address). Fields per brief; client-side bonus preview informational.
-- `POST /api/wholesale/submit`: validate → lookup-or-create `wholesale_customers` by email → compute authoritative promo (every full 100 of any pretzel SKU adds 25 of same SKU @ $0; stackable per SKU) in `api/_lib/promo.js` → create `wholesale_orders` draft (status `awaiting_payment`) → create Stripe Checkout session with bonus as $0 line items → resolve `email_send_id` from `src_tag → campaign_email.cta_src → wholesale_email_sends` for this customer → return Checkout URL.
-- `GET /api/wholesale/customer?id=<uuid>`: public-safe fields only. No phone, no notes, no email.
-- **Commit:** `feat: add public wholesale order form and submit API`
+### Phase 3 — Invoice workflow
+Files: `api/_lib/invoice-template.js` (new), `api/wholesale/invoice.js` (new)
+- Template module exports `renderInvoice({ order, customer, baseUrl })` →
+  `{ subject, bodyMd, html, text }`. Body is markdown (rendered via the
+  existing `md.js`): greeting, itemized line list (billed items + bonus
+  lines marked "(free)"), subtotal / discount / total, pickup block,
+  then the payment-instructions block from env
+  `WHOLESALE_INVOICE_PAYMENT_HELP` (default literal: "We'll follow up
+  with payment details shortly."). HTML version runs through
+  `renderMarkdown` + `escapeHtml`; raw user fields (customer names, pickup
+  text) are escaped.
+- `POST /api/wholesale/invoice?o=<order_id>`, operator-gated. Body:
+  `{dry_run: true|false}`.
+  - Loads the order + customer. 404 if not found.
+  - Builds the invoice markdown + html + text.
+  - Mode resolution: `mode = (dry_run !== true && EMAIL_SEND_LIVE_ENABLED
+    === 'true') ? 'live' : 'dry_run'` (same pattern as `send.js`).
+  - Dry-run: returns `{mode, sent: false, subject, to, rendered_html,
+    live_disabled_reason?}`.
+  - Live: sends via `sendEmail({to, subject, html, text})`; on success,
+    update the order to `status='invoiced', invoiced_at=now(),
+    invoiced_by=sess.sub` IF the current status is `awaiting_payment`
+    (if it moved out from under us, the send still counts; the response
+    reports `status_updated: false`). Return
+    `{mode, sent: true, subject, to, status_updated}`.
+- Vercel function-count: +1 new endpoint; well within Pro's 100 cap.
+- Commit: `feat(wholesale): invoice template + operator invoice send endpoint`.
 
-### Phase 3 — Stripe webhook + success page
-- `POST /api/wholesale/stripe-webhook`: raw-body signature verification (reuses `_lib/stripe.verifyStripeSignature`). `checkout.session.completed` → status=paid, set `paid_at`, `stripe_payment_intent_id`, final `total_cents`. `checkout.session.expired` → `cancelled`. Idempotent on `stripe_session_id`. `module.exports.config = { api: { bodyParser: false } }` so Stripe sig verification works.
-- `wholesale/success.html`: order summary via `GET /api/wholesale/order?session_id=…` (RLS filters to that session only). Link home.
-- **Commit:** `feat: handle stripe checkout webhook and success page`
+### Phase 4 — Campaign operator-auth branch
+File: `api/campaigns/send.js` (modified)
+- Current auth: `Authorization: Bearer $CRON_SECRET`.
+- New auth: accept EITHER a valid Bearer header OR a valid operator
+  session cookie (via `readSession` + role check). No valid bearer and
+  no operator session → 401 as today.
+- No other behavior change. Dry-run default and
+  `EMAIL_SEND_LIVE_ENABLED` gate stay unconditional.
+- Commit: `feat(campaigns): accept operator session alongside cron bearer`.
 
-### Phase 4 — Campaign sender + tracking
-- `POST /api/campaigns/send`: internal, requires `Authorization: Bearer $CRON_SECRET`. `?dry_run=true|false`. **Live sends refuse unless `EMAIL_SEND_LIVE_ENABLED=true`** (env var added to `.env.example` with name-only comment).
-  - For each customer in campaign without an existing `wholesale_email_sends` row for this `campaign_email_id`:
-    - Render `body_md` with `{{first_name}} {{organization}} {{pickup_location}} {{pickup_address}}` → HTML via `api/_lib/md.js` (small zero-dep markdown-to-HTML helper covering headings, bold, italic, links, lists, paragraphs — enough for the 6 templates).
-    - Rewrite destination links to `${BASE_URL}/api/track/click?s=<send_id>&u=<base64url(url)>` (destination allowlist: `the-pretzel-cup.vercel.app`, `docs.google.com`; others rejected 400 at click time).
-    - Append 1×1 pixel `${BASE_URL}/api/track/open?s=<send_id>`.
-    - `dry_run`: insert send row with `sent_at=null, notes='dry_run'`. Return rendered HTML for one sample customer.
-    - Live: send via Gmail API as the confirmed send-as address, using service-account JWT with `gmail.send` scope + subject-impersonation. On 2xx: set `sent_at`. On error: set `bounced_at` + reason string; **no retry inside handler**.
-  - Return `{sent, skipped, errors}`.
-- `GET /api/track/open?s=<id>`: records `opened_at` on FIRST hit only (SQL `COALESCE`); returns transparent 1×1 GIF with `Cache-Control: no-store`.
-- `GET /api/track/click?s=<id>&u=<b64>`: increments `click_count` atomically, sets `first_clicked_at` if null, host-validates decoded `u` against allowlist, 302 to `u` (else 400). No open-redirect.
-- `api/_lib/gmail.js`: thin wrapper around `googleapis` for domain-wide-delegated send. Reuses the key material `_lib/sheet.js` already loads. Scope: `https://www.googleapis.com/auth/gmail.send`.
-- **Commit:** `feat: add campaign sender via gmail api and tracking endpoints`
+### Phase 5 — Ops dashboard UI
+File: `ops/wholesale/index.html` (modified)
+- Status pill: add `.status-pill.invoiced` (amber/brown so it reads
+  distinct from `.awaiting` and `.paid`).
+- Orders drawer:
+  - Three row-level action buttons: **Mark invoiced**, **Mark paid**,
+    **Cancel**. Each disabled when the current status doesn't allow
+    the move (mirrors server-side transition table).
+  - **Mark invoiced** opens the invoice modal: shows the generated
+    subject + rendered HTML preview in an iframe (`srcdoc=` with
+    `sandbox="allow-same-origin"` so inline styles render but scripts
+    don't), customer email pre-filled, two buttons — **Send invoice**
+    (POST `/api/wholesale/invoice?o=<id>` with `dry_run=false`) and
+    **Just mark invoiced** (PATCH `/api/wholesale/order?o=<id>` with
+    `status='invoiced'`).
+  - **Mark paid** and **Cancel** are plain `confirm()` → PATCH calls.
+  - **Email history** section listing the campaign emails the customer
+    received, with send/open/click stamps. Hidden when empty.
+- Funnel tab: three row-level buttons per campaign email:
+  - **Preview** — POST `send.js?dry_run=true` with operator cookie;
+    open a modal rendering the returned `sample_html` in an iframe.
+  - **Dry-run** — same POST; display the counts inline in the row.
+  - **Send now** — opens a modal that requires the operator to type
+    the campaign slug exactly, then POSTs with `dry_run=false`. If
+    `live_disabled_reason` comes back, surface it in the modal and stop.
+- All browser calls use `credentials: 'same-origin'` so the operator
+  JWT cookie carries them.
+- Commit: `feat(ops/wholesale): operator action buttons, invoice modal, email history`.
 
-### Phase 5 — Operator dashboard
-- `ops/wholesale/index.html`: gated by `POST /api/auth/me` (reuses `ops/stops/index.html` pattern verbatim). Three sections:
-  1. **Orders** table (org + first name, items summary, total, promo, status, pickup date/location, src_tag); row → detail drawer; filter by status/promo/date.
-  2. **Revenue** this-week/this-month/campaign-to-date; by-promo bar; by-product table; CSV export.
-  3. **Funnel** per campaign email: sent / opened / clicked / ordered (count + %) + revenue, with sparkline per row.
-- `GET /api/wholesale/list`: operator-gated, recent orders.
-- `GET /api/wholesale/metrics`: operator-gated, revenue rollups + per-email funnel.
-- **Commit:** `feat: add operator wholesale dashboard with revenue and funnel`
-
-### Phase 6 — Verification + runbook
-- Run seed against dev Supabase; confirm 7 products, 1 campaign, 6 emails, N customers (redacted count only in state.md).
-- Local Stripe test: `stripe listen --forward-to localhost:3000/api/wholesale/stripe-webhook`; test card 4242…; confirm `paid` in dashboard.
-- Dry-run Email 1: confirm 25 send rows with `sent_at=null, notes='dry_run'`.
-- `docs/wholesale.md`: seed, local Stripe test, dry-run send, how to enable live sends (sets `EMAIL_SEND_LIVE_ENABLED=true` + configure Gmail API domain-wide delegation for `GOOGLE_SA_EMAIL` on the send-as address with `gmail.send` scope — link Google's delegation docs).
-- Run `scripts/agent/eval-report.sh`.
-- Invoke `reviewer` subagent; record signoff in `.agent/state.md`.
-- **Commit:** `docs: add wholesale runbook and verification evidence`
+### Phase 6 — Docs
+File: `docs/wholesale.md` (modified)
+- Update the order-lifecycle diagram to the four-state flow
+  (`awaiting_payment → invoiced → paid`, plus `cancelled`).
+- Mark the previous "Follow-up" bullets as **done** (operator UI for
+  status transitions; invoice template + send).
+- Document `WHOLESALE_INVOICE_PAYMENT_HELP` (optional, markdown).
+- Document `PATCH /api/wholesale/order` and `POST /api/wholesale/invoice`.
+- Document the operator-auth branch added to `/api/campaigns/send`.
+- Commit: `docs(wholesale): document operator controls, invoice flow, and email history`.
 
 ## Success criteria
 
-**Quantitative:**
-- All migrations apply cleanly on a fresh schema.
-- Seed script runs twice in a row with 0 duplicates.
-- `scope-check.sh` passes (only files in scope.txt modified).
-- CodeQL: no new high/critical alerts.
-- `grep -r 'EMAIL_SEND_LIVE_ENABLED' api/` shows the live-send gate at the one correct place.
-- Function count after Phase 5: 22 (12 existing + 10 new); within Pro's 100-fn cap.
-- No `.env` or secret values appear in any committed file (`git log -p` greps for the var names and sees only `.env.example` comment lines).
-
-**Qualitative:**
-- A test order through `/wholesale/` with Stripe test card lands in `/ops/wholesale/` as paid, with the right promo, right bonus units, and right `email_send_id` attribution when the referral came via a tracked link.
-- A dry-run of Email 1 produces 25 pending send rows and one rendered HTML sample that visually matches the template (merge fields replaced, tracking links point to our domain, pixel is at end-of-body).
-- A click on a tracked link increments `click_count` once per hit and lands the user on the right page.
-- An open of a tracked message sets `opened_at` once; a second open does not overwrite it.
-- Operator can filter orders by promo code and the revenue rolls up to a round number matching the raw rows.
+- [ ] Required checks pass (plan-gate, scope-check, agent-conflicts, CI).
+- [ ] Only files in the declared scope changed.
+- [ ] No new code scanning alerts.
+- [ ] `p15_wholesale_order_audit` applied in dev Supabase; the `invoiced`
+      enum value and five audit columns are present; no FK orphan rows.
+- [ ] Operator can advance a test order through
+      `awaiting_payment → invoiced → paid` from the dashboard UI alone;
+      `invoiced_by`/`paid_by`/`cancelled_by` all record the operator's
+      `people.id`.
+- [ ] Dry-run of `POST /api/wholesale/invoice` returns a correctly
+      escaped HTML invoice body. Live mode is refused when
+      `EMAIL_SEND_LIVE_ENABLED` is not set.
+- [ ] `POST /api/campaigns/send` accepts both bearer and operator
+      cookie; bearer-path behavior is unchanged.
+- [ ] Email-history section in the drawer lists the campaign emails sent
+      to that order's customer (empty hidden).
+- [ ] Reviewer subagent run against the diff; HIGH findings addressed
+      before un-drafting.
 
 ## Risks + mitigations
 
-- **Stripe webhook raw-body**: handler sets `bodyParser: false` in `module.exports.config`. Mitigation: unit-smoke the signature verification against a stripe-listen test event before merge.
-- **Open redirect via track-click**: hard allowlist on decoded `u`. Reject with 400 if host not in `the-pretzel-cup.vercel.app` or `docs.google.com`.
-- **Gmail scope misuse**: service account send scope allows sending as any delegated user. Mitigation: domain-wide delegation configured for ONE address only; handler hardcodes the from address; code review flags any dynamic from.
-- **PII leaks**: no customer email in state.md, decisions.md, plans, logs, or commits. Redacted counts only. `api/wholesale/customer` returns PUBLIC-safe fields only (no email, no phone, no notes).
-- **Promo stackability**: multiple SKUs each hit 100 → each gets its own 25 bonus. Property-based unit cases in a scratchpad script before shipping — not a committed test (no test suite yet, per CLAUDE.md).
-- **Live sends by accident**: `EMAIL_SEND_LIVE_ENABLED` default `undefined` → handler refuses live. Dry-run path also refuses to flip rows to `sent_at` set.
+- **Status transitions on real orders.** Server-side transition table
+  rejects invalid moves (409). All transitions audited with
+  `<state>_at` + `<state>_by` columns. Dev-DB walkthrough before any
+  PR flip from draft.
+- **Accidental live invoice send.** Live mode gated by
+  `EMAIL_SEND_LIVE_ENABLED=true` (reused from campaign sender). Dry-run
+  default. "Just mark invoiced" path does not send.
+- **Accidental mass-send of a campaign.** The Send-now modal requires
+  the operator to type the campaign slug; refuses without env flag;
+  `wholesale_email_sends` UNIQUE constraint prevents double-sends to a
+  single customer (upgrades in place, same as today).
+- **Email-history leak via public GET.** `email_history` is attached
+  only when the caller has a valid operator session; the public receipt
+  payload stays unchanged.
+- **Enum-value add in a transaction.** The Supabase MCP `apply_migration`
+  runs each statement separately; `ADD VALUE IF NOT EXISTS 'invoiced'
+  BEFORE 'paid'` is re-run safe.
+- **Operator id not a valid people row later.** FK is `ON DELETE SET NULL`:
+  if an operator is later removed, audit rows persist with NULL `_by`.
+  We never fabricate the id — `sess.sub` is `people.id` as minted at
+  sign-in.
 
-## Rollback
+## Rollback / escalation plan
 
-- Phase 1 migration: `drop table` the 6 new tables cascade; no FK to existing data.
-- Phase 2-5: `git revert` the branch merge; Vercel redeploys previous SHA.
-- Deploy itself is human-only via `npm run deploy` and remains outside this task.
-
-## Evidence plan
-
-- `.agent/state.md` records: migration applied, seed counts (redacted), each commit SHA, Stripe test session id, dry-run response, click/open spot-checks, reviewer signoff.
-- PR description includes: screenshots of `/wholesale/` form and `/ops/wholesale/` dashboard; the three Phase-6 verification bullets; the function-count check output; the Responsible AI checklist.
-- `scripts/agent/eval-report.sh` output attached to PR.
-
-## Gates
-
-- **Scope gate:** human sets `.agent-control/scope.txt` to the file list above.
-- **Plan gate:** human runs `scripts/agent/approve-plan.sh` after confirming scope.
-- **PR gate:** PR opens as **DRAFT**. Never ready-for-review, never merged, never approved from this agent.
-
-## Confirmed before approval
-
-1. **Send-as Gmail address:** `mcaiazzoppffs@gmail.com` (hard-coded in `api/_lib/gmail.js`; domain-wide delegation configured for this one address only).
-2. **Base URL env var:** `WHOLESALE_BASE_URL`, with fallback to `https://${process.env.VERCEL_URL}` and final fallback to `http://localhost:3000` for local dev.
+- **Code:** `git revert <merge-sha>`; Vercel redeploys previous SHA.
+- **Migration:** p15 adds only nullable columns + one enum value.
+  Columns are dropped with
+  `ALTER TABLE wholesale_orders DROP COLUMN invoiced_at, DROP COLUMN
+  invoiced_by, DROP COLUMN cancelled_at, DROP COLUMN cancelled_by,
+  DROP COLUMN paid_by;`. Enum values cannot be removed in Postgres
+  without a type rebuild — leave `'invoiced'` in place after rollback.
+- **Escalation:** >2 failed retries, scope change, or any live-send
+  surprise → stop and file an escalation note in `.agent/state.md`
+  with root cause (`reasoning | tool-misuse | context/env`).
