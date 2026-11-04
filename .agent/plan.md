@@ -1,196 +1,200 @@
-# Plan — Wholesale operator control surface
+# Plan — Server-generated PDF invoice attachment
 
-- **Risk:** high
-- **Goal:** Give operators a complete control surface over wholesale order
-  status (`awaiting_payment` → `invoiced` → `paid`, plus `cancelled`), with
-  an optional invoice email sent in the same operator click, preview /
-  dry-run / live-send controls for nurture campaigns (today a terminal
-  curl), and per-customer email history inside the order drawer.
-- **Scope (paths/files):** supabase/migrations/p15_wholesale_order_audit.sql, api/wholesale/order.js, api/wholesale/invoice.js, api/wholesale/list.js, api/campaigns/send.js, api/_lib/invoice-template.js, ops/wholesale/index.html, docs/wholesale.md
+## Risk
+**HIGH.** Touches the live-email path (`api/_lib/gmail.js` MIME assembly,
+`api/wholesale/invoice.js` send flow), `api/_lib/*` (plan-first per
+`.agent-policy/policy.sh`), and adds a Supabase schema migration. No
+new serverless function is added — the PDF logic folds into the
+existing `POST /api/wholesale/invoice`, so Vercel's 100-fn cap is
+unaffected. Live sends remain env-gated (`EMAIL_SEND_LIVE_ENABLED=true`).
 
-Scope entries for `.agent-control/scope.txt` — the main repo owns this
-file (worktree reads it through `AGENT_REPO_ROOT`). Already set by the
-human to the list below:
+## Goal
+When the operator clicks **Mark invoiced → Send invoice**, the customer
+receives the existing markdown-rendered email **with a real PDF invoice
+attached**, formatted to match the Pretzels of Long Island LLC invoice
+template (header + "INVOICE NO. | DATE" row + Bill-To / Store-Address
+columns + items table + totals). Dry-run returns the PDF as base64 so
+the modal offers a **Download PDF** button for the operator to inspect
+before sending.
 
-```
-.claude/worktrees/eager-einstein-93e3e9/.agent/
-.claude/worktrees/eager-einstein-93e3e9/supabase/migrations/p15_wholesale_order_audit.sql
-.claude/worktrees/eager-einstein-93e3e9/api/wholesale/order.js
-.claude/worktrees/eager-einstein-93e3e9/api/wholesale/invoice.js
-.claude/worktrees/eager-einstein-93e3e9/api/campaigns/send.js
-.claude/worktrees/eager-einstein-93e3e9/api/_lib/invoice-template.js
-.claude/worktrees/eager-einstein-93e3e9/ops/wholesale/index.html
-.claude/worktrees/eager-einstein-93e3e9/docs/wholesale.md
-```
+Done = operator clicks *Mark invoiced* → modal preview shows HTML +
+Download-PDF button → live *Send invoice* attaches the PDF to the Gmail
+message → status flips to invoiced (CAS-guarded, same as today).
+
+## Scope (files, worktree-relative)
+Already widened in `.agent-control/scope.txt`:
+- `.agent/plan.md`, `.agent/state.md`, `.agent/decisions.md`
+- `supabase/migrations/p16_wholesale_invoice_number.sql`  (new)
+- `api/_lib/invoice-pdf.js`                               (new)
+- `api/_lib/gmail.js`                                     (modify)
+- `api/wholesale/invoice.js`                              (modify)
+- `ops/wholesale/index.html`                              (modify)
+- `docs/wholesale.md`                                     (modify)
+- `package.json`, `package-lock.json`                     (add pdfkit)
+
+**No changes to** `.claude/`, `.agent-policy/`, `.agent-control/`,
+`.env*`, `vercel.json`, any other `api/` file, or the markdown email
+template (`api/_lib/invoice-template.js`).
 
 ## Steps
 
-### Phase 1 — Migration
-File: `supabase/migrations/p15_wholesale_order_audit.sql`
-- `ALTER TYPE wholesale_order_status ADD VALUE IF NOT EXISTS 'invoiced'
-  BEFORE 'paid';` — must run outside a transaction (Postgres constraint).
-  The Supabase MCP `apply_migration` handles the transaction mode.
-- Add nullable columns to `wholesale_orders`:
-  `invoiced_at timestamptz`,
-  `invoiced_by uuid references public.people(id) on delete set null`,
-  `cancelled_at timestamptz`,
-  `cancelled_by uuid references public.people(id) on delete set null`,
-  `paid_by     uuid references public.people(id) on delete set null`.
-- Safe to re-run — `ADD VALUE IF NOT EXISTS` + `ADD COLUMN IF NOT EXISTS`.
-- Commit: `feat(wholesale): add order-audit columns and 'invoiced' status`.
+### 1. P16 migration + decision log
+- Create `supabase/migrations/p16_wholesale_invoice_number.sql`:
+  ```sql
+  create sequence if not exists wholesale_invoice_number_seq
+    start with 5000;
+  alter table public.wholesale_orders
+    add column if not exists invoice_number int;
+  create unique index if not exists wholesale_orders_invoice_number_uidx
+    on public.wholesale_orders (invoice_number)
+    where invoice_number is not null;
+  ```
+  Partial unique index (not column-level UNIQUE) so retroactive NULLs
+  on existing rows stay valid.
+- Apply via Supabase MCP `apply_migration`. Idempotent — safe to re-run.
+- Append to `.agent/decisions.md`:
+  `- 2026-11-04 | sequence-based invoice_number starting at 5000 |
+    matches existing 3000s–4000s manual numbering, stable across
+    retries (retry reuses same number via COALESCE), sortable |
+    rejected: UUID-prefix (random, breaks visual pattern), per-year
+    reset (adds complexity for zero gain) | review-by 2027-11-04`.
 
-### Phase 2 — Order PATCH + email-history on GET
-File: `api/wholesale/order.js` (modified)
-- Keep the public GET (receipt view) unchanged in payload and auth.
-- Add method dispatch: `PATCH /api/wholesale/order?o=<id>`, operator-gated
-  via `requireRole(req, res, ['operator'])`. Body: `{status}`.
-- Server-side transition table (anything else → 409):
-  - `awaiting_payment` → `invoiced`, `paid`, `cancelled`
-  - `invoiced`         → `paid`, `cancelled`
-  - `paid` / `cancelled` / `refunded` / `draft` → no transitions here.
-- On transition, stamp the matching audit column + operator id from
-  `sess.sub`: invoiced_at/by, paid_at/by, cancelled_at/by. Return the
-  updated order payload (operator-shape; see below).
-- GET upgrade: if the caller has a valid operator session (the UUID-gated
-  public receipt path is preserved for `/wholesale/success`), include an
-  `email_history` array pulled from `wholesale_email_sends` joined to
-  `wholesale_campaign_emails` keyed on the order's `customer_id`.
-  Fields per row: `position, subject, send_date, sent_at, opened_at,
-  first_clicked_at, click_count`. Order by `position asc`.
-- Commit: `feat(wholesale): add order PATCH endpoint and operator email history`.
+### 2. pdfkit dependency
+- Edit `package.json`: add `"pdfkit": "^0.15.0"` to `dependencies`.
+- Run `npm install` in the worktree to update `package-lock.json`.
+- Smoke-import: `node -e "const d = require('pdfkit'); console.log(typeof d)"`.
 
-### Phase 3 — Invoice workflow
-Files: `api/_lib/invoice-template.js` (new), `api/wholesale/invoice.js` (new)
-- Template module exports `renderInvoice({ order, customer, baseUrl })` →
-  `{ subject, bodyMd, html, text }`. Body is markdown (rendered via the
-  existing `md.js`): greeting, itemized line list (billed items + bonus
-  lines marked "(free)"), subtotal / discount / total, pickup block,
-  then the payment-instructions block from env
-  `WHOLESALE_INVOICE_PAYMENT_HELP` (default literal: "We'll follow up
-  with payment details shortly."). HTML version runs through
-  `renderMarkdown` + `escapeHtml`; raw user fields (customer names, pickup
-  text) are escaped.
-- `POST /api/wholesale/invoice?o=<order_id>`, operator-gated. Body:
-  `{dry_run: true|false}`.
-  - Loads the order + customer. 404 if not found.
-  - Builds the invoice markdown + html + text.
-  - Mode resolution: `mode = (dry_run !== true && EMAIL_SEND_LIVE_ENABLED
-    === 'true') ? 'live' : 'dry_run'` (same pattern as `send.js`).
-  - Dry-run: returns `{mode, sent: false, subject, to, rendered_html,
-    live_disabled_reason?}`.
-  - Live: sends via `sendEmail({to, subject, html, text})`; on success,
-    update the order to `status='invoiced', invoiced_at=now(),
-    invoiced_by=sess.sub` IF the current status is `awaiting_payment`
-    (if it moved out from under us, the send still counts; the response
-    reports `status_updated: false`). Return
-    `{mode, sent: true, subject, to, status_updated}`.
-- Vercel function-count: +1 new endpoint; well within Pro's 100 cap.
-- Commit: `feat(wholesale): invoice template + operator invoice send endpoint`.
+### 3. `api/_lib/invoice-pdf.js`  (new, ~180 lines)
+Pure function `renderInvoicePdf({ order, customer, invoiceNumber, invoiceDate })`
+returning a Promise that resolves to a `Buffer`. Layout:
 
-### Phase 4 — Campaign operator-auth branch
-File: `api/campaigns/send.js` (modified)
-- Current auth: `Authorization: Bearer $CRON_SECRET`.
-- New auth: accept EITHER a valid Bearer header OR a valid operator
-  session cookie (via `readSession` + role check). No valid bearer and
-  no operator session → 401 as today.
-- No other behavior change. Dry-run default and
-  `EMAIL_SEND_LIVE_ENABLED` gate stay unconditional.
-- Commit: `feat(campaigns): accept operator session alongside cron bearer`.
+- **Header band** — "Pretzels of Long Island LLC" bold, then
+  "118 Broadway, Lynbrook, NY 11563 · 516-459-0954".
+- **Invoice-no / date row** — left: `INVOICE NO. {{invoiceNumber}}`,
+  right: `invoiceDate` formatted as `NOV 4, 2026`.
+- **Bill-To / Store-Address row** — two columns.
+  - Bill-To line 1: `customer.organization || customer.contact_name || customer.first_name || '—'`.
+  - Bill-To line 2: `customer.pickup_address` if present, else nothing.
+  - Store Address (fixed): `118 Broadway, Lynbrook, NY 11563`.
+- **Items table** — columns QUANTITY | DATE PERFORMED | UNIT PRICE | TOTAL.
+  One row per `order.items[*]`. `DATE PERFORMED` = `order.pickup_date`
+  (formatted) on every row; `UNIT PRICE` / `TOTAL` show `$` amounts;
+  bonus items show `(free)` in the UNIT PRICE column.
+- **Totals block** — `SUBTOTAL` (always), `DISCOUNT` (only when
+  `discount_cents > 0`, with promo code in parens), `SALES TAX $0.00`
+  (we're tax-exempt in this cut), bold `TOTAL`.
 
-### Phase 5 — Ops dashboard UI
-File: `ops/wholesale/index.html` (modified)
-- Status pill: add `.status-pill.invoiced` (amber/brown so it reads
-  distinct from `.awaiting` and `.paid`).
-- Orders drawer:
-  - Three row-level action buttons: **Mark invoiced**, **Mark paid**,
-    **Cancel**. Each disabled when the current status doesn't allow
-    the move (mirrors server-side transition table).
-  - **Mark invoiced** opens the invoice modal: shows the generated
-    subject + rendered HTML preview in an iframe (`srcdoc=` with
-    `sandbox="allow-same-origin"` so inline styles render but scripts
-    don't), customer email pre-filled, two buttons — **Send invoice**
-    (POST `/api/wholesale/invoice?o=<id>` with `dry_run=false`) and
-    **Just mark invoiced** (PATCH `/api/wholesale/order?o=<id>` with
-    `status='invoiced'`).
-  - **Mark paid** and **Cancel** are plain `confirm()` → PATCH calls.
-  - **Email history** section listing the campaign emails the customer
-    received, with send/open/click stamps. Hidden when empty.
-- Funnel tab: three row-level buttons per campaign email:
-  - **Preview** — POST `send.js?dry_run=true` with operator cookie;
-    open a modal rendering the returned `sample_html` in an iframe.
-  - **Dry-run** — same POST; display the counts inline in the row.
-  - **Send now** — opens a modal that requires the operator to type
-    the campaign slug exactly, then POSTs with `dry_run=false`. If
-    `live_disabled_reason` comes back, surface it in the modal and stop.
-- All browser calls use `credentials: 'same-origin'` so the operator
-  JWT cookie carries them.
-- Commit: `feat(ops/wholesale): operator action buttons, invoice modal, email history`.
+PDF options: Letter page, Helvetica + Helvetica-Bold (built-in), 0.75"
+margins. All user-sourced strings pass through a tiny `safePdfText()`
+that strips control chars (`[\x00-\x08\x0B-\x1F\x7F]`) before the
+`doc.text()` call — defense in depth against anything the form could
+have smuggled past the submit path.
 
-### Phase 6 — Docs
-File: `docs/wholesale.md` (modified)
-- Update the order-lifecycle diagram to the four-state flow
-  (`awaiting_payment → invoiced → paid`, plus `cancelled`).
-- Mark the previous "Follow-up" bullets as **done** (operator UI for
-  status transitions; invoice template + send).
-- Document `WHOLESALE_INVOICE_PAYMENT_HELP` (optional, markdown).
-- Document `PATCH /api/wholesale/order` and `POST /api/wholesale/invoice`.
-- Document the operator-auth branch added to `/api/campaigns/send`.
-- Commit: `docs(wholesale): document operator controls, invoice flow, and email history`.
+Exports: `renderInvoicePdf`, `__test_buildBuffer` (internal, for CI).
+
+### 4. `api/_lib/gmail.js` MIME upgrade
+- Extend `buildRaw({ to, subject, html, text, preheader, attachments })`:
+  - `attachments` defaults to `[]`. When empty → emit today's
+    `multipart/alternative` layout **byte-for-byte unchanged** (so the
+    campaign-nurture path stays regression-free).
+  - When non-empty → wrap the plain+html alternative in an outer
+    `multipart/mixed` boundary; append each attachment as a part with
+    `Content-Type: <mime>; name="<file>"`, `Content-Disposition:
+    attachment; filename="<file>"`, `Content-Transfer-Encoding: base64`,
+    body chunked to 76 chars/line.
+- `sendEmail({..., attachments})` passes through unchanged otherwise.
+- Export an internal `__test_buildRaw` for a no-attachment snapshot
+  check (gated on `NODE_ENV === 'test'` or similar; CI not required
+  because there's no test runner, but the export makes a manual smoke
+  trivial).
+
+### 5. Wire `api/wholesale/invoice.js`
+- **Dry-run branch:** after `renderInvoice(...)`, also call
+  `renderInvoicePdf({ order, customer, invoiceNumber: 'DRAFT',
+  invoiceDate: new Date() })`. Attach `rendered_pdf_base64:
+  buf.toString('base64')` to the response payload. Status untouched.
+- **Live branch:** inside the existing CAS UPDATE, additionally set
+  `invoice_number: coalesce(invoice_number, nextval(...))`.
+  - Since supabase-js can't express `coalesce(col, nextval(seq))` in an
+    `.update({})` call, call a small RPC `assign_invoice_number(order_id,
+    required_status)` added in the P16 migration — it returns the
+    `(invoice_number, status_updated)` pair atomically. The RPC
+    performs `UPDATE wholesale_orders SET status='invoiced', invoiced_at,
+    invoiced_by, invoice_number = COALESCE(invoice_number,
+    nextval('wholesale_invoice_number_seq')) WHERE id=$1 AND
+    status=$2 RETURNING invoice_number;` — single statement, atomic.
+  - Render PDF with the real number. Pass
+    `[{ filename: 'invoice-<n>.pdf', mime: 'application/pdf', content: buffer }]`
+    to `sendEmail`.
+  - On send failure, roll the status back to `awaiting_payment` as
+    today **but leave `invoice_number` in place**. Number is bound; next
+    retry sees `invoice_number` already set and reuses it via COALESCE.
+  - Response payload gains `invoice_number` (int).
+
+### 6. Dashboard: Download-PDF button
+- `ops/wholesale/index.html` (invoice modal):
+  - Add `<button class="btn-sm ghost" id="invoice-download-pdf" disabled>Download PDF</button>`
+    next to the existing Cancel button.
+  - In `openInvoiceModal` success branch: if `d.rendered_pdf_base64`,
+    enable the button and wire its click to:
+    ```js
+    const bin = atob(d.rendered_pdf_base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    const a = Object.assign(document.createElement('a'), {
+      href: url, download: `invoice-${currentOrder.id.slice(0,8)}.pdf`,
+    });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    ```
+  - Disable on modal close.
+
+### 7. Docs
+- Append to `docs/wholesale.md`:
+  - A "PDF invoice" subsection under the existing Operator UI section
+    naming the template, numbering scheme (sequence starts at 5000),
+    where the number comes from (RPC-allocated at CAS time), and the
+    MIME structure.
+  - Update the `POST /api/wholesale/invoice` row in the shape table to
+    note `rendered_pdf_base64` on dry-run and `invoice_number` on live.
+  - Add P16 to the migrations list and Rollback section.
 
 ## Success criteria
 
-- [ ] Required checks pass (plan-gate, scope-check, agent-conflicts, CI).
-- [ ] Only files in the declared scope changed.
-- [ ] No new code scanning alerts.
-- [ ] `p15_wholesale_order_audit` applied in dev Supabase; the `invoiced`
-      enum value and five audit columns are present; no FK orphan rows.
-- [ ] Operator can advance a test order through
-      `awaiting_payment → invoiced → paid` from the dashboard UI alone;
-      `invoiced_by`/`paid_by`/`cancelled_by` all record the operator's
-      `people.id`.
-- [ ] Dry-run of `POST /api/wholesale/invoice` returns a correctly
-      escaped HTML invoice body. Live mode is refused when
-      `EMAIL_SEND_LIVE_ENABLED` is not set.
-- [ ] `POST /api/campaigns/send` accepts both bearer and operator
-      cookie; bearer-path behavior is unchanged.
-- [ ] Email-history section in the drawer lists the campaign emails sent
-      to that order's customer (empty hidden).
-- [ ] Reviewer subagent run against the diff; HIGH findings addressed
-      before un-drafting.
+### Quantitative
+- CI passes (plan-gate, scope-check, agent-conflicts, test, CodeQL).
+- `node -e "require('./api/_lib/invoice-pdf').renderInvoicePdf({ order: FIXTURE, customer: FIXTURE, invoiceNumber: 5000, invoiceDate: new Date() }).then(b => { if (!b.slice(0,5).toString().startsWith('%PDF-')) process.exit(1); })"` succeeds — buffer starts with the PDF magic bytes.
+- `node -e "const g = require('./api/_lib/gmail'); const a = g.__test_buildRaw({ to: 'x@y', subject: 's', html: '<p>h</p>', text: 't' }); const b = g.__test_buildRaw({ to: 'x@y', subject: 's', html: '<p>h</p>', text: 't', attachments: [] }); if (a !== b) process.exit(1);"` — no-attachment path is byte-identical to today.
+- `supabase/migrations/p16_wholesale_invoice_number.sql` applies cleanly via Supabase MCP and is idempotent (re-apply is a no-op).
+- Dry-run response includes non-empty `rendered_pdf_base64`; live response includes an `invoice_number` integer ≥ 5000.
+- No new code-scanning alerts (CodeQL).
+
+### Qualitative
+- The PDF visually matches the Pretzels of Long Island LLC invoice template (header, invoice-no + date row, two-column Bill-To / Store-Address, items table with QUANTITY · DATE PERFORMED · UNIT PRICE · TOTAL, totals block, bold TOTAL line).
+- With `EMAIL_SEND_LIVE_ENABLED` unset: send button still refused with the same `live_disabled_reason`.
+- CAS continues to serialize concurrent "Send invoice" clicks: no two emails for the same order; retry after a send failure reuses the first `invoice_number` (verified by log line or a manual re-send against a staged failing SMTP).
+- Download-PDF button on the modal produces a valid PDF that opens in Preview / Acrobat.
+- Markdown-email body is unchanged (PDF is strictly additive).
 
 ## Risks + mitigations
 
-- **Status transitions on real orders.** Server-side transition table
-  rejects invalid moves (409). All transitions audited with
-  `<state>_at` + `<state>_by` columns. Dev-DB walkthrough before any
-  PR flip from draft.
-- **Accidental live invoice send.** Live mode gated by
-  `EMAIL_SEND_LIVE_ENABLED=true` (reused from campaign sender). Dry-run
-  default. "Just mark invoiced" path does not send.
-- **Accidental mass-send of a campaign.** The Send-now modal requires
-  the operator to type the campaign slug; refuses without env flag;
-  `wholesale_email_sends` UNIQUE constraint prevents double-sends to a
-  single customer (upgrades in place, same as today).
-- **Email-history leak via public GET.** `email_history` is attached
-  only when the caller has a valid operator session; the public receipt
-  payload stays unchanged.
-- **Enum-value add in a transaction.** The Supabase MCP `apply_migration`
-  runs each statement separately; `ADD VALUE IF NOT EXISTS 'invoiced'
-  BEFORE 'paid'` is re-run safe.
-- **Operator id not a valid people row later.** FK is `ON DELETE SET NULL`:
-  if an operator is later removed, audit rows persist with NULL `_by`.
-  We never fabricate the id — `sess.sub` is `people.id` as minted at
-  sign-in.
+- **PDF size vs. Gmail / Vercel limits.** One-page PDF with built-in fonts is well under 50 KB; Gmail allows 25 MB and the serverless response payload stays under 4.5 MB. No image embedding in this cut.
+- **Invoice number collisions on retry.** `invoice_number` is allocated inside the single CAS UPDATE via COALESCE + nextval; the partial unique index enforces no duplicates. Retry after a failed send reuses the already-allocated number.
+- **MIME regression in the campaign-nurture path.** `attachments` defaults to `[]`; when empty, `buildRaw` emits the current `multipart/alternative` byte-for-byte. Covered by the `__test_buildRaw` snapshot check above. A regression would surface instantly in the next campaign send (plain-text + HTML stops rendering) rather than silently.
+- **Service-account access to attachments.** Gmail's `users.messages.send` accepts the attachment inline in the `raw` field — no extra scope needed beyond today's `gmail.send`. No new credentials, no new secret.
+- **`pdfkit` build at Vercel.** Pure JS, no native compilation. Lockfile committed; Vercel's `npm ci` will install exactly the pinned version.
 
-## Rollback / escalation plan
+## Rollback
+- Revert the PR → Vercel redeploys the previous SHA.
+- Migration rollback:
+  ```sql
+  drop index if exists wholesale_orders_invoice_number_uidx;
+  alter table wholesale_orders drop column if exists invoice_number;
+  drop sequence if exists wholesale_invoice_number_seq;
+  drop function if exists assign_invoice_number(uuid, wholesale_order_status);
+  ```
 
-- **Code:** `git revert <merge-sha>`; Vercel redeploys previous SHA.
-- **Migration:** p15 adds only nullable columns + one enum value.
-  Columns are dropped with
-  `ALTER TABLE wholesale_orders DROP COLUMN invoiced_at, DROP COLUMN
-  invoiced_by, DROP COLUMN cancelled_at, DROP COLUMN cancelled_by,
-  DROP COLUMN paid_by;`. Enum values cannot be removed in Postgres
-  without a type rebuild — leave `'invoiced'` in place after rollback.
-- **Escalation:** >2 failed retries, scope change, or any live-send
-  surprise → stop and file an escalation note in `.agent/state.md`
-  with root cause (`reasoning | tool-misuse | context/env`).
+## Escalation
+- Any send-path failure that the existing CAS claim cannot cleanly roll back → stop, record root cause in state.md, flag to human. Do not invent a retry policy.
+- PDF rendering throws unexpectedly on a specific order → treat as a data bug, escalate with the offending `order.id` (never log PII — redact customer fields).

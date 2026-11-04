@@ -22,7 +22,7 @@ without another migration.
 | `GET /api/wholesale/customer[?id=<uuid>]` | public | Form bootstrap: active product list + public-safe pre-fill fields only. |
 | `GET /api/wholesale/order?o=<order_id>` | public (unguessable uuid); operator session upgrades payload | Receipt payload for `/wholesale/success`. Operator caller gets audit columns + an `email_history` array (campaign sends this customer has received). |
 | `PATCH /api/wholesale/order?o=<order_id>` | operator | Advance a wholesale order's status. Body `{status}`. Server-side transition table rejects invalid moves with 409. Stamps the matching audit column + operator id. |
-| `POST /api/wholesale/invoice?o=<order_id>` | operator | Build + preview or send the invoice email. Body `{dry_run: true\|false}`. Dry-run returns `rendered_html`; live is refused unless `EMAIL_SEND_LIVE_ENABLED=true` and advances the order to `invoiced` on success (only when it was still `awaiting_payment`). |
+| `POST /api/wholesale/invoice?o=<order_id>` | operator | Build + preview or send the invoice email **with a PDF invoice attached**. Body `{dry_run: true\|false}`. Dry-run returns `rendered_html` + `rendered_pdf_base64` (the Download-PDF button in the modal consumes it). Live is refused unless `EMAIL_SEND_LIVE_ENABLED=true`; on success it advances the order to `invoiced` (only when it was still `awaiting_payment`), allocates/reuses a sequential `invoice_number`, and returns it on the response. |
 | `GET /api/wholesale/list` | operator | Recent orders + filters. |
 | `GET /api/wholesale/metrics` | operator | Revenue + funnel (revenue is based on orders operators have marked `paid`). |
 | `POST /api/campaigns/send` | internal (`CRON_SECRET`) **or** operator (session cookie) | Dry-run or live-send a specific campaign email. Operator-auth path powers the dashboard's Preview / Dry-run / Send-now buttons. |
@@ -44,6 +44,16 @@ anon policies — API routes use the service role.
 `cancelled_by`, `paid_by`. Each `_by` is a nullable FK to
 `public.people(id)` with `ON DELETE SET NULL` so audit rows outlive an
 operator removal.
+
+`supabase/migrations/p16_wholesale_invoice_number.sql` adds the
+`wholesale_invoice_number_seq` sequence (starts at 5000, above the
+existing 3000s-4000s manual invoice numbers), a nullable
+`invoice_number int` column on `wholesale_orders` with a partial
+unique index (NULLs allowed on historical rows, uniqueness enforced
+on allocated values), and the `assign_invoice_number(order_id,
+required_from, invoiced_by, invoiced_at)` RPC that performs the
+CAS-claim and sequence allocation in one atomic UPDATE (COALESCE on
+retry so a resend after a failed Gmail call reuses the same number).
 
 ## Order lifecycle (manual invoicing)
 
@@ -211,10 +221,13 @@ bounced_at stamped with the error reason on failure, no retry).
   **Email history** (every campaign send they've received, with send /
   open / click timestamps).
 - **Mark invoiced** opens an invoice modal: a sandboxed iframe preview
-  of the rendered HTML, the destination email, and two buttons —
-  **Send invoice** (live) or **Just mark invoiced** (status change only,
-  no email). The live path is refused unless
+  of the rendered HTML, the destination email, and four buttons —
+  **Send invoice** (live), **Just mark invoiced** (status change only,
+  no email), **Download PDF** (saves the dry-run PDF locally for
+  operator review), and **Cancel**. The live path is refused unless
   `EMAIL_SEND_LIVE_ENABLED=true` and the modal surfaces the reason.
+  The live send **attaches a PDF invoice** to the Gmail message (see
+  "PDF invoice" below).
 - **Funnel** → per campaign-email row: **Preview** (opens a sandboxed
   iframe with the rendered HTML for the first eligible customer),
   **Dry-run** (writes placeholder send rows and reports counts inline),
@@ -223,6 +236,65 @@ bounced_at stamped with the error reason on failure, no retry).
 The dashboard calls `/api/campaigns/send` with the operator's session
 cookie — no bearer token needed from the browser. The cron
 bearer path is unchanged and still powers scheduled sends.
+
+## PDF invoice
+
+The live `Send invoice` path attaches a server-generated PDF to the
+Gmail message. The PDF is rendered by `api/_lib/invoice-pdf.js` using
+`pdfkit` (pure JS, built-in Helvetica — no font files are shipped and
+no network fetches happen at render time) and matches the Pretzels of
+Long Island LLC invoice template:
+
+- Header: `Pretzels of Long Island LLC · 118 Broadway, Lynbrook, NY
+  11563 · 516-459-0954`.
+- Invoice-no / date row: left `INVOICE NO. <n>`, right date as
+  `MON D, YYYY`.
+- Bill-To / Store-Address two-column block. Bill-To line 1 =
+  `organization || contact_name || first_name`; line 2 =
+  `pickup_address` when set. Store Address is the fixed Lynbrook
+  address.
+- Line items table: `QUANTITY · DATE PERFORMED · UNIT PRICE · TOTAL`.
+  `DATE PERFORMED` is `order.pickup_date` on every row. Bonus
+  (100-for-25 promo) rows show "(free)" in the unit-price column.
+- Totals block: SUBTOTAL, DISCOUNT (only when `discount_cents > 0`,
+  with the promo code in parens), SALES TAX `$0.00`, bold TOTAL.
+
+### Numbering
+
+Invoice numbers are allocated from the `wholesale_invoice_number_seq`
+sequence (starts at 5000). Allocation happens inside the same
+`UPDATE` that CAS-claims the order's transition to `invoiced` —
+`invoice_number = COALESCE(invoice_number,
+nextval('wholesale_invoice_number_seq'))`. That means:
+
+- Two operators racing on *Send invoice* produce one winner and one
+  409; only the winner's PDF goes out, with one number burned.
+- If the Gmail send fails, the status rolls back to
+  `awaiting_payment` but the already-allocated `invoice_number` stays
+  on the row. The next retry sees it set and reuses it — the customer
+  never receives two different invoice numbers for the same order.
+- Historical orders (pre-P16) have `invoice_number = NULL`; the
+  partial unique index allows this.
+
+### MIME shape
+
+`api/_lib/gmail.js` emits `multipart/mixed` only when the caller
+passes a non-empty `attachments` array — the campaign-nurture send
+path (no attachments) stays on `multipart/alternative` byte-for-byte
+(modulo the random boundary string). The attachment part carries
+`Content-Type: application/pdf; name="invoice-<n>.pdf"`,
+`Content-Disposition: attachment; filename="invoice-<n>.pdf"`, and
+base64-encoded content wrapped at 76 chars/line per RFC 2045.
+
+### Dry-run preview
+
+The dashboard's invoice modal calls the endpoint with `dry_run: true`
+and renders both the HTML preview (sandboxed iframe) and the PDF
+(via the Download PDF button, which turns the `rendered_pdf_base64`
+field into a local Blob and triggers a browser download named
+`invoice-<order-prefix>.pdf`). Nothing is sent and no status change
+happens. On dry-run, `invoice_number` shows `DRAFT` unless the order
+has already been invoiced (in which case the real number is shown).
 
 ## Follow-up
 
@@ -251,6 +323,13 @@ bearer path is unchanged and still powers scheduled sends.
     drop column cancelled_at,
     drop column cancelled_by,
     drop column paid_by;
+  ```
+- P16 migration:
+  ```sql
+  drop function if exists assign_invoice_number(uuid, wholesale_order_status, uuid, timestamptz);
+  drop index if exists wholesale_orders_invoice_number_uidx;
+  alter table wholesale_orders drop column if exists invoice_number;
+  drop sequence if exists wholesale_invoice_number_seq;
   ```
 - Code: `git revert` the PR merge commit; Vercel redeploys the
   previous SHA.

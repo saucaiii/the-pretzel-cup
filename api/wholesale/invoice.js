@@ -22,19 +22,22 @@
 //
 // Response shape:
 //   {
-//     mode:            'dry_run' | 'live',
-//     sent:            boolean,
-//     subject:         string,
-//     to:              string,         // destination email
-//     status_updated:  boolean,        // true only when we flipped it
-//     rendered_html?:  string,         // dry_run only
-//     live_disabled_reason?: string,   // dry_run only, when flag missing
-//     error?:          string,         // live path, when send failed
+//     mode:                'dry_run' | 'live',
+//     sent:                boolean,
+//     subject:             string,
+//     to:                  string,         // destination email
+//     status_updated:      boolean,        // true only when we flipped it
+//     invoice_number?:     int,            // live only (allocated at CAS)
+//     rendered_html?:      string,         // dry_run only
+//     rendered_pdf_base64?: string,        // dry_run only — base64 PDF for the modal's Download button
+//     live_disabled_reason?: string,       // dry_run only, when flag missing
+//     error?:              string,         // live path, when send failed
 //   }
 
 const { createClient } = require('@supabase/supabase-js');
 const { readSession } = require('../_lib/auth');
 const { renderInvoice } = require('../_lib/invoice-template');
+const { renderInvoicePdf } = require('../_lib/invoice-pdf');
 const { sendEmail } = require('../_lib/gmail');
 
 const sb = createClient(
@@ -76,7 +79,7 @@ module.exports = async function handler(req, res) {
   // ─── Load order + customer ─────────────────────────────────────
   const { data: order, error: orderErr } = await sb
     .from('wholesale_orders')
-    .select('id, customer_id, status, items, subtotal_cents, discount_cents, total_cents, pickup_location, pickup_date, pickup_time, promo_code')
+    .select('id, customer_id, status, items, subtotal_cents, discount_cents, total_cents, pickup_location, pickup_date, pickup_time, promo_code, invoice_number')
     .eq('id', id)
     .maybeSingle();
   if (orderErr) return res.status(500).json({ error: 'order lookup failed' });
@@ -84,7 +87,7 @@ module.exports = async function handler(req, res) {
 
   const { data: customer, error: custErr } = await sb
     .from('wholesale_customers')
-    .select('id, email, first_name, organization')
+    .select('id, email, first_name, contact_name, organization, pickup_address')
     .eq('id', order.customer_id)
     .maybeSingle();
   if (custErr)   return res.status(500).json({ error: 'customer lookup failed' });
@@ -108,9 +111,35 @@ module.exports = async function handler(req, res) {
     status_updated: false,
   };
 
-  // ─── Dry-run → return rendered HTML, do nothing else ────────────
+  // ─── Dry-run → return rendered HTML + PDF, do nothing else ──────
   if (mode === 'dry_run') {
     payload.rendered_html = html;
+    // Preview PDF: use the already-allocated invoice_number if this
+    // order was previously invoiced, otherwise show "DRAFT" so the
+    // operator sees which number will be stamped on the real send.
+    const previewNumber = order.invoice_number != null
+      ? String(order.invoice_number)
+      : 'DRAFT';
+    try {
+      const pdfBuf = await renderInvoicePdf({
+        order,
+        customer,
+        invoiceNumber: previewNumber,
+        invoiceDate: new Date(),
+      });
+      payload.rendered_pdf_base64 = pdfBuf.toString('base64');
+    } catch (ex) {
+      // Don't fail the whole dry-run just because the PDF didn't
+      // render — the HTML preview still works. Log the real reason
+      // server-side (Vercel captures console.error) and surface a
+      // fixed message so pdfkit internals never reach the browser.
+      // eslint-disable-next-line no-console
+      console.error('wholesale invoice pdf render failed', {
+        order_id: id,
+        err: String(ex && (ex.message || ex)).slice(0, 300),
+      });
+      payload.pdf_error = 'PDF preview unavailable';
+    }
     if (!liveEnabled && !dryRun) {
       payload.live_disabled_reason = 'EMAIL_SEND_LIVE_ENABLED not set to "true"';
     }
@@ -131,28 +160,27 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // Claim the send by flipping status to 'invoiced' BEFORE sendEmail.
-  // Two operators racing both pre-see `awaiting_payment`; this CAS
-  // serializes them so only the winner's email goes out. `.select('id')
-  // .maybeSingle()` lets us distinguish "we moved the row" (claimRow)
-  // from "someone beat us to it" (null).
+  // Claim the send by flipping status to 'invoiced' BEFORE sendEmail
+  // AND allocate (or reuse) an invoice_number in the same statement.
+  // Two operators racing both pre-see `awaiting_payment`; the RPC's
+  // CAS serializes them so only the winner's email goes out, and the
+  // COALESCE on invoice_number means a retry after a send failure
+  // picks up the already-allocated number instead of burning a new one.
+  // RPC returns 0 rows on CAS miss.
   const invoicedAt = new Date().toISOString();
-  const { data: claimRow, error: claimErr } = await sb
-    .from('wholesale_orders')
-    .update({
-      status:      'invoiced',
-      invoiced_at: invoicedAt,
-      invoiced_by: sess.sub,
-    })
-    .eq('id', id)
-    .eq('status', 'awaiting_payment')
-    .select('id')
-    .maybeSingle();
+  const { data: claimRows, error: claimErr } = await sb.rpc('assign_invoice_number', {
+    p_order_id:      id,
+    p_required_from: 'awaiting_payment',
+    p_invoiced_by:   sess.sub,
+    p_invoiced_at:   invoicedAt,
+  });
   if (claimErr) {
     res.setHeader('Cache-Control', 'no-store');
     return res.status(500).json({ ...payload, error: 'claim failed' });
   }
-  if (!claimRow) {
+  // RPC returns an array (one row on success, zero on CAS miss).
+  const claimed = Array.isArray(claimRows) ? claimRows[0] : claimRows;
+  if (!claimed) {
     // Lost the race: either another operator already invoiced, or the
     // order moved further on. No email leaves the server.
     res.setHeader('Cache-Control', 'no-store');
@@ -161,6 +189,31 @@ module.exports = async function handler(req, res) {
       error: 'invoice send in flight (or already completed) by another operator; refresh and retry',
     });
   }
+  const invoiceNumber = claimed.invoice_number;
+  payload.invoice_number = invoiceNumber;
+
+  // Render the PDF with the real number. A render failure before
+  // sendEmail still rolls back the claim — leaves the number dangling
+  // only on the (rare) retry path, which is intentional per the plan.
+  let pdfBuf;
+  try {
+    pdfBuf = await renderInvoicePdf({
+      order:         { ...order, invoice_number: invoiceNumber },
+      customer,
+      invoiceNumber: String(invoiceNumber),
+      invoiceDate:   new Date(invoicedAt),
+    });
+  } catch (pdfErr) {
+    await sb
+      .from('wholesale_orders')
+      .update({ status: 'awaiting_payment', invoiced_at: null, invoiced_by: null })
+      .eq('id', id)
+      .eq('status', 'invoiced')
+      .eq('invoiced_at', invoicedAt);
+    const reason = String(pdfErr && (pdfErr.message || pdfErr)).slice(0, 300);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(500).json({ ...payload, sent: false, status_updated: false, error: `pdf render failed: ${reason}` });
+  }
 
   try {
     await sendEmail({
@@ -168,6 +221,11 @@ module.exports = async function handler(req, res) {
       subject,
       html,
       text,
+      attachments: [{
+        filename: `invoice-${invoiceNumber}.pdf`,
+        mime:     'application/pdf',
+        content:  pdfBuf,
+      }],
     });
     payload.sent = true;
     payload.status_updated = true;
@@ -175,6 +233,8 @@ module.exports = async function handler(req, res) {
     // Roll back the claim so the operator can retry. Only revert if the
     // row is still in our claimed state — if somehow another transition
     // beat us to the row after the send attempt, leave their state alone.
+    // IMPORTANT: invoice_number stays set. On retry, the RPC's COALESCE
+    // reuses it; no duplicate number is ever issued.
     await sb
       .from('wholesale_orders')
       .update({ status: 'awaiting_payment', invoiced_at: null, invoiced_by: null })
