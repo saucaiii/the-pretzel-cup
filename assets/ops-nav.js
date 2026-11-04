@@ -19,6 +19,7 @@
       { label: "Revenue",  href: "/ops/revenue"  },
       { label: "Payments", href: "/ops/payments" }
     ]},
+    { label: "Wholesale", href: "/ops/wholesale" },
     { label: "Growth", children: [
       { label: "Prospecting",         href: "/ops/prospecting" },
       { label: "New Store Setup",     href: "/ops/onboard"     },
