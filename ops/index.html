@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
 <link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/assets/ops-chrome.css">
 <style>
 /* Mobile tap baseline — see driver for rationale. */
 button, [role="button"], input[type="button"], input[type="submit"] {
@@ -50,10 +51,7 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
   position: relative;
   z-index: 2;
 }
-.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
 
-.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
 .nav-link {
   display: inline-flex; align-items: center;
   padding: 10px 12px;
@@ -67,17 +65,6 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
   font-weight: 400;
   text-decoration: none;
 }
-.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
-.nav-link:active { background: rgba(0,0,0,0.35); }
-.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
-.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
-.nav-link.is-active:active { background: var(--accent-2); }
-.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
-.public-link:hover { color: var(--accent); }
-.public-link:active { color: var(--accent-2); }
-.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: transform 80ms ease, background 120ms ease, color 120ms ease; }
-.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
-.logout-btn:active { transform: scale(0.96); background: rgba(0,0,0,0.3); }
 
 /* ─── DASHBOARD CONTENT ─── */
 .dash-hero { max-width: 1280px; margin: 0 auto; padding: 56px 24px 24px; }
