@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Route Pitch Packet — The Pretzel Cup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  :root { --green:#0D5237; --gold:#D4B662; color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f3efe4; color: #111; font-family: 'Inter', system-ui, sans-serif; }
+  .toolbar {
+    background: var(--green); color: #fff;
+    padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .toolbar .title { font-family: 'Anton', sans-serif; font-size: 20px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  .toolbar .sub { font-size: 12px; color: rgba(255,255,255,.7); letter-spacing: .1em; text-transform: uppercase; }
+  .wrap { max-width: 920px; margin: 32px auto; padding: 0 24px; }
+  h1 { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 36px; letter-spacing: .02em; margin: 0 0 6px; text-transform: uppercase; color: var(--green); }
+  .lede { color: #555; font-size: 14px; margin: 0 0 28px; max-width: 64ch; }
+  .lede b { color: #111; }
+  .bundle {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    background: var(--green); color: #fff;
+    padding: 16px 20px; border-radius: 10px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  }
+  .bundle .label { font-family: 'Anton', sans-serif; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 2px; }
+  .bundle .desc { font-size: 12.5px; color: rgba(255,255,255,.78); }
+  .bundle a.btn {
+    background: var(--gold); color: #000; border-radius: 999px;
+    padding: 9px 18px; font: 700 12px 'Anton', sans-serif; letter-spacing: .14em; text-transform: uppercase;
+    text-decoration: none; white-space: nowrap;
+  }
+  .bundle a.btn:hover { background: #fff; }
+
+  .group h2 { font-family: 'Anton', sans-serif; font-size: 14px; letter-spacing: .22em; text-transform: uppercase; color: var(--green); margin: 0 0 10px; }
+  .sheets { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .sheet {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    background: #fff; border: 1px solid #e9e3cf;
+    padding: 12px 16px; border-radius: 10px; text-decoration: none; color: inherit;
+    transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+  }
+  .sheet:hover { background: #faf4e1; border-color: var(--gold); }
+  .sheet .meta { display: flex; flex-direction: column; gap: 2px; }
+  .sheet .num { font-family: 'Anton', sans-serif; letter-spacing: .14em; color: var(--green); font-size: 12px; }
+  .sheet .name { font-weight: 600; color: #111; }
+  .sheet .size { color: #777; font-size: 12px; font-family: 'Anton', sans-serif; letter-spacing: .08em; margin-top: 2px; }
+  .actions { display: flex; gap: 8px; }
+  .actions a {
+    border-radius: 999px;
+    padding: 6px 14px; font: 700 11px 'Anton', sans-serif; letter-spacing: .14em; text-transform: uppercase;
+    text-decoration: none; white-space: nowrap;
+  }
+  .actions a.open { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .actions a.print { background: var(--green); color: var(--gold); }
+  .actions a.open:hover { background: var(--green); color: var(--gold); }
+  .actions a.print:hover { background: var(--gold); color: #000; }
+
+  @media (min-width: 720px) {
+    .sheets { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div>
+    <div class="title">Route Pitch Packet</div>
+    <div class="sub">PPF · Pretzel Cup · Grocery &amp; deli leave-behind</div>
+  </div>
+</div>
+
+<main class="wrap">
+  <h1>Pick a sheet</h1>
+  <p class="lede">The six-sheet printable leave-behind for grocery and deli prospects on the daily delivery route. Each page is 8.5 &times; 11. <b>Open</b> previews a sheet in the browser; <b>Print PDF</b> opens its own print dialog with the correct page size already set.</p>
+
+  <section class="bundle">
+    <div>
+      <div class="label">All six sheets, together</div>
+      <div class="desc">Chrome-headless-ready print bundle — one PDF, six pages, in order.</div>
+    </div>
+    <a class="btn" href="print-bundle" target="_blank" rel="noopener">Open print bundle →</a>
+  </section>
+
+  <section class="group">
+    <h2>The packet</h2>
+    <div class="sheets">
+      <div class="sheet">
+        <div class="meta">
+          <span class="num">01</span>
+          <span class="name">Cover</span>
+          <span class="size">8.5 &times; 11 · dark green hero</span>
+        </div>
+        <div class="actions">
+          <a class="open" href="01-cover" target="_blank" rel="noopener">Open</a>
+          <a class="print" href="01-cover" target="_blank" rel="noopener" onclick="setTimeout(()=>{try{this.contentWindow&&this.contentWindow.print()}catch(e){}},0)">Print PDF</a>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="meta">
+          <span class="num">02</span>
+          <span class="name">The deal</span>
+          <span class="size">8.5 &times; 11 · six numbered features</span>
+        </div>
+        <div class="actions">
+          <a class="open" href="02-the-deal" target="_blank" rel="noopener">Open</a>
+          <a class="print" href="02-the-deal" target="_blank" rel="noopener">Print PDF</a>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="meta">
+          <span class="num">03</span>
+          <span class="name">The numbers</span>
+          <span class="size">8.5 &times; 11 · margin table + sample days</span>
+        </div>
+        <div class="actions">
+          <a class="open" href="03-the-numbers" target="_blank" rel="noopener">Open</a>
+          <a class="print" href="03-the-numbers" target="_blank" rel="noopener">Print PDF</a>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="meta">
+          <span class="num">04</span>
+          <span class="name">Portal preview</span>
+          <span class="size">8.5 &times; 11 · dashboard chip + 6 features</span>
+        </div>
+        <div class="actions">
+          <a class="open" href="04-portal-preview" target="_blank" rel="noopener">Open</a>
+          <a class="print" href="04-portal-preview" target="_blank" rel="noopener">Print PDF</a>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="meta">
+          <span class="num">05</span>
+          <span class="name">Payment</span>
+          <span class="size">8.5 &times; 11 · ACH 4-step + alt</span>
+        </div>
+        <div class="actions">
+          <a class="open" href="05-payment" target="_blank" rel="noopener">Open</a>
+          <a class="print" href="05-payment" target="_blank" rel="noopener">Print PDF</a>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="meta">
+          <span class="num">06</span>
+          <span class="name">Close</span>
+          <span class="size">8.5 &times; 11 · split CTA + QR + phone</span>
+        </div>
+        <div class="actions">
+          <a class="open" href="06-close" target="_blank" rel="noopener">Open</a>
+          <a class="print" href="06-close" target="_blank" rel="noopener">Print PDF</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Route Pitch · Portal Preview — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  html, body { margin: 0; padding: 0; background: var(--ppf-green); }
+  body { width: 8.5in; height: 11in; }
+
+  .sheet {
+    width: 8.5in; height: 11in;
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    display: flex; flex-direction: column;
+  }
+
+  /* ─── Head band ─────────────────────────────────────────────── */
+  .head {
+    padding: 28px 60px 20px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 32px;
+  }
+  .head .eyebrow {
+    font-family: var(--font-display); font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--ppf-gold); margin: 0 0 8px;
+  }
+  .head .headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 44px; line-height: 0.95;
+    text-transform: uppercase; margin: 0;
+    color: var(--ppf-white);
+  }
+  .head .script {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 40px; display: block; margin-top: 4px;
+  }
+
+  /* ─── Dashboard mock chip ───────────────────────────────────── */
+  .dash {
+    background: var(--ppf-cream);
+    color: var(--ppf-ink);
+    border-radius: 6px;
+    padding: 14px 18px;
+    min-width: 230px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+  .dash .label {
+    font-family: var(--font-display); font-size: 9px;
+    letter-spacing: 0.22em; color: var(--ppf-gold-deep);
+    text-transform: uppercase;
+  }
+  .dash .url {
+    font-family: var(--font-display); font-size: 10px;
+    color: var(--ppf-cool-gray); margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+  .dash .big {
+    font-family: var(--font-display); font-size: 36px;
+    color: var(--ppf-green-deep); line-height: 1;
+    letter-spacing: 0.01em; margin: 10px 0 4px;
+  }
+  .dash .delta {
+    font-size: 10.5px; color: var(--ppf-green);
+    font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .dash .divider {
+    height: 1px; background: rgba(13,82,55,0.14);
+    margin: 10px 0;
+  }
+  .dash .row {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: 11px; color: var(--ppf-ink);
+    padding: 2px 0;
+  }
+  .dash .row .val {
+    font-family: var(--font-display); color: var(--ppf-green);
+    letter-spacing: 0.02em;
+  }
+
+  /* ─── Hero line ─────────────────────────────────────────────── */
+  .hero {
+    padding: 18px 60px 20px;
+    font-size: 14px; line-height: 1.55;
+    color: var(--ppf-muted);
+    border-top: 2px solid var(--ppf-gold);
+  }
+  .hero strong { color: var(--ppf-white); }
+
+  /* ─── Body grid ─────────────────────────────────────────────── */
+  .body {
+    flex: 1; padding: 6px 60px 12px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px;
+  }
+  .feat {
+    display: grid; grid-template-columns: 44px 1fr; gap: 12px;
+    align-items: start;
+  }
+  .feat .ico {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--ppf-gold); color: var(--ppf-green-deep);
+    font-family: var(--font-display); font-size: 15px;
+    display: grid; place-items: center; letter-spacing: 0;
+    flex-shrink: 0;
+  }
+  .feat .text { padding-top: 2px; }
+  .feat h3 {
+    margin: 0 0 4px;
+    font-family: var(--font-display); font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ppf-gold);
+  }
+  .feat p {
+    margin: 0; font-size: 11.5px; line-height: 1.5;
+    color: var(--ppf-muted);
+  }
+  .feat p strong { color: var(--ppf-white); }
+
+  /* ─── Footer ────────────────────────────────────────────────── */
+  .footer {
+    background: var(--ppf-green-deep);
+    color: var(--ppf-white);
+    padding: 14px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .footer .gold { color: var(--ppf-gold); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="plate-strip"></div>
+
+  <!-- HEAD -->
+  <div class="head">
+    <div>
+      <div class="eyebrow">Your store portal</div>
+      <h1 class="headline">Every pretzel<br/>you sell,</h1>
+      <span class="script">counted for you.</span>
+    </div>
+    <div class="dash">
+      <div class="label">Your dashboard · demo</div>
+      <div class="url">the-pretzel-cup.vercel.app/store</div>
+      <div class="big">$1,482.50</div>
+      <div class="delta">&#9650; Month-to-date profit</div>
+      <div class="divider"></div>
+      <div class="row"><span>Singles sold</span><span class="val">412</span></div>
+      <div class="row"><span>Doubles sold</span><span class="val">327</span></div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    Your sign-up includes a <strong>store portal</strong> — one URL,
+    one 4-digit PIN. See <strong>daily, weekly, monthly, year-to-date
+    profit</strong>, flag issues, request route changes, and talk to
+    Chris without leaving the page.
+  </div>
+
+  <!-- FEATURES -->
+  <div class="body">
+    <div class="feat">
+      <div class="ico">1</div>
+      <div class="text">
+        <h3>Profit in real time</h3>
+        <p>Each delivery flows into your dashboard. See daily,
+        weekly, monthly, YTD profit — not a line buried in a
+        statement.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="ico">2</div>
+      <div class="text">
+        <h3>Report issues in one tap</h3>
+        <p>Short count, damage, missed drop — flag it from your
+        phone and the ops team sees it instantly.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="ico">3</div>
+      <div class="text">
+        <h3>Flex your drops</h3>
+        <p>Ask for a double load before a weekend, or skip tomorrow
+        if you're closing early. We adjust the route.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="ico">4</div>
+      <div class="text">
+        <h3>Monthly PDF statements</h3>
+        <p>Printable PDF or Excel export — pre-formatted for your
+        bookkeeper. Nothing to assemble yourself.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="ico">5</div>
+      <div class="text">
+        <h3>Call Chris from inside</h3>
+        <p>Direct line, one tap. No phone-tree, no inbox purgatory,
+        no 48-hour callbacks.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="ico">6</div>
+      <div class="text">
+        <h3>Dead-simple access</h3>
+        <p>One URL, 4-digit PIN. Private per store. If you can
+        text, you can use it.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Your portal · included at no cost</span>
+    <span class="gold">4 / 6</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Route Pitch · Payment — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  html, body { margin: 0; padding: 0; background: var(--ppf-cream); }
+  body { width: 8.5in; height: 11in; }
+
+  .sheet {
+    width: 8.5in; height: 11in;
+    background: var(--ppf-cream);
+    color: var(--ppf-ink);
+    display: flex; flex-direction: column;
+  }
+
+  /* ─── Head band ─────────────────────────────────────────────── */
+  .head-wrap { background: var(--ppf-green); }
+  .head {
+    background: var(--ppf-green); color: var(--ppf-white);
+    padding: 26px 60px 30px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .head .eyebrow {
+    font-family: var(--font-display); font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--ppf-gold); margin: 0 0 8px;
+  }
+  .head .headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 44px; line-height: 0.95;
+    text-transform: uppercase; margin: 0;
+  }
+  .head .script {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 36px; display: block; margin-top: 4px;
+  }
+  .head .right { text-align: right; min-width: 150px; }
+  .head .right .label {
+    font-family: var(--font-display); font-size: 10px; letter-spacing: 0.22em;
+    color: var(--ppf-gold); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .head .right .page {
+    font-family: var(--font-display); color: var(--ppf-white);
+    font-size: 20px; letter-spacing: 0.08em;
+  }
+
+  /* ─── Hero line ─────────────────────────────────────────────── */
+  .hero {
+    padding: 22px 60px 14px;
+    font-size: 14px; line-height: 1.55; color: var(--ppf-ink);
+    border-bottom: 2px solid var(--ppf-gold);
+  }
+  .hero strong { color: var(--ppf-green); }
+
+  /* ─── Step cards ────────────────────────────────────────────── */
+  .steps {
+    padding: 22px 60px 10px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+  }
+  .step {
+    background: var(--ppf-white);
+    border-left: 4px solid var(--ppf-gold);
+    padding: 14px 18px;
+    display: grid; grid-template-columns: 54px 1fr; gap: 12px;
+    align-items: start;
+  }
+  .step .n {
+    font-family: var(--font-display);
+    font-size: 36px; color: var(--ppf-gold-deep);
+    line-height: 1; letter-spacing: 0;
+    padding-top: 2px;
+  }
+  .step .t h3 {
+    margin: 0 0 4px;
+    font-family: var(--font-display); font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ppf-green);
+  }
+  .step .t p {
+    margin: 0; font-size: 11.5px; line-height: 1.5;
+    color: var(--ppf-ink);
+  }
+
+  /* ─── Fee highlight ─────────────────────────────────────────── */
+  .fee {
+    margin: 16px 60px 0;
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    border-left: 4px solid var(--ppf-gold);
+    padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  }
+  .fee .left-stack .main {
+    font-family: var(--font-display); font-size: 22px;
+    color: var(--ppf-white); line-height: 1;
+    letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .fee .left-stack .caveat {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 24px; line-height: 1;
+    margin-top: 4px;
+  }
+  .fee .left-stack .sub {
+    font-size: 11.5px; line-height: 1.5;
+    color: var(--ppf-muted);
+    margin-top: 6px; max-width: 42ch;
+  }
+  .fee .alt { text-align: right; min-width: 130px; }
+  .fee .alt .label {
+    font-family: var(--font-display); font-size: 10px;
+    letter-spacing: 0.22em; color: var(--ppf-gold);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .fee .alt .val {
+    font-family: var(--font-display); font-size: 18px;
+    color: var(--ppf-white); line-height: 1;
+    letter-spacing: 0.02em; text-transform: uppercase;
+  }
+
+  /* ─── Note ──────────────────────────────────────────────────── */
+  .note {
+    margin: 14px 60px 0;
+    background: var(--ppf-white);
+    border-left: 4px solid var(--ppf-gold);
+    padding: 14px 20px;
+    font-size: 12px; line-height: 1.55;
+    color: var(--ppf-ink);
+  }
+  .note strong { color: var(--ppf-green); }
+
+  /* ─── Footer ────────────────────────────────────────────────── */
+  .footer {
+    margin-top: auto;
+    background: var(--ppf-green-deep);
+    color: var(--ppf-white);
+    padding: 14px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .footer .gold { color: var(--ppf-gold); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <!-- HEAD -->
+  <div class="head-wrap">
+    <div class="plate-strip"></div>
+    <div class="head">
+      <div>
+        <div class="eyebrow">How you pay us</div>
+        <h1 class="headline">Nothing to<br/>invoice.</h1>
+        <span class="script">Nothing to chase.</span>
+      </div>
+      <div class="right">
+        <div class="label">Sheet</div>
+        <div class="page">5 / 6</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    Most of our stores run on <strong>ACH auto-pull</strong> — you opt
+    in once, see the running tab in your portal, and we pull on the
+    cadence you pick. No checks, no net-30, no reminders. Still on
+    cash or check? That's fine too.
+  </div>
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step">
+      <div class="n">1</div>
+      <div class="t">
+        <h3>Opt in once</h3>
+        <p>Link your business bank through Plaid. Bank-level secure,
+        60 seconds, your account number never leaves the bank.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">2</div>
+      <div class="t">
+        <h3>Watch the tab</h3>
+        <p>Your portal shows the running total since the last pull
+        — every delivery, in or out.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">3</div>
+      <div class="t">
+        <h3>We pull on cadence</h3>
+        <p>Weekly or monthly, you pick. Operator reviews drafts
+        before every pull — anomalies get flagged, not
+        auto-charged.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">4</div>
+      <div class="t">
+        <h3>We absorb fees</h3>
+        <p>ACH processing is on us. The price on your invoice is
+        the price. No surcharge, no handling fee.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEE HIGHLIGHT -->
+  <div class="fee">
+    <div class="left-stack">
+      <div class="main">0.8%, capped at $5/pull.</div>
+      <div class="caveat">Paid by us.</div>
+      <div class="sub">
+        That's the actual ACH cost. We cover it because it's cheaper
+        than chasing a check.
+      </div>
+    </div>
+    <div class="alt">
+      <div class="label">Alternative</div>
+      <div class="val">Cash · Check</div>
+    </div>
+  </div>
+
+  <!-- NOTE -->
+  <div class="note">
+    <strong>Prefer old-school?</strong> Cash or check at the door
+    still works — same pricing, same program. ACH is optional, we
+    default new stores to weekly.
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>The Pretzel Cup · Route delivery pitch</span>
+    <span class="gold">the-pretzel-cup.vercel.app/apply</span>
+  </div>
+
+</div>
+</body>
+</html>

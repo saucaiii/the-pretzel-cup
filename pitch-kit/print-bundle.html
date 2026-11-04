@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Route Pitch Packet — Print Bundle</title>
+<base href="/pitch-kit/">
+<meta name="robots" content="noindex,nofollow">
+<style>
+  /* Iframe-based 6-sheet print bundle for the route-delivery pitch.
+     Static — no per-store personalization — rendered to a single PDF
+     by scripts/gen-pitch-pdf.mjs (or by opening in Chrome and using
+     File → Print). */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: white; }
+  body { font-family: system-ui, -apple-system, sans-serif; color: #0E2918; }
+
+  @page { size: letter portrait; margin: 0; }
+
+  .pg {
+    page-break-after: always;
+    break-after: page;
+    width: 8.5in;
+    height: 11in;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+  }
+  .pg:last-child { page-break-after: avoid; break-after: auto; }
+
+  iframe { border: 0; display: block; }
+
+  /* Screen-only chrome so you can preview this URL in a normal tab */
+  @media screen {
+    body { background: #f3efe6; }
+    .pg { margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 20px rgba(0,0,0,0.1); }
+  }
+</style>
+</head>
+<body>
+
+<div class="pg">
+  <iframe src="01-cover" width="816" height="1056" title="Cover"></iframe>
+</div>
+
+<div class="pg">
+  <iframe src="02-the-deal" width="816" height="1056" title="The deal"></iframe>
+</div>
+
+<div class="pg">
+  <iframe src="03-the-numbers" width="816" height="1056" title="The numbers"></iframe>
+</div>
+
+<div class="pg">
+  <iframe src="04-portal-preview" width="816" height="1056" title="Portal preview"></iframe>
+</div>
+
+<div class="pg">
+  <iframe src="05-payment" width="816" height="1056" title="Payment"></iframe>
+</div>
+
+<div class="pg">
+  <iframe src="06-close" width="816" height="1056" title="Close"></iframe>
+</div>
+
+</body>
+</html>
