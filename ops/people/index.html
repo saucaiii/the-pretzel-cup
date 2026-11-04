@@ -10,24 +10,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
 <link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/assets/ops-chrome.css">
 <style>
-.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
-.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
-.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
-.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
-.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
-.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
-.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
-.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
-.public-link:hover { color: var(--accent); }
-.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
-.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
 
-.page { max-width: 920px; margin: 0 auto; padding: 56px 24px 80px; }
-.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
-.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
-.page-sub { color: var(--ink-2); font-size: 15px; max-width: 72ch; margin: 0 0 32px; line-height: 1.5; }
 
 .card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
 .row { display: grid; grid-template-columns: 160px 100px 1fr 120px 100px; gap: 10px; align-items: center; padding: 12px 20px; border-top: 1px solid var(--line); font-size: 14px; }
@@ -82,17 +67,7 @@
         </div>
       </a>
       <div class="header-right">
-        <nav class="ops-site-nav" aria-label="Primary">
-          <a href="/ops" class="nav-link">Dashboard</a>
-          <a href="/ops/updates" class="nav-link">Updates</a>
-          <a href="/ops/time-off" class="nav-link">Time Off</a>
-          <a href="/ops/stops" class="nav-link">Stops</a>
-          <a href="/ops/store" class="nav-link">Store</a>
-          <a href="/ops/shifts" class="nav-link">Shifts</a>
-          <a href="/ops/people" class="nav-link is-active">People</a>
-          <a href="/ops/plan" class="nav-link">Plan</a>
-          <a href="/ops/standings" class="nav-link">Standings</a>
-        </nav>
+        <nav class="ops-site-nav" aria-label="Primary"></nav>
         <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
         <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
       </div>
@@ -224,5 +199,6 @@ function bindRow(row) {
   };
 }
 </script>
+  <script src="/assets/ops-nav.js" defer></script>
 </body>
 </html>

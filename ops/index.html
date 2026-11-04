@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
 <link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/assets/ops-chrome.css">
 <style>
 /* Mobile tap baseline — see driver for rationale. */
 button, [role="button"], input[type="button"], input[type="submit"] {
@@ -50,10 +51,7 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
   position: relative;
   z-index: 2;
 }
-.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
 
-.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
 .nav-link {
   display: inline-flex; align-items: center;
   padding: 10px 12px;
@@ -67,17 +65,6 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
   font-weight: 400;
   text-decoration: none;
 }
-.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
-.nav-link:active { background: rgba(0,0,0,0.35); }
-.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
-.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
-.nav-link.is-active:active { background: var(--accent-2); }
-.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
-.public-link:hover { color: var(--accent); }
-.public-link:active { color: var(--accent-2); }
-.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: transform 80ms ease, background 120ms ease, color 120ms ease; }
-.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
-.logout-btn:active { transform: scale(0.96); background: rgba(0,0,0,0.3); }
 
 /* ─── DASHBOARD CONTENT ─── */
 .dash-hero { max-width: 1280px; margin: 0 auto; padding: 56px 24px 24px; }
@@ -85,8 +72,9 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
 .dash-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 7vw, 76px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 16px; text-transform: uppercase; }
 .dash-sub { color: var(--ink-2); font-size: 16px; max-width: 60ch; margin: 0; line-height: 1.5; }
 
-/* Metrics strip — one source of "today in ops" numbers. All but Day-X-of-90
-   are driven by live state from /api/plan-state. */
+/* Metrics strip — one source of "today in ops" numbers (revenue, pending
+   invoices, time off, account requests, active stops). Populated by the
+   same fetches the per-tile stats use, so the two can never drift. */
 .metrics {
   max-width: 1280px;
   margin: 0 auto;
@@ -122,11 +110,41 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
   text-transform: uppercase;
 }
 
-/* Tool tiles grid */
-.tools {
+/* Dashboard sections — groups of tiles under a category heading.
+   Matches the top-nav IA (Operations / Money / Growth / Plan). */
+.dash-section {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 24px 80px;
+  padding: 24px 24px 8px;
+}
+.dash-section:first-of-type { padding-top: 32px; }
+.dash-section:last-of-type { padding-bottom: 80px; }
+.dash-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.dash-section-title {
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 400;
+  margin: 0;
+}
+.dash-section-note {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+
+/* Tool tiles grid */
+.tools {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
@@ -218,19 +236,7 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
         </div>
       </a>
       <div class="header-right">
-        <nav class="ops-site-nav" aria-label="Primary">
-          <a href="/ops" class="nav-link is-active">Dashboard</a>
-          <a href="/ops/revenue" class="nav-link">Revenue</a>
-          <a href="/ops/updates" class="nav-link">Updates</a>
-          <a href="/ops/time-off" class="nav-link">Time Off</a>
-          <a href="/ops/stops" class="nav-link">Stops</a>
-          <a href="/ops/prospecting" class="nav-link">Prospecting</a>
-          <a href="/ops/store" class="nav-link">Store</a>
-          <a href="/ops/shifts" class="nav-link">Shifts</a>
-          <a href="/ops/people" class="nav-link">People</a>
-          <a href="/ops/plan" class="nav-link">Plan</a>
-          <a href="/ops/standings" class="nav-link">Standings</a>
-        </nav>
+        <nav class="ops-site-nav" aria-label="Primary"></nav>
         <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
         <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
       </div>
@@ -240,86 +246,130 @@ a.nav-link, a.public-link, a.tool { -webkit-tap-highlight-color: transparent; to
   <section class="dash-hero">
     <div class="dash-eyebrow"><span id="dash-date">&mdash;</span></div>
     <h1 class="dash-title">Operator Dashboard</h1>
-    <p class="dash-sub">The quick view across the 90-day plan, routes, and standings. Pick a tool below to drill in.</p>
+    <p class="dash-sub">Daily view across operations, money, and growth. Pick a tile below to drill in.</p>
   </section>
 
   <div class="metrics" id="metrics">
     <!-- populated by JS once we have plan state -->
   </div>
 
-  <section class="tools" aria-label="Operator tools">
-    <a class="tool" href="/ops/revenue">
-      <span class="tool-chip">Gross Retail</span>
-      <h2 class="tool-title">Revenue</h2>
-      <p class="tool-sub">What drivers rang up. Weekly / 30-day / quarter / year-to-date totals, broken out by route, by driver, and per-stop drill-down. 30-day sparkline up top.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-revenue-stat">&mdash;</span><span class="tool-stat-label">This Week</span></div>
-    </a>
-    <a class="tool" href="/ops/updates">
-      <span class="tool-chip">Broadcast</span>
-      <h2 class="tool-title">Updates</h2>
-      <p class="tool-sub">Post a note to bakers, drivers, or everyone. Shows up in each person's app on their next visit; marked updates get a tap-to-acknowledge button.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-updates-stat">&mdash;</span><span class="tool-stat-label">Updates Posted (30d)</span></div>
-    </a>
-    <a class="tool" href="/ops/time-off">
-      <span class="tool-chip">Approvals</span>
-      <h2 class="tool-title">Time Off</h2>
-      <p class="tool-sub">Review and act on day-off and cover requests from bakers and drivers. Approve with an optional cover person; denials snap the schedule back to normal.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-timeoff-stat">&mdash;</span><span class="tool-stat-label">Pending</span></div>
-    </a>
-    <a class="tool" href="/ops/stops">
-      <span class="tool-chip">Operational</span>
-      <h2 class="tool-title">Stops</h2>
-      <p class="tool-sub">Edit drop sizes, basket type, notes, and active state per stop. Changes propagate to the driver and baker apps on their next page load.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-stops-count">&mdash;</span><span class="tool-stat-label">Active Stops</span></div>
-    </a>
-    <a class="tool" href="/ops/payments">
-      <span class="tool-chip">Settlement</span>
-      <h2 class="tool-title">Payments</h2>
-      <p class="tool-sub">Review draft invoices, batch-approve ACH pulls, and triage failed debits. Reconciliation CSV plus KPIs for in-flight money.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-pay-stat">&mdash;</span><span class="tool-stat-label">Drafts Awaiting</span></div>
-    </a>
-    <a class="tool" href="/ops/onboard">
-      <span class="tool-chip">New Store</span>
-      <h2 class="tool-title">Onboard</h2>
-      <p class="tool-sub">The guided eight-step flow for adding a new 7-Eleven franchisee to the route. Captures identity, portal credentials, standing order, and kit prep; schedules the welcome delivery and day-1/week-1/month-1 follow-ups.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-onboard-stat">&mdash;</span><span class="tool-stat-label">Drafts In Flight</span></div>
-    </a>
-    <a class="tool" href="/ops/invite">
-      <span class="tool-chip">Existing Stores</span>
-      <h2 class="tool-title">Invites</h2>
-      <p class="tool-sub">Portal activity tracker: Needs setup, Awaiting first login, Active. Backfill manager contact per store, see which stores have rotated off the starter PIN, and open each store's per-store contact-card QR for printing.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-invite-stat">&mdash;</span><span class="tool-stat-label">Awaiting First Login</span></div>
-    </a>
-    <a class="tool" href="/ops/prospecting">
-      <span class="tool-chip">Growth</span>
-      <h2 class="tool-title">Prospecting</h2>
-      <p class="tool-sub">Wholesale prospects across four segments: delis &amp; markets (route-density), schools (PTA / fundraiser, NCES-enriched with enrollment + public/private), Christian churches (functions / coffee hour), and daycares. Filter, sort, and export CSV per segment.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-prospect-stat">&mdash;</span><span class="tool-stat-label">Prospects (all segments)</span></div>
-    </a>
-    <a class="tool" href="/ops/print-kits">
-      <span class="tool-chip">Printing</span>
-      <h2 class="tool-title">Print Kits</h2>
-      <p class="tool-sub">One-click per-store print bundles for Staples. Opens a page with the five kit pieces for one store (contact-card QR already personalized), ready to Save as PDF. Work through the list, upload the PDFs, pick them up.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-print-stat">&mdash;</span><span class="tool-stat-label">Stores To Print</span></div>
-    </a>
-    <a class="tool" href="/ops/shifts">
-      <span class="tool-chip">Scheduling</span>
-      <h2 class="tool-title">Shifts</h2>
-      <p class="tool-sub">Who works what day. Edit day-of-week assignments and route coverage for bakers and drivers; the schedule grid and each person's app refresh immediately.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-shifts-count">&mdash;</span><span class="tool-stat-label">Shifts On File</span></div>
-    </a>
-    <a class="tool" href="/ops/plan">
-      <span class="tool-chip">90-Day Plan</span>
-      <h2 class="tool-title">Plan</h2>
-      <p class="tool-sub">The full 90-day roadmap &mdash; task timeline, prerequisites, and ready-to-start queue across Fix the Base, Grow, Pretzels &amp; Pints, and Marketing tracks.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-plan-stat">&mdash;</span><span class="tool-stat-label">Tasks Done</span></div>
-    </a>
-    <a class="tool" href="/ops/standings">
-      <span class="tool-chip">Live Sales</span>
-      <h2 class="tool-title">Standings</h2>
-      <p class="tool-sub">Weekly leaderboard with dollar values, week-over-week deltas, biggest mover, and the quarter grand-prize race.</p>
-      <div class="tool-stat"><span class="tool-stat-value" id="tool-standings-stat">Live</span><span class="tool-stat-label">Season Running</span></div>
-    </a>
+  <section class="dash-section" aria-labelledby="sec-ops">
+    <div class="dash-section-head">
+      <h2 id="sec-ops" class="dash-section-title">Operations</h2>
+      <span class="dash-section-note">Daily running of the route.</span>
+    </div>
+    <div class="tools">
+      <a class="tool" href="/ops/updates">
+        <span class="tool-chip">Broadcast</span>
+        <h2 class="tool-title">Announcements</h2>
+        <p class="tool-sub">Post a note to bakers, drivers, or everyone. Shows up in each person's app on their next visit; tagged announcements get a tap-to-acknowledge button.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-updates-stat">&mdash;</span><span class="tool-stat-label">Posted (30d)</span></div>
+      </a>
+      <a class="tool" href="/ops/time-off">
+        <span class="tool-chip">Approvals</span>
+        <h2 class="tool-title">Time Off</h2>
+        <p class="tool-sub">Review and act on day-off and cover requests from bakers and drivers. Approve with an optional cover person; denials snap the schedule back to normal.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-timeoff-stat">&mdash;</span><span class="tool-stat-label">Pending</span></div>
+      </a>
+      <a class="tool" href="/ops/stops">
+        <span class="tool-chip">Operational</span>
+        <h2 class="tool-title">Delivery Stops</h2>
+        <p class="tool-sub">Edit drop sizes, basket type, notes, and active state for each delivery stop. Changes propagate to the driver and baker apps on their next page load.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-stops-count">&mdash;</span><span class="tool-stat-label">Active Stops</span></div>
+      </a>
+      <a class="tool" href="/ops/shifts">
+        <span class="tool-chip">Scheduling</span>
+        <h2 class="tool-title">Shifts</h2>
+        <p class="tool-sub">Who works what day. Edit day-of-week assignments and route coverage for bakers and drivers; the schedule grid and each person's app refresh immediately.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-shifts-count">&mdash;</span><span class="tool-stat-label">Shifts On File</span></div>
+      </a>
+      <a class="tool" href="/ops/people">
+        <span class="tool-chip">Team</span>
+        <h2 class="tool-title">People</h2>
+        <p class="tool-sub">Operators, bakers, and drivers &mdash; names, PINs, Telegram handles, and secondary roles. Reset a PIN, re-link a chat handle, or audit the roster.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-people-stat">&mdash;</span><span class="tool-stat-label">On Staff</span></div>
+      </a>
+      <a class="tool" href="/ops/store">
+        <span class="tool-chip">Inbox</span>
+        <h2 class="tool-title">Account Requests</h2>
+        <p class="tool-sub">What accounts are reporting &mdash; open delivery issues, drop-change requests for upcoming days, and manager sign-in / PIN support.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-requests-stat">&mdash;</span><span class="tool-stat-label">Open + Pending</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="dash-section" aria-labelledby="sec-money">
+    <div class="dash-section-head">
+      <h2 id="sec-money" class="dash-section-title">Money</h2>
+      <span class="dash-section-note">Sales in, invoices out.</span>
+    </div>
+    <div class="tools">
+      <a class="tool" href="/ops/revenue">
+        <span class="tool-chip">Gross Retail</span>
+        <h2 class="tool-title">Revenue</h2>
+        <p class="tool-sub">What drivers rang up. Weekly / 30-day / quarter / year-to-date totals, broken out by route, by driver, and per-stop drill-down. 30-day sparkline up top.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-revenue-stat">&mdash;</span><span class="tool-stat-label">This Week</span></div>
+      </a>
+      <a class="tool" href="/ops/payments">
+        <span class="tool-chip">Settlement</span>
+        <h2 class="tool-title">Payments</h2>
+        <p class="tool-sub">Review draft invoices, batch-approve ACH pulls, and triage failed debits. Reconciliation CSV plus KPIs for in-flight money.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-pay-stat">&mdash;</span><span class="tool-stat-label">Drafts Awaiting</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="dash-section" aria-labelledby="sec-growth">
+    <div class="dash-section-head">
+      <h2 id="sec-growth" class="dash-section-title">Growth</h2>
+      <span class="dash-section-note">Adding and activating new accounts.</span>
+    </div>
+    <div class="tools">
+      <a class="tool" href="/ops/prospecting">
+        <span class="tool-chip">Leads</span>
+        <h2 class="tool-title">Prospecting</h2>
+        <p class="tool-sub">Wholesale prospects across four segments: delis &amp; markets (route-density), schools (PTA / fundraiser, NCES-enriched with enrollment + public/private), Christian churches (functions / coffee hour), and daycares. Filter, sort, and export CSV per segment.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-prospect-stat">&mdash;</span><span class="tool-stat-label">Prospects (all segments)</span></div>
+      </a>
+      <a class="tool" href="/ops/onboard">
+        <span class="tool-chip">Onboarding</span>
+        <h2 class="tool-title">New Store Setup</h2>
+        <p class="tool-sub">Guided eight-step flow for bringing a new 7-Eleven franchisee onto the route. Captures identity, portal credentials, standing order, and kit prep; schedules the welcome delivery and day-1 / week-1 / month-1 follow-ups.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-onboard-stat">&mdash;</span><span class="tool-stat-label">Drafts In Flight</span></div>
+      </a>
+      <a class="tool" href="/ops/invite">
+        <span class="tool-chip">Activation</span>
+        <h2 class="tool-title">Account Portal Access</h2>
+        <p class="tool-sub">Portal activity tracker for existing accounts: Needs setup, Awaiting first login, Active. Backfill the manager contact, see who's rotated off the starter PIN, and open each account's contact-card QR for printing.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-invite-stat">&mdash;</span><span class="tool-stat-label">Awaiting First Login</span></div>
+      </a>
+      <a class="tool" href="/ops/print-kits">
+        <span class="tool-chip">Printing</span>
+        <h2 class="tool-title">Print Kits</h2>
+        <p class="tool-sub">Per-account print bundles for Staples &mdash; QR, flyers, signage, all pre-personalized and ready to Save as PDF. Today: existing-account kits. Coming: prospecting kits for cold outreach to new leads.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-print-stat">&mdash;</span><span class="tool-stat-label">Stores To Print</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="dash-section" aria-labelledby="sec-plan">
+    <div class="dash-section-head">
+      <h2 id="sec-plan" class="dash-section-title">Plan</h2>
+      <span class="dash-section-note">90-day push and the sales leaderboard.</span>
+    </div>
+    <div class="tools">
+      <a class="tool" href="/ops/plan">
+        <span class="tool-chip">Reference</span>
+        <h2 class="tool-title">Plan</h2>
+        <p class="tool-sub">Older 90-day roadmap doc &mdash; task timeline, prerequisites, and ready-to-start queue across Fix the Base, Grow, Pretzels &amp; Pints, and Marketing tracks. Kept around as a reference, not actively maintained.</p>
+      </a>
+      <a class="tool" href="/ops/standings">
+        <span class="tool-chip">Live Sales</span>
+        <h2 class="tool-title">Leaderboard</h2>
+        <p class="tool-sub">Weekly standings by dollar value, with week-over-week deltas, biggest mover, and the quarter grand-prize race.</p>
+        <div class="tool-stat"><span class="tool-stat-value" id="tool-standings-stat">Live</span><span class="tool-stat-label">Season Running</span></div>
+      </a>
+    </div>
   </section>
 
   <footer class="footer">PPF Operator &middot; Philly Pretzel Factory</footer>
@@ -354,16 +404,13 @@ async function boot() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Dashboard — fills metrics strip + per-tile stats from the
-   shared plan state. All counts are relative to the fixed totals
-   from the plan page (33 tasks, 13 urgent, 6 dead stops, 24 bars,
-   6 target accounts, 3 approvals). If the plan changes, bump
-   the constants here to match.
+   Dashboard — "Today" metrics strip + per-tile stats.
+   Each live number is fetched once and used to populate both the
+   top strip and the matching tile below, so the two can never
+   drift from each other. Plan-state (old 90-day roadmap counts)
+   is no longer surfaced on the dashboard; the Plan page is a
+   reference doc now and its tile is unstatted.
    ───────────────────────────────────────────────────────────── */
-const PLAN_START = new Date(2026, 9, 16); // Oct 16, 2026 — day 1 of the 90-day plan
-const PLAN_SPAN  = 90;
-const TOTALS = { tasks: 33, urgent: 13, dead: 6, bars: 24, targets: 6, approvals: 3 };
-
 async function initApp() {
   document.getElementById('logout-btn').onclick = async () => {
     try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
@@ -372,121 +419,118 @@ async function initApp() {
   document.getElementById('dash-date').textContent =
     new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  renderMetrics({ done: {}, pushed: {}, tstat: {}, ostat: {} }); // show skeleton values immediately
-
-  // Fetch live plan state — hub is read-only. The session cookie goes
-  // along automatically; no header needed. 401/500 just leaves the zeros
-  // in place rather than bouncing the user out.
-  try {
-    const r = await fetch('/api/plan-state', { credentials: 'same-origin', cache: 'no-store' });
-    if (!r.ok) throw new Error('http ' + r.status);
-    const s = await r.json();
-    renderMetrics(s);
-  } catch (e) {
-    console.warn('plan state fetch failed:', e);
-  }
+  renderMetricsSkeleton();
+  loadDashboardStats();
 }
 
-function renderMetrics(s) {
-  const doneCount    = Object.keys(s.done || {}).length;
-  const pushedCount  = Object.keys(s.pushed || {}).length;
-  const signedCount  = Object.values(s.tstat || {}).filter(v => v === 'Signed').length;
-  const barsSigned   = Object.values(s.ostat || {}).filter(v => v === 'Signed').length;
-  const deadLogged   = Object.keys(s.ostat || {}).filter(k => k.startsWith('dead_')).length;
-  const approvalsDone= Object.keys(s.ostat || {}).filter(k => k.startsWith('a') && /^a\d/.test(k)).length;
-
-  // Day X of 90 — relative to a fixed start date so it stays stable.
-  const todayMs = Date.now();
-  const dayNum = Math.max(0, Math.min(PLAN_SPAN, Math.floor((todayMs - PLAN_START.getTime()) / 86400000) + 1));
-  const urgentOutstanding = Math.max(0, TOTALS.urgent - pushedCount);
-  const deadOutstanding   = Math.max(0, TOTALS.dead - deadLogged);
-
-  const metrics = [
-    { label: 'Day of 90', value: dayNum, cls: '' },
-    { label: 'Tasks Done', value: doneCount + ' / ' + TOTALS.tasks, cls: doneCount >= TOTALS.tasks ? 'is-ok' : '' },
-    { label: 'Urgent Pending', value: urgentOutstanding, cls: urgentOutstanding ? 'is-warn' : 'is-ok' },
-    { label: 'Dead Stops To Log', value: deadOutstanding, cls: deadOutstanding ? 'is-warn' : 'is-ok' },
-    { label: 'Signed Accounts', value: signedCount + ' / ' + TOTALS.targets, cls: signedCount >= TOTALS.targets ? 'is-ok' : '' },
-    { label: 'Bars Signed', value: barsSigned + ' / 3', cls: barsSigned >= 3 ? 'is-ok' : '' },
+function renderMetricsSkeleton() {
+  const slots = [
+    { id: 'm-revenue',  label: 'This Week' },
+    { id: 'm-drafts',   label: 'Drafts Awaiting' },
+    { id: 'm-timeoff',  label: 'Time Off Pending' },
+    { id: 'm-requests', label: 'Open Requests' },
+    { id: 'm-stops',    label: 'Active Stops' },
   ];
-
-  document.getElementById('metrics').innerHTML = metrics.map(m => `
+  document.getElementById('metrics').innerHTML = slots.map(s => `
     <div class="metric">
-      <div class="metric-value ${m.cls}">${m.value}</div>
-      <div class="metric-label">${m.label}</div>
+      <div class="metric-value" id="${s.id}">&mdash;</div>
+      <div class="metric-label">${s.label}</div>
     </div>`).join('');
+}
 
-  // Per-tile stats
-  document.getElementById('tool-plan-stat').textContent      = doneCount + ' / ' + TOTALS.tasks;
+function setMetric(id, value, warn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = value;
+  el.classList.remove('is-warn', 'is-ok');
+  if (warn === true)  el.classList.add('is-warn');
+  if (warn === false) el.classList.add('is-ok');
+}
+function setTile(id, value, warn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = value;
+  if (warn === true)  el.style.color = '#f4c25f';
+  if (warn === false) el.style.color = '';
+}
 
-  // Updates tile — count of updates posted in the last 30 days. Lives on
-  // the same /api/updates feed every role already reads; we just filter.
+function loadDashboardStats() {
+  // Revenue — this-week gross retail. Same endpoint the Revenue page uses.
+  fetch('/api/schedule?resource=revenue&window=week', { credentials: 'same-origin', cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => {
+      if (!j || !j.summary) return;
+      const cents = j.summary.total_cents || 0;
+      const money = '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      setMetric('m-revenue', money);
+      setTile('tool-revenue-stat', money);
+    })
+    .catch(() => {});
+
+  // Draft invoices awaiting operator approval.
+  fetch('/api/schedule?resource=pending-invoices', { credentials: 'same-origin', cache: 'no-store' })
+    .then(r => r.ok ? r.json() : { kpi: {} })
+    .then(({ kpi }) => {
+      const drafts = (kpi && kpi.drafts) || 0;
+      setMetric('m-drafts', String(drafts), drafts > 0 ? true : undefined);
+      setTile('tool-pay-stat', String(drafts), drafts > 0 ? true : undefined);
+    })
+    .catch(() => {});
+
+  // Time-off requests pending operator decision.
+  fetch('/api/time-off?scope=all', { credentials: 'same-origin', cache: 'no-store' })
+    .then(r => r.ok ? r.json() : { requests: [] })
+    .then(({ requests }) => {
+      const pending = (requests || []).filter(r => r.status === 'pending').length;
+      setMetric('m-timeoff', String(pending), pending > 0 ? true : undefined);
+      setTile('tool-timeoff-stat', String(pending), pending > 0 ? true : undefined);
+    })
+    .catch(() => {});
+
+  // Open account requests — delivery issues + drop-change requests.
+  // Same endpoints the Account Requests page reads.
+  Promise.all([
+    fetch('/api/schedule?resource=store-issues&status=open',    { credentials: 'same-origin', cache: 'no-store' }).then(r => r.ok ? r.json() : { issues: [] }),
+    fetch('/api/schedule?resource=store-requests&status=pending', { credentials: 'same-origin', cache: 'no-store' }).then(r => r.ok ? r.json() : { requests: [] }),
+  ])
+    .then(([a, b]) => {
+      const total = ((a && a.issues) || []).length + ((b && b.requests) || []).length;
+      setMetric('m-requests', String(total), total > 0 ? true : undefined);
+      setTile('tool-requests-stat', String(total), total > 0 ? true : undefined);
+    })
+    .catch(() => {});
+
+  // Active delivery stops across all routes.
+  fetch('/api/schedule?resource=stops', { credentials: 'same-origin', cache: 'no-store' })
+    .then(r => r.ok ? r.json() : { stops: [] })
+    .then(({ stops }) => {
+      const active = (stops || []).filter(s => s.active).length;
+      setMetric('m-stops', String(active));
+      setTile('tool-stops-count', String(active));
+    })
+    .catch(() => {});
+
+  // --- Tile-only fetches (not surfaced in the top strip) ------------------
+
+  // Announcements posted in the last 30 days.
   fetch('/api/updates', { credentials: 'same-origin', cache: 'no-store' })
     .then(r => r.ok ? r.json() : { updates: [] })
     .then(({ updates }) => {
       const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
       const recent = (updates || []).filter(u => new Date(u.posted_at).getTime() >= cutoff).length;
-      const el = document.getElementById('tool-updates-stat');
-      if (el) el.textContent = String(recent);
+      setTile('tool-updates-stat', String(recent));
     })
     .catch(() => {});
 
-  // Revenue tile — this-week gross retail. Pulls the same endpoint the
-  // Revenue page uses so numbers never drift.
-  fetch('/api/schedule?resource=revenue&window=week', { credentials: 'same-origin', cache: 'no-store' })
-    .then(r => r.ok ? r.json() : null)
-    .then(j => {
-      const el = document.getElementById('tool-revenue-stat');
-      if (!el || !j || !j.summary) return;
-      const cents = j.summary.total_cents || 0;
-      el.textContent = '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    })
-    .catch(() => {});
-
-  // Time-off tile — count of pending requests. Mirrors what the operator
-  // sees as unresolved on the Time Off page.
-  fetch('/api/time-off?scope=all', { credentials: 'same-origin', cache: 'no-store' })
-    .then(r => r.ok ? r.json() : { requests: [] })
-    .then(({ requests }) => {
-      const pending = (requests || []).filter(r => r.status === 'pending').length;
-      const el = document.getElementById('tool-timeoff-stat');
-      if (el) { el.textContent = String(pending); if (pending > 0) el.style.color = '#f4c25f'; }
-    })
-    .catch(() => {});
-
-  // Stops tile — count of active stops across all routes.
-  fetch('/api/schedule?resource=stops', { credentials: 'same-origin', cache: 'no-store' })
-    .then(r => r.ok ? r.json() : { stops: [] })
-    .then(({ stops }) => {
-      const active = (stops || []).filter(s => s.active).length;
-      const el = document.getElementById('tool-stops-count');
-      if (el) el.textContent = String(active);
-    })
-    .catch(() => {});
-
-  // Shifts tile — count of all shift records.
+  // Shift records on file.
   fetch('/api/schedule?resource=shifts', { credentials: 'same-origin', cache: 'no-store' })
     .then(r => r.ok ? r.json() : { shifts: [] })
     .then(({ shifts }) => {
-      const el = document.getElementById('tool-shifts-count');
-      if (el) el.textContent = String((shifts || []).length);
+      setTile('tool-shifts-count', String((shifts || []).length));
     })
     .catch(() => {});
 
-  // Payments tile — count of draft invoices waiting for operator approval,
-  // flipping warn color when > 0 so it reads at a glance on the dashboard.
-  fetch('/api/schedule?resource=pending-invoices', { credentials: 'same-origin', cache: 'no-store' })
-    .then(r => r.ok ? r.json() : { kpi: {} })
-    .then(({ kpi }) => {
-      const drafts = (kpi && kpi.drafts) || 0;
-      const el = document.getElementById('tool-pay-stat');
-      if (el) { el.textContent = String(drafts); if (drafts > 0) el.style.color = '#f4c25f'; }
-    })
-    .catch(() => {});
-
-  // Prospecting tile — total prospects across all four segments. Each JSON
-  // file is a static asset under /ops/prospecting/; see ops/prospecting/README.md
-  // for the refresh script.
+  // Prospects — total across all four segments (static JSON assets).
   Promise.all([
     fetch('/ops/prospecting/data.json',     { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
     fetch('/ops/prospecting/schools.json',  { cache: 'no-cache' }).then(r => r.ok ? r.json() : { rows: [] }),
@@ -495,13 +539,13 @@ function renderMetrics(s) {
   ])
     .then(all => {
       const total = all.reduce((n, { rows }) => n + (rows || []).length, 0);
-      const el = document.getElementById('tool-prospect-stat');
-      if (el) el.textContent = total.toLocaleString();
+      setTile('tool-prospect-stat', total.toLocaleString());
     })
     .catch(() => {});
 }
 
 boot();
 </script>
+  <script src="/assets/ops-nav.js" defer></script>
 </body>
 </html>
