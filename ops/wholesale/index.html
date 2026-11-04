@@ -267,7 +267,7 @@
         <dt>To</dt>        <dd id="invoice-to">—</dd>
         <dt>Subject</dt>   <dd id="invoice-subject">—</dd>
       </dl>
-      <iframe class="preview-frame" id="invoice-preview" sandbox="allow-same-origin" title="Invoice preview"></iframe>
+      <iframe class="preview-frame" id="invoice-preview" sandbox="" title="Invoice preview"></iframe>
       <p class="send-note" id="invoice-note"></p>
       <div class="modal-footer">
         <button class="btn-sm ghost" id="invoice-cancel">Cancel</button>
@@ -283,7 +283,7 @@
       <button class="close" id="camp-preview-close" aria-label="Close">×</button>
       <h3 id="camp-preview-title">Campaign email preview</h3>
       <p class="inline-note" id="camp-preview-sub">—</p>
-      <iframe class="preview-frame" id="camp-preview-frame" sandbox="allow-same-origin" title="Campaign preview"></iframe>
+      <iframe class="preview-frame" id="camp-preview-frame" sandbox="" title="Campaign preview"></iframe>
     </div>
   </div>
 
@@ -319,6 +319,7 @@
   const fmtDate = (iso) => iso ? new Date(iso).toLocaleString() : '—';
   let allOrders = [];
   let currentOrder = null;   // last-fetched order detail (for the drawer actions / invoice modal)
+  let drawerFetchSeq = 0;    // guards against out-of-order drawer fetches
 
   // Mirror of the server-side transition table in api/wholesale/order.js.
   // Kept small so a new allowed move only needs editing one line.
@@ -457,6 +458,7 @@
     // Fetch fresh so we pick up status transitions another operator may
     // have made, and so we get email_history (only attached when the
     // caller has an operator session).
+    const seq = ++drawerFetchSeq;   // ignore any in-flight fetch that resolves after a newer one
     const summary = allOrders.find(x => x.id === id) || { id };
     currentOrder = Object.assign({ id }, summary);   // placeholder for rendering while we fetch
     renderDrawerBase(currentOrder);
@@ -465,8 +467,10 @@
     $('drawer-bg').classList.add('is-open');
     try {
       const r = await fetch('/api/wholesale/order?o=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' });
+      if (seq !== drawerFetchSeq) return;   // a newer openDrawer superseded us
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = await r.json();
+      if (seq !== drawerFetchSeq) return;
       // The list shape carries nested `customer`; the order endpoint
       // doesn't. Merge so renderDrawerBase has both.
       currentOrder = Object.assign({}, summary, d.order, { email_history: d.email_history || [] });
@@ -474,6 +478,7 @@
       renderDrawerActions(currentOrder);
       renderEmailHistory(currentOrder.email_history);
     } catch (ex) {
+      if (seq !== drawerFetchSeq) return;
       $('drawer-actions').innerHTML = `<p class="send-note err">Detail load failed: ${esc(ex.message)}</p>`;
     }
   }
@@ -566,6 +571,15 @@
         body: JSON.stringify({ status }),
       });
       const d = await r.json().catch(() => ({}));
+      if (r.status === 409) {
+        // Lost a race against another operator (or we're on a stale
+        // view). Refresh the drawer from server truth so the buttons
+        // reflect the new state before the operator tries again.
+        note.textContent = (d.error || 'Status changed') + ' — refreshing…';
+        note.className = 'inline-note err';
+        openDrawer(id);
+        return;
+      }
       if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
       // Refresh in place: update currentOrder, re-render drawer + list row.
       Object.assign(currentOrder, d.order || {});

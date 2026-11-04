@@ -70,7 +70,11 @@ async function readJsonBody(req) {
 
 async function emailHistoryFor(customerId) {
   // Join through campaign_email so each row carries the email's
-  // position + subject. Ordered by send-position for a stable UI.
+  // position + subject. Only actual sends: `wholesale_email_sends`
+  // also holds dry-run placeholders (notes='dry_run', sent_at=null)
+  // that campaigns/send.js writes to preview an upcoming send — those
+  // would look identical to "pending" in the UI and mislead the
+  // operator, so filter them out server-side.
   const { data, error } = await sb
     .from('wholesale_email_sends')
     .select(`
@@ -79,7 +83,8 @@ async function emailHistoryFor(customerId) {
         position, subject, send_date
       )
     `)
-    .eq('customer_id', customerId);
+    .eq('customer_id', customerId)
+    .not('sent_at', 'is', null);
   if (error) return [];
   const rows = (data || []).map(r => ({
     position:         r.campaign_email ? r.campaign_email.position  : null,
@@ -90,7 +95,13 @@ async function emailHistoryFor(customerId) {
     first_clicked_at: r.first_clicked_at,
     click_count:      r.click_count,
   }));
-  rows.sort((a, b) => (a.position || 0) - (b.position || 0));
+  // Nulls last on position so a deleted campaign_email row doesn't
+  // float to the top.
+  rows.sort((a, b) => {
+    const ap = a.position == null ?  Infinity : a.position;
+    const bp = b.position == null ?  Infinity : b.position;
+    return ap - bp;
+  });
   return rows;
 }
 

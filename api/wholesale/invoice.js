@@ -119,6 +119,49 @@ module.exports = async function handler(req, res) {
   }
 
   // ─── Live send ─────────────────────────────────────────────────
+  // Invoice sends are only allowed from `awaiting_payment`. The UI
+  // disables the "Mark invoiced" entry point for any other status, so
+  // reaching this branch past that state means a stale client or a
+  // direct API call — in either case a resend is not wanted.
+  if (order.status !== 'awaiting_payment') {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(409).json({
+      ...payload,
+      error: `cannot send invoice for order in status "${order.status}"`,
+    });
+  }
+
+  // Claim the send by flipping status to 'invoiced' BEFORE sendEmail.
+  // Two operators racing both pre-see `awaiting_payment`; this CAS
+  // serializes them so only the winner's email goes out. `.select('id')
+  // .maybeSingle()` lets us distinguish "we moved the row" (claimRow)
+  // from "someone beat us to it" (null).
+  const invoicedAt = new Date().toISOString();
+  const { data: claimRow, error: claimErr } = await sb
+    .from('wholesale_orders')
+    .update({
+      status:      'invoiced',
+      invoiced_at: invoicedAt,
+      invoiced_by: sess.sub,
+    })
+    .eq('id', id)
+    .eq('status', 'awaiting_payment')
+    .select('id')
+    .maybeSingle();
+  if (claimErr) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(500).json({ ...payload, error: 'claim failed' });
+  }
+  if (!claimRow) {
+    // Lost the race: either another operator already invoiced, or the
+    // order moved further on. No email leaves the server.
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(409).json({
+      ...payload,
+      error: 'invoice send in flight (or already completed) by another operator; refresh and retry',
+    });
+  }
+
   try {
     await sendEmail({
       to:      customer.email,
@@ -127,25 +170,20 @@ module.exports = async function handler(req, res) {
       text,
     });
     payload.sent = true;
+    payload.status_updated = true;
   } catch (sendErr) {
+    // Roll back the claim so the operator can retry. Only revert if the
+    // row is still in our claimed state — if somehow another transition
+    // beat us to the row after the send attempt, leave their state alone.
+    await sb
+      .from('wholesale_orders')
+      .update({ status: 'awaiting_payment', invoiced_at: null, invoiced_by: null })
+      .eq('id', id)
+      .eq('status', 'invoiced')
+      .eq('invoiced_at', invoicedAt);
     const reason = String(sendErr && (sendErr.message || sendErr)).slice(0, 300);
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(502).json({ ...payload, error: reason });
-  }
-
-  // Only flip the status when the order is still awaiting payment.
-  // Any other current status is left alone (the send still counted).
-  if (order.status === 'awaiting_payment') {
-    const { error: upErr } = await sb
-      .from('wholesale_orders')
-      .update({
-        status:       'invoiced',
-        invoiced_at:  new Date().toISOString(),
-        invoiced_by:  sess.sub,
-      })
-      .eq('id', id)
-      .eq('status', 'awaiting_payment');  // defend against a race
-    if (!upErr) payload.status_updated = true;
+    return res.status(502).json({ ...payload, sent: false, status_updated: false, error: reason });
   }
 
   res.setHeader('Cache-Control', 'no-store');

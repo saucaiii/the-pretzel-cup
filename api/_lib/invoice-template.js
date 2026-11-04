@@ -31,11 +31,26 @@ function paymentHelpMd() {
   return s;
 }
 
+// Break the markdown link syntax `[label](url)` in customer-sourced
+// strings. escapeHtml in md.js runs BEFORE the link regex, but `[ ] ( )`
+// aren't HTML-special so they survive escape and can still form an
+// anchor via a crafted `first_name` / `organization` / item name. The
+// scheme allowlist prevents javascript:/data: so this isn't XSS, but
+// it would let a hostile customer put a live external link into an
+// invoice they themselves receive. Replace just the `](` joiner with
+// `) (` — enough to kill link syntax while barely touching readable
+// names (e.g. "Store (NYC)" stays intact).
+function mdSafe(s) {
+  return String(s == null ? '' : s).replace(/\]\(/g, ') (');
+}
+
 // Each line item becomes a markdown list row. Bonus items (is_bonus +
 // $0 unit) are tagged "(free)" so operator and customer both see the
-// 100-for-25 math the same way.
+// 100-for-25 math the same way. Item name comes from
+// wholesale_products.name server-side, but goes through mdSafe anyway
+// for defense in depth.
 function itemLine(it) {
-  const name = String(it.name || it.sku || 'Item');
+  const name = mdSafe(it.name || it.sku || 'Item');
   const qty  = Number(it.qty || 0);
   const unit = Number(it.unit_price_cents || 0);
   const line = Number(it.line_total_cents || qty * unit);
@@ -47,18 +62,18 @@ function itemLine(it) {
 
 function pickupMd(order) {
   const parts = [];
-  if (order.pickup_location) parts.push(order.pickup_location);
-  if (order.pickup_date)     parts.push(order.pickup_date);
-  if (order.pickup_time)     parts.push(order.pickup_time);
+  if (order.pickup_location) parts.push(mdSafe(order.pickup_location));
+  if (order.pickup_date)     parts.push(mdSafe(order.pickup_date));
+  if (order.pickup_time)     parts.push(mdSafe(order.pickup_time));
   return parts.length ? parts.join(' · ') : null;
 }
 
 function buildBody({ order, customer }) {
   const greetingName = customer && customer.first_name
-    ? String(customer.first_name).trim()
+    ? mdSafe(String(customer.first_name).trim())
     : 'there';
   const org = customer && customer.organization
-    ? String(customer.organization).trim()
+    ? mdSafe(String(customer.organization).trim())
     : null;
   const items = Array.isArray(order.items) ? order.items : [];
   const itemsMd = items.length
@@ -68,7 +83,7 @@ function buildBody({ order, customer }) {
   const total = money(order.total_cents);
   const subtotal = money(order.subtotal_cents);
   const discount = money(order.discount_cents);
-  const promo = order.promo_code ? ` (${order.promo_code})` : '';
+  const promo = order.promo_code ? ` (${mdSafe(order.promo_code)})` : '';
 
   // Markdown body. Line order:
   //   greeting, intro, items list, totals, pickup, payment help, sig.
