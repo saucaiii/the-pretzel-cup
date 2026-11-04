@@ -57,12 +57,21 @@ function b64url(s) {
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// Known store addresses — used as a fallback when a customer has no
+// recorded pickup_address, so the nurture templates don't render as
+// "at Lynbrook ()" with an empty parenthetical.
+const STORE_ADDR = {
+  'Lynbrook':        '118 Broadway, Lynbrook',
+  'Franklin Square': '197 Franklin Ave, Franklin Square',
+};
+
 function fieldsFor(customer) {
+  const loc = customer.pickup_location || '';
   return {
     first_name:      customer.first_name      || 'there',
     organization:    customer.organization    || 'your team',
-    pickup_location: customer.pickup_location || 'Franklin Square or Lynbrook',
-    pickup_address:  customer.pickup_address  || '',
+    pickup_location: loc || 'Franklin Square or Lynbrook',
+    pickup_address:  customer.pickup_address  || STORE_ADDR[loc] || '118 Broadway, Lynbrook',
   };
 }
 
