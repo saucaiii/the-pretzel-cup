@@ -1,12 +1,12 @@
-# State — agent/ops-rename
+# State — agent/ops-chrome-css
 
-Task: PR 3 of operator-dashboard cleanup — vocabulary rename (copy-only, no logic).
+PR 4 of operator-dashboard cleanup — CSS extract.
 
 Progress:
-- Branch cut from latest `main` (`b29bc9b`, includes PR #15 shared-nav merge).
-- Nav labels updated in `assets/ops-nav.js`.
-- Dashboard tile titles/chips/descriptions updated in `ops/index.html`.
-- Sub-page `<title>` + `<h1>` + eyebrow updated on the 5 renamed pages.
-- URLs unchanged.
+- Branch cut from `main` at `c5f98a5` (post-#16).
+- `assets/ops-chrome.css` created with the canonical chrome rules.
+- 14 ops HTML files: link added + 189 inline chrome-rule lines stripped.
+- `ops/standings.html` left alone — self-contained CSS, no `/brand.css` link, needs a separate migration pass.
+- Driver / baker / API / Supabase untouched.
 
-Follow-ups: PR 4 extracts shared ops chrome CSS; PR 5 rebuilds the `/ops` dashboard into 5 category cards with live Today metrics.
+Follow-ups: migrate `ops/standings.html` onto brand.css + ops-chrome.css; then consider extracting the per-page `.card` / `.btn` / `.field` patterns that also repeat across many ops sub-pages.
