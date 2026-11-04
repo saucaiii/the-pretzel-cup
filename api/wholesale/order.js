@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
 
   const { data, error } = await sb
     .from('wholesale_orders')
-    .select('status, items, subtotal_cents, discount_cents, total_cents, pickup_location, pickup_address, pickup_date, pickup_time, promo_code, created_at, paid_at')
+    .select('status, items, subtotal_cents, discount_cents, total_cents, pickup_location, pickup_date, pickup_time, promo_code, created_at, paid_at')
     .eq('id', id)
     .maybeSingle();
   if (error) return res.status(500).json({ error: 'lookup failed' });
