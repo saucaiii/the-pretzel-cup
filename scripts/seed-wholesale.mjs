@@ -223,17 +223,26 @@ const WHOLESALE_TAB_GID  = 164530681;
 
 // Header-name → canonical customer field. Multiple variants map to
 // one column so a renamed header still works. Lowercased + stripped
-// of non-alphanumerics for comparison.
+// of non-alphanumerics for comparison. The long form-question-style
+// variants (youremail, schoolorganizationname, etc.) match the
+// current wholesale lead-form sheet; the short forms are kept as
+// future-proofing for a cleaned-up form.
+//
+// DELIBERATELY NOT MAPPED: columns P/Q ("Column 1" / "Column 2") in
+// the current sheet contain credit card numbers and CVVs. Those are
+// PCI-sensitive data that must NEVER enter our DB. Any variant of
+// "card", "pan", "cvv", "ccnumber" etc. is also excluded here as a
+// future-proofing. Cards go through Stripe Checkout in the new flow.
 const HEADER_MAP = {
-  email:           ['email', 'emailaddress'],
+  email:           ['youremail', 'emailaddress', 'email'],
   first_name:      ['firstname', 'first', 'given'],
-  contact_name:    ['fullname', 'contactname', 'name', 'contact'],
-  organization:    ['organization', 'org', 'school', 'business', 'company', 'organizationname', 'schoolname', 'businessname'],
-  pickup_location: ['pickuplocation', 'location', 'preferredlocation', 'pickup'],
-  pickup_address:  ['pickupaddress', 'address', 'deliveryaddress'],
-  phone:           ['phone', 'phonenumber', 'cell', 'mobile'],
+  contact_name:    ['yourname', 'fullname', 'contactname', 'name', 'contact'],
+  organization:    ['schoolorganizationname', 'organization', 'org', 'school', 'business', 'company', 'organizationname', 'schoolname', 'businessname'],
+  pickup_location: ['whichstorelocationforpickup', 'pickuplocation', 'location', 'preferredlocation', 'pickup'],
+  pickup_address:  ['deliveryaddressoptional', 'pickupaddress', 'address', 'deliveryaddress'],
+  phone:           ['yourphonenumber', 'phone', 'phonenumber', 'cell', 'mobile'],
   tax_exempt:      ['taxexempt', 'exempt', 'ein', 'nonprofit'],
-  notes:           ['notes', 'note', 'comments', 'other'],
+  notes:           ['questionsandcomments', 'notes', 'note', 'comments', 'other'],
 };
 
 function norm(s) {
@@ -300,6 +309,18 @@ async function readWholesaleSheet() {
       if (v == null || v === '') continue;
       if (field === 'tax_exempt') cust[field] = parseTaxExempt(v);
       else cust[field] = String(v).trim();
+    }
+    // Derive first_name from contact_name when the form only collected
+    // a full name (e.g. "Krissie Lamparello" → "Krissie"). Greeting
+    // merges in the nurture emails only use first_name.
+    if (!cust.first_name && cust.contact_name) {
+      cust.first_name = cust.contact_name.split(/\s+/)[0];
+    }
+    // Strip the "(address)" suffix that the form appends to pickup
+    // locations, e.g. "Lynbrook (118 Broadway, Lynbrook)" → "Lynbrook",
+    // so this column matches the <select> options in /wholesale/.
+    if (cust.pickup_location) {
+      cust.pickup_location = cust.pickup_location.replace(/\s*\(.*\)\s*$/, '').trim();
     }
     byEmail.set(email, cust);  // last-write-wins → most recent row
   }
