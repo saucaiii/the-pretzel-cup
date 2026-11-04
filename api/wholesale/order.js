@@ -158,13 +158,19 @@ async function handlePatch(req, res, id) {
   if (next === 'paid')      { patch.paid_at      = now; patch.paid_by      = sess.sub; }
   if (next === 'cancelled') { patch.cancelled_at = now; patch.cancelled_by = sess.sub; }
 
+  // Race-guard: `status = current.status` means a concurrent transition
+  // that ran between the read above and this write (another operator
+  // moving the order) wins, and we surface 409 so the caller can retry
+  // against the new state.
   const { data: updated, error: upErr } = await sb
     .from('wholesale_orders')
     .update(patch)
     .eq('id', id)
+    .eq('status', current.status)
     .select(OPERATOR_SELECT)
-    .single();
-  if (upErr) return res.status(500).json({ error: 'update failed' });
+    .maybeSingle();
+  if (upErr)   return res.status(500).json({ error: 'update failed' });
+  if (!updated) return res.status(409).json({ error: 'order status changed under us; refresh and retry' });
 
   res.setHeader('Cache-Control', 'no-store');
   return res.status(200).json({ order: updated });

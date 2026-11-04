@@ -1,7 +1,7 @@
 // Invoice template for wholesale orders.
 //
-// Pure function: takes an order row + its customer row, returns
-// { subject, bodyMd, html, text }.
+// Pure function: `renderInvoice({ order, customer })` returns
+// `{ subject, bodyMd, html, text }`.
 //
 // Rendering goes through the same markdown helper the campaign sender
 // uses (api/_lib/md.js) so email-client rendering is consistent with
