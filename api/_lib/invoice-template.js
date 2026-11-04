@@ -88,8 +88,9 @@ function buildBody({ order, customer }) {
     itemsMd,
     '',
     `Subtotal: ${subtotal}`,
+    '',
     ...(Number(order.discount_cents) > 0
-      ? [`Discount: ${discount}${promo}`]
+      ? [`Discount: ${discount}${promo}`, '']
       : []),
     `**Total due: ${total}**`,
     '',
