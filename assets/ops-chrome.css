@@ -1,0 +1,40 @@
+/* Shared /ops chrome — header, nav, sign-out, page frame.
+   Loaded by every /ops/* page via <link>. One source of truth; prevents
+   the ~80 lines of inline-duplicate drift this cleanup collapsed. */
+
+/* ─── Top banner ────────────────────────────────────────────────────── */
+.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
+
+/* ─── Header right-side cluster (nav + sign out) ────────────────────── */
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+
+/* ─── Nav links (top-level and dropdown triggers) ───────────────────── */
+.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
+.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
+.nav-link:active { background: rgba(0,0,0,0.35); }
+.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
+.nav-link.is-active:hover { background: var(--accent-2); color: var(--ppf-black); }
+.nav-link.is-active:active { background: var(--accent-2); }
+
+/* ─── Public-site link (to-the-side separator, pill style) ──────────── */
+.public-link { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; border-left: 1px solid var(--line); }
+.public-link:hover { color: var(--accent); }
+.public-link:active { color: var(--accent-2); }
+
+/* ─── Sign-out button ───────────────────────────────────────────────── */
+.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: transform 80ms ease, background 120ms ease, color 120ms ease; }
+.logout-btn:hover { background: rgba(0,0,0,0.2); color: var(--ink); }
+.logout-btn:active { transform: scale(0.96); background: rgba(0,0,0,0.3); }
+
+/* ─── Sub-page frame (eyebrow / title / sub). Dashboard uses its own
+       dash-hero styles and doesn't pick these up. ───────────────────── */
+.page { max-width: 1080px; margin: 0 auto; padding: 56px 24px 80px; }
+.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 12px; text-transform: uppercase; }
+.page-sub { color: var(--ink-2); font-size: 15px; max-width: 60ch; margin: 0 0 32px; line-height: 1.5; }
+
+/* ─── Mobile tap baseline (shared with /driver, but re-declared in-scope
+       so pages without that override still behave right on touch). ──── */
+button.nav-link, a.nav-link, a.public-link { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }

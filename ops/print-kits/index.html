@@ -10,23 +10,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
 <link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/assets/ops-chrome.css">
 <style>
-.ops-banner { background: var(--ppf-black); color: var(--accent); padding: 10px 24px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; border-bottom: 1px solid var(--line); }
-.ops-banner .user-tag { color: var(--ink-3); margin-left: 20px; }
 .ops-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--bg-2); }
 .ops-header-bar .brand { font-family: var(--display); font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); }
 .ops-header-bar .brand a { color: inherit; }
-.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.ops-site-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
-.nav-link { display: inline-flex; align-items: center; padding: 10px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: transparent; font-family: var(--display); font-weight: 400; text-decoration: none; }
-.nav-link:hover { color: var(--ink); background: rgba(0,0,0,0.2); }
-.nav-link.is-active { color: var(--ppf-black); background: var(--accent); }
-.logout-btn { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
 
-.page { max-width: 1080px; margin: 0 auto; padding: 48px 24px 80px; }
-.page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
-.page-title { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 10px; text-transform: uppercase; }
-.page-sub { color: var(--ink-2); font-size: 15px; max-width: 65ch; margin: 0 0 32px; line-height: 1.5; }
 .page-sub code { background: var(--bg); color: var(--accent); padding: 1px 6px; border-radius: 3px; font-family: monospace; font-size: 13px; }
 
 /* Workflow callout */
@@ -115,14 +104,7 @@
 <div class="ops-header-bar">
   <div class="brand"><a href="/ops">◂ Ops Hub</a></div>
   <div class="header-right">
-    <nav class="ops-site-nav">
-      <a href="/ops/plan" class="nav-link">Plan</a>
-      <a href="/ops/stops" class="nav-link">Stops</a>
-      <a href="/ops/people" class="nav-link">People</a>
-      <a href="/ops/onboard" class="nav-link">Onboard</a>
-      <a href="/ops/invite" class="nav-link">Invites</a>
-      <a href="/ops/print-kits" class="nav-link is-active">Print Kits</a>
-    </nav>
+    <nav class="ops-site-nav"></nav>
     <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
   </div>
 </div>
@@ -277,5 +259,6 @@ function render() {
   });
 }
 </script>
+  <script src="/assets/ops-nav.js" defer></script>
 </body>
 </html>

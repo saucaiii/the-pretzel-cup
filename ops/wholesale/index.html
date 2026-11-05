@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>Wholesale — Operator — Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/assets/ops-chrome.css">
+<style>
+  .page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 80px; }
+  .page-eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+  .page-title { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 6vw, 56px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 10px; text-transform: uppercase; }
+  .page-sub { color: var(--ink-2); font-size: 15px; max-width: 72ch; margin: 0 0 24px; line-height: 1.5; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+  .tabs button { background: transparent; border: 0; color: var(--ink-2); font-family: var(--display); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; padding: 12px 18px; cursor: pointer; border-bottom: 3px solid transparent; }
+  .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  section.view { display: none; }
+  section.view.is-active { display: block; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .stat .lbl { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+  .stat .val { font-family: var(--display); font-size: 32px; color: var(--accent); font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .stat .sub { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: end; }
+  .filters .f { display: flex; flex-direction: column; gap: 4px; }
+  .filters .f label { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+  .filters .f input, .filters .f select { background: var(--bg); color: var(--ink); border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 10px; font: 14px var(--body); min-width: 150px; }
+  .btn-sm { background: var(--accent); color: var(--ppf-black); border: 0; border-radius: 6px; padding: 7px 14px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+  .btn-sm.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); }
+
+  .tbl-wrap { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 820px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; background: rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 1; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.row-clickable { cursor: pointer; }
+  tr.row-clickable:hover { background: rgba(212,182,98,0.05); }
+  .status-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font: 600 10px var(--display); letter-spacing: 0.12em; text-transform: uppercase; }
+  .status-pill.paid       { background: rgba(95,213,140,0.18); color: #5fd58c; }
+  .status-pill.awaiting   { background: rgba(244,194,95,0.18); color: #f4c25f; }
+  .status-pill.invoiced   { background: rgba(212,140,60,0.22);  color: #e8a05f; }
+  .status-pill.cancelled  { background: rgba(244,117,114,0.18); color: #f47572; }
+  .status-pill.draft      { background: rgba(255,255,255,0.08); color: var(--ink-3); }
+  .status-pill.refunded   { background: rgba(127,179,213,0.18); color: #7fb3d5; }
+
+  /* Drawer action buttons */
+  .drawer-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 6px; }
+  .drawer-actions button { flex: 0 0 auto; }
+  .drawer-actions button[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .btn-danger { background: transparent; border: 1px solid #f47572; color: #f47572; border-radius: 6px; padding: 7px 14px; font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+  .inline-note { font-size: 12px; color: var(--ink-3); margin: 4px 0 0; }
+
+  /* Email history mini-list inside the drawer */
+  .email-history { margin-top: 14px; }
+  .email-history h4 { font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; margin: 14px 0 4px; }
+  .email-history .eh-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .email-history .eh-row:last-child { border-bottom: 0; }
+  .email-history .eh-sub { font-size: 11px; color: var(--ink-3); grid-column: 1 / -1; }
+
+  /* Modal (invoice preview + campaign preview + type-slug confirm) */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.72); display: none; align-items: center; justify-content: center; z-index: 40; padding: 20px; }
+  .modal-bg.is-open { display: flex; }
+  .modal { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 24px; }
+  .modal h3 { font-family: var(--display); font-size: 20px; letter-spacing: 0.02em; margin: 0 0 10px; }
+  .modal .close { float: right; background: transparent; border: 0; color: var(--ink-3); font-size: 22px; cursor: pointer; line-height: 1; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+  .modal .field-row { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
+  .modal .field-row label { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
+  .modal .field-row input { background: var(--bg); color: var(--ink); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; font: 14px var(--body); }
+  .preview-frame { width: 100%; min-height: 360px; border: 1px solid var(--line-2); border-radius: 8px; background: #fff; }
+  .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; font-size: 13px; margin: 6px 0 10px; }
+  .kv dt { color: var(--ink-3); font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .kv dd { margin: 0; color: var(--ink); word-break: break-word; }
+  .send-note { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .send-note.err { color: #f47572; }
+  .send-note.ok  { color: #5fd58c; }
+  .fn-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .fn-actions button { white-space: nowrap; }
+  .fn-note { display: block; font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+  .fn-note.err { color: #f47572; }
+  .fn-note.ok  { color: #5fd58c; }
+
+  .promo-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .promo-bar .b { display: grid; grid-template-columns: 120px 1fr 100px 80px; gap: 10px; align-items: center; font-size: 14px; }
+  .promo-bar .b .name { font-family: var(--display); font-size: 12px; letter-spacing: 0.1em; color: var(--ink); }
+  .promo-bar .b .bar { height: 10px; background: rgba(255,255,255,0.05); border-radius: 999px; overflow: hidden; }
+  .promo-bar .b .bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+  .promo-bar .b .amt { font-variant-numeric: tabular-nums; color: var(--ink); text-align: right; }
+  .promo-bar .b .cnt { color: var(--ink-3); font-size: 12px; text-align: right; }
+
+  /* Drawer */
+  .drawer-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 30; padding: 20px; }
+  .drawer-bg.is-open { display: flex; }
+  .drawer { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 24px; }
+  .drawer h3 { font-family: var(--display); font-size: 22px; letter-spacing: 0.02em; margin: 0 0 12px; }
+  .drawer .close { float: right; background: transparent; border: 0; color: var(--ink-3); font-size: 22px; cursor: pointer; line-height: 1; }
+  .drawer dl { display: grid; grid-template-columns: 140px 1fr; gap: 6px 14px; font-size: 14px; }
+  .drawer dt { color: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .drawer dd { margin: 0; color: var(--ink); }
+  .drawer ul { margin: 10px 0 0; padding: 0; list-style: none; }
+  .drawer ul li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .drawer ul li:last-child { border-bottom: 0; }
+  .drawer ul li.bonus { color: var(--accent-2); }
+
+  .empty { padding: 40px; text-align: center; color: var(--ink-3); font-size: 14px; }
+  .err { color: #f47572; font-size: 14px; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading&hellip;
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary"></nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button type="button" class="logout-btn" id="logout">Sign out</button>
+      </div>
+    </header>
+  </div>
+
+  <main class="page">
+    <div class="page-eyebrow">Operator · Wholesale</div>
+    <h1 class="page-title">Wholesale Dashboard</h1>
+    <p class="page-sub">Orders, revenue, and the email funnel for the Made-to-Crave nurture.</p>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true"  data-view="orders">Orders</button>
+      <button role="tab" aria-selected="false" data-view="revenue">Revenue</button>
+      <button role="tab" aria-selected="false" data-view="funnel">Funnel</button>
+    </div>
+
+    <!-- ─── Orders ──────────────────────────────────────────────── -->
+    <section class="view is-active" id="view-orders">
+      <div class="filters">
+        <div class="f">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option value="">All</option>
+            <option value="paid">Paid</option>
+            <option value="invoiced">Invoiced</option>
+            <option value="awaiting_payment">Awaiting payment</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="refunded">Refunded</option>
+            <option value="draft">Draft</option>
+          </select>
+        </div>
+        <div class="f">
+          <label for="f-promo">Promo</label>
+          <input id="f-promo" type="text" placeholder="HOLIDAY25" />
+        </div>
+        <div class="f">
+          <label for="f-from">From</label>
+          <input id="f-from" type="date" />
+        </div>
+        <div class="f">
+          <label for="f-to">To</label>
+          <input id="f-to" type="date" />
+        </div>
+        <button class="btn-sm" id="btn-apply">Apply</button>
+        <button class="btn-sm ghost" id="btn-reset">Reset</button>
+      </div>
+      <div class="tbl-wrap">
+        <table id="tbl-orders">
+          <thead>
+            <tr>
+              <th>Created</th><th>Customer</th><th>Items</th><th class="num">Total</th>
+              <th>Promo</th><th>Status</th><th>Pickup</th><th>Src</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="8" class="empty">Loading orders…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── Revenue ─────────────────────────────────────────────── -->
+    <section class="view" id="view-revenue">
+      <div class="stat-row">
+        <div class="stat"><div class="lbl">This week</div><div class="val" id="rev-week">—</div><div class="sub">Mon→now, UTC</div></div>
+        <div class="stat"><div class="lbl">This month</div><div class="val" id="rev-month">—</div><div class="sub">1st→now, UTC</div></div>
+        <div class="stat"><div class="lbl">Campaign to date</div><div class="val" id="rev-camp">—</div><div class="sub" id="rev-camp-sub">—</div></div>
+        <div class="stat"><div class="lbl">Customers on file</div><div class="val" id="cust-count">—</div><div class="sub">All wholesale leads</div></div>
+      </div>
+
+      <h3 style="font-family:var(--display); font-size:13px; letter-spacing:0.18em; color:var(--ink-3); text-transform:uppercase; margin:28px 0 6px;">Revenue by promo code</h3>
+      <div class="promo-bar" id="promo-bars"></div>
+
+      <h3 style="font-family:var(--display); font-size:13px; letter-spacing:0.18em; color:var(--ink-3); text-transform:uppercase; margin:28px 0 6px;">Revenue by product</h3>
+      <div class="tbl-wrap">
+        <table id="tbl-products">
+          <thead><tr><th>SKU</th><th class="num">Qty</th><th class="num">Revenue</th></tr></thead>
+          <tbody><tr><td colspan="3" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn-sm" id="btn-csv">Export orders CSV</button>
+      </div>
+    </section>
+
+    <!-- ─── Funnel ──────────────────────────────────────────────── -->
+    <section class="view" id="view-funnel">
+      <p class="page-sub" style="margin-top: 8px;">Per campaign email: sent / opened / clicked / ordered. Rates are over <em>sent</em>, not over customers on file.</p>
+      <div class="tbl-wrap">
+        <table id="tbl-funnel">
+          <thead>
+            <tr>
+              <th>#</th><th>Subject</th><th>Send date</th><th>Promo</th>
+              <th class="num">Sent</th>
+              <th class="num">Opened</th>
+              <th class="num">Clicked</th>
+              <th class="num">Ordered</th>
+              <th class="num">Revenue</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="10" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Order detail drawer -->
+  <div class="drawer-bg" id="drawer-bg">
+    <div class="drawer" id="drawer" role="dialog" aria-labelledby="drawer-title">
+      <button class="close" id="drawer-close" aria-label="Close">×</button>
+      <h3 id="drawer-title">Order detail</h3>
+      <div class="drawer-actions" id="drawer-actions"></div>
+      <p class="inline-note" id="drawer-action-note" hidden></p>
+      <dl id="drawer-dl"></dl>
+      <h4 style="font-family:var(--display); font-size:12px; letter-spacing:0.14em; color:var(--ink-3); text-transform:uppercase; margin:14px 0 4px;">Items</h4>
+      <ul id="drawer-items"></ul>
+      <div class="email-history" id="drawer-email-history" hidden></div>
+    </div>
+  </div>
+
+  <!-- Invoice modal (Mark invoiced) -->
+  <div class="modal-bg" id="invoice-bg">
+    <div class="modal" role="dialog" aria-labelledby="invoice-title">
+      <button class="close" id="invoice-close" aria-label="Close">×</button>
+      <h3 id="invoice-title">Send invoice</h3>
+      <dl class="kv">
+        <dt>To</dt>        <dd id="invoice-to">—</dd>
+        <dt>Subject</dt>   <dd id="invoice-subject">—</dd>
+      </dl>
+      <iframe class="preview-frame" id="invoice-preview" sandbox="" title="Invoice preview"></iframe>
+      <p class="send-note" id="invoice-note"></p>
+      <div class="modal-footer">
+        <button class="btn-sm ghost" id="invoice-cancel">Cancel</button>
+        <button class="btn-sm ghost" id="invoice-download-pdf" disabled>Download PDF</button>
+        <button class="btn-sm ghost" id="invoice-just-mark">Just mark invoiced</button>
+        <button class="btn-sm"       id="invoice-send">Send invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Campaign-email preview modal -->
+  <div class="modal-bg" id="camp-preview-bg">
+    <div class="modal" role="dialog" aria-labelledby="camp-preview-title">
+      <button class="close" id="camp-preview-close" aria-label="Close">×</button>
+      <h3 id="camp-preview-title">Campaign email preview</h3>
+      <p class="inline-note" id="camp-preview-sub">—</p>
+      <iframe class="preview-frame" id="camp-preview-frame" sandbox="" title="Campaign preview"></iframe>
+    </div>
+  </div>
+
+  <!-- Send-now (type-the-slug) confirmation modal -->
+  <div class="modal-bg" id="camp-send-bg">
+    <div class="modal" role="dialog" aria-labelledby="camp-send-title">
+      <button class="close" id="camp-send-close" aria-label="Close">×</button>
+      <h3 id="camp-send-title">Send campaign — live</h3>
+      <p class="inline-note">This will send the live email to every eligible customer. To confirm, type the campaign slug below.</p>
+      <dl class="kv">
+        <dt>Campaign</dt>  <dd id="camp-send-slug">—</dd>
+        <dt>Email</dt>     <dd id="camp-send-subject">—</dd>
+      </dl>
+      <div class="field-row">
+        <label for="camp-send-confirm">Type slug to confirm</label>
+        <input id="camp-send-confirm" type="text" autocomplete="off" />
+      </div>
+      <p class="send-note" id="camp-send-note"></p>
+      <div class="modal-footer">
+        <button class="btn-sm ghost" id="camp-send-cancel">Cancel</button>
+        <button class="btn-sm"       id="camp-send-go" disabled>Send now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const next = encodeURIComponent(location.pathname + location.search);
+  const $ = (id) => document.getElementById(id);
+  const money = (c) => '$' + (Number(c || 0) / 100).toFixed(2);
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleString() : '—';
+  let allOrders = [];
+  let currentOrder = null;   // last-fetched order detail (for the drawer actions / invoice modal)
+  let drawerFetchSeq = 0;    // guards against out-of-order drawer fetches
+
+  // Mirror of the server-side transition table in api/wholesale/order.js.
+  // Kept small so a new allowed move only needs editing one line.
+  const ALLOWED = {
+    awaiting_payment: ['invoiced', 'paid', 'cancelled'],
+    invoiced:         ['paid', 'cancelled'],
+    paid:             [],
+    cancelled:        [],
+    refunded:         [],
+    draft:            [],
+  };
+
+  // ─── Boot: operator-gate ────────────────────────────────────────
+  async function boot() {
+    try {
+      const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { location.replace('/signin?next=' + next); return; }
+      const me = await r.json();
+      if (me.role !== 'operator') {
+        location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin');
+        return;
+      }
+      $('boot').style.display = 'none';
+      $('app').hidden = false;
+      $('user-tag').textContent = me.name;
+      initApp();
+    } catch (_) { location.replace('/signin?next=' + next); }
+  }
+
+  function initApp() {
+    document.querySelectorAll('[role="tab"]').forEach(b => {
+      b.addEventListener('click', () => switchView(b.dataset.view));
+    });
+    $('btn-apply').addEventListener('click', loadOrders);
+    $('btn-reset').addEventListener('click', () => {
+      $('f-status').value = ''; $('f-promo').value = ''; $('f-from').value = ''; $('f-to').value = '';
+      loadOrders();
+    });
+    $('btn-csv').addEventListener('click', downloadCsv);
+    $('drawer-close').addEventListener('click', closeDrawer);
+    $('drawer-bg').addEventListener('click', (e) => { if (e.target === $('drawer-bg')) closeDrawer(); });
+    $('logout').addEventListener('click', async () => {
+      try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (_) {}
+      location.replace('/signin');
+    });
+
+    // Invoice modal
+    $('invoice-close').addEventListener('click', closeInvoiceModal);
+    $('invoice-cancel').addEventListener('click', closeInvoiceModal);
+    $('invoice-bg').addEventListener('click', (e) => { if (e.target === $('invoice-bg')) closeInvoiceModal(); });
+    $('invoice-just-mark').addEventListener('click', onInvoiceJustMark);
+    $('invoice-send').addEventListener('click', onInvoiceSend);
+    $('invoice-download-pdf').addEventListener('click', onInvoiceDownloadPdf);
+
+    // Campaign preview modal
+    $('camp-preview-close').addEventListener('click', closeCampPreview);
+    $('camp-preview-bg').addEventListener('click', (e) => { if (e.target === $('camp-preview-bg')) closeCampPreview(); });
+
+    // Campaign send-now modal
+    $('camp-send-close').addEventListener('click', closeCampSend);
+    $('camp-send-cancel').addEventListener('click', closeCampSend);
+    $('camp-send-bg').addEventListener('click', (e) => { if (e.target === $('camp-send-bg')) closeCampSend(); });
+    $('camp-send-confirm').addEventListener('input', onCampSendInput);
+    $('camp-send-go').addEventListener('click', onCampSendGo);
+
+    loadOrders();
+    loadMetrics();
+  }
+
+  function switchView(name) {
+    document.querySelectorAll('[role="tab"]').forEach(b => {
+      b.setAttribute('aria-selected', String(b.dataset.view === name));
+    });
+    document.querySelectorAll('section.view').forEach(s => {
+      s.classList.toggle('is-active', s.id === 'view-' + name);
+    });
+  }
+
+  // ─── Orders ─────────────────────────────────────────────────────
+  async function loadOrders() {
+    const params = new URLSearchParams();
+    if ($('f-status').value) params.set('status', $('f-status').value);
+    if ($('f-promo').value)  params.set('promo',  $('f-promo').value.trim().toUpperCase());
+    if ($('f-from').value)   params.set('from',   $('f-from').value);
+    if ($('f-to').value)     params.set('to',     $('f-to').value);
+    params.set('limit', '500');
+    const tbody = $('tbl-orders').querySelector('tbody');
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">Loading…</td></tr>';
+    try {
+      const r = await fetch('/api/wholesale/list?' + params.toString(), { credentials: 'same-origin' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      allOrders = d.orders || [];
+      applyAndRender();
+    } catch (ex) {
+      tbody.innerHTML = `<tr><td colspan="8" class="err">Load failed: ${ex.message}</td></tr>`;
+    }
+  }
+
+  // Re-render the orders table against the current status filter.
+  // Called after loadOrders completes and after any inline mutation
+  // (patchStatus) so filtered views don't suddenly show everything.
+  function applyAndRender() {
+    const want = $('f-status').value;
+    const view = want ? allOrders.filter(o => o.status === want) : allOrders;
+    renderOrders(view);
+  }
+
+  function renderOrders(orders) {
+    const tbody = $('tbl-orders').querySelector('tbody');
+    if (!orders.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No orders match the filters.</td></tr>'; return; }
+    const rows = orders.map(o => {
+      const org = (o.customer && (o.customer.organization || o.customer.first_name)) || '(unknown)';
+      const first = (o.customer && o.customer.first_name) || '';
+      const customerCell = `<div style="font-weight:600">${esc(org)}</div><div style="font-size:12px;color:var(--ink-3)">${esc(first)}</div>`;
+      const itemsSummary = (o.items || []).filter(i => !i.is_bonus).map(i => `${i.qty}× ${i.name || i.sku}`).join(', ');
+      const statusCls = o.status === 'awaiting_payment' ? 'awaiting' : o.status;  // 'invoiced' | 'paid' | 'cancelled' | 'refunded' | 'draft' map 1:1
+      return `
+        <tr class="row-clickable" data-id="${o.id}">
+          <td>${new Date(o.created_at).toLocaleDateString()}</td>
+          <td>${customerCell}</td>
+          <td style="max-width:280px">${esc(itemsSummary) || '—'}</td>
+          <td class="num">${money(o.total_cents)}</td>
+          <td>${esc(o.promo_code || '')}</td>
+          <td><span class="status-pill ${statusCls}">${o.status.replace('_', ' ')}</span></td>
+          <td>${esc(o.pickup_location || '')}<div style="font-size:12px;color:var(--ink-3)">${esc(o.pickup_date || '')} ${esc(o.pickup_time || '')}</div></td>
+          <td style="font-size:12px;color:var(--ink-3)">${esc(o.src_tag || '')}</td>
+        </tr>`;
+    }).join('');
+    tbody.innerHTML = rows;
+    tbody.querySelectorAll('tr.row-clickable').forEach(tr => {
+      tr.addEventListener('click', () => openDrawer(tr.dataset.id));
+    });
+  }
+
+  async function openDrawer(id) {
+    // Fetch fresh so we pick up status transitions another operator may
+    // have made, and so we get email_history (only attached when the
+    // caller has an operator session).
+    const seq = ++drawerFetchSeq;   // ignore any in-flight fetch that resolves after a newer one
+    const summary = allOrders.find(x => x.id === id) || { id };
+    currentOrder = Object.assign({ id }, summary);   // placeholder for rendering while we fetch
+    renderDrawerBase(currentOrder);
+    $('drawer-actions').innerHTML = '';
+    $('drawer-email-history').hidden = true;
+    $('drawer-bg').classList.add('is-open');
+    try {
+      const r = await fetch('/api/wholesale/order?o=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' });
+      if (seq !== drawerFetchSeq) return;   // a newer openDrawer superseded us
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      if (seq !== drawerFetchSeq) return;
+      // The list shape carries nested `customer`; the order endpoint
+      // doesn't. Merge so renderDrawerBase has both.
+      currentOrder = Object.assign({}, summary, d.order, { email_history: d.email_history || [] });
+      renderDrawerBase(currentOrder);
+      renderDrawerActions(currentOrder);
+      renderEmailHistory(currentOrder.email_history);
+    } catch (ex) {
+      if (seq !== drawerFetchSeq) return;
+      $('drawer-actions').innerHTML = `<p class="send-note err">Detail load failed: ${esc(ex.message)}</p>`;
+    }
+  }
+
+  function renderDrawerBase(o) {
+    const dl = $('drawer-dl');
+    dl.innerHTML = '';
+    const rows = [
+      ['Status',    (o.status || '').replace('_', ' ')],
+      ['Created',   fmtDate(o.created_at)],
+      ['Invoiced',  fmtDate(o.invoiced_at)],
+      ['Paid at',   fmtDate(o.paid_at)],
+      ['Cancelled', fmtDate(o.cancelled_at)],
+      ['Customer',  (o.customer && o.customer.organization) || ''],
+      ['Contact',   (o.customer && o.customer.first_name) || ''],
+      ['Email',     (o.customer && o.customer.email) || ''],
+      ['Pickup',    [o.pickup_location, o.pickup_date, o.pickup_time].filter(Boolean).join(' · ')],
+      ['Promo',     o.promo_code || ''],
+      ['Src tag',   o.src_tag || ''],
+      ['Subtotal',  o.subtotal_cents != null ? money(o.subtotal_cents) : ''],
+      ['Discount',  o.discount_cents != null ? money(o.discount_cents) : ''],
+      ['Total',     o.total_cents    != null ? money(o.total_cents)    : ''],
+    ].filter(r => r[1]);
+    for (const [k, v] of rows) {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      dl.appendChild(dt); dl.appendChild(dd);
+    }
+    const items = $('drawer-items');
+    items.innerHTML = (o.items || []).map(it => `
+      <li class="${it.is_bonus ? 'bonus' : ''}">
+        <span>${it.is_bonus ? '+ ' : ''}${esc(it.name || it.sku)}${it.is_bonus ? ' (free)' : ''}</span>
+        <span>${it.qty} × ${money(it.unit_price_cents)}</span>
+      </li>`).join('');
+  }
+
+  function renderDrawerActions(o) {
+    const allowed = ALLOWED[o.status] || [];
+    const buttons = [
+      { s: 'invoiced',  label: 'Mark invoiced', cls: 'btn-sm',       handler: () => openInvoiceModal() },
+      { s: 'paid',      label: 'Mark paid',     cls: 'btn-sm ghost', handler: () => confirmTransition('paid',      'Mark this order as PAID?') },
+      { s: 'cancelled', label: 'Cancel',        cls: 'btn-danger',   handler: () => confirmTransition('cancelled', 'Cancel this order?') },
+    ];
+    const wrap = $('drawer-actions');
+    wrap.innerHTML = '';
+    for (const b of buttons) {
+      const btn = document.createElement('button');
+      btn.className = b.cls;
+      btn.textContent = b.label;
+      btn.disabled = !allowed.includes(b.s);
+      btn.title = allowed.includes(b.s) ? '' : `Not allowed from status "${o.status}"`;
+      btn.addEventListener('click', b.handler);
+      wrap.appendChild(btn);
+    }
+    $('drawer-action-note').hidden = true;
+  }
+
+  function renderEmailHistory(history) {
+    const box = $('drawer-email-history');
+    if (!history || !history.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = '<h4>Email history</h4>' + history.map(h => {
+      const parts = [];
+      if (h.sent_at)          parts.push('sent ' + fmtDate(h.sent_at));
+      else                    parts.push('not sent');
+      if (h.opened_at)        parts.push('opened ' + fmtDate(h.opened_at));
+      if (h.first_clicked_at) parts.push('clicked ' + fmtDate(h.first_clicked_at) + (h.click_count > 1 ? ` (×${h.click_count})` : ''));
+      return `<div class="eh-row">
+        <div>#${esc(h.position == null ? '?' : h.position)} ${esc(h.subject || '(no subject)')}</div>
+        <div style="color:var(--ink-3);font-size:12px;text-align:right">${esc(h.send_date || '')}</div>
+        <div class="eh-sub">${esc(parts.join(' · '))}</div>
+      </div>`;
+    }).join('');
+    box.hidden = false;
+  }
+
+  async function confirmTransition(next, msg) {
+    if (!currentOrder) return;
+    if (!confirm(msg)) return;
+    await patchStatus(currentOrder.id, next);
+  }
+
+  async function patchStatus(id, status) {
+    const note = $('drawer-action-note');
+    note.hidden = false; note.textContent = 'Updating…'; note.className = 'inline-note';
+    try {
+      const r = await fetch('/api/wholesale/order?o=' + encodeURIComponent(id), {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 409) {
+        // Lost a race against another operator (or we're on a stale
+        // view). Refresh the drawer from server truth so the buttons
+        // reflect the new state before the operator tries again.
+        note.textContent = (d.error || 'Status changed') + ' — refreshing…';
+        note.className = 'inline-note err';
+        openDrawer(id);
+        return;
+      }
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      // Refresh in place: update currentOrder, re-render drawer + list row.
+      Object.assign(currentOrder, d.order || {});
+      renderDrawerBase(currentOrder);
+      renderDrawerActions(currentOrder);
+      const idx = allOrders.findIndex(x => x.id === id);
+      if (idx >= 0) Object.assign(allOrders[idx], d.order || {});
+      applyAndRender();
+      note.textContent = `Status is now "${(d.order && d.order.status || status).replace('_', ' ')}".`;
+      note.className = 'inline-note';
+      loadMetrics();   // revenue/funnel may shift when an order flips to paid
+    } catch (ex) {
+      note.textContent = 'Update failed: ' + ex.message;
+      note.className = 'inline-note err';
+    }
+  }
+
+  function closeDrawer() { $('drawer-bg').classList.remove('is-open'); currentOrder = null; }
+
+  // ─── Invoice modal ─────────────────────────────────────────────
+  let invoicePdfBase64 = null;   // holds dry-run PDF for the Download button
+
+  async function openInvoiceModal() {
+    if (!currentOrder) return;
+    const bg = $('invoice-bg');
+    $('invoice-to').textContent      = (currentOrder.customer && currentOrder.customer.email) || '—';
+    $('invoice-subject').textContent = 'Loading preview…';
+    $('invoice-preview').srcdoc      = '';
+    $('invoice-note').textContent    = '';
+    $('invoice-note').className      = 'send-note';
+    $('invoice-send').disabled       = true;
+    $('invoice-just-mark').disabled  = !(ALLOWED[currentOrder.status] || []).includes('invoiced');
+    $('invoice-download-pdf').disabled = true;
+    invoicePdfBase64 = null;
+    bg.classList.add('is-open');
+    try {
+      const r = await fetch('/api/wholesale/invoice?o=' + encodeURIComponent(currentOrder.id), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dry_run: true }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      $('invoice-subject').textContent = d.subject || '(no subject)';
+      $('invoice-preview').srcdoc = d.rendered_html || '';
+      $('invoice-send').disabled = false;
+      if (d.rendered_pdf_base64) {
+        invoicePdfBase64 = d.rendered_pdf_base64;
+        $('invoice-download-pdf').disabled = false;
+      } else if (d.pdf_error) {
+        $('invoice-note').textContent = 'PDF preview failed: ' + d.pdf_error;
+        $('invoice-note').className = 'send-note err';
+      }
+      if (d.live_disabled_reason) {
+        $('invoice-note').textContent = 'Live sending disabled: ' + d.live_disabled_reason;
+        $('invoice-note').className = 'send-note err';
+      }
+    } catch (ex) {
+      $('invoice-subject').textContent = '—';
+      $('invoice-note').textContent = 'Preview failed: ' + ex.message;
+      $('invoice-note').className = 'send-note err';
+    }
+  }
+  function closeInvoiceModal() {
+    $('invoice-bg').classList.remove('is-open');
+    $('invoice-download-pdf').disabled = true;
+    invoicePdfBase64 = null;
+  }
+
+  function onInvoiceDownloadPdf() {
+    if (!invoicePdfBase64 || !currentOrder) return;
+    try {
+      const bin = atob(invoicePdfBase64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'invoice-' + currentOrder.id.slice(0, 8) + '.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    } catch (ex) {
+      $('invoice-note').textContent = 'Download failed: ' + ex.message;
+      $('invoice-note').className = 'send-note err';
+    }
+  }
+
+  async function onInvoiceJustMark() {
+    if (!currentOrder) return;
+    await patchStatus(currentOrder.id, 'invoiced');
+    closeInvoiceModal();
+  }
+
+  async function onInvoiceSend() {
+    if (!currentOrder) return;
+    $('invoice-send').disabled = true;
+    $('invoice-just-mark').disabled = true;
+    $('invoice-note').textContent = 'Sending…';
+    $('invoice-note').className = 'send-note';
+    try {
+      const r = await fetch('/api/wholesale/invoice?o=' + encodeURIComponent(currentOrder.id), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dry_run: false }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      if (d.mode !== 'live' || !d.sent) {
+        // Live was refused (env flag missing) → show the reason, keep modal open.
+        const reason = d.live_disabled_reason || d.error || 'Live send refused.';
+        $('invoice-note').textContent = reason;
+        $('invoice-note').className = 'send-note err';
+        $('invoice-send').disabled = false;
+        $('invoice-just-mark').disabled = false;
+        return;
+      }
+      $('invoice-note').textContent = d.status_updated
+        ? 'Sent. Order marked invoiced.'
+        : 'Sent. (Status already past awaiting_payment — left alone.)';
+      $('invoice-note').className = 'send-note ok';
+      // Refresh the drawer + list from server truth.
+      await openDrawer(currentOrder.id);
+      setTimeout(closeInvoiceModal, 1200);
+    } catch (ex) {
+      $('invoice-note').textContent = 'Send failed: ' + ex.message;
+      $('invoice-note').className = 'send-note err';
+      $('invoice-send').disabled = false;
+      $('invoice-just-mark').disabled = false;
+    }
+  }
+
+  // ─── Campaign-email actions (Funnel tab) ───────────────────────
+  async function campaignFetch(slug, position, dryRun) {
+    const r = await fetch('/api/campaigns/send?dry_run=' + (dryRun ? 'true' : 'false'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_slug: slug, email_position: position }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+    return d;
+  }
+
+  async function campaignPreview(slug, position, subject, noteEl) {
+    noteEl.textContent = 'Loading preview…';
+    noteEl.className = 'fn-note';
+    try {
+      const d = await campaignFetch(slug, position, true);
+      $('camp-preview-title').textContent = 'Preview — ' + subject;
+      $('camp-preview-sub').textContent = `${slug} · email #${position} · eligible ${d.eligible}`;
+      $('camp-preview-frame').srcdoc = d.sample_html || '<p>(no preview available — no eligible customers)</p>';
+      $('camp-preview-bg').classList.add('is-open');
+      noteEl.textContent = '';
+    } catch (ex) {
+      noteEl.textContent = 'Preview failed: ' + ex.message;
+      noteEl.className = 'fn-note err';
+    }
+  }
+  function closeCampPreview() { $('camp-preview-bg').classList.remove('is-open'); }
+
+  async function campaignDryRun(slug, position, noteEl) {
+    noteEl.textContent = 'Dry-run…';
+    noteEl.className = 'fn-note';
+    try {
+      const d = await campaignFetch(slug, position, true);
+      const bits = [`eligible ${d.eligible}`, `written ${d.sent}`, `skipped ${d.skipped}`];
+      if (d.errors && d.errors.length) bits.push(`errors ${d.errors.length}`);
+      noteEl.textContent = 'Dry-run: ' + bits.join(' · ');
+      noteEl.className = 'fn-note ok';
+    } catch (ex) {
+      noteEl.textContent = 'Dry-run failed: ' + ex.message;
+      noteEl.className = 'fn-note err';
+    }
+  }
+
+  let pendingSend = null;    // { slug, position, subject, noteEl }
+  function openCampSend(slug, position, subject, noteEl) {
+    pendingSend = { slug, position, subject, noteEl };
+    $('camp-send-slug').textContent = slug;
+    $('camp-send-subject').textContent = `#${position} — ${subject}`;
+    $('camp-send-confirm').value = '';
+    $('camp-send-go').disabled = true;
+    $('camp-send-note').textContent = '';
+    $('camp-send-note').className = 'send-note';
+    $('camp-send-bg').classList.add('is-open');
+    setTimeout(() => $('camp-send-confirm').focus(), 0);
+  }
+  function closeCampSend() { $('camp-send-bg').classList.remove('is-open'); pendingSend = null; }
+  function onCampSendInput() {
+    if (!pendingSend) return;
+    $('camp-send-go').disabled = ($('camp-send-confirm').value.trim() !== pendingSend.slug);
+  }
+  async function onCampSendGo() {
+    if (!pendingSend) return;
+    const { slug, position, noteEl } = pendingSend;
+    $('camp-send-go').disabled = true;
+    $('camp-send-note').textContent = 'Sending…';
+    $('camp-send-note').className = 'send-note';
+    try {
+      const d = await campaignFetch(slug, position, false);
+      if (d.mode !== 'live') {
+        const reason = d.live_disabled_reason || 'Live send refused.';
+        $('camp-send-note').textContent = reason;
+        $('camp-send-note').className = 'send-note err';
+        $('camp-send-go').disabled = false;
+        return;
+      }
+      $('camp-send-note').textContent = `Sent live: ${d.sent} · skipped ${d.skipped}${d.errors && d.errors.length ? ` · errors ${d.errors.length}` : ''}`;
+      $('camp-send-note').className = 'send-note ok';
+      noteEl.textContent = `Live: sent ${d.sent}, skipped ${d.skipped}.`;
+      noteEl.className = 'fn-note ok';
+      await loadMetrics();   // funnel counts move after a live send
+      setTimeout(closeCampSend, 1400);
+    } catch (ex) {
+      $('camp-send-note').textContent = 'Send failed: ' + ex.message;
+      $('camp-send-note').className = 'send-note err';
+      $('camp-send-go').disabled = false;
+    }
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[c])); }
+
+  // ─── Metrics ────────────────────────────────────────────────────
+  async function loadMetrics() {
+    try {
+      const r = await fetch('/api/wholesale/metrics', { credentials: 'same-origin' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      $('rev-week').textContent  = money(d.revenue.this_week_cents);
+      $('rev-month').textContent = money(d.revenue.this_month_cents);
+      $('rev-camp').textContent  = money(d.revenue.campaign_to_date_cents);
+      $('rev-camp-sub').textContent = d.meta.campaign.name;
+      $('cust-count').textContent = String(d.meta.customer_count);
+
+      // Promo bars
+      const promos = Object.entries(d.revenue.by_promo).sort((a, b) => b[1].revenue_cents - a[1].revenue_cents);
+      const max = Math.max(1, ...promos.map(([, v]) => v.revenue_cents));
+      $('promo-bars').innerHTML = promos.length
+        ? promos.map(([code, v]) => `
+            <div class="b">
+              <div class="name">${esc(code)}</div>
+              <div class="bar"><div class="bar-fill" style="width:${(v.revenue_cents / max * 100).toFixed(1)}%"></div></div>
+              <div class="amt">${money(v.revenue_cents)}</div>
+              <div class="cnt">${v.orders} order${v.orders === 1 ? '' : 's'}</div>
+            </div>`).join('')
+        : '<div class="empty">No paid orders yet.</div>';
+
+      // Product table
+      const products = Object.entries(d.revenue.by_product).sort((a, b) => b[1].revenue_cents - a[1].revenue_cents);
+      const ptbody = $('tbl-products').querySelector('tbody');
+      ptbody.innerHTML = products.length
+        ? products.map(([sku, v]) => `
+            <tr><td>${esc(sku)}</td><td class="num">${v.qty}</td><td class="num">${money(v.revenue_cents)}</td></tr>`).join('')
+        : '<tr><td colspan="3" class="empty">—</td></tr>';
+
+      // Funnel
+      const slug = d.meta && d.meta.campaign && d.meta.campaign.slug;
+      const ftbody = $('tbl-funnel').querySelector('tbody');
+      if (!(d.funnel || []).length) {
+        ftbody.innerHTML = '<tr><td colspan="10" class="empty">No campaign emails configured.</td></tr>';
+      } else {
+        ftbody.innerHTML = d.funnel.map((f, i) => `
+            <tr data-fn-row="${i}">
+              <td>${f.position}</td>
+              <td style="max-width:320px">${esc(f.subject)}<div style="font-size:12px;color:var(--ink-3)">${esc(f.cta_src || '')}</div></td>
+              <td>${esc(f.send_date || '')}</td>
+              <td>${esc(f.promo_code || '')}</td>
+              <td class="num">${f.sent}</td>
+              <td class="num">${f.opened}<div style="font-size:11px;color:var(--ink-3)">${f.open_rate_pct}%</div></td>
+              <td class="num">${f.clicked}<div style="font-size:11px;color:var(--ink-3)">${f.click_rate_pct}%</div></td>
+              <td class="num">${f.ordered}<div style="font-size:11px;color:var(--ink-3)">${f.order_rate_pct}%</div></td>
+              <td class="num">${money(f.revenue_cents)}</td>
+              <td>
+                <div class="fn-actions">
+                  <button class="btn-sm ghost" data-act="preview">Preview</button>
+                  <button class="btn-sm ghost" data-act="dry">Dry-run</button>
+                  <button class="btn-sm"       data-act="send">Send now</button>
+                </div>
+                <span class="fn-note" data-fn-note></span>
+              </td>
+            </tr>`).join('');
+        // Wire buttons with the campaign slug + position from the metrics response.
+        ftbody.querySelectorAll('tr[data-fn-row]').forEach(tr => {
+          const idx = Number(tr.dataset.fnRow);
+          const f = d.funnel[idx];
+          const noteEl = tr.querySelector('[data-fn-note]');
+          tr.querySelector('[data-act="preview"]').addEventListener('click', () => campaignPreview(slug, f.position, f.subject, noteEl));
+          tr.querySelector('[data-act="dry"]'    ).addEventListener('click', () => campaignDryRun(slug, f.position, noteEl));
+          tr.querySelector('[data-act="send"]'   ).addEventListener('click', () => openCampSend(slug, f.position, f.subject, noteEl));
+        });
+      }
+    } catch (ex) {
+      $('promo-bars').innerHTML = `<div class="err">Metrics load failed: ${ex.message}</div>`;
+    }
+  }
+
+  // ─── CSV export (of currently-loaded orders) ───────────────────
+  function downloadCsv() {
+    if (!allOrders.length) return;
+    const headers = ['created_at','paid_at','status','promo_code','pickup_location','pickup_date','subtotal_cents','discount_cents','total_cents','src_tag','customer_org','customer_first','customer_email','items_summary'];
+    const rows = allOrders.map(o => {
+      const org = (o.customer && o.customer.organization) || '';
+      const first = (o.customer && o.customer.first_name) || '';
+      const emailAddr = (o.customer && o.customer.email) || '';
+      const items = (o.items || []).map(i => `${i.qty}x${i.sku}${i.is_bonus ? '(bonus)' : ''}`).join(' | ');
+      return [o.created_at, o.paid_at || '', o.status, o.promo_code || '', o.pickup_location || '', o.pickup_date || '', o.subtotal_cents, o.discount_cents, o.total_cents, o.src_tag || '', org, first, emailAddr, items];
+    });
+    const csv = [headers.join(',')].concat(rows.map(r => r.map(csvCell).join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `wholesale-orders-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  boot();
+})();
+</script>
+<script src="/assets/ops-nav.js" defer></script>
+</body>
+</html>
