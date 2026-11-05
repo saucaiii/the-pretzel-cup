@@ -19,7 +19,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Runs in every repo, app or not: the guardrails themselves are tested.
       - name: Guardrail tests
         run: |
@@ -67,7 +67,7 @@ jobs:
       actions: read            # CodeQL reads the workflow run; required on private repos
       security-events: write   # only what CodeQL needs to upload SARIF results
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # CodeQL fails on a repo with no JS/TS, so skip the scan (the job still passes) until there is code.
       - name: Detect JavaScript/TypeScript
         id: detect
