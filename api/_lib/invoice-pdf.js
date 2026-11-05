@@ -110,6 +110,22 @@ function billToLines(customer) {
   return line2 ? [line1, line2] : [line1];
 }
 
+// Stacked pickup lines: location, date (MMM D, YYYY), time. Any field
+// that's empty is skipped so the column collapses to fewer lines
+// rather than showing blanks. `order.pickup_location` wins when set
+// (that's what the submit path writes); `customer.pickup_location` is
+// the fallback for orders captured before the submit path propagated
+// it (pre-P14 legacy).
+function pickupLines(order, customer) {
+  const loc = safePdfText(
+    (order && order.pickup_location) ||
+    (customer && customer.pickup_location),
+  );
+  const date = safePdfText(order && order.pickup_date ? formatDateMDY(order.pickup_date) : '');
+  const time = safePdfText(order && order.pickup_time);
+  return [loc, date, time].filter(Boolean);
+}
+
 // Build the items array in render-ready form (one row per order.items[*]).
 // Bonus rows (is_bonus=true, unit_price_cents=0) render "(free)" in the
 // UNIT PRICE column and $0.00 in TOTAL; regular rows show both figures.
@@ -204,22 +220,37 @@ function renderInvoicePdf({ order, customer, invoiceNumber, invoiceDate }) {
         .text(invDate, M + USABLE_W / 2, rowY, { width: USABLE_W / 2, align: 'right' });
       doc.moveDown(1.2);
 
-      // ─── Bill-To / Store-Address row ─────────────────────────────
+      // ─── Bill-To / Pickup row ───────────────────────────────────
+      // Store Address isn't duplicated here — it's already in the
+      // header band above. The right column now surfaces pickup
+      // location + date + time, which is what the customer needs to
+      // act on (e2e report flagged the missing pickup time + the
+      // buried pickup location).
       const colY = doc.y;
       const colW = USABLE_W / 2 - 10;
       doc.font('Helvetica-Bold').fontSize(10)
         .text('BILL TO', M, colY)
-        .text('STORE ADDRESS', M + USABLE_W / 2, colY);
+        .text('PICKUP', M + USABLE_W / 2, colY);
       doc.font('Helvetica').fontSize(10);
       const billLines = billToLines(customer);
+      const pickLines = pickupLines(order, customer);
       let leftY  = doc.y;
       let rightY = leftY;
       billLines.forEach((ln) => {
         doc.text(ln, M, leftY, { width: colW });
         leftY = doc.y;
       });
-      doc.text(STORE_ADDRESS, M + USABLE_W / 2, rightY, { width: colW });
-      rightY = doc.y;
+      if (pickLines.length) {
+        pickLines.forEach((ln) => {
+          doc.text(ln, M + USABLE_W / 2, rightY, { width: colW });
+          rightY = doc.y;
+        });
+      } else {
+        // No pickup fields populated — keep the right column vertical
+        // footprint comparable so the layout doesn't collapse.
+        doc.text('—', M + USABLE_W / 2, rightY, { width: colW });
+        rightY = doc.y;
+      }
       doc.y = Math.max(leftY, rightY);
       doc.moveDown(1.0);
 
@@ -313,5 +344,5 @@ module.exports = {
   renderInvoicePdf,
   // Internal: test-only exports. Kept on the module so a static smoke
   // can exercise formatting helpers without round-tripping a real PDF.
-  __test: { money, formatDateMDY, safePdfText, billToLines, itemRows, LOGO_LOADED: Boolean(LOGO_BYTES) },
+  __test: { money, formatDateMDY, safePdfText, billToLines, pickupLines, itemRows, LOGO_LOADED: Boolean(LOGO_BYTES) },
 };
