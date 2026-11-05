@@ -1,39 +1,51 @@
 # Working memory (short-term). Keep under 60 lines. Prune when a task closes.
-Branch: claude/invoice-pdf-branding (based on origin/main past PR #19 merge)
-Task: PDF invoice branding pass (logo + PPF-green accents + cream header band).
+Branch: claude/invoice-email-restyle (based on origin/main past PR #20 merge)
+Task: Restyle operator-sent invoice email + drop DISCOUNT row from
+      both customer-facing surfaces (PDF + email).
 
 ## Progress
-- Branched off origin/main (PR #19 merged) → claude/invoice-pdf-branding.
-- Rewrote .agent/plan.md for the branding pass (scope: api/_lib/invoice-pdf.js
-  + api/_lib/invoice-logo.jpg).
-- Human re-ran approve-plan.sh 2026-11-04 → bound to the new plan hash.
-- Copied ppf-logo.jpg (repo root) → api/_lib/invoice-logo.jpg so
-  @vercel/nft picks it up statically.
-- Edited api/_lib/invoice-pdf.js:
-  - Loads LOGO_BYTES once via fs.readFileSync at module load with a
-    silent try/catch (null fallback → text-only header).
-  - Header lockup: logo at (M, M) with fit [54, 54], store name +
-    address + phone shifted LOGO_W + 14pt to the right.
-  - Rule under header: 1.0pt PPF green (#0D5237).
-  - Items-table header row: cream (#FAF4E1) band, PPF-green labels.
-  - Totals block: SUBTOTAL / DISCOUNT / SALES TAX stay 10pt black;
-    TOTAL is 11pt bold PPF-green.
-  - Thin rule above totals kept, now rendered in neutral gray #999.
-  - fillColor/strokeColor paired with save/restore so color state
-    doesn't leak between regions.
-- Smoke render: /tmp/invoice-smoke.pdf, 286 KB, %PDF-1.3, opens cleanly.
-  User previewed and said "ship it".
-- Updated .agent/decisions.md with the co-locate-logo decision.
-
-## Failures and root causes
-- (none)
+- Branched off origin/main (PR #20 merged) → claude/invoice-email-restyle.
+- Initial plan: single-file invoice-template.js rewrite (Shopify-style
+  layout, PPF palette, "unpaid invoice" semantics). Approved.
+- Mid-flight: user surfaced wholesale-e2e report finding #4
+  (/tmp/wholesale-e2e-report.md) — DISCOUNT row frames the 100-for-25
+  bonus as a price cut. Plan amended to drop the row from BOTH PDF
+  and email; scope widened to include invoice-pdf.js; re-approved.
+- Implemented:
+  - api/_lib/invoice-template.js — full rewrite of the HTML branch
+    (hand-built inline-CSS table layout: logo + invoice# header,
+    "Thanks for your order — invoice attached." heading, "unpaid"
+    paragraph, cream Amount-due callout above the fold, order summary
+    rows, Subtotal + Amount due totals, Pickup / Bill-to two-column
+    block, bordered PPF-green Payment panel, footer). Plain-text
+    fallback preserved via buildBody+toPlainText.
+  - api/_lib/invoice-pdf.js — removed the DISCOUNT totals row and
+    its promo-label branch. discount_cents still accepted on input;
+    just not rendered.
+- Smokes all pass: no "Discount" anywhere on the email, no
+  "DISCOUNT" in the PDF content stream. Visual previews saved
+  to /tmp/invoice-email-smoke.html and /tmp/invoice-pdf-smoke.pdf;
+  user eyeballed them and said "Ship it".
+- Decision-log entries added for the inline-CSS-table choice and
+  the discount-row-drop rationale.
 
 ## Review notes
-- User approved the visual output pre-commit. Skipping reviewer
-  subagent for this contained visual-only change; CI (plan-gate,
-  scope-check, agent-conflicts, test, CodeQL) still runs on the PR.
+- Reviewer subagent skipped. The change is small and localized
+  (two files, both visual); the user eyeballed both the email and
+  the PDF preview before approving the ship. CI (plan-gate,
+  scope-check, agent-conflicts, test, CodeQL) will still run on
+  the PR.
+
+## Failures and root causes
+- Mid-flight PDF edit was blocked by scope.txt not yet including
+  invoice-pdf.js. Context/environment issue — scope must be widened
+  *before* the edit tool runs. Fix: human re-ran the scope cat
+  with the expanded list, then the edit landed. No code impact.
 
 ## Handoff — needs human
-1. Review the branch; merge when CI is green. No schema change, no
-   env change, no new function — pure visual pass on top of #19.
-2. (Nothing else; prod DB, scope.txt, env all unchanged.)
+1. Review the branch; merge when CI is green. Visual-only, no
+   schema change, no env change — same multipart/mixed attachment
+   path, same assign_invoice_number RPC.
+2. After merge + deploy: confirm the email render in a real Gmail
+   inbox (Outlook-on-Windows is the usual offender for inline-CSS
+   drift; capture a screenshot if it looks off).

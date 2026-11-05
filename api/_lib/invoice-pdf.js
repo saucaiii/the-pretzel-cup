@@ -287,11 +287,14 @@ function renderInvoicePdf({ order, customer, invoiceNumber, invoiceDate }) {
         doc.moveDown(0.3);
       }
 
+      // No DISCOUNT row. The 100-for-25 is a comped-units free gift,
+      // not a price cut — the `(free)` entry in the UNIT PRICE column
+      // of each bonus line item already carries the story, and
+      // printing a dollar discount beside an unchanged TOTAL reads
+      // as broken math and assigns a public dollar value to a gift.
+      // `discount_cents` stays on the order row for internal
+      // analytics; it just stops being rendered on the PDF.
       totalsRow('SUBTOTAL', money(order && order.subtotal_cents));
-      if (Number(order && order.discount_cents) > 0) {
-        const promo = order.promo_code ? ` (${safePdfText(order.promo_code)})` : '';
-        totalsRow(`DISCOUNT${promo}`, '-' + money(order.discount_cents));
-      }
       totalsRow('SALES TAX', '$0.00');
       totalsRow('TOTAL', money(order && order.total_cents), {
         bold:  true,
