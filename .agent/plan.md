@@ -1,120 +1,130 @@
-# Plan — PDF invoice: show pickup time (and fix the Bill-To / Store-Address redundancy)
+# Plan — route-pitch
 
-## Risk
-**HIGH.** Edits `api/_lib/invoice-pdf.js` (plan-first per
-`.agent-policy/policy.sh`). Visual-only — no schema change, no change
-to the send flow, no new serverless function, no env, no secret. Live
-sends remain env-gated (`EMAIL_SEND_LIVE_ENABLED=true`). The PDF
-attachment flow in `api/wholesale/invoice.js` + `api/_lib/gmail.js`
-is untouched.
+**Risk:** MEDIUM overall. Component-by-component:
+- `pitch-kit/` HTML — LOW (static content, shipped)
+- `vercel.json` SAMEORIGIN header — HIGH per policy (plan-first)
+- `scripts/gen-pitch-pdf.mjs` — HIGH per policy (plan-first)
+- `apply/` HTML — LOW
+- `api/leads.js` — MEDIUM
+- `supabase/migrations/p20_leads.sql` — HIGH per policy (plan-first);
+  parallel-agent coordination required (see Risks)
 
 ## Goal
-The customer's PDF invoice carries the **pickup block** the e2e
-report flagged as missing:
+Two outcomes in one branch:
+1. A 6-sheet printable "Route Pitch Packet" under `pitch-kit/` — the
+   pre-signup leave-behind for grocery + deli prospects of Program A
+   (daily route delivery, buy-back model). Matches `/onboarding-kit/`
+   brand system, has a picker page, and prints via a Chrome-headless
+   bundle. **Done — HTML committed on 4b4d185.**
+2. A working `/apply` lead-capture flow so the QR on sheet 6 and the
+   URL on sheets 1–5 actually land somewhere. Branded form, honeypot,
+   rate-limit, Supabase persistence, Telegram notify.
 
-- **Pickup location** is today buried in the BILL-TO address (from
-  `customer.pickup_address`) — reads as the customer's billing
-  address, not as "where to come pick up".
-- **Pickup time** does not appear on the PDF at all.
-- **Pickup date** is in the DATE PERFORMED column of the items
-  table, which is correct but implicit.
-
-Replace the two-column **Bill-To / Store-Address** row with a two-
-column **Bill-To / Pickup** row. The Store Address was duplicative —
-`118 Broadway, Lynbrook, NY 11563` already sits in the header band
-right above. The reclaimed column surfaces Pickup properly:
-location (line 1), date formatted MMM D, YYYY (line 2), time
-verbatim (line 3). This mirrors the invoice-email layout shipped in
-PR #22 (Pickup / Bill-to two-column block).
-
-## Scope (files, worktree-relative)
-- `.agent/plan.md`, `.agent/state.md`, `.agent/decisions.md`
-- `api/_lib/invoice-pdf.js`   (modify)
-
-**No changes to** `.claude/`, `.agent-policy/`, `.agent-control/`,
-`.env*`, `vercel.json`, `supabase/migrations/`,
-`api/_lib/invoice-template.js`, `api/_lib/gmail.js`,
-`api/wholesale/*`, `ops/wholesale/index.html`, or `docs/wholesale.md`.
+## Scope (updated — human must mirror this in `.agent-control/scope.txt`)
+- `pitch-kit/` (committed)
+- `scripts/gen-pitch-pdf.mjs` (new — standalone Chrome-headless PDF
+  generator for the bundle; keeps `gen-print-kits.mjs` untouched)
+- `vercel.json` (SAMEORIGIN for `pitch-kit/(.*)` so iframes work)
+- `apply/` (new — `index.html` form, `success.html` thank-you)
+- `api/leads.js` (new — POST submit, GET list; folded no longer
+  required since Vercel is on the Pro plan)
+- `supabase/migrations/p20_leads.sql` (new — `leads` table + RLS)
 
 ## Steps
-1. **Replace the Bill-To / Store-Address row with Bill-To / Pickup.**
-   - Left column header: `BILL TO` (unchanged). Body from
-     `billToLines(customer)` as today.
-   - Right column header: `PICKUP` (new). Body stacked:
-     `order.pickup_location` → line 1 (fall through to
-     `customer.pickup_location` if the order didn't carry one),
-     `formatDateMDY(order.pickup_date)` → line 2, `order.pickup_time`
-     → line 3. Any field that's empty is just skipped — the column
-     collapses to fewer lines rather than showing a blank.
-2. **Keep the DATE PERFORMED column.** This is the industry-style
-   "date the work was performed / goods delivered" column the
-   template uses; it stays populated from `order.pickup_date`. The
-   PICKUP block above answers "where / when do I pick up?" vs. the
-   per-row answer "what day does this line item bill against?".
-3. **No change to the Items / Totals blocks.** This is a pure
-   header-row swap.
-4. **Fallback behavior preserved.** `safePdfText` still strips
-   control chars from the pickup fields. A customer with no
-   `pickup_location` / `pickup_date` / `pickup_time` (unusual, but
-   possible via T6h-style direct-API bypass pre-#23 merge) renders
-   as `PICKUP` + an empty body — not a broken layout.
-5. **Decision-log entry** in `.agent/decisions.md`:
-   `- 2026-11-05 | replace the PDF's Store Address column with a
-     Pickup block (location + date + time) | the Store Address was
-     duplicating the header band; PICKUP is what customers need to
-     act on (e2e report §#Pickup rows); matches the invoice email's
-     Pickup/Bill-to two-column shape from PR #22 | rejected adding a
-     third column (page width is already tight at 504pt usable);
-     rejected a separate PICKUP row below Bill-To (adds vertical
-     space without reclaiming any) | review-by 2027-11-05`.
+
+### Already done
+1. Read reference files; confirmed brand tokens.
+2. Built 6 sheets + picker + print bundle under `pitch-kit/`.
+3. Visual-checked each sheet via local static server; fixed the
+   Caveat-script uppercase bleed on 06-close.
+4. Generated a sample PDF through Chrome headless (6 pages, letter).
+5. Committed HTML as `feat(pitch-kit): add 6-sheet route-delivery
+   pitch packet` (4b4d185).
+
+### Still to do (needs scope + approval)
+6. Add `pitch-kit/(.*)` SAMEORIGIN entry to `vercel.json`.
+7. Write `scripts/gen-pitch-pdf.mjs` — standalone renderer: hits
+   `BASE/pitch-kit/print-bundle` with Chrome headless, writes to
+   `pitch-kit/pdfs/route-pitch.pdf`. Shares the Chrome-invocation
+   pattern of the existing `scripts/gen-print-kits.mjs` but without
+   Supabase / per-store fan-out.
+8. Build `apply/index.html` — branded form matching the pitch-kit
+   look (cream + green, Archivo Black headline, Caveat accent).
+   Fields: business name, contact name, role, address, city, state,
+   zip, phone, email, est_foot_traffic (optional), notes, honeypot
+   `_hp` hidden input. Client-side validation, then POST JSON to
+   `/api/leads`. On 200, redirect to `/apply/success`.
+9. Build `apply/success.html` — short thank-you, repeats
+   `516.517.8111 · ask for Chris`, promises a call within 24h.
+10. Write `supabase/migrations/p20_leads.sql`:
+    - `leads` table (id uuid pk, created_at, status enum
+      new|contacted|qualified|signed|dead, business_name, contact_name,
+      role, address, city, state, zip, phone, email,
+      est_foot_traffic int, notes, source text default 'pitch-kit-qr',
+      user_agent, ip_hash, handled_by, handled_at)
+    - index on status, created_at
+    - RLS enabled; no anon policies (service role only writes)
+11. Write `api/leads.js`:
+    - POST: honeypot reject if `_hp` set; Upstash sliding-window
+      rate-limit per IP (5 req / 10 min); server-side field validation;
+      Supabase insert via `SUPABASE_SERVICE_ROLE_KEY`; Telegram notify
+      to Chris's group with all contact fields + inline "Mark
+      Contacted" button; returns 200 `{ok:true}`.
+    - GET: admin-auth gated (reuses ops cookie auth from
+      `api/_lib/auth.js` — matches how `/ops/*` pages gate today).
+      Lists leads newest first for a future `/ops/leads` view.
+    - No new `api/_lib/` file; inlines a 30-line helper in the handler
+      rather than touching the HIGH_RISK `api/_lib/` folder (and
+      avoids collision with wholesale-invoice-pdf-f264f2 which owns
+      `api/_lib/gmail.js`).
+12. Leave coordination note in the side-session-notes folder stating
+    I am taking `supabase/migrations/p20_leads.sql`.
+13. Commit in three chunks:
+    - `chore(vercel): expose pitch-kit for iframe print bundle`
+    - `feat(pitch-kit): add standalone print-bundle PDF generator`
+    - `feat(apply): lead capture form + endpoint + leads schema`
+14. Push and open a DRAFT PR using the repo template. Body ends with
+    the required Claude Code attribution line.
+
+### Deferred (follow-up PR, not blocking print)
+- `ops/leads/index.html` — admin list view with status filters and
+  "convert to stop" action. Telegram notifications give Chris
+  immediate visibility; admin view is not needed to start taking
+  real leads.
 
 ## Success criteria
-
-### Quantitative
-- `node --check api/_lib/invoice-pdf.js` clean.
-- Smoke: `renderInvoicePdf({ order, customer })` with
-  `order.pickup_location="118 Broadway, Lynbrook, NY 11563"`,
-  `order.pickup_date="2026-11-15"`, `order.pickup_time="10:00 AM"`
-  produces a PDF whose content stream contains `PICKUP` and does
-  NOT contain `STORE ADDRESS` (compressed-stream caveat: pdfkit's
-  text operators emit the strings in a Tj / TJ instruction, so a
-  raw-buffer search still sees them when the stream isn't
-  compressed; smoke script toggles pdfkit's `compress: false` for
-  the assertion).
-- Smoke: order with only `pickup_location` set (no date, no time)
-  renders a PDF with `PICKUP` label and a single body line (no
-  stray blank lines).
-- CI passes (plan-gate, scope-check, agent-conflicts, test, CodeQL).
-- No new code-scanning alerts.
-
-### Qualitative
-- Visual: the PDF's upper block now reads
-  `BILL TO : {customer}` | `PICKUP : {location / date / time}`,
-  with no duplicated Lynbrook address.
-- Still single-page for a typical 1–4 item wholesale order.
-- `EMAIL_SEND_LIVE_ENABLED` unset path still refuses live sends.
-- MIME attachment flow unchanged.
+- `/apply` returns 200 in prod and shows a brand-matched lead form.
+- Submitting the form inserts a row in `leads` (checked via Supabase)
+  and fires a Telegram message to Chris's group.
+- Submitting without JS or with the honeypot populated 400s cleanly.
+- Repeated submissions from one IP beyond the rate limit 429.
+- QR on sheet 6 (`pitch-kit/06-close.html`) resolves without 404.
+- `scripts/gen-pitch-pdf.mjs` writes a 6-page PDF to
+  `pitch-kit/pdfs/route-pitch.pdf` with no Supabase env required.
+- `vercel.json` grants SAMEORIGIN to `pitch-kit/(.*)`.
+- The word "wholesale" appears only in the unit-economics table of
+  `pitch-kit/03-the-numbers.html` (grep confirms).
 
 ## Risks + mitigations
-- **Operators expect a Store Address somewhere on the paper
-  invoice.** The header band still carries
-  `Pretzels of Long Island LLC. 118 Broadway, Lynbrook, NY 11563 ·
-  516-459-0954` — no actual information is lost, only a duplicate.
-- **Column-width change layout drift.** The widths stay 50/50;
-  only the column label and body contents change. No column math
-  is recomputed, so the items table below is unaffected.
-- **Pickup-time truncation.** The right column's `colW` is
-  `USABLE_W/2 - 10` (~242 pt) — fits "10:00 AM – 12:00 PM" easily.
-  `safePdfText` trims control chars but preserves whatever the
-  customer typed; pdfkit wraps long lines automatically.
+- **Migration-file collision with parallel agents.** `price-override-ga`
+  worktree owns `supabase/migrations/` whole; `wholesale-stack` has
+  `p14_wholesale.sql`; `wholesale-invoice-pdf-f264f2` has
+  `p16_wholesale_invoice_number.sql`; `eager-einstein` had
+  `p15_wholesale_order_audit.sql`. Taking `p20_` leaves a clear
+  numeric gap and I'll drop a note in
+  `/Users/chris/Library/Application Support/Claude/side-session-notes/
+  local_5dee5459-3907-4c47-ae7e-ab35905fe9b6/` naming the number I'm
+  taking so the other agents don't pick it.
+- **`api/_lib/` collision.** `wholesale-invoice-pdf-f264f2` owns
+  `api/_lib/gmail.js`; `wholesale-stack` owns `api/_lib/{gmail,md,
+  promo}.js`. I avoid `api/_lib/` entirely — any helper I need goes
+  inline in `api/leads.js`.
+- **Spam.** Honeypot + Upstash per-IP rate-limit. If spam still gets
+  through after launch, add Turnstile in a follow-up.
+- **No admin UI yet.** Telegram notifications cover the "I got a
+  lead" case for day one; admin UI is a separate PR.
 
-## Rollback
-- `git revert` the merge commit → Vercel redeploys previous SHA.
-- No schema change, no env change.
-
-## Escalation
-- If removing Store Address breaks a downstream operator process
-  (printing the PDF and mailing it to an address the customer
-  reads off the sheet), restore Store Address as a tight third line
-  in the header band and move Pickup to a separate labeled row
-  below Bill-To — but flag before doing so.
+## Rollback / escalation
+Revert on `agent/route-pitch` via `git revert`. Migration rollback is
+`DROP TABLE leads;` (no data loss risk pre-launch). No production
+surface changes until the draft PR is reviewed and merged.

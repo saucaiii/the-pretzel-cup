@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Route Pitch · The Deal — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  html, body { margin: 0; padding: 0; background: var(--ppf-cream); }
+  body { width: 8.5in; height: 11in; }
+
+  .sheet {
+    width: 8.5in; height: 11in;
+    background: var(--ppf-cream);
+    color: var(--ppf-ink);
+    display: flex; flex-direction: column;
+  }
+
+  /* ─── Head band ─────────────────────────────────────────────── */
+  .head-wrap { background: var(--ppf-green); }
+  .head {
+    background: var(--ppf-green); color: var(--ppf-white);
+    padding: 26px 60px 30px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .head .eyebrow {
+    font-family: var(--font-display); font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--ppf-gold); margin: 0 0 8px;
+  }
+  .head .headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 44px; line-height: 0.95;
+    text-transform: uppercase; margin: 0;
+  }
+  .head .script {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 36px; display: block; margin-top: 4px;
+  }
+  .head .right { text-align: right; min-width: 150px; }
+  .head .right .label {
+    font-family: var(--font-display); font-size: 10px; letter-spacing: 0.22em;
+    color: var(--ppf-gold); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .head .right .page {
+    font-family: var(--font-display); color: var(--ppf-white);
+    font-size: 20px; letter-spacing: 0.08em;
+  }
+
+  /* ─── Hero line ─────────────────────────────────────────────── */
+  .hero {
+    padding: 22px 60px 10px;
+    font-size: 14.5px; line-height: 1.5; color: var(--ppf-ink);
+    border-bottom: 2px solid var(--ppf-gold);
+  }
+  .hero strong { color: var(--ppf-green); }
+
+  /* ─── Body grid ─────────────────────────────────────────────── */
+  .body {
+    flex: 1; padding: 22px 60px 12px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px;
+  }
+  .feat {
+    display: grid; grid-template-columns: 44px 1fr; gap: 12px;
+    align-items: start;
+  }
+  .feat .num {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--ppf-green); color: var(--ppf-gold);
+    font-family: var(--font-display); font-size: 16px;
+    display: grid; place-items: center; letter-spacing: 0;
+    flex-shrink: 0;
+  }
+  .feat .text { padding-top: 2px; }
+  .feat h3 {
+    margin: 0 0 4px;
+    font-family: var(--font-display); font-size: 13.5px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ppf-green);
+  }
+  .feat p {
+    margin: 0; font-size: 12px; line-height: 1.5; color: var(--ppf-ink);
+  }
+
+  /* ─── Highlight band ────────────────────────────────────────── */
+  .highlight {
+    margin: 0 60px 20px;
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    border-left: 4px solid var(--ppf-gold);
+    padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  }
+  .highlight .big {
+    font-family: var(--font-display); font-size: 44px;
+    color: var(--ppf-gold); letter-spacing: 0.02em; line-height: 1;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .highlight .sub {
+    font-size: 12px; line-height: 1.55; color: var(--ppf-white);
+    max-width: 56ch;
+  }
+  .highlight .sub strong { color: var(--ppf-gold); }
+
+  /* ─── Footer ────────────────────────────────────────────────── */
+  .footer {
+    background: var(--ppf-green-deep);
+    color: var(--ppf-white);
+    padding: 14px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .footer .gold { color: var(--ppf-gold); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <!-- HEAD -->
+  <div class="head-wrap">
+    <div class="plate-strip"></div>
+    <div class="head">
+      <div>
+        <div class="eyebrow">How the program works</div>
+        <h1 class="headline">The deal,<br/>in six lines.</h1>
+        <span class="script">Zero mysteries.</span>
+      </div>
+      <div class="right">
+        <div class="label">Sheet</div>
+        <div class="page">2 / 6</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    You've got the foot traffic and the counter space. We've got the
+    pretzels, the truck, and the risk. Here's exactly how we fit into
+    your store.
+  </div>
+
+  <!-- FEATURES -->
+  <div class="body">
+    <div class="feat">
+      <div class="num">1</div>
+      <div class="text">
+        <h3>Pay only for what you sell</h3>
+        <p>Unsold pretzels go back on the truck and come off your
+        invoice. Zero shrink exposure.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">2</div>
+      <div class="text">
+        <h3>Baked that morning</h3>
+        <p>Trays leave the oven and are at your door before lunch. No
+        frozen, no reheats, no par-baked.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">3</div>
+      <div class="text">
+        <h3>Month-to-month</h3>
+        <p>No contract, no signup fee, no minimum order. Try it for a
+        week. Keep it if it moves.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">4</div>
+      <div class="text">
+        <h3>Zero equipment to buy</h3>
+        <p>Counter basket and stand insert included. No warmer, fryer,
+        fridge, or utensils needed.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">5</div>
+      <div class="text">
+        <h3>Ready to scan</h3>
+        <p>UPC labels come pre-printed. Your register already knows
+        what to do — we send the codes.</p>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="num">6</div>
+      <div class="text">
+        <h3>A phone number that answers</h3>
+        <p>One owner on Long Island. Not a 1-800. Text Chris and Chris
+        texts back.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIGHLIGHT -->
+  <div class="highlight">
+    <div class="big">10 &rarr; go</div>
+    <div class="sub">
+      <strong>Minimum first order: 10 pretzels.</strong> Fits a small
+      basket next to your register. First drop can be tomorrow — we
+      just need your address and your register's UPC format.
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>The Pretzel Cup · Route delivery pitch</span>
+    <span class="gold">the-pretzel-cup.vercel.app/apply</span>
+  </div>
+
+</div>
+</body>
+</html>

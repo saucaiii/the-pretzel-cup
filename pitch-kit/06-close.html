@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Route Pitch · Close — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  html, body { margin: 0; padding: 0; background: var(--ppf-green); }
+  body { width: 8.5in; height: 11in; }
+
+  .sheet {
+    width: 8.5in; height: 11in;
+    display: grid;
+    grid-template-rows: 1fr auto;
+  }
+
+  /* ─── Split body ────────────────────────────────────────────── */
+  .split {
+    display: grid; grid-template-columns: 1.3fr 1fr;
+    height: 100%;
+  }
+
+  /* ─── LEFT (green) ──────────────────────────────────────────── */
+  .left {
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .left .plate-strip { height: 36px; }
+  .left .inner {
+    padding: 44px 48px 36px;
+    flex: 1;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .left .eyebrow {
+    font-family: var(--font-display); font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--ppf-gold); margin: 0 0 14px;
+  }
+  .left .headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 54px; line-height: 0.92;
+    text-transform: uppercase; margin: 0;
+    color: var(--ppf-white);
+  }
+  .left .script {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 48px; display: block; margin-top: 10px; line-height: 1;
+    text-transform: none; letter-spacing: 0;
+  }
+  .left .sub {
+    margin-top: 28px;
+    font-size: 14px; line-height: 1.55;
+    color: var(--ppf-muted);
+    max-width: 32ch;
+  }
+  .left .sub strong { color: var(--ppf-white); }
+
+  /* ─── RIGHT (cream) ─────────────────────────────────────────── */
+  .right {
+    background: var(--ppf-cream);
+    color: var(--ppf-ink);
+    padding: 48px 36px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    gap: 16px;
+  }
+  .qr-box {
+    width: 190px; height: 190px;
+    background: var(--ppf-white);
+    padding: 10px;
+    border: 2px solid var(--ppf-green);
+    border-radius: 4px;
+  }
+  .qr-box img { width: 100%; height: 100%; display: block; }
+  .scan-label {
+    font-family: var(--font-display);
+    font-size: 14px; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ppf-green);
+    margin-top: 6px;
+  }
+  .apply-url {
+    font-family: var(--font-display);
+    font-size: 11px; letter-spacing: 0.04em;
+    color: var(--ppf-ink);
+    opacity: 0.75;
+    word-break: break-all;
+  }
+
+  .divider {
+    width: 60%;
+    height: 2px;
+    background: var(--ppf-gold);
+    margin: 10px 0 4px;
+  }
+
+  .or-line {
+    font-family: var(--font-script);
+    font-size: 24px;
+    color: var(--ppf-gold-deep);
+    line-height: 1;
+  }
+
+  .phone-block {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px;
+  }
+  .phone-block .label {
+    font-family: var(--font-display); font-size: 10px;
+    letter-spacing: 0.22em; color: var(--ppf-gold-deep);
+    text-transform: uppercase;
+  }
+  .phone-block .num {
+    font-family: var(--font-display);
+    font-size: 30px; color: var(--ppf-green);
+    line-height: 1; letter-spacing: 0.02em;
+  }
+  .phone-block .caveat {
+    font-family: var(--font-script); color: var(--ppf-gold-deep);
+    font-size: 22px; line-height: 1; margin-top: 2px;
+  }
+
+  /* ─── Footer (spans both) ───────────────────────────────────── */
+  .footer {
+    background: var(--ppf-green-deep);
+    color: var(--ppf-white);
+    padding: 14px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .footer .gold { color: var(--ppf-gold); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="split">
+
+    <!-- LEFT -->
+    <div class="left">
+      <div class="plate-strip"></div>
+      <div class="inner">
+        <div class="eyebrow">Let's do this</div>
+        <h1 class="headline">
+          Put a basket<br/>
+          on your counter.
+          <span class="script">We'll handle the rest.</span>
+        </h1>
+        <p class="sub">
+          Ten pretzels. Tomorrow morning. <strong>Zero risk, zero
+          equipment, zero commitment.</strong> If it doesn't sell, it
+          goes back on the truck.
+        </p>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+      <div class="qr-box">
+        <img id="qr-img" alt="Apply QR code" />
+      </div>
+      <div class="scan-label">Scan to apply</div>
+      <div class="apply-url">the-pretzel-cup.vercel.app/apply</div>
+
+      <div class="divider"></div>
+
+      <div class="or-line">or call / text</div>
+
+      <div class="phone-block">
+        <div class="label">The Pretzel Cup</div>
+        <div class="num">516.517.8111</div>
+        <div class="caveat">ask for Chris</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER (spans both) -->
+  <div class="footer">
+    <span>Christopher Aumuller · Owner · The Pretzel Cup</span>
+    <span class="gold">6 / 6</span>
+  </div>
+
+</div>
+
+<script>
+// Hard-coded QR — the pitch packet is a static leave-behind, every
+// prospect gets the same apply URL. Same QR service as 03-contact-card.
+(function () {
+  var target = 'https://the-pretzel-cup.vercel.app/apply';
+  document.getElementById('qr-img').src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=0&data=' +
+    encodeURIComponent(target);
+})();
+</script>
+</body>
+</html>

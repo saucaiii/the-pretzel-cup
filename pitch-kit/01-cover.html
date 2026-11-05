@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Route Pitch · Cover — The Pretzel Cup</title>
+<base href="/onboarding-kit/" />
+<link rel="stylesheet" href="assets/kit.css" />
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  html, body { margin: 0; padding: 0; background: var(--ppf-green); }
+  body { width: 8.5in; height: 11in; }
+
+  .cover {
+    width: 8.5in; height: 11in;
+    background: var(--ppf-green);
+    color: var(--ppf-white);
+    display: flex; flex-direction: column;
+  }
+
+  /* ─── Head band ─────────────────────────────────────────────── */
+  .cover-head {
+    padding: 28px 72px 24px;
+    display: flex; align-items: center; gap: 28px;
+  }
+  .cover-head .logo-badge {
+    width: 92px; height: 92px; flex-shrink: 0;
+  }
+  .cover-head .brand-stack .eyebrow {
+    font-size: 10px; letter-spacing: 0.22em; margin-bottom: 4px;
+  }
+  .cover-head .brand-stack .wordmark {
+    font-family: var(--font-display); font-size: 22px;
+    text-transform: uppercase; letter-spacing: 0.04em; line-height: 1;
+    color: var(--ppf-white);
+  }
+  .cover-head .tagline {
+    font-weight: 700; font-size: 11px; letter-spacing: 0.08em;
+    color: var(--ppf-white); margin-top: 8px; text-align: left;
+  }
+
+  /* ─── Hero ──────────────────────────────────────────────────── */
+  .hero {
+    padding: 36px 72px 24px;
+    flex: 1;
+  }
+  .hero .headline {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 72px; line-height: 0.92;
+    text-transform: uppercase; margin: 0;
+    color: var(--ppf-white);
+  }
+  .hero .headline .script {
+    font-family: var(--font-script); color: var(--ppf-gold);
+    font-size: 72px; text-transform: none; letter-spacing: 0;
+    display: block; margin-top: 10px; line-height: 1;
+  }
+  .hero .sub {
+    font-size: 16px; line-height: 1.55;
+    max-width: 48ch;
+    margin: 32px 0 0;
+    color: var(--ppf-muted);
+  }
+  .hero .sub strong { color: var(--ppf-white); }
+
+  /* ─── Promise columns ──────────────────────────────────────── */
+  .promises {
+    padding: 0 72px 28px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;
+  }
+  .promise .num {
+    font-family: var(--font-display); color: var(--ppf-gold);
+    font-size: 22px; letter-spacing: 0.06em; line-height: 1;
+    margin-bottom: 8px;
+  }
+  .promise h3 {
+    font-family: var(--font-display);
+    font-size: 13px; letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ppf-white);
+    margin: 0 0 6px;
+  }
+  .promise p {
+    margin: 0; font-size: 11.5px; line-height: 1.5;
+    color: var(--ppf-muted);
+  }
+
+  /* ─── CTA band (cream) ─────────────────────────────────────── */
+  .cta-band {
+    background: var(--ppf-cream);
+    color: var(--ppf-ink);
+    padding: 22px 72px;
+    display: flex; align-items: center; gap: 36px;
+    border-top: 4px solid var(--ppf-gold);
+  }
+  .cta-band .inside .kicker {
+    font-family: var(--font-display); font-size: 10px;
+    letter-spacing: 0.22em; color: var(--ppf-gold-deep);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .cta-band .inside .line {
+    font-size: 12.5px; line-height: 1.5; color: var(--ppf-ink);
+  }
+  .cta-band .inside .line strong { color: var(--ppf-green); }
+  .cta-band .apply { margin-left: auto; text-align: right; min-width: 200px; }
+  .cta-band .apply .label {
+    font-family: var(--font-display); font-size: 10px;
+    letter-spacing: 0.22em; color: var(--ppf-gold-deep);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .cta-band .apply .big {
+    font-family: var(--font-display); font-size: 20px;
+    color: var(--ppf-green); text-transform: uppercase;
+    letter-spacing: 0.02em; line-height: 1;
+  }
+  .cta-band .apply .url {
+    font-family: var(--font-display); color: var(--ppf-green-deep);
+    font-size: 13px; letter-spacing: 0.04em; margin-top: 4px;
+  }
+
+  /* ─── Footer ───────────────────────────────────────────────── */
+  .cover-footer {
+    background: var(--ppf-green-deep);
+    color: var(--ppf-white);
+    padding: 14px 72px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .cover-footer .gold { color: var(--ppf-gold); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="cover">
+
+  <div class="plate-strip"></div>
+
+  <!-- HEAD -->
+  <div class="cover-head">
+    <span class="logo-badge"></span>
+    <div class="brand-stack">
+      <div class="eyebrow">Daily route delivery · Grocery &amp; deli</div>
+      <div class="wordmark">The Pretzel Cup</div>
+      <div class="tagline">MADE TO CRAVE<sup>®</sup></div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1 class="headline">
+      Fresh pretzels<br/>
+      in your store<br/>
+      <span class="script">—starting tomorrow.</span>
+    </h1>
+    <p class="sub">
+      Hot, hand-twisted Philly Pretzel Factory pretzels, <strong>baked
+      that morning</strong> and delivered to your door every day. <strong>You
+      only pay for what you sell.</strong> Zero equipment. Zero contracts.
+      One local owner you can actually reach.
+    </p>
+  </div>
+
+  <!-- PROMISES -->
+  <div class="promises">
+    <div class="promise">
+      <div class="num">01</div>
+      <h3>Buy-back program</h3>
+      <p>Anything that doesn't sell goes back on the truck. Your cost
+      on the first delivery is $0 out of pocket.</p>
+    </div>
+    <div class="promise">
+      <div class="num">02</div>
+      <h3>No contracts</h3>
+      <p>Month-to-month. No signup fee, no minimum term. We earn the
+      shelf space — we don't lock you to it.</p>
+    </div>
+    <div class="promise">
+      <div class="num">03</div>
+      <h3>Daily fresh</h3>
+      <p>Baked that morning, delivered before lunch. No freezer,
+      fryer, utensils, or refrigeration.</p>
+    </div>
+  </div>
+
+  <!-- CTA BAND -->
+  <div class="cta-band">
+    <div class="inside">
+      <div class="kicker">Inside this packet</div>
+      <div class="line">
+        <strong>Deal terms</strong> · <strong>Unit economics</strong>
+        · <strong>Platform preview</strong> &amp; how to start.
+      </div>
+    </div>
+    <div class="apply">
+      <div class="label">Apply in 2 minutes</div>
+      <div class="big">the-pretzel-cup</div>
+      <div class="url">.vercel.app/apply</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="cover-footer">
+    <span>Pitch Packet · For prospective route stops</span>
+    <span class="gold">1 / 6</span>
+  </div>
+
+</div>
+</body>
+</html>
