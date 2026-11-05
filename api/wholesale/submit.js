@@ -33,6 +33,7 @@ const sb = createClient(
 );
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PICKUP_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function pickString(v, max = 500) {
   if (typeof v !== 'string') return null;
@@ -74,25 +75,50 @@ module.exports = async function handler(req, res) {
   if (!first_name)                                return res.status(400).json({ error: 'first name required' });
   if (!organization)                              return res.status(400).json({ error: 'organization required' });
   if (!pickup_location)                           return res.status(400).json({ error: 'pickup location required' });
+  // Pickup date is required on the client (<input type="date" required>)
+  // but the HTML gate doesn't bind direct API callers; enforce it here.
+  if (!pickup_date || !PICKUP_DATE_RE.test(pickup_date)) {
+    return res.status(400).json({ error: 'valid pickup date required (YYYY-MM-DD)' });
+  }
   if (!Array.isArray(body.items) || !body.items.length) {
     return res.status(400).json({ error: 'at least one item required' });
   }
 
-  // ─── 2. Customer upsert ─────────────────────────────────────────
+  // ─── 2. Customer lookup-or-insert ───────────────────────────────
+  // Insert-if-absent, never update: operator edits in /ops/wholesale/
+  // (e.g. a corrected contact_name or a cleaned-up organization) must
+  // survive any later resubmit by the customer. `ignoreDuplicates: true`
+  // means a conflict on the unique `email` index returns zero rows
+  // instead of updating. We SELECT the row in that branch, so a
+  // concurrent new-email race still resolves cleanly (the loser sees
+  // the winner's row).
   const custPatch = { email, first_name, organization };
   if (phone)           custPatch.phone = phone;
   if (pickup_location) custPatch.pickup_location = pickup_location;
   if (pickup_address)  custPatch.pickup_address = pickup_address;
 
-  const { data: cust, error: custErr } = await sb
+  const { data: upserted, error: upErr } = await sb
     .from('wholesale_customers')
-    .upsert([custPatch], { onConflict: 'email', ignoreDuplicates: false })
-    .select('id')
-    .single();
-  if (custErr) {
-    return res.status(500).json({ error: 'customer lookup failed' });
+    .upsert([custPatch], { onConflict: 'email', ignoreDuplicates: true })
+    .select('id');
+  if (upErr) {
+    return res.status(500).json({ error: 'customer upsert failed' });
   }
-  const customer_id = cust.id;
+
+  let customer_id = upserted && upserted[0] && upserted[0].id;
+  if (!customer_id) {
+    // Existing customer — upsert swallowed the conflict and returned
+    // nothing. Look the row up.
+    const { data: existing, error: exErr } = await sb
+      .from('wholesale_customers')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (exErr || !existing) {
+      return res.status(500).json({ error: 'customer lookup failed' });
+    }
+    customer_id = existing.id;
+  }
 
   // ─── 3. Compute authoritative items ─────────────────────────────
   const { data: products, error: pErr } = await sb
@@ -129,6 +155,24 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // ─── 4b. Validate + normalize promo code ───────────────────────
+  // The 100-for-25 bonus is quantity-driven (applyBonus above) — a
+  // bogus code never gates the bonus. This step only decides whether
+  // the code is REPORTABLE: normalize to uppercase, look it up
+  // against the campaign-emails table, store the normalized value
+  // when it matches, else drop it to null so the reports column
+  // doesn't collect typos / stray strings.
+  let normalized_promo_code = null;
+  if (promo_code) {
+    const candidate = promo_code.trim().toUpperCase();
+    const { data: codeRow } = await sb
+      .from('wholesale_campaign_emails')
+      .select('id')
+      .eq('promo_code', candidate)
+      .maybeSingle();
+    if (codeRow && codeRow.id) normalized_promo_code = candidate;
+  }
+
   // ─── 5. Insert order awaiting invoice ───────────────────────────
   // stripe_session_id / stripe_payment_intent_id left null; the
   // columns are retained in the schema so a future payment-processor
@@ -139,7 +183,7 @@ module.exports = async function handler(req, res) {
       customer_id,
       email_send_id,
       src_tag,
-      promo_code,
+      promo_code: normalized_promo_code,
       pickup_location,
       pickup_date,
       pickup_time,
