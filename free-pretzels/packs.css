@@ -1,0 +1,294 @@
+/* Pretzel pack game on /free-pretzels. Loaded on every visit, but every
+   rule here is scoped to the game, which only shows when the API says
+   the game is on. With the game off the page is unchanged.
+
+   Brand: solid palette colours only, square corners, no shadows, no
+   hover animation. Gold-to-gold shimmer only. Logo flat and upright,
+   never tilted, cropped or recoloured. Original pack design. */
+
+body.game-on #offer-section,
+body.game-on #claim-section { display: none !important; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ─── page section ─────────────────────────────────────────────── */
+.game { background: var(--black); color: var(--white); text-align: center; padding: 36px 0 40px; }
+.game .g-eyebrow {
+  margin: 0 0 6px; font-family: var(--display); font-size: 16px;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-light);
+}
+.game h2 { color: var(--gold); margin: 0 0 6px; }
+.game .g-sub { margin: 0 0 22px; font-weight: 700; }
+.g-msg { margin: 16px 0 0; min-height: 1.5em; font-weight: 700; color: var(--gold-light); }
+.g-msg:empty { display: none; }
+
+/* ─── the pack (shared by picker and stage) ─────────────────────── */
+/* Width drives everything: --w on the .pk element. Height = 1.55w.
+   Top 40% = diamond plate foil + words. Bottom 60% = logo on solid
+   green with clear space on every side. */
+.pk {
+  --w: 120px;
+  position: relative;
+  width: var(--w);
+  height: calc(var(--w) * 1.55);
+  font-family: var(--display);
+  color: var(--gold);
+}
+.pk-top, .pk-bot { position: absolute; left: 0; right: 0; overflow: hidden; }
+.pk-top {
+  top: 0; height: 40%;
+  background-color: var(--green);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'><g fill='%23D4B662'><polygon points='2,10 18,5 22,8 6,13'/><polygon points='26,18 42,13 46,16 30,21'/></g></svg>");
+  background-size: calc(var(--w) * 0.2) calc(var(--w) * 0.1);
+}
+.pk-bot { bottom: 0; height: 60%; background: var(--green); }
+/* Crimped seals, top and bottom: a solid zigzag strip. */
+.pk-crimp {
+  position: absolute; left: 0; right: 0; height: calc(var(--w) * 0.07);
+  background-color: var(--gold-deep);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><polygon points='0,8 6,0 12,8' fill='%23D4B662'/></svg>");
+  background-size: calc(var(--w) * 0.08) 100%;
+}
+.pk-top .pk-crimp { top: 0; }
+.pk-bot .pk-crimp { bottom: 0; transform: scaleY(-1); }
+.pk-word {
+  position: absolute; left: 8%; right: 8%; top: 27%;
+  padding: calc(var(--w) * 0.035) 0;
+  background: var(--black);
+  font-size: calc(var(--w) * 0.13);
+  line-height: 1.02;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--gold);
+}
+/* Logo: 64% of pack width, clear space >= one "P" height (12.5% of
+   logo width) from the tear line, the crimp and the sides. */
+.pk-logo {
+  position: absolute;
+  left: 18%; width: 64%;
+  top: calc(var(--w) * 0.12);
+  height: auto;
+}
+/* Perforation hint on the picker packs. */
+.pk-perf {
+  position: absolute; left: 0; right: 0; top: 40%; height: 2px; margin-top: -1px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='2'><rect width='5' height='2' fill='%23D4B662'/></svg>");
+  background-size: 8px 2px;
+}
+
+/* ─── picker ──────────────────────────────────────────────────── */
+.picker { display: flex; justify-content: center; align-items: flex-start; gap: 10px; min-height: 10px; }
+.picker[hidden] { display: none; }
+.pick {
+  appearance: none; border: 0; padding: 0; margin: 0; background: transparent;
+  cursor: pointer; border-radius: 0;
+}
+.pick .pk { --w: min(28vw, 104px); }
+/* Fan on phones: middle pack raised, no rotation (the logo never tilts). */
+.pick:nth-child(1), .pick:nth-child(3) { margin-top: 16px; }
+.pick:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 4px; }
+.pick[disabled] { cursor: default; }
+@media (min-width: 720px) {
+  .picker { gap: 28px; }
+  .pick .pk { --w: 150px; }
+  .pick:nth-child(1), .pick:nth-child(3) { margin-top: 0; }
+}
+.picker.leaving .pick { pointer-events: none; }
+
+/* ─── vouchers on the page ────────────────────────────────────── */
+.vouchers { display: grid; gap: 14px; margin: 22px 0 0; text-align: left; }
+.vouchers:empty { display: none; }
+.vcard {
+  background: var(--gold-light); color: var(--black);
+  border: 2px solid var(--gold-deep); border-radius: 0; padding: 16px 18px;
+}
+.vcard p { margin: 0; }
+.vc-label { font-family: var(--display); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
+.vc-code { margin: 6px 0 4px !important; font-family: var(--display); font-size: clamp(26px, 9vw, 34px); line-height: 1; letter-spacing: 0.08em; white-space: nowrap; }
+.vc-meta { font-weight: 700; font-size: 15px; }
+.vcard .btn { margin-top: 12px; }
+.vcard.done { background: var(--white); border-color: var(--gray); }
+.vcard.done .vc-code { color: var(--gray); text-decoration: line-through; }
+.btn-dark { background: var(--black); color: var(--gold-light); border-color: var(--black); }
+
+/* ─── bonus packs ─────────────────────────────────────────────── */
+.bonus { margin: 28px 0 0; text-align: left; border-top: 2px solid var(--gold-deep); padding-top: 22px; }
+.bonus h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: 0.01em; text-transform: uppercase; color: var(--gold); }
+.bonus .b-count { margin: 2px 0 16px; font-weight: 700; color: var(--gold-light); }
+.b-item { padding: 16px 0; border-top: 1px solid var(--gold-deep); }
+.b-item h4 { margin: 0 0 8px; font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--white); }
+.b-item.used h4, .b-item.used p { color: var(--gray); }
+.b-item p { margin: 0 0 10px; font-size: 15px; }
+.b-done { font-weight: 700; color: var(--gold-light); }
+.field-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.g-input {
+  flex: 1 1 200px; min-height: 48px; padding: 0 12px;
+  background: var(--white); color: var(--black);
+  border: 2px solid var(--gold); border-radius: 0;
+  font-family: var(--body); font-size: 16px; font-weight: 500;
+}
+.g-input:focus-visible, .game .btn:focus-visible, .stage .btn:focus-visible, .sheet .btn:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 0; font-size: 14px; }
+.check input { width: 22px; height: 22px; margin: 0; accent-color: var(--gold); flex: none; }
+.privacy { margin: 10px 0 0 !important; font-size: 13px !important; color: var(--gold-light); }
+.game .btn, .stage .btn, .sheet .btn { cursor: pointer; font-family: var(--body); }
+.game .btn[disabled], .sheet .btn[disabled] { opacity: 0.5; cursor: default; }
+.b-status { margin: 10px 0 0 !important; font-weight: 700; color: var(--gold-light); min-height: 1.2em; }
+.b-status:empty { display: none; }
+.all-used { margin: 16px 0 0; font-family: var(--display); font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--gold); }
+
+/* ─── stage (the opening sequence) ────────────────────────────── */
+.stage {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--black); color: var(--white);
+  overflow: hidden;
+  --pw: min(62vw, 300px, 40vh);           /* pack width */
+  --ph: calc(var(--pw) * 1.55);           /* pack height */
+  --zh: min(56vh, 460px);                 /* pretzel height */
+  --zw: calc(var(--zh) * 0.44);           /* pretzel width (646x1468) */
+}
+.stage[hidden] { display: none; }
+.stage.settled { overflow-y: auto; }
+.st-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.st-rays {
+  position: absolute; left: 50%; top: 54%; width: 170vmax; height: 170vmax;
+  margin: -85vmax 0 0 -85vmax; z-index: 2; opacity: 0; pointer-events: none;
+}
+.st-rays svg { width: 100%; height: 100%; display: block; }
+.st-rays.turning svg { animation: st-turn 40s linear infinite; }
+@keyframes st-turn { to { transform: rotate(360deg); } }
+
+.st-center { position: absolute; left: 50%; top: 54%; width: 0; height: 0; z-index: 4; perspective: 900px; }
+.st-pack {
+  position: absolute; left: calc(var(--pw) / -2); top: calc(var(--ph) / -2);
+  transform-style: preserve-3d;
+}
+.st-pack .pk { --w: var(--pw); }
+.st-pack .pk-logo { opacity: 0; }
+.st-glint {
+  position: absolute; top: -10%; bottom: -10%; left: 0; width: 34%;
+  background: var(--gold-light); opacity: 0;
+  transform: translateX(-160%) skewX(-18deg);
+  pointer-events: none; z-index: 3;
+}
+.st-glint-clip { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.st-tear {
+  position: absolute; left: -3%; right: -3%; top: 40%; height: 4px; margin-top: -2px;
+  background: var(--gold); transform: scaleX(0); transform-origin: 0 50%; z-index: 4;
+}
+.st-tear.bright { background: var(--gold-light); height: 6px; margin-top: -3px; }
+.st-hit {
+  position: absolute; inset: -12% -8%; z-index: 6;
+  appearance: none; background: transparent; border: 0; border-radius: 0; padding: 0;
+  cursor: grab; touch-action: none;
+}
+.st-hit:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 0; }
+.st-hint {
+  position: absolute; left: 0; right: 0; z-index: 7; margin: 0;
+  top: calc(54% + var(--ph) / 2 + 22px);
+  font-family: var(--display); font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gold-light); opacity: 0; text-align: center; pointer-events: none;
+}
+.st-hint.wait { animation: st-blink 1.2s steps(2, jump-none) infinite; }
+@keyframes st-blink { 50% { opacity: 0.35; } }
+
+.st-prize {
+  position: absolute; left: 50%; top: 54%; z-index: 5;
+  width: var(--zw); height: var(--zh);
+  transform: translate(-50%, -50%) scale(0.5); opacity: 0; pointer-events: none;
+}
+.st-prize img { width: 100%; height: 100%; display: block; }
+/* Gold shimmer: a solid gold-light band, clipped to the pretzel's own
+   shape by a mask, sweeps across once. The photo itself is untouched. */
+.st-shine {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  -webkit-mask: url("/free-pretzels/packs/pretzel.webp") center / contain no-repeat;
+          mask: url("/free-pretzels/packs/pretzel.webp") center / contain no-repeat;
+}
+.st-shine i {
+  position: absolute; top: -10%; bottom: -10%; left: 0; width: 38%;
+  background: var(--gold-light); opacity: 0;
+  transform: translateX(-150%) skewX(-16deg);
+}
+
+.st-head { position: absolute; left: 0; right: 0; top: 6%; z-index: 7; text-align: center; pointer-events: none; }
+.st-won, .st-what { margin: 0; font-family: var(--display); text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; opacity: 0; }
+.st-won { font-size: clamp(40px, 12vw, 76px); color: var(--white); }
+.st-what { margin-top: 10px; font-size: clamp(26px, 8vw, 46px); color: var(--gold); }
+.st-stamp {
+  position: absolute; z-index: 7; width: 92px; height: 92px; border-radius: 50%;
+  left: calc(50% + var(--zw) / 2 - 34px); top: calc(54% + var(--zh) * 0.08);
+  display: grid; place-items: center;
+  background: var(--gold); color: var(--black); border: 4px solid var(--gold-deep);
+  font-family: var(--display); font-size: 24px; letter-spacing: 0.04em;
+  opacity: 0; pointer-events: none;
+}
+.st-skip {
+  position: absolute; z-index: 9;
+  top: calc(12px + env(safe-area-inset-top)); right: 12px;
+  min-height: 44px; padding: 0 16px;
+  background: transparent; color: var(--gold-light);
+  border: 2px solid var(--gold-deep); border-radius: 0;
+  font-family: var(--display); font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer;
+}
+.st-skip:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+
+/* Beat 6: voucher view. The pretzel sits small at the top. */
+.st-voucher {
+  position: absolute; z-index: 8; left: 50%; top: 37%;
+  width: min(88vw, 400px); transform: translateX(-50%);
+  background: var(--gold-light); color: var(--black);
+  border: 3px solid var(--gold); border-radius: 0;
+  padding: 18px 20px 20px; text-align: center; opacity: 0;
+}
+.st-voucher[hidden] { display: none; }
+.st-voucher p { margin: 0; }
+.sv-label { font-family: var(--display); font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
+.sv-code { margin: 8px 0 6px !important; font-family: var(--display); font-size: clamp(26px, 9vw, 46px); line-height: 1; letter-spacing: 0.08em; white-space: nowrap; }
+.sv-exp { font-weight: 700; }
+.sv-how { margin: 6px 0 14px !important; font-weight: 700; font-size: 18px; color: var(--green); }
+.sv-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.stage.settled .st-prize { top: 20%; opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+.stage.settled .st-voucher { opacity: 1; }
+.stage.settled .st-head, .stage.settled .st-stamp, .stage.settled .st-hint,
+.stage.settled .st-center, .stage.settled .st-skip { display: none; }
+.stage.settled .st-rays { opacity: 0.12; }
+.stage.error .st-voucher .sv-code { font-size: 22px; letter-spacing: 0.02em; }
+
+/* ─── staff redeem sheet ──────────────────────────────────────── */
+.sheet {
+  position: fixed; inset: 0; z-index: 60; background: var(--black);
+  display: grid; place-items: center; padding: 20px; overflow-y: auto;
+}
+.sheet[hidden] { display: none; }
+.sheet-card {
+  width: min(100%, 420px); background: var(--gold-light); color: var(--black);
+  border: 3px solid var(--gold); border-radius: 0; padding: 20px;
+}
+.sheet-card h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px; text-transform: uppercase; letter-spacing: 0.02em; color: var(--green); }
+.sheet-card p { margin: 6px 0 0; }
+.rd-code { font-family: var(--display); font-size: 30px; letter-spacing: 0.08em; margin: 10px 0 14px !important; }
+.sheet fieldset { border: 0; margin: 0 0 14px; padding: 0; }
+.sheet legend, .sheet label.lbl { font-family: var(--display); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; padding: 0; display: block; }
+.radio-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-row label {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
+  border: 2px solid var(--green); font-weight: 700; cursor: pointer;
+}
+.radio-row input { width: 20px; height: 20px; margin: 0; accent-color: var(--green); }
+.pin {
+  width: 100%; min-height: 56px; padding: 0 14px; margin: 0 0 14px;
+  border: 2px solid var(--green); border-radius: 0; background: var(--white); color: var(--black);
+  font-family: var(--display); font-size: 28px; letter-spacing: 0.4em;
+}
+.pin:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.sheet .btn-line { color: var(--green); border-color: var(--green); }
+.rd-msg { min-height: 1.4em; font-weight: 700; margin: 12px 0 0 !important; }
+.rd-ok { font-family: var(--display); font-size: 22px; text-transform: uppercase; color: var(--green); }
+
+html.stage-open, html.stage-open body { overflow: hidden; }

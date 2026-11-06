@@ -14,6 +14,7 @@
      SantElia -> Caveat (one optional warm accent word only)
      BullPen is signage-only and never used on the web. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@700&family=Montserrat:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="/free-pretzels/packs.css" />
 <style>
   /* Brand rules (summary of the internal brand guide):
      - Solid brand colours only. Green dominant; black; golds. No gradients.
@@ -294,6 +295,51 @@
     </div>
   </section>
 
+  <!-- Pretzel pack game. Hidden unless /api/leads?resource=packs says
+       the game is on (switched in /ops/qr). Replaces the offer and
+       claim blocks while it shows. See free-pretzels/packs.js. -->
+  <section class="game" id="game" hidden aria-labelledby="game-title">
+    <div class="wrap">
+      <p class="g-eyebrow">Free pretzel pack</p>
+      <h2 id="game-title">Pick a pack</h2>
+      <p class="g-sub" id="game-sub">Every pack wins a free pretzel. Tap one.</p>
+      <div class="picker" id="picker" role="group" aria-label="Three packs"></div>
+      <p class="g-msg" id="game-msg" role="status"></p>
+      <div class="vouchers" id="vouchers"></div>
+
+      <div class="bonus" id="bonus" hidden>
+        <h3>Want another?</h3>
+        <p class="b-count" id="b-count"></p>
+
+        <div class="b-item" id="b-email">
+          <h4>Verify email (+1)</h4>
+          <form id="email-form" novalidate>
+            <p>We email you a link. Tap it to unlock one more pack.</p>
+            <div class="field-row">
+              <label class="sr-only" for="email-input">Email</label>
+              <input class="g-input" id="email-input" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="you@example.com" required />
+              <button class="btn btn-solid" id="email-send" type="submit">Send link</button>
+            </div>
+            <label class="check"><input type="checkbox" id="email-optin" /> <span>Also send me Philly Pretzel Factory deals. Optional.</span></label>
+            <p class="privacy">We use your email to send this link and to keep bonus packs to one per person. Without the deals box ticked, we delete it 30 days after the offer ends.</p>
+            <p class="b-status" id="email-status" role="status"></p>
+          </form>
+          <p class="b-done" id="b-email-done" hidden></p>
+        </div>
+
+        <div class="b-item" id="b-ig">
+          <h4>Follow on Instagram (+1)</h4>
+          <p>Follow <span id="ig-handle"></span>, then come back here.</p>
+          <button class="btn btn-solid" id="ig-btn" type="button">Follow on Instagram</button>
+          <p class="b-done" id="b-ig-done" hidden></p>
+          <p class="b-status" id="ig-status" role="status"></p>
+        </div>
+
+        <p class="all-used" id="all-used" hidden>3 of 3 used. See you at the counter.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="panel" id="claim-section" style="padding-top:0">
     <div class="wrap">
       <h2>How to Claim</h2>
@@ -344,6 +390,61 @@
     <p class="store-line">Philly Pretzel Factory, Lynbrook and Franklin Square.</p>
   </div>
 </footer>
+
+<!-- Opening sequence. Built for packs.js; hidden until a pack is picked. -->
+<div class="stage" id="stage" hidden role="dialog" aria-modal="true" aria-label="Opening your pack">
+  <canvas class="st-canvas" aria-hidden="true"></canvas>
+  <div class="st-rays" aria-hidden="true"><svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid slice"><g fill="#F2E7A4"><polygon points="0,0 141.2,-14.8 141.2,14.8"/><polygon points="0,0 129.7,57.8 114.9,83.5"/><polygon points="0,0 83.5,114.9 57.8,129.7"/><polygon points="0,0 14.8,141.2 -14.8,141.2"/><polygon points="0,0 -57.8,129.7 -83.5,114.9"/><polygon points="0,0 -114.9,83.5 -129.7,57.8"/><polygon points="0,0 -141.2,14.8 -141.2,-14.8"/><polygon points="0,0 -129.7,-57.8 -114.9,-83.5"/><polygon points="0,0 -83.5,-114.9 -57.8,-129.7"/><polygon points="0,0 -14.8,-141.2 14.8,-141.2"/><polygon points="0,0 57.8,-129.7 83.5,-114.9"/><polygon points="0,0 114.9,-83.5 129.7,-57.8"/></g></svg></div>
+  <div class="st-center"></div>
+  <div class="st-prize" aria-hidden="true">
+    <picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="" /></picture>
+    <div class="st-shine"><i></i></div>
+  </div>
+  <div class="st-head" aria-hidden="true"><p class="st-won">You won</p><p class="st-what">Free pretzel</p></div>
+  <div class="st-stamp" aria-hidden="true">FREE</div>
+  <p class="st-hint" aria-hidden="true"></p>
+  <button class="st-skip" type="button">Skip</button>
+  <div class="st-voucher" hidden>
+    <p class="sv-label">Your free pretzel</p>
+    <p class="sv-code" id="sv-code"></p>
+    <p class="sv-exp" id="sv-exp"></p>
+    <p class="sv-how">Show this at the counter.</p>
+    <div class="sv-actions">
+      <button class="btn btn-solid" id="sv-done" type="button">Done</button>
+      <button class="btn btn-dark" id="sv-redeem" type="button">Staff: redeem</button>
+    </div>
+  </div>
+  <p class="sr-only" id="st-live" aria-live="assertive"></p>
+</div>
+
+<!-- Staff redeem. The 4-digit store PIN burns the code once. -->
+<div class="sheet" id="redeem" hidden role="dialog" aria-modal="true" aria-labelledby="rd-title">
+  <div class="sheet-card">
+    <h3 id="rd-title">Staff only</h3>
+    <p>Redeem this code. It can only be used once.</p>
+    <p class="rd-code" id="rd-code"></p>
+    <form id="rd-form" novalidate>
+      <fieldset>
+        <legend>Store</legend>
+        <div class="radio-row">
+          <label><input type="radio" name="rd-store" value="lynbrook" /> Lynbrook</label>
+          <label><input type="radio" name="rd-store" value="franklin_square" /> Franklin Square</label>
+        </div>
+      </fieldset>
+      <label class="lbl" for="rd-pin">Store PIN</label>
+      <input class="pin" id="rd-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" />
+      <div class="actions">
+        <button class="btn btn-solid" id="rd-submit" type="submit">Redeem</button>
+        <button class="btn btn-line" id="rd-cancel" type="button">Cancel</button>
+      </div>
+      <p class="rd-msg" id="rd-msg" role="status"></p>
+    </form>
+    <div id="rd-ok" hidden>
+      <p class="rd-ok" id="rd-ok-text"></p>
+      <div class="actions" style="margin-top:14px"><button class="btn btn-solid" id="rd-close" type="button">Done</button></div>
+    </div>
+  </div>
+</div>
 
 <script>
 // Live offer. Published from /ops/qr into Edge Config and served by
@@ -415,6 +516,8 @@
     .then(function () { clearTimeout(timer); });
 })();
 </script>
+
+<script src="/free-pretzels/packs.js" defer></script>
 
 <!-- Vercel Web Analytics page views (no-op if Web Analytics is off). -->
 <script defer src="/_vercel/insights/script.js"></script>
