@@ -24,7 +24,8 @@
       { label: "Prospecting",         href: "/ops/prospecting" },
       { label: "New Store Setup",     href: "/ops/onboard"     },
       { label: "Account Portal Access", href: "/ops/invite"    },
-      { label: "Print Kits",          href: "/ops/print-kits"  }
+      { label: "Print Kits",          href: "/ops/print-kits"  },
+      { label: "QR + Offer",          href: "/ops/qr"          }
     ]},
     { label: "Plan", children: [
       { label: "Plan",        href: "/ops/plan"      },
