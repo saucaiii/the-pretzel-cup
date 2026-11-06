@@ -102,6 +102,8 @@ function validateOffer(input) {
     instagram_handle: str(o.instagram_handle, LIMITS.instagram_handle + 1).replace(/^@/, ''),
   };
   if (!offer.headline) errors.push('headline is required');
+  // Pack limits are keyed on the start date (api/_packs.js offerKey).
+  if (offer.game && !offer.starts_at) errors.push('a start date is required when the pack game is on');
   if (offer.instagram_handle && !IG_HANDLE_RE.test(offer.instagram_handle)) {
     errors.push('instagram_handle must be 1 to 30 letters, numbers, dots or underscores');
   }

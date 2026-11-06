@@ -3,10 +3,12 @@
 // keeps this file from becoming its own function).
 //
 //   GET  ?resource=packs&view=state       player state (public)
-//   GET  ?resource=packs&verify=<token>   magic link, verifies + redirects
+//   GET  ?resource=packs&verify=<token>   magic link: redirects to the page,
+//                                         which confirms with POST verify
+//                                         (mail scanners never POST)
 //   GET  ?resource=packs&view=stats       operator
 //   POST ?resource=packs {action, ...}    public, JSON + same-origin only
-//        actions: open, email, instagram, redeem
+//        actions: open, email, verify, instagram, redeem
 //
 // Rules:
 //   - Every pack wins one free pretzel. No tiers, no chance.
@@ -42,10 +44,11 @@ const STORES = { lynbrook: 'Lynbrook', franklin_square: 'Franklin Square' };
 const TIME_ZONE = 'America/New_York';
 // [max, window seconds] per hashed IP (or hashed email).
 const LIMITS = {
-  open: [10, 600],
+  open: [60, 600],
   email_ip: [5, 3600],
   email_addr: [3, 3600],
   verify: [20, 600],
+  pin_code: [5, 600],
   instagram: [10, 600],
   redeem: [12, 600],
 };
@@ -245,7 +248,7 @@ function supabaseStore(sb) {
   };
   return {
     getPlayer: (id) => one(sb.from('pack_players').select('*').eq('id', id).maybeSingle()),
-    createPlayer: () => one(sb.from('pack_players').insert({}).select('*').single()),
+    createPlayer: () => one(sb.from('pack_players').insert({ marketing_opt_in: false }).select('*').single()),
     findPlayerByEmail: (email) => one(sb.from('pack_players').select('*').eq('email', email).maybeSingle()),
     async updatePlayer(id, patch) {
       const { data, error } = await sb.from('pack_players').update(patch).eq('id', id).select('*').single();
@@ -267,8 +270,10 @@ function supabaseStore(sb) {
       return { ok: true, voucher: data };
     },
     findVoucher: (code) => one(sb.from('pack_vouchers').select('*').eq('code', code).maybeSingle()),
-    async bumpPinFailures(code, n) {
-      await one(sb.from('pack_vouchers').update({ pin_failures: n }).eq('code', code).is('redeemed_at', null));
+    // Compare-and-set so parallel wrong PINs cannot overwrite each other.
+    async bumpPinFailures(code, from, to) {
+      await one(sb.from('pack_vouchers').update({ pin_failures: to })
+        .eq('code', code).eq('pin_failures', from).is('redeemed_at', null));
     },
     async burnVoucher(code, store, nowIso) {
       const rows = await one(sb.from('pack_vouchers')
@@ -277,30 +282,45 @@ function supabaseStore(sb) {
       return (rows && rows[0]) || null;
     },
     insertMagicLink: (row) => one(sb.from('pack_magic_links').insert(row)),
-    async consumeMagicLink(hash, nowIso) {
+    // Single use, unexpired, and only for the player who asked for it.
+    async consumeMagicLink(hash, nowIso, playerId) {
       const rows = await one(sb.from('pack_magic_links')
         .update({ used_at: nowIso })
-        .eq('token_hash', hash).is('used_at', null).gt('expires_at', nowIso).select('*'));
+        .eq('token_hash', hash).eq('player_id', playerId).is('used_at', null).gt('expires_at', nowIso).select('*'));
       return (rows && rows[0]) || null;
     },
     // Move vouchers to the email's player. A slot the target already
-    // used stays on the old player (the code was already handed out).
-    async moveVouchers(fromId, toId) {
-      const rows = await one(sb.from('pack_vouchers').select('id').eq('player_id', fromId));
+    // used is a duplicate: if unredeemed it is voided (expired now), so
+    // one email never holds more than 3 live codes per offer.
+    async moveVouchers(fromId, toId, nowIso) {
+      const rows = await one(sb.from('pack_vouchers').select('id,redeemed_at').eq('player_id', fromId));
       for (const r of rows || []) {
         const { error } = await sb.from('pack_vouchers').update({ player_id: toId }).eq('id', r.id);
-        if (error && !isUnique(error)) throw error;
+        if (isUnique(error)) {
+          if (!r.redeemed_at) await one(sb.from('pack_vouchers').update({ expires_at: nowIso }).eq('id', r.id).is('redeemed_at', null));
+          continue;
+        }
+        if (error) throw error;
       }
     },
+    // Head-only counts: no row cap (PostgREST returns at most 1000 rows).
     async stats(key) {
-      const rows = await one(sb.from('pack_vouchers').select('source,redeemed_at').eq('offer_key', key).limit(20000));
-      const count = async (col) => {
-        const { count: n, error } = await sb.from('pack_players').select('id', { count: 'exact', head: true }).not(col, 'is', null);
+      const n = async (q) => {
+        const { count, error } = await q;
         if (error) throw error;
-        return n || 0;
+        return count || 0;
       };
-      const [emails_verified, instagram_taps] = await Promise.all([count('email_verified_at'), count('instagram_at')]);
-      return summarize(rows || [], emails_verified, instagram_taps);
+      const v = () => sb.from('pack_vouchers').select('id', { count: 'exact', head: true }).eq('offer_key', key);
+      const p = () => sb.from('pack_players').select('id', { count: 'exact', head: true });
+      const [first, email, instagram, redeemed, emails_verified, instagram_taps] = await Promise.all([
+        n(v().eq('source', 'first')), n(v().eq('source', 'email')), n(v().eq('source', 'instagram')),
+        n(v().not('redeemed_at', 'is', null)),
+        n(p().not('email_verified_at', 'is', null)), n(p().not('instagram_at', 'is', null)),
+      ]);
+      return {
+        opened: { first, email, instagram, total: first + email + instagram },
+        redeemed, emails_verified, instagram_taps,
+      };
     },
   };
 }
@@ -375,10 +395,16 @@ function originOk(req) {
   }
 }
 
-function siteOrigin(req) {
-  const host = req.headers['x-forwarded-host'] || req.headers.host || 'the-pretzel-cup.vercel.app';
-  const proto = req.headers['x-forwarded-proto'] || (/^(localhost|127\.0\.0\.1)(:|$)/.test(host) ? 'http' : 'https');
-  return `${proto}://${host}`;
+// Origin for emailed links. Only our own hosts (production, this
+// project's preview deployments, local dev); anything else falls back to
+// production so a spoofed Host header can never point a link elsewhere.
+const CANONICAL_ORIGIN = 'https://the-pretzel-cup.vercel.app';
+function siteOrigin(req, env = {}) {
+  if (env.PACKS_SITE_URL && /^https:\/\/[a-z0-9.-]+$/i.test(env.PACKS_SITE_URL)) return env.PACKS_SITE_URL;
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return `http://${host}`;
+  if (host === 'the-pretzel-cup.vercel.app' || /^the-pretzel-cup-[a-z0-9-]+\.vercel\.app$/.test(host)) return `https://${host}`;
+  return CANONICAL_ORIGIN;
 }
 
 // Fixed-window counter. Fails open: Redis down never blocks a pack.
@@ -388,8 +414,10 @@ async function overLimit(deps, name, id) {
   const [max, win] = LIMITS[name];
   const key = `packs:rl:${name}:${id}`;
   try {
+    // Create the key with its TTL first, so a failed EXPIRE can never
+    // leave a counter that blocks this IP forever.
+    await r.set(key, 0, { nx: true, ex: win });
     const n = await r.incr(key);
-    if (n === 1) await r.expire(key, win);
     return n > max;
   } catch (e) {
     console.error('[packs] rate-limit check failed:', e.message || e);
@@ -474,7 +502,7 @@ async function handleEmail(req, res, deps, ctx, body) {
     marketing_opt_in: body.marketing_opt_in === true,
     expires_at: new Date(now.getTime() + LINK_TTL_MS).toISOString(),
   });
-  const link = `${siteOrigin(req)}/api/leads?resource=packs&verify=${token}`;
+  const link = `${siteOrigin(req, deps.env)}/api/leads?resource=packs&verify=${token}`;
   try {
     await deps.sendEmail({ to: email, ...magicLinkEmail(link) });
   } catch (e) {
@@ -485,18 +513,38 @@ async function handleEmail(req, res, deps, ctx, body) {
   return res.status(200).json({ ok: true });
 }
 
-async function handleVerify(req, res, deps, token) {
-  const back = (result) => redirect(res, `/free-pretzels?pack_email=${result}`);
-  if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) return back('invalid');
-  if (await overLimit(deps, 'verify', clientIpHash(req, deps.env))) return back('busy');
-  const secret = deps.env.APP_JWT_SECRET;
-  const store = deps.store();
-  const now = deps.now();
-  const link = await store.consumeMagicLink(sha256(token), now.toISOString());
-  if (!link) return back('expired');
+// GET from the email: never touches the token. It hands it to the page
+// in the URL fragment (kept out of logs and Referer); the page confirms
+// with POST {action:'verify'}. Link scanners that pre-open URLs never
+// send that POST, so they cannot use up or redeem a token.
+function handleVerifyLink(res, token) {
+  if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) return redirect(res, '/free-pretzels?pack_email=invalid');
+  return redirect(res, `/free-pretzels#pack_verify=${token}`);
+}
 
-  let finalId = link.player_id;
-  for (let attempt = 0; attempt < 2; attempt++) {
+// POST {action:'verify', token}. The link only works in the browser that
+// asked for it (same ppf_player cookie), so a link sent to someone
+// else's inbox cannot attach their email to a stranger's player.
+async function handleVerify(req, res, deps, ctx, body) {
+  const token = typeof body.token === 'string' ? body.token : '';
+  if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) return res.status(400).json({ result: 'invalid', error: 'That link did not work.' });
+  if (await overLimit(deps, 'verify', clientIpHash(req, deps.env))) return res.status(429).json({ result: 'busy', error: MSG.busy });
+  const store = ctx.store;
+  const now = deps.now();
+  const hash = sha256(token);
+  if (!ctx.player) return res.status(403).json({ result: 'device', error: 'Open the link on the same phone and browser you used to ask for it.' });
+  const link = await store.consumeMagicLink(hash, now.toISOString(), ctx.player.id);
+  if (!link) {
+    return res.status(410).json({ result: 'expired', error: 'That link has expired, was already used, or was opened on a different phone.' });
+  }
+  // One verified email per player: verifying a second address would free
+  // the first one to earn another email bonus somewhere else.
+  if (ctx.player.email && ctx.player.email !== link.email) {
+    return res.status(409).json({ result: 'already', error: 'This phone already has a verified email.' });
+  }
+
+  let finalId = null;
+  for (let attempt = 0; attempt < 2 && !finalId; attempt++) {
     const owner = await store.findPlayerByEmail(link.email);
     if (!owner) {
       const r = await store.updatePlayer(link.player_id, {
@@ -507,18 +555,18 @@ async function handleVerify(req, res, deps, token) {
       break;
     }
     if (owner.id !== link.player_id) {
-      const from = await store.getPlayer(link.player_id);
-      await store.moveVouchers(link.player_id, owner.id);
+      await store.moveVouchers(link.player_id, owner.id, now.toISOString());
       const patch = {};
-      if (!owner.instagram_at && from && from.instagram_at) patch.instagram_at = from.instagram_at;
+      if (!owner.instagram_at && ctx.player.instagram_at) patch.instagram_at = ctx.player.instagram_at;
       if (link.marketing_opt_in && !owner.marketing_opt_in) patch.marketing_opt_in = true;
       if (Object.keys(patch).length) await store.updatePlayer(owner.id, patch);
     }
     finalId = owner.id;
-    break;
   }
-  setPlayerCookie(res, finalId, secret);
-  return back('verified');
+  if (!finalId) return res.status(409).json({ result: 'busy', error: MSG.busy });
+  setPlayerCookie(res, finalId, ctx.secret);
+  ctx.player = await store.getPlayer(finalId);
+  return res.status(200).json({ ok: true, result: 'verified', state: await stateOf(ctx, deps) });
 }
 
 async function handleInstagram(req, res, deps, ctx) {
@@ -551,8 +599,11 @@ async function handleRedeem(req, res, deps, body) {
   if (new Date(v.expires_at).getTime() <= now.getTime()) return res.status(410).json({ error: 'This code has expired.', voucher: publicVoucher(v, now) });
   if ((v.pin_failures || 0) >= PIN_TRIES) return res.status(423).json({ error: 'Too many wrong PINs for this code. Ask a manager.' });
   if (!pinOk(body.pin, pin)) {
+    if (await overLimit(deps, 'pin_code', sha256('code|' + code).slice(0, 32))) {
+      return res.status(423).json({ error: 'Too many wrong PINs for this code. Ask a manager.' });
+    }
     const n = (v.pin_failures || 0) + 1;
-    await db.bumpPinFailures(code, n);
+    await db.bumpPinFailures(code, v.pin_failures || 0, n);
     return res.status(403).json({ error: 'Wrong PIN.', tries_left: Math.max(0, PIN_TRIES - n) });
   }
   const burned = await db.burnVoucher(code, store, now.toISOString());
@@ -578,7 +629,7 @@ async function handle(req, res, deps = defaultDeps()) {
       const view = url.searchParams.get('view') || 'state';
       if (view === 'stats') return await handleStats(req, res, deps);
       if (!deps.env.APP_JWT_SECRET) return res.status(503).json({ error: MSG.setup });
-      if (url.searchParams.has('verify')) return await handleVerify(req, res, deps, url.searchParams.get('verify') || '');
+      if (url.searchParams.has('verify')) return handleVerifyLink(res, url.searchParams.get('verify') || '');
       if (view === 'state') return await handleState(req, res, deps);
       return res.status(400).json({ error: 'unknown view' });
     }
@@ -596,6 +647,7 @@ async function handle(req, res, deps = defaultDeps()) {
     const ctx = await loadContext(req, deps);
     if (body.action === 'open') return await handleOpen(req, res, deps, ctx);
     if (body.action === 'email') return await handleEmail(req, res, deps, ctx, body);
+    if (body.action === 'verify') return await handleVerify(req, res, deps, ctx, body);
     if (body.action === 'instagram') return await handleInstagram(req, res, deps, ctx);
     return res.status(400).json({ error: 'unknown action' });
   } catch (e) {
@@ -622,6 +674,7 @@ module.exports = {
   voucherExpiry,
   playerState,
   magicLinkEmail,
+  siteOrigin,
   summarize,
   sha256,
   COOKIE,

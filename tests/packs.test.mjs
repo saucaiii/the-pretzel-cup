@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { randomUUID, randomBytes } from 'node:crypto';
+import { randomUUID, randomBytes, randomInt } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -52,7 +52,7 @@ function memStore() {
       return { ok: true, voucher: { ...v } };
     },
     async findVoucher(code) { return vouchers.find((v) => v.code === code) || null; },
-    async bumpPinFailures(code, n) { const v = vouchers.find((x) => x.code === code); if (v) v.pin_failures = n; },
+    async bumpPinFailures(code, from, to) { const v = vouchers.find((x) => x.code === code && x.pin_failures === from); if (v) v.pin_failures = to; },
     async burnVoucher(code, store, nowIso) {
       const v = vouchers.find((x) => x.code === code && !x.redeemed_at && x.expires_at > nowIso);
       if (!v) return null;
@@ -60,16 +60,17 @@ function memStore() {
       return { ...v };
     },
     async insertMagicLink(row) { links.set(row.token_hash, { used_at: null, ...row }); },
-    async consumeMagicLink(hash, nowIso) {
+    async consumeMagicLink(hash, nowIso, playerId) {
       const l = links.get(hash);
-      if (!l || l.used_at || l.expires_at <= nowIso) return null;
+      if (!l || l.used_at || l.expires_at <= nowIso || l.player_id !== playerId) return null;
       l.used_at = nowIso;
       return { ...l };
     },
-    async moveVouchers(from, to) {
+    async moveVouchers(from, to, nowIso) {
       for (const v of vouchers.filter((x) => x.player_id === from)) {
         const clash = vouchers.some((x) => x.player_id === to && x.offer_key === v.offer_key && x.source === v.source);
         if (!clash) v.player_id = to;
+        else if (!v.redeemed_at) v.expires_at = nowIso;
       }
     },
     async stats(key) {
@@ -80,11 +81,11 @@ function memStore() {
   };
 }
 function mockRedis(fail = false) {
-  const n = {};
+  const n = {}; const ttl = {};
   return {
-    n,
+    n, ttl,
+    async set(k, v, o) { if (fail) throw new Error('redis down'); if (o && o.nx && k in n) return null; n[k] = v; ttl[k] = o && o.ex; return 'OK'; },
     async incr(k) { if (fail) throw new Error('redis down'); n[k] = (n[k] || 0) + 1; return n[k]; },
-    async expire() {},
   };
 }
 function deps(over = {}) {
@@ -125,13 +126,16 @@ function get(qs, cookie) {
 }
 async function call(d, req) { const res = mockRes(); await packs.handle(req, res, d); return res; }
 async function openPack(d, cookie) { return call(d, post({ action: 'open' }, { cookie })); }
-// Request a magic link and click it. Returns the new cookie.
+// Request a magic link, open it (GET redirect), confirm it (POST verify).
 async function verifyEmail(d, cookie, email = 'player@example.com') {
   const r = await call(d, post({ action: 'email', email }, { cookie }));
   assert.equal(r.statusCode, 200, JSON.stringify(r.body));
-  const link = d.sent.at(-1).text.match(/verify=([A-Za-z0-9_-]+)/)[1];
-  const v = await call(d, get('verify=' + link, cookie || cookieOf(r)));
-  return { res: v, cookie: cookieOf(v), token: link };
+  const c = cookie || cookieOf(r);
+  const token = d.sent.at(-1).text.match(/verify=([A-Za-z0-9_-]+)/)[1];
+  const g = await call(d, get('verify=' + token, c));
+  assert.equal(g.headers.location, '/free-pretzels#pack_verify=' + token);
+  const v = await call(d, post({ action: 'verify', token }, { cookie: c }));
+  return { res: v, cookie: cookieOf(v) || c, token };
 }
 
 // ─── pure helpers ────────────────────────────────────────────────────
@@ -225,7 +229,7 @@ test('validateOffer: game flag defaults off, handle validated', () => {
   const base = { headline: 'Free Pretzel' };
   assert.equal(qr.validateOffer(base).offer.game, false);
   assert.equal(qr.validateOffer({ ...base, game: 'true' }).offer.game, false);
-  assert.equal(qr.validateOffer({ ...base, game: true }).offer.game, true);
+  assert.equal(qr.validateOffer({ ...base, game: true, starts_at: '2026-11-01' }).offer.game, true);
   assert.equal(qr.validateOffer({ ...base, instagram_handle: '@philly.pretzel_1' }).offer.instagram_handle, 'philly.pretzel_1');
   assert.ok(qr.validateOffer({ ...base, instagram_handle: 'bad handle' }).errors);
   assert.ok(qr.validateOffer({ ...base, instagram_handle: 'x'.repeat(31) }).errors);
@@ -322,8 +326,9 @@ test('full run: first + email + instagram = 3, then a 4th is impossible', async 
   const d = deps();
   let c = cookieOf(await openPack(d));
   const v = await verifyEmail(d, c);
-  assert.equal(v.res.statusCode, 302);
-  assert.equal(v.res.headers.location, '/free-pretzels?pack_email=verified');
+  assert.equal(v.res.statusCode, 200);
+  assert.equal(v.res.body.result, 'verified');
+  assert.equal(v.res.body.state.bonuses.email, 'unlocked');
   c = v.cookie;
   assert.equal((await openPack(d, c)).body.voucher.source, 'email');
   const ig = await call(d, post({ action: 'instagram' }, { cookie: c }));
@@ -374,13 +379,25 @@ test('email: bad address -> 400, send failure -> 502 and first pack unaffected',
   assert.equal((await openPack(d, cookieOf(r))).statusCode, 200);
 });
 
+test('magic link: GET never uses the token (mail scanners)', async () => {
+  const d = deps();
+  const c = cookieOf(await openPack(d));
+  await call(d, post({ action: 'email', email: 'player@example.com' }, { cookie: c }));
+  const token = d.sent[0].text.match(/verify=([A-Za-z0-9_-]+)/)[1];
+  for (let i = 0; i < 3; i++) await call(d, get('verify=' + token)); // scanner, no cookie
+  assert.equal([...d.s.links.values()][0].used_at, null);
+  assert.equal([...d.s.players.values()][0].email, null);
+  const v = await call(d, post({ action: 'verify', token }, { cookie: c }));
+  assert.equal(v.body.result, 'verified');
+});
+
 test('magic link: works once', async () => {
   const d = deps();
   const c = cookieOf(await openPack(d));
   const v = await verifyEmail(d, c);
-  const again = await call(d, get('verify=' + v.token));
-  assert.equal(again.headers.location, '/free-pretzels?pack_email=expired');
-  assert.equal(again.headers['set-cookie'], undefined);
+  const again = await call(d, post({ action: 'verify', token: v.token }, { cookie: c }));
+  assert.equal(again.statusCode, 410);
+  assert.equal(again.body.result, 'expired');
 });
 
 test('magic link: expired after 1 hour', async () => {
@@ -389,15 +406,54 @@ test('magic link: expired after 1 hour', async () => {
   await call(d, post({ action: 'email', email: 'player@example.com' }, { cookie: c }));
   const token = d.sent[0].text.match(/verify=([A-Za-z0-9_-]+)/)[1];
   d.now = () => new Date(NOW.getTime() + 61 * 60 * 1000);
-  const r = await call(d, get('verify=' + token));
-  assert.equal(r.headers.location, '/free-pretzels?pack_email=expired');
+  const r = await call(d, post({ action: 'verify', token }, { cookie: c }));
+  assert.equal(r.body.result, 'expired');
   assert.equal([...d.s.players.values()][0].email_verified_at, null);
 });
 
-test('magic link: garbage token -> invalid, no DB lookup', async () => {
+test('magic link: garbage token -> invalid', async () => {
   const d = deps();
-  const r = await call(d, get('verify=%3Cscript%3E'));
-  assert.equal(r.headers.location, '/free-pretzels?pack_email=invalid');
+  assert.equal((await call(d, get('verify=%3Cscript%3E'))).headers.location, '/free-pretzels?pack_email=invalid');
+  assert.equal((await call(d, post({ action: 'verify', token: '<x>' }))).body.result, 'invalid');
+});
+
+test('magic link: only the browser that asked can use it (no email hijack)', async () => {
+  const d = deps();
+  // Attacker asks for a link to the victim's address.
+  const attacker = cookieOf(await openPack(d));
+  await call(d, post({ action: 'email', email: 'victim@example.com' }, { cookie: attacker }));
+  const token = d.sent[0].text.match(/verify=([A-Za-z0-9_-]+)/)[1];
+  // Victim (or the victim's mail scanner) opens it in their own browser.
+  const victim = cookieOf(await openPack(d));
+  const r = await call(d, post({ action: 'verify', token }, { cookie: victim }));
+  assert.equal(r.statusCode, 410);
+  const noCookie = await call(d, post({ action: 'verify', token }));
+  assert.equal(noCookie.body.result, 'device');
+  assert.ok([...d.s.players.values()].every((p) => p.email === null), 'nobody got the email');
+  assert.equal(r.headers['set-cookie'], undefined);
+});
+
+test('one verified email per player', async () => {
+  const d = deps();
+  const c = cookieOf(await openPack(d));
+  // Ask for two links before verifying either.
+  await call(d, post({ action: 'email', email: 'one@example.com' }, { cookie: c }));
+  await call(d, post({ action: 'email', email: 'two@example.com' }, { cookie: c }));
+  const [t1, t2] = d.sent.map((m) => m.text.match(/verify=([A-Za-z0-9_-]+)/)[1]);
+  assert.equal((await call(d, post({ action: 'verify', token: t1 }, { cookie: c }))).body.result, 'verified');
+  const r2 = await call(d, post({ action: 'verify', token: t2 }, { cookie: c }));
+  assert.equal(r2.body.result, 'already');
+  assert.equal([...d.s.players.values()][0].email, 'one@example.com');
+});
+
+test('email link points at our own host, never a spoofed one', () => {
+  const r = (host) => packs.siteOrigin({ headers: { host } });
+  assert.equal(r('the-pretzel-cup.vercel.app'), 'https://the-pretzel-cup.vercel.app');
+  assert.equal(r('the-pretzel-cup-abc123-team.vercel.app'), 'https://the-pretzel-cup-abc123-team.vercel.app');
+  assert.equal(r('localhost:3000'), 'http://localhost:3000');
+  assert.equal(r('evil.example.com'), 'https://the-pretzel-cup.vercel.app');
+  assert.equal(r('the-pretzel-cup.vercel.app.evil.example.com'), 'https://the-pretzel-cup.vercel.app');
+  assert.equal(packs.siteOrigin({ headers: { host: 'evil.example.com' } }, { PACKS_SITE_URL: 'https://pretzels.example.com' }), 'https://pretzels.example.com');
 });
 
 test('verify on a new device merges into the email player; limit follows the person', async () => {
@@ -422,6 +478,9 @@ test('verify on a new device merges into the email player; limit follows the per
   assert.equal((await openPack(d, b)).statusCode, 409, 'no 4th pack on the merged player');
   const owned = d.s.vouchers.filter((v) => v.player_id === idA);
   assert.equal(owned.length, 3);
+  // Phone B's duplicate first pack was voided: 3 live codes for this email, not 4.
+  const live = d.s.vouchers.filter((v) => !v.redeemed_at && v.expires_at > NOW.toISOString());
+  assert.equal(live.length, 3);
 });
 
 test('email already verified -> 409', async () => {
@@ -480,11 +539,13 @@ test('redeem: expired, unknown, no store, PIN not configured', async () => {
 // ─── rate limits, outages, CSRF ─────────────────────────────────────
 test('rate limit: open is capped per IP', async () => {
   const r = mockRedis();
-  const d = deps({ redis: () => r });
+  const d = deps({ redis: () => r, randomInt }); // real codes: 60 opens must not collide
   const codes = [];
-  for (let i = 0; i < 12; i++) codes.push((await openPack(d)).statusCode);
-  assert.equal(codes.filter((c) => c === 200).length, 10);
+  for (let i = 0; i < 62; i++) codes.push((await openPack(d)).statusCode);
+  assert.equal(codes.filter((c) => c === 200).length, 60);
   assert.equal(codes.at(-1), 429);
+  const key = Object.keys(r.ttl).find((k) => k.includes(':open:'));
+  assert.equal(r.ttl[key], 600, 'counter is created with its TTL');
 });
 
 test('rate limit: magic link sends capped per address', async () => {
@@ -505,6 +566,24 @@ test('rate limit: PIN guessing across codes is capped per IP', async () => {
   for (let i = 0; i < 13; i++) last = await call(d, post({ action: 'redeem', code: 'ZZZZ-ZZZZ', pin: '0000', store: 'lynbrook' }));
   assert.equal(last.statusCode, 429);
   assert.ok(code);
+});
+
+test('validateOffer: game on needs a start date (limits key on it)', () => {
+  assert.ok(qr.validateOffer({ headline: 'x', game: true }).errors);
+  assert.ok(qr.validateOffer({ headline: 'x', game: true, starts_at: '2026-11-01' }).offer);
+  assert.ok(qr.validateOffer({ headline: 'x', game: false }).offer);
+});
+
+test('redeem: wrong PINs are capped per code even across IPs', async () => {
+  const r = mockRedis();
+  const d = deps({ redis: () => r });
+  const code = await oneVoucher(d);
+  d.s.bumpPinFailures = async () => {}; // simulate lost DB writes (parallel race)
+  const out = [];
+  for (let i = 0; i < 7; i++) {
+    out.push((await call(d, post({ action: 'redeem', code, pin: '0000', store: 'lynbrook' }, { headers: { 'x-forwarded-for': '198.51.100.' + i } }))).statusCode);
+  }
+  assert.deepEqual(out, [403, 403, 403, 403, 403, 423, 423]);
 });
 
 test('Redis down: first pack still opens', async () => {
