@@ -1,38 +1,30 @@
 # Working memory (short-term). Keep under 60 lines.
-Branch: agent/route-pitch
-Task: route-pitch
-Status: ready to commit + push + draft PR
-Started: 2026-11-04T13:39Z
+Branch: agent/qr-scan-redirect
+Task: qr-scan-redirect
+Status: code done, draft PR open; CRITICAL steps handed to human
+Started: 2026-11-05
 
 ## Progress
-- Pitch-kit HTML committed earlier (4b4d185): 6 sheets + index +
-  print-bundle. Fixed Caveat-script uppercase bleed on 06-close
-  afterward (in working tree, included in next commit).
-- Sample PDF (6 pages, letter) generated via Chrome headless and
-  delivered to user from scratchpad.
-- Plan rewritten to cover full scope; scope.txt widened and plan
-  approved by the user (hash matches b7ce3e9d8300…).
-- Added `pitch-kit/(.*)` SAMEORIGIN to vercel.json.
-- Wrote scripts/gen-pitch-pdf.mjs (standalone PDF renderer).
-- Wrote supabase/migrations/p20_leads.sql (leads table, RLS on,
-  dedupe + status indexes). p20_ clears p14/p15/p16 claimed by the
-  wholesale worktrees.
-- Wrote apply/index.html (branded form, honeypot, client-side
-  validation) + apply/success.html (thank-you).
-- Wrote api/leads.js (POST public: honeypot, Upstash rate-limit,
-  dedupe, Supabase insert, Telegram notify; GET operator-gated).
-- Visual-checked /apply + /apply/success — both render cleanly in
-  the local preview server.
-- Node syntax-check passed on api/leads.js and
-  scripts/gen-pitch-pdf.mjs.
+- middleware.js (root, matcher /scan only): Edge Config scan_target,
+  800ms timeout, fallback /free-pretzels, query passthrough, UTM for
+  own site, 302 + no-store, qr_scan analytics event via waitUntil.
+- tests/scan-redirect.test.mjs: 20/20 pass (node --test). Covers the
+  no-EDGE_CONFIG fallback path, bad targets, UTM, passthrough.
+- free-pretzels/index.html + resized logo: visual-checked at 375px,
+  no horizontal scroll. Offer, redemption, fine print are placeholders.
+- tests/guardrails.sh: 106 passed, 0 failed.
 
-## Next
-- Commit in three chunks:
-  * chore(vercel): expose pitch-kit for iframe print bundle
-  * feat(pitch-kit): add standalone print-bundle PDF generator
-    (also includes the 06-close script CSS fix)
-  * feat(apply): lead capture form + endpoint + leads schema
-- Push and open DRAFT PR.
+## Not verified
+- Middleware on real Vercel (ESM middleware.js in a non-"type: module"
+  project; Edge Config read; analytics event). Needs a preview deploy.
+- The timeout path (Edge Config hanging) is not unit-tested.
+- Whether Web Analytics is enabled on the project (MCP lacked team
+  scope for get_project).
+
+## Next (human, CRITICAL: prepare only)
+- Create Edge Config store, connect to the-pretzel-cup (adds the
+  EDGE_CONFIG env var), add item scan_target = "/free-pretzels".
+- Enable Web Analytics if off. Preview deploy, test /scan, then prod.
 
 ## Handoffs
 - (agent -> agent: input, output, result)
