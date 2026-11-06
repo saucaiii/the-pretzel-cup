@@ -33,7 +33,12 @@ const TAGLINE_COLORS = ['white', 'black'];
 // Tagline colour each layout must use (white on dark, black on light).
 const LAYOUT_TAGLINE = { green: 'white', black: 'white', 'gold-light': 'black' };
 
-const LIMITS = { headline: 80, details: 600, step: 140, steps: 5, fine_print: 800, stamp: 40, accent: 24 };
+const LIMITS = { headline: 80, details: 600, step: 140, steps: 5, fine_print: 800, stamp: 40, accent: 24, instagram_handle: 30 };
+// Instagram usernames: letters, numbers, dot, underscore, up to 30.
+const IG_HANDLE_RE = /^[A-Za-z0-9._]{1,30}$/;
+// App Store links only (the 4th bonus pack).
+const APP_STORE_RE = /^https:\/\/apps\.apple\.com\/[A-Za-z0-9\/._~%?=&+-]*$/;
+const APP_STORE_MAX = 300;
 const HEADLINE_LINT_LEN = 48;
 
 // ─── pure helpers (unit-tested) ─────────────────────────────────────
@@ -95,8 +100,20 @@ function validateOffer(input) {
     layout: LAYOUTS.includes(o.layout) ? o.layout : 'green',
     starts_at: o.starts_at ? String(o.starts_at) : '',
     ends_at: o.ends_at ? String(o.ends_at) : '',
+    // Pack game (api/_packs.js). Off unless explicitly true.
+    game: o.game === true,
+    instagram_handle: str(o.instagram_handle, LIMITS.instagram_handle + 1).replace(/^@/, ''),
+    app_store_url: str(o.app_store_url, APP_STORE_MAX),
   };
   if (!offer.headline) errors.push('headline is required');
+  if (offer.app_store_url && (offer.app_store_url.length > APP_STORE_MAX || !APP_STORE_RE.test(offer.app_store_url))) {
+    errors.push('app_store_url must be an https://apps.apple.com/ link');
+  }
+  // Pack limits are keyed on the start date (api/_packs.js offerKey).
+  if (offer.game && !offer.starts_at) errors.push('a start date is required when the pack game is on');
+  if (offer.instagram_handle && !IG_HANDLE_RE.test(offer.instagram_handle)) {
+    errors.push('instagram_handle must be 1 to 30 letters, numbers, dots or underscores');
+  }
   for (const k of ['headline', 'details', 'fine_print', 'stamp', 'accent']) {
     if (offer[k].length > LIMITS[k]) errors.push(`${k} is longer than ${LIMITS[k]} characters`);
   }
@@ -290,11 +307,8 @@ function originOk(req) {
   }
 }
 
-async function handleOffer(req, res, deps) {
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return res.status(405).json({ error: 'method not allowed' });
-  }
+// Validated live offer + status. Shared with api/_packs.js. Never throws.
+async function readLiveOffer(deps) {
   let offer = null;
   try {
     const v = await deps.edgeGet('offer');
@@ -305,11 +319,20 @@ async function handleOffer(req, res, deps) {
   } catch (e) {
     console.error('[qr] offer read failed:', e.message || e);
   }
+  return { offer, status: offerStatus(offer, deps.now()) };
+}
+
+async function handleOffer(req, res, deps) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'method not allowed' });
+  }
+  const { offer, status } = await readLiveOffer(deps);
   // Short cache at Vercel's CDN only. Browsers always revalidate, so a
   // newly published offer is never held stale in a visitor's browser.
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
   res.setHeader('Vercel-CDN-Cache-Control', 'max-age=30, stale-while-revalidate=120');
-  return res.status(200).json({ offer, status: offerStatus(offer, deps.now()) });
+  return res.status(200).json({ offer, status });
 }
 
 async function handleQr(req, res, deps) {
@@ -415,6 +438,10 @@ async function handle(req, res, resource, deps = defaultDeps()) {
 
 module.exports = {
   handle,
+  readLiveOffer,
+  defaultDeps,
+  IG_HANDLE_RE,
+  APP_STORE_RE,
   parseTarget,
   isOwnSite,
   sanitizePlacement,

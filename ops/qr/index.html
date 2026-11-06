@@ -244,6 +244,23 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
             </div>
             <p class="hint">After the end date the page says "This offer has ended" and still shows both locations.</p>
 
+            <div class="field">
+              <span class="lbl">Pack game on /free-pretzels</span>
+              <div class="choices" id="game-group">
+                <button type="button" class="choice" data-game="off" aria-pressed="true">Off</button>
+                <button type="button" class="choice" data-game="on" aria-pressed="false">On</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="o-ig">Instagram handle for the bonus pack (optional)</label>
+              <input id="o-ig" maxlength="31" placeholder="handle, without @" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="field">
+              <label for="o-app">App Store link for the bonus pack (optional)</label>
+              <input id="o-app" maxlength="300" placeholder="https://apps.apple.com/..." autocomplete="off" spellcheck="false" inputmode="url">
+            </div>
+            <p class="hint">Game on: visitors swipe through 5 packs, open one, and every pack wins one free pretzel. Bonus packs: email sign-up (+1), Instagram follow (+1) and app download (+1); the Instagram and app buttons stay hidden until their field is set. Max 4 per person. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
+
             <span class="lbl">Brand voice check</span>
             <ul class="lint" id="lint"></ul>
             <ul class="rules">
@@ -320,9 +337,16 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
         <div class="table-wrap"><table id="stats"><thead><tr><th>Placement</th><th class="n">Today</th><th class="n">7 days</th><th class="n">30 days</th></tr></thead><tbody></tbody></table></div>
       </div>
 
-      <!-- 6. History -->
+      <!-- 6. Pack game -->
+      <div class="panel" id="p-packs">
+        <h2><span class="num">6</span>Pack game</h2>
+        <p class="hint" id="pk-hint">For the current offer. Emails verified and Instagram taps are all time.</p>
+        <div class="table-wrap"><table id="pack-stats"><thead><tr><th>Packs</th><th class="n">Count</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <!-- 7. History -->
       <div class="panel" id="p-history">
-        <h2><span class="num">6</span>History</h2>
+        <h2><span class="num">7</span>History</h2>
         <p class="hint">Last 20 changes. Restore puts that version back live.</p>
         <ul class="hist" id="history"></ul>
       </div>
@@ -338,7 +362,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 var $ = function (s) { return document.querySelector(s); };
 var API = '/api/leads';
 var LAYOUT_TAGLINE = { green: 'white', black: 'white', 'gold-light': 'black' };
-var state = { config: null, layout: 'green' };
+var state = { config: null, layout: 'green', game: false };
 
 // ─── boot / auth ──────────────────────────────────────────────────
 async function boot() {
@@ -368,6 +392,7 @@ function init() {
   initQr();
   loadConfig();
   loadStats();
+  loadPackStats();
   loadHistory();
 }
 
@@ -472,6 +497,9 @@ function readOffer() {
     layout: state.layout,
     starts_at: $('#o-start').value,
     ends_at: $('#o-end').value,
+    game: state.game,
+    instagram_handle: $('#o-ig').value.trim().replace(/^@/, ''),
+    app_store_url: $('#o-app').value.trim(),
   };
 }
 function fillOffer(o) {
@@ -485,6 +513,9 @@ function fillOffer(o) {
   $('#o-start').value = o.starts_at || '';
   $('#o-end').value = o.ends_at || '';
   setLayout(o.layout || 'green');
+  setGame(o.game === true);
+  $('#o-ig').value = o.instagram_handle || '';
+  $('#o-app').value = o.app_store_url || '';
   onOfferChange();
 }
 function setLayout(l) {
@@ -492,6 +523,10 @@ function setLayout(l) {
   state.layout = l;
   document.querySelectorAll('#layout-group .choice').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.layout === l)); });
   $('#tagline-note').textContent = 'Tagline will be ' + LAYOUT_TAGLINE[l] + ' (locked).';
+}
+function setGame(on) {
+  state.game = !!on;
+  document.querySelectorAll('#game-group .choice').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.game === 'on') === state.game)); });
 }
 function today() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -596,6 +631,10 @@ function initOffer() {
     b.onclick = function () { setLayout(b.dataset.layout); onOfferChange(); };
   });
   setLayout('green');
+  document.querySelectorAll('#game-group .choice').forEach(function (b) {
+    b.onclick = function () { setGame(b.dataset.game === 'on'); onOfferChange(); };
+  });
+  setGame(false);
   window.addEventListener('message', function (e) {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'offer-preview-ready') return;
     previewReady = true;
@@ -777,6 +816,24 @@ function statRow(cells, strong) {
     tr.appendChild(td);
   });
   return tr;
+}
+
+// ─── 5b. pack game stats ──────────────────────────────────────────
+async function loadPackStats() {
+  var tbody = $('#pack-stats tbody');
+  tbody.textContent = '';
+  try {
+    var r = await fetch(API + '?resource=packs&view=stats', { credentials: 'same-origin', cache: 'no-store' });
+    var s = await r.json();
+    if (!r.ok) throw new Error(s && s.error);
+    $('#pk-hint').textContent = 'Game is ' + (s.game ? 'on' : 'off') + '. Counts for this offer (round ' + s.offer_key + '). Emails verified and Instagram taps are all time.';
+    [['First packs opened', s.opened.first], ['Email bonus packs', s.opened.email], ['Instagram bonus packs', s.opened.instagram], ['App bonus packs', s.opened.app || 0],
+     ['Codes redeemed', s.redeemed], ['Emails verified', s.emails_verified], ['Instagram taps', s.instagram_taps], ['App Store taps', s.app_taps || 0]]
+      .forEach(function (row) { tbody.appendChild(statRow(row)); });
+    tbody.appendChild(statRow(['All packs opened', s.opened.total], true));
+  } catch (e) {
+    tbody.appendChild(statRow(['Pack stats need the p10_pretzel_packs tables in Supabase.', '']));
+  }
 }
 
 // ─── 6. history ───────────────────────────────────────────────────

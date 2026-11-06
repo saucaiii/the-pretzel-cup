@@ -1,185 +1,174 @@
-# Plan: qr-control-panel (`/ops/qr`), stacked on PR #26
+# Plan: pretzel-packs v2 (3D foil packs, swipe carousel, 4th pack)
 
-Branch: `agent/qr-scan-redirect` (stack on draft PR saucaiii/the-pretzel-cup#26).
-Design approved by the human in chat ("Approve plan as written"), 2026-11-05.
-This file still needs `scripts/agent/approve-plan.sh` before any edit.
+Draft, 2026-11-05. Not approved. Replaces the v1 plan (approved, built,
+draft PR #27 on branch `agent/pretzel-packs`). v1 is in git history at
+commit 269c89b. This plan changes v1's design, so it needs a new
+`scripts/agent/approve-plan.sh` before any code changes.
 
 ## Risk
-**HIGH overall, with CRITICAL parts that are prepare-only.**
-- HIGH (security): new operator-only write path that changes what a
-  printed QR sticker points at and what the public offer page says.
-  Auth via the existing `readSession`/`requireRole` (role `operator`).
-  `api/_lib/` is NOT edited.
-- MEDIUM (operational): `middleware.js` gains Redis counters; `api/leads.js`
-  gains a `?resource=` dispatcher; `assets/ops-nav.js` gains one link.
-- LOW: `/ops/qr` page, `/free-pretzels` live-offer rendering, vendored QR lib.
-- CRITICAL, human only: creating the Vercel access token
-  (`EDGE_CONFIG_WRITE_TOKEN`), setting env vars `EDGE_CONFIG_WRITE_TOKEN`
-  and `EDGE_CONFIG_ID`, creating + connecting the Edge Config store,
-  seeding `scan_target` and `offer`, any deploy. The agent writes the
-  exact steps into the PR and `.agent/state.md`; it never runs them.
-- Fairness/automated decisions about people: none.
+**CRITICAL (personal data, prizes), with HIGH parts.** Take the highest.
+- CRITICAL: the prize cap goes from 3 to 4 per person; the migration
+  changes (still unapplied, so `p10_pretzel_packs.sql` is edited in place).
+  Human applies the migration, sets env, deploys.
+- HIGH: new third-party code (three.js, MIT, vendored); third-party
+  trademarks on the page (Instagram glyph, Apple App Store badge).
+- MEDIUM: `api/_packs.js` new `app` source; `api/_qr.js` `app_store_url`.
+- LOW: pack rendering, carousel, motion.
+- Automated decisions about people: none. Every pack wins the same pretzel.
 
 ## Goal
-An operator can, from `/ops/qr` and without a redeploy: change where `/scan`
-sends people, edit and schedule the `/free-pretzels` offer with a live phone
-preview, lint copy against brand voice, generate per-placement QR codes in
-brand colours, see scan counts by placement, and restore any of the last 20
-versions in one click.
+Make the pack feel real and fun on a phone: an industrial, diamond plate,
+gold foil booster pack rendered in 3D with real light, in a carousel of
+5 packs the player swipes through, then opens. Bonus packs: email (+1),
+Instagram (+1), App Store download (+1). Max 4 per person per offer.
 
-## Scope (files the human should list in `.agent-control/scope.txt`)
-- `api/leads.js` (add `?resource=offer` and `?resource=qr` dispatch; existing lead POST/GET unchanged)
-- `api/_qr.js` (new; underscore = not a serverless function, so the 12-function cap is untouched)
-- `middleware.js` (Redis scan counters, reject self-loop `/scan` targets)
-- `ops/qr/index.html` (new)
-- `assets/ops-nav.js` (one "QR + Offer" link under Sales)
-- `assets/vendor/qrcode-generator.js`, `assets/vendor/qrcode-generator.LICENSE` (new, vendored, MIT)
-- `free-pretzels/index.html`
-- `tests/scan-redirect.test.mjs` (extend), `tests/qr-config.test.mjs` (new)
-- `package.json` (only to add a `test` script; no new dependencies)
-- `.agent/plan.md`, `.agent/state.md`, `.agent/decisions.md`
+## Decisions (user, 2026-11-05)
+1. Rendering: 3D with three.js and **our own pack model built in code**
+   (no Sketchfab model, so no credit line).
+2. Brand exception: **lit metallic shading on the 3D pack only**, in brand
+   golds, green and black. Page, buttons and voucher stay solid colour.
+   Gold-to-gold shimmer rule still applies everywhere else.
+3. 4th pack: **App Store download, honor tap** (like Instagram). Cap 4.
+4. Carousel: **5 packs**, all identical in outcome (every pack wins).
+5. Pack order: 1 first (free), 2 email, 3 Instagram, 4 App Store.
 
-Not touched: `api/_lib/`, `vercel.json`, `scripts/`, `.github/`, `supabase/`, hooks, settings.
+## Scope
+**Scope (paths/files):** api/leads.js api/_packs.js api/_qr.js ops/qr/ free-pretzels/ supabase/migrations/p10_pretzel_packs.sql tests/ .agent/
+
+Same as v1 (no widening). three.js is vendored under
+`free-pretzels/vendor/` (inside scope). Not touched: `api/_lib/`,
+`vercel.json`, `middleware.js`, `scripts/`, `.github/`, `package.json`
+(three.js is not an npm dependency of the app).
+
+## Design
+**Pack model (built in code, `free-pretzels/pack3d.js`):**
+- A crimped foil pouch: a subdivided plane bent into a slightly pillowed
+  shape (thicker in the middle, thin at the edges), with crimped seal
+  strips at top and bottom (zigzag ridges in the geometry).
+- Materials (three.js `MeshPhysicalMaterial`): gold foil (metalness 1,
+  low roughness, brand golds #D4B662 / #B2872F / #F2E7A4), diamond plate
+  on the upper face (normal and roughness maps drawn on a canvas at run
+  time from the existing 48x24 diamond tile, so no texture files), green
+  #0D5237 lower panel. The environment map is a small canvas-made studio
+  (black with gold-light softboxes), so reflections stay on-brand.
+- Front art as canvas textures: "FREE PRETZEL" in Archivo Black on a black
+  band above the tear line; our logo flat on the lower panel (never
+  tilted, cropped or recoloured on the texture; see the logo rule below).
+- Tear line: a gold strip across the middle; it brightens in beat 2.
+- Rip (beat 3): two meshes (top and bottom halves). Top flies up and away,
+  bottom drops straight down, no rotation.
+
+**Logo rule with 3D:** the logo is printed on the pack, and the pack turns
+in 3D. To keep "never tilted": the carousel turns packs only around the
+vertical axis by at most 25 degrees while swiping (the logo stays upright,
+never rotated in-plane), and every pack faces flat front when centred and
+during beats 2 to 6. In beat 1 (spin-in) the logo stays hidden until the
+pack faces front, as in v1. If the human considers any 3D turn a "tilt",
+fall back to: logo hidden on all non-centred packs.
+
+**Carousel (step 0, replaces "pick 1 of 3"):**
+- 5 packs in a row, centred one large, neighbours smaller and dimmer.
+  Swipe (pointer drag with momentum and snap), arrow buttons, and arrow
+  keys. Light glints across the foil as packs move (tilt follows the drag;
+  optional device tilt via `DeviceOrientationEvent` only after a tap,
+  iOS asks permission, off by default).
+- "Open this pack" button under the centred pack (plus tap on the pack).
+  The chosen pack flies to centre, the others drop away, stage goes black,
+  then the six beats run with v1's timing table (unchanged).
+
+**Win (beats 3 to 6):** unchanged from v1 (real pretzel pops out, rays,
+YOU WON / FREE PRETZEL, burst, shimmer, stamp, rivets rain, voucher).
+The 3D canvas renders the pack; the existing 2D canvases keep rivets
+(behind) and shards (front).
+
+**Bonus list (page):**
+- Pack 2: "Sign up with email (+1)" (unchanged flow, magic link, POST
+  confirm).
+- Pack 3: "Follow on Instagram (+1)" with the official Instagram glyph.
+- Pack 4: "Download the app (+1)" with Apple's official "Download on the
+  App Store" badge, linking to the `app_store_url` set in `/ops/qr`
+  (validated `https://apps.apple.com/...`). Hidden until set. Unlocks on
+  return (honor system, once per player).
+- Trademark use: official artwork only, unaltered, at or above each
+  owner's minimum size and clear space, on a plain background (white
+  badge variant on black where needed). The human supplies the official
+  files from Apple Marketing Tools and Instagram's brand resources; the
+  agent does not redraw them. Until supplied, text buttons are used.
+
+**Performance and fallbacks:**
+- three.js (r160 module build, about 170 KB gzipped) and `pack3d.js` load
+  only when the API says the game is on, after first paint.
+- Pixel ratio capped at 2; one render loop that stops when nothing moves;
+  carousel renders 5 instances of one geometry.
+- No WebGL, load failure, or `prefers-reduced-motion`: use v1's CSS packs
+  (already built) in the same carousel layout, no 3D.
+- Target: 60 fps on a mid-range phone, under 1.5 s from tap to beat 1.
+
+## API and data changes
+- `api/_packs.js`: `SOURCES` adds `app`; `MAX_PACKS` 4; new action
+  `{action:'app'}` (like `instagram`: live game, `app_store_url` set,
+  rate-limited, once per player sets `pack_players.app_at`); state gains
+  `bonuses.app` and `app_store_url`. Opening order: first, email,
+  instagram, app.
+- `api/_qr.js`: offer gains `app_store_url` (empty or
+  `^https://apps\.apple\.com/` up to 300 chars).
+- `p10_pretzel_packs.sql` (unapplied, edited in place): `pack_players.app_at
+  timestamptz`; `pack_vouchers.source` check adds `'app'`. If it was
+  applied before this lands, the human gets a separate `ALTER` instead.
+- `/ops/qr`: App Store URL field; stats rows for app packs and app taps.
 
 ## Steps
-1. **`api/_qr.js`** (CommonJS, pure where possible so it is unit-testable):
-   - `parseTarget` with the same rules as `middleware.js` (relative `/path`,
-     not `//` or `/\`, or absolute http/https), plus: reject own-host `/scan`
-     (redirect loop), max 2000 chars.
-   - `validateOffer`: headline <= 80, details <= 600, steps 0..5 each <= 140,
-     fine_print <= 800, stamp <= 40, layout in {green, black, gold-light},
-     starts_at/ends_at ISO dates with ends >= starts. Unknown keys dropped.
-   - `lintCopy`: flags em/en dashes, emojis (Extended_Pictographic),
-     `!!`/`?!` stacks, headline > 48 chars. Advisory only, returned to UI.
-   - `sanitizePlacement`: `[a-z0-9_-]{1,32}` else `other`.
-   - Edge Config write: `PATCH https://api.vercel.com/v1/edge-config/{EDGE_CONFIG_ID}/items`
-     with `Authorization: Bearer ${EDGE_CONFIG_WRITE_TOKEN}`, items
-     `[{operation:'upsert', key, value}]`, 8s timeout. Missing env -> 503
-     with a clear "not configured" message (never crashes).
-   - Read path: `@vercel/edge-config` `get()` (already a dependency).
-   - Redis (existing `@upstash/redis`, same env vars as leads.js):
-     history `LPUSH qr:history` + `LTRIM 0 19`, entry
-     `{v, ts, by_sub, by_name, kind, scan_target?, offer?}`;
-     stats from `qr:scans:<YYYY-MM-DD>` hashes.
-2. **`api/leads.js`**: at the top of the handler, if `req.query.resource`
-   is `offer` or `qr`, hand off to `api/_qr.js`; otherwise existing code runs
-   byte-for-byte as today.
-   - `GET ?resource=offer` public; `Cache-Control: public, s-maxage=30, stale-while-revalidate=120`;
-     returns `{offer, status: 'scheduled'|'live'|'ended'}`.
-   - `GET ?resource=qr&view=config|history|stats` operator.
-   - `POST ?resource=qr` operator, `{action: 'publish_offer'|'set_target'|'reset_target'|'restore', ...}`.
-     CSRF: require `Content-Type: application/json` and `Origin` matching the host.
-     Write Edge Config first, then history; history failure is logged, not fatal.
-3. **`middleware.js`**: inside the existing `waitUntil`, `HINCRBY qr:scans:<date> <placement> 1`
-   + `EXPIRE 40d`, using the REST client; any error swallowed. Date uses the
-   timezone already used elsewhere in the repo (checked at implement time;
-   UTC if none). Self-loop targets fall back to `/free-pretzels`.
-   Redirect behaviour and 800ms Edge Config timeout unchanged.
-4. **Vendor QR lib**: `qrcode-generator@1.4.4` (Kazuhiko Arase, MIT) via
-   `npm pack` into the scratchpad, copy the single browser file + licence into
-   `assets/vendor/`. Pinned, no runtime CDN, noted in the PR.
-5. **`ops/qr/index.html`** using `assets/ops-chrome.css` + `assets/ops-nav.js`:
-   1) redirect picker (site pages list + custom URL, inline validation,
-      test link, reset to `/free-pretzels`);
-   2) offer editor with live phone preview (iframe of the real
-      `/free-pretzels?preview=1` fed via `postMessage`);
-   3) creative tools: green/black/gold-light hero, optional stamp line, start/end
-      schedule, brand-voice lint panel;
-   4) QR studio: placement name -> `/scan?utm_source=<name>`, SVG + PNG
-      download, colours limited to the brand palette, contrast check
-      (WCAG ratio >= 4.5 and dark-on-light module colour) that blocks download on fail;
-   5) scan stats today / 7d / 30d by placement;
-   6) history list with one-click restore (confirm dialog).
-   Brand rules: see "Brand rules (from the brand guide)" below; they apply
-   to the editor, the preview and every QR/hero option. Hero layouts are
-   **green / black / gold-light (#F2E7A4)**; there is no cream option.
-   Lint and layout options enforce: tagline colour locked to white or black,
-   diamond plate top-only, no green+gold gradient (all backgrounds solid),
-   no off-palette colours, no second "crave" line next to the lockup.
-6. **`free-pretzels/index.html`**: apply the brand fixes below to the
-   current static page first (tagline, diamond plate, palette, type), then
-   fetch `/api/leads?resource=offer` (2.5s
-   timeout); render headline/details/steps/fine print/stamp/layout; if
-   status `ended`, show "This offer has ended" plus the two locations; on any
-   failure keep today's static content. `?preview=1` accepts `postMessage`
-   from the same origin only.
-7. **Tests** (`node --test`): validation tables for target/offer/lint/
-   placement; parity test that `_qr.js` and `middleware.js` `parseTarget`
-   agree on a shared input table; middleware counter path with a stub Redis
-   (success, Redis throws, Redis missing) never changes the 302; self-loop
-   fallback; handler auth (no session 401, wrong role 403, bad Origin 403)
-   with stubbed auth.
-8. **Validate**: tests, `tests/guardrails.sh`, `scripts/agent/eval-report.sh`,
-   reviewer subagent; visual check of `/ops/qr` and `/free-pretzels` at
-   375px and desktop in a local static server with mocked API responses.
-9. **Record + propose**: update `.agent/state.md` and `.agent/decisions.md`,
-   commit (Conventional Commits) and push to `agent/qr-scan-redirect`, update
-   the draft PR body with Evidence and the human steps. Never merge, deploy,
-   set secrets or force-push.
-
-## Brand rules (from the brand guide)
-Source: internal brand guide PDF held by the user. It is marked internal and
-this repo is public: never commit it, copy pages from it, or quote it at
-length in code or the PR. Short rule summaries in comments are fine.
-- **Tagline** "Made to Crave®" (with ®), title case, centred directly under
-  the logo, gap = one tagline height, colour white or black only (white on
-  green here; today it is gold-light, which is wrong). One tagline only, no
-  stacked "crave" lines under it.
-- **Diamond plate** at the very top of the page, flush to the edge, exactly
-  3 rows (48x24 tile, so 36px tall at 2 diamonds per tile row), white at
-  75% opacity on green, even unaltered spacing. Never top and bottom.
-  Remove the thin strip under the hero.
-- **Logo** clear space >= height of the "P" in Philly on every side; nothing
-  over it; no recolour, tilt, crop, outline or ring.
-- **Colour** solid only: green #0D5237 dominant, black, gold #D4B662 /
-  #B2872F / #F2E7A4 (light panels). Secondary text cool gray #6D6E71.
-  Cream #FAF4E1 is removed everywhere. No gradients at all.
-- **Type** headlines Archivo Black (FatFrank stand-in) at +0.01em
-  letter-spacing, never tightened; body Montserrat 400/500/700 (Gotham
-  stand-in); optional script accent word in Caveat (SantElia stand-in);
-  never BullPen.
-- **Voice** bold, confident, flavourful, simple. "Crave" lines are welcome
-  in promo body copy, never next to the logo + tagline lockup. Plus the
-  standing rules: no emojis, em dashes, shadows, hover animation, soft
-  rounded cards, pure white backgrounds, Inter/Geist.
+1. Migration + `_packs.js` + `_qr.js`: `app` source, cap 4, `app_store_url`.
+2. Tests: cap 4, app tap once, app hidden when URL unset, order of sources,
+   URL validation, merge carries `app_at`.
+3. Vendor three.js r160 (`three.module.min.js` + LICENSE) under
+   `free-pretzels/vendor/`, fetched from the npm registry tarball, checksum
+   recorded in the PR.
+4. `free-pretzels/pack3d.js`: pack geometry, materials, canvas textures,
+   environment, carousel, rip halves, render loop, fallback detection.
+5. `free-pretzels/packs.js` + `packs.css` + `index.html`: carousel step 0,
+   hook the 3D pack into beats 1 to 3, bonus list with 3 bonuses and
+   brand-safe slots for the official badges, fallback to CSS packs.
+6. `/ops/qr`: App Store URL field + stats.
+7. Validate: `npm test`, `tests/guardrails.sh`, `eval-report.sh`, reviewer
+   subagent, visual check at 375 px and desktop on the local mock (beats
+   timing table, swipe, reduced motion, no-WebGL fallback, game off, API
+   down), frame-time sample on the mock.
+8. Record in `.agent/`, commit, push to `agent/pretzel-packs`, update draft
+   PR #27.
 
 ## Success criteria
-- Quantitative: all `node --test` suites pass (existing 20 plus new);
-  `tests/guardrails.sh` passes; only files in Scope change (CI scope-check);
-  serverless function count unchanged (`api/_qr.js` is underscore-prefixed);
-  no new npm dependencies.
-- Qualitative: with env vars unset, every write returns a clear 503 and the
-  public page and `/scan` still work exactly as on PR #26; an operator can
-  restore a prior version in one click; the QR studio cannot export a
-  low-contrast or off-brand code; brand lint catches each listed pattern;
-  `/free-pretzels` shows "Made to Crave®" in white under the logo, a
-  3-row diamond plate at the top only, and no #FAF4E1 anywhere in the repo
-  files touched (grep check); the brand PDF is not in git.
+- Quantitative: all tests pass; only scoped files change; function count
+  unchanged (12); no new npm dependencies; three.js only via the vendored
+  file; page weight added only when the game is on.
+- Qualitative: on a phone the pack reads as an industrial gold foil pack
+  with diamond plate (side by side with v1, clearly more real); swiping the
+  carousel feels smooth and snaps; beats still land at 0 / 0.9 / 2.0 /
+  2.5 / 3.3 / 6.0 s (within about 0.2 s); a 5th pretzel is impossible for
+  the same email; with no WebGL or reduced motion the v1 CSS packs work;
+  with the game off the page is the plain offer page.
 
 ## Risks + mitigations
-- **Write token blast radius**: a Vercel access token can do more than edit
-  Edge Config. Mitigation: human creates it scoped to the team with an
-  expiry; only read server-side; never sent to the browser or logged.
-- **Bad target bricks the sticker**: validation server-side and in middleware;
-  middleware still falls back on anything invalid; reset button.
-- **Self-redirect loop**: `/scan` targets rejected in both places.
-- **CSRF on operator POST**: JSON content type + Origin check + existing
-  session cookie.
-- **Redis counters slow or break `/scan`**: inside `waitUntil`, errors
-  swallowed, test proves the 302 is unchanged when Redis throws.
-- **Unbounded Redis keys**: placement sanitised; day hashes expire in 40 days;
-  history trimmed to 20.
-- **Edge Config propagation delay (seconds)**: UI says "live within about a
-  minute" and re-reads after publish.
-- **Stored XSS via offer text**: page renders with `textContent` only; length limits.
-- **Leads endpoint regression**: dispatcher only triggers on `resource`;
-  existing POST/GET paths untouched; reviewer checks the diff.
+- **Phone performance / battery:** loop stops when idle; low-fps detection
+  drops shadows and pixel ratio; fallback to CSS packs.
+- **Third-party trademarks:** official files only, supplied by the human;
+  usage guidelines followed; text buttons until then.
+- **Brand drift from 3D shading:** exception limited to the pack; human
+  reviews screenshots in the PR before turning the game on.
+- **Honor-system bonuses (Instagram, app):** once per player, capped.
+- **New third-party code:** three.js MIT, vendored and pinned, licence
+  file shipped, noted in the PR.
 
 ## Rollback / escalation
-- Code: `git revert` the commits on this branch (no history rewrite). PR #26
-  behaviour returns.
-- Config: restore from history in `/ops/qr`, or the human sets `scan_target`
-  in the Vercel dashboard. Deleting the `offer` key makes `/free-pretzels`
-  show its static content.
-- Escalate: any need to touch `api/_lib/`, `vercel.json`, or a new
-  serverless function; 2 failed retries; any scope change.
+- Turn the game off in `/ops/qr` (no deploy).
+- Code: `git revert` of the v2 commits returns to v1 (still working).
+- Escalate on any need for a new function, `vercel.json`, `api/_lib/`, or
+  an npm dependency.
+
+## Human steps (CRITICAL, prepare only)
+- Run `scripts/agent/approve-plan.sh` for this plan.
+- Supply the official Instagram glyph and App Store badge files (SVG)
+  into `free-pretzels/packs/` or tell the agent where they are.
+- Give the App Store URL and the Instagram handle (set in `/ops/qr`).
+- Plus all v1 human steps in PR #27 (migration, `PACKS_STAFF_PIN`, Gmail,
+  Supabase smoke test, preview on a phone, deploy).
