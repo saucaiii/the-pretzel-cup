@@ -256,6 +256,8 @@ test('state: new visitor can open one pack, game on', async () => {
   assert.equal(r.body.bonuses.app, 'locked');
   assert.equal(r.body.app_store_url, OFFER.app_store_url);
   assert.equal(r.body.max, 4);
+  assert.equal(r.body.headline, OFFER.headline);
+  assert.equal(r.body.stamp, '');
   assert.equal(r.headers['cache-control'], 'no-store');
   assert.equal(d.s.players.size, 0, 'state never creates a player');
 });
