@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D5237">
+<title>QR + Offer | Operator | Philly Pretzel Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Brand stand-ins: Archivo Black (FatFrank), Montserrat (Gotham). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Montserrat:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/assets/ops-chrome.css">
+<style>
+/* This page follows the brand guide strictly: solid palette colours,
+   square corners, no shadows, no hover animation. It reuses the ops
+   chrome (header, nav) and overrides type to the brand stand-ins. */
+:root {
+  --display: 'Archivo Black', 'Arial Black', Impact, sans-serif;
+  --body: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --qr-green: #0D5237;
+  --qr-black: #000000;
+  --qr-gold: #D4B662;
+  --qr-gold-deep: #B2872F;
+  --qr-gold-light: #F2E7A4;
+  --qr-gray: #6D6E71;
+  --qr-white: #FFFFFF;
+}
+body { background: var(--qr-green); font-family: var(--body); }
+.page-title { letter-spacing: 0.01em; }
+
+.notice { border: 2px solid var(--qr-gold); background: var(--qr-black); color: var(--qr-gold-light); padding: 14px 16px; margin: 0 0 24px; font-weight: 500; font-size: 14px; }
+.notice b { color: var(--qr-white); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.panel { background: var(--qr-black); border: 2px solid var(--qr-gold-deep); border-radius: 0; padding: 22px; min-width: 0; }
+.panel h2 { font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: 0.02em; margin: 0 0 4px; text-transform: uppercase; color: var(--qr-gold); }
+.panel .hint { margin: 0 0 16px; color: var(--qr-gold-light); font-size: 13px; }
+.num { display: inline-block; min-width: 28px; color: var(--qr-gold-light); }
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; min-width: 0; }
+.field label, .lbl { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--qr-gold-light); text-transform: uppercase; }
+.field input, .field textarea, .field select {
+  background: var(--qr-green); border: 2px solid var(--qr-gold-deep); border-radius: 0;
+  padding: 10px 12px; color: var(--qr-white); font-family: var(--body); font-size: 15px; font-weight: 500; width: 100%;
+}
+.field textarea { min-height: 84px; resize: vertical; line-height: 1.45; }
+.field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible { outline: 2px solid var(--qr-gold-light); outline-offset: 1px; }
+.count { font-size: 11px; color: var(--qr-gold-light); align-self: flex-end; }
+.count.over { color: var(--qr-gold); font-weight: 700; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .two { grid-template-columns: 1fr; } }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.qbtn { background: var(--qr-gold); color: var(--qr-black); border: 2px solid var(--qr-gold); border-radius: 0; padding: 10px 16px; font-family: var(--display); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
+.qbtn.line { background: transparent; color: var(--qr-gold-light); border-color: var(--qr-gold-deep); }
+.qbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.status { font-size: 13px; min-height: 18px; color: var(--qr-gold-light); }
+.status.ok { color: var(--qr-gold-light); }
+.status.ok::before { content: "Saved. "; font-weight: 700; color: var(--qr-gold); }
+.status.fail { color: var(--qr-white); }
+.status.fail::before { content: "Not saved. "; font-weight: 700; color: var(--qr-gold); }
+
+.current { font-family: var(--body); font-weight: 700; color: var(--qr-white); overflow-wrap: anywhere; margin: 0 0 14px; }
+.current small { display: block; font-weight: 500; color: var(--qr-gold-light); }
+
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.choice { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 2px solid var(--qr-gold-deep); background: transparent; color: var(--qr-white); font-family: var(--display); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border-radius: 0; }
+.choice[aria-pressed="true"] { border-color: var(--qr-gold-light); background: var(--qr-green); }
+.sw { width: 18px; height: 18px; border: 1px solid var(--qr-gold-light); display: inline-block; }
+
+/* Offer editor + preview */
+.editor-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+@media (min-width: 980px) { .editor-grid { grid-template-columns: minmax(0, 1fr) 360px; } }
+.phone { width: 340px; max-width: 100%; margin: 0 auto; border: 10px solid var(--qr-black); outline: 2px solid var(--qr-gold-deep); background: var(--qr-black); }
+.phone-screen { position: relative; width: 100%; aspect-ratio: 375 / 740; overflow: hidden; background: var(--qr-green); }
+.phone iframe { position: absolute; top: 0; left: 0; width: 375px; height: 740px; border: 0; transform-origin: 0 0; }
+.preview-label { text-align: center; margin: 10px 0 0; }
+
+.lint { list-style: none; margin: 0; padding: 0; }
+.lint li { padding: 8px 0; border-top: 1px solid var(--qr-gold-deep); font-size: 14px; color: var(--qr-white); }
+.lint li b { color: var(--qr-gold); font-family: var(--display); font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; margin-right: 6px; }
+.lint .clean { color: var(--qr-gold-light); border-top: 0; }
+.rules { margin: 10px 0 0; padding: 0 0 0 18px; color: var(--qr-gold-light); font-size: 12px; }
+
+/* QR studio */
+.qr-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 780px) { .qr-grid { grid-template-columns: minmax(0, 1fr) 280px; } }
+.qr-out { width: 100%; max-width: 280px; margin: 0 auto; }
+.qr-out svg { display: block; width: 100%; height: auto; }
+.qr-url { font-size: 13px; color: var(--qr-white); overflow-wrap: anywhere; margin: 8px 0 0; text-align: center; }
+.contrast { margin: 10px 0 0; font-size: 13px; color: var(--qr-gold-light); text-align: center; }
+.contrast.fail { color: var(--qr-white); }
+.contrast.fail::before { content: "Blocked: "; color: var(--qr-gold); font-weight: 700; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--qr-white); }
+th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--qr-gold-deep); vertical-align: top; }
+th { font-family: var(--display); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--qr-gold-light); border-top: 0; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+.empty { color: var(--qr-gold-light); font-size: 14px; padding: 10px 0; }
+
+.hist { list-style: none; margin: 0; padding: 0; }
+.hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--qr-gold-deep); }
+.hist .what { color: var(--qr-white); font-weight: 700; overflow-wrap: anywhere; }
+.hist .meta { color: var(--qr-gold-light); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="gate-wrap" id="boot" style="min-height:100dvh;display:grid;place-items:center;background:var(--ppf-green);color:var(--ink-3);font:400 11px var(--display);letter-spacing:0.2em;text-transform:uppercase;">
+  Loading
+</div>
+
+<div id="app" hidden>
+  <div class="ops-banner">
+    PPF Operator &middot; Confidential
+    <span class="user-tag">Signed in as <span id="user-tag"></span></span>
+  </div>
+
+  <div class="header-wrap">
+    <div class="diamond-strip" aria-hidden="true"></div>
+    <header class="header">
+      <a href="/ops" class="brand" translate="no" style="display:flex;align-items:center;gap:16px;color:inherit;text-decoration:none;" aria-label="Operator dashboard">
+        <img src="/ppf-logo.jpg" alt="" class="brand-logo">
+        <div class="brand-text">
+          <span class="top">Philly Pretzel Factory</span>
+          <span class="bot">Operator</span>
+        </div>
+      </a>
+      <div class="header-right">
+        <nav class="ops-site-nav" aria-label="Primary"></nav>
+        <a href="/" class="public-link" title="Open the public site">View site &rarr;</a>
+        <button class="logout-btn" id="logout-btn" type="button">Sign Out</button>
+      </div>
+    </header>
+  </div>
+
+  <section class="page">
+    <div class="page-eyebrow">Growth</div>
+    <h1 class="page-title">QR + Offer</h1>
+    <p class="page-sub">Point the window sticker anywhere, run the free pretzel offer, make QR codes for new spots, and see what gets scanned. Changes go live within about a minute. No redeploy.</p>
+
+    <div class="notice" id="config-notice" hidden></div>
+
+    <div class="layout">
+
+      <!-- 1. Redirect -->
+      <div class="panel" id="p-redirect">
+        <h2><span class="num">1</span>Where the sticker goes</h2>
+        <p class="hint">Every QR code points at <b>/scan</b>. This picks where /scan sends people.</p>
+        <p class="current" id="cur-target">Loading<small></small></p>
+        <div class="two">
+          <div class="field">
+            <label for="t-page">Site page</label>
+            <select id="t-page">
+              <option value="/free-pretzels">/free-pretzels (offer page)</option>
+              <option value="/">/ (home)</option>
+              <option value="/products">/products</option>
+              <option value="/order">/order</option>
+              <option value="/wholesale">/wholesale</option>
+              <option value="/partners">/partners</option>
+              <option value="/videos">/videos</option>
+              <option value="/cup">/cup</option>
+              <option value="">Custom URL</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="t-custom">Custom URL or /path</label>
+            <input type="text" id="t-custom" maxlength="2000" placeholder="https://example.com/promo" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <p class="status" id="t-check"></p>
+        <div class="btn-row">
+          <button class="qbtn" id="t-save" type="button">Save destination</button>
+          <a class="qbtn line" id="t-test" href="/scan" target="_blank" rel="noopener">Test /scan</a>
+          <button class="qbtn line" id="t-reset" type="button">Reset to /free-pretzels</button>
+        </div>
+        <p class="status" id="t-status" role="status"></p>
+      </div>
+
+      <!-- 2 + 3. Offer editor, creative tools, preview -->
+      <div class="panel" id="p-offer">
+        <h2><span class="num">2</span>Free pretzel offer</h2>
+        <p class="hint">Edits show in the phone on the right. Nothing is public until you press Publish.</p>
+        <div class="editor-grid">
+          <form id="offer-form" autocomplete="off">
+            <div class="field">
+              <label for="o-headline">Headline</label>
+              <input id="o-headline" name="headline" maxlength="80" required placeholder="Free Pretzel. On Us.">
+              <span class="count" data-for="o-headline"></span>
+            </div>
+            <div class="two">
+              <div class="field">
+                <label for="o-accent">Accent word (script, optional)</label>
+                <input id="o-accent" name="accent" maxlength="24" placeholder="Fresh">
+              </div>
+              <div class="field">
+                <label for="o-stamp">Stamp line (optional)</label>
+                <input id="o-stamp" name="stamp" maxlength="40" placeholder="This week only">
+                <span class="count" data-for="o-stamp"></span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="o-details">Details</label>
+              <textarea id="o-details" name="details" maxlength="600" placeholder="Crave it. Love it. Share it. One free soft pretzel with any purchase."></textarea>
+              <span class="count" data-for="o-details"></span>
+            </div>
+            <div class="field">
+              <span class="lbl">How to claim (up to 5 steps)</span>
+              <input id="o-step1" class="o-step" maxlength="140" placeholder="Show this screen at the counter">
+              <input id="o-step2" class="o-step" maxlength="140" placeholder="Pick your pretzel">
+              <input id="o-step3" class="o-step" maxlength="140">
+              <input id="o-step4" class="o-step" maxlength="140">
+              <input id="o-step5" class="o-step" maxlength="140">
+            </div>
+            <div class="field">
+              <label for="o-fine">Fine print</label>
+              <textarea id="o-fine" name="fine_print" maxlength="800" placeholder="Limit one per guest. Lynbrook and Franklin Square only."></textarea>
+              <span class="count" data-for="o-fine"></span>
+            </div>
+
+            <h2 style="margin-top:8px"><span class="num">3</span>Look and schedule</h2>
+            <div class="field">
+              <span class="lbl">Hero colour (solid brand colours only)</span>
+              <div class="choices" id="layout-group">
+                <button type="button" class="choice" data-layout="green" aria-pressed="true"><span class="sw" style="background:#0D5237"></span>Green</button>
+                <button type="button" class="choice" data-layout="black" aria-pressed="false"><span class="sw" style="background:#000000"></span>Black</button>
+                <button type="button" class="choice" data-layout="gold-light" aria-pressed="false"><span class="sw" style="background:#F2E7A4"></span>Gold light</button>
+              </div>
+              <span class="count" id="tagline-note"></span>
+            </div>
+            <div class="two">
+              <div class="field">
+                <label for="o-start">Starts (optional)</label>
+                <input type="date" id="o-start">
+              </div>
+              <div class="field">
+                <label for="o-end">Ends (optional)</label>
+                <input type="date" id="o-end">
+              </div>
+            </div>
+            <p class="hint">After the end date the page says "This offer has ended" and still shows both locations.</p>
+
+            <span class="lbl">Brand voice check</span>
+            <ul class="lint" id="lint"></ul>
+            <ul class="rules">
+              <li>Bold. Confident. Flavorful. Simple.</li>
+              <li>Crave lines belong in the details, never next to the logo.</li>
+              <li>Tagline is locked: "Made to Crave®", white or black, under the logo.</li>
+              <li>Diamond plate sits at the top only. No gradients.</li>
+            </ul>
+
+            <div class="btn-row" style="margin-top:16px">
+              <button class="qbtn" id="o-publish" type="submit">Publish offer</button>
+              <a class="qbtn line" href="/free-pretzels" target="_blank" rel="noopener">Open live page</a>
+            </div>
+            <p class="status" id="o-status" role="status"></p>
+          </form>
+
+          <div>
+            <div class="phone" aria-label="Phone preview of /free-pretzels">
+              <div class="phone-screen" id="phone-screen">
+                <iframe id="preview" title="Offer preview"></iframe>
+              </div>
+            </div>
+            <p class="preview-label lbl" id="preview-state">Preview</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. QR studio -->
+      <div class="panel" id="p-qr">
+        <h2><span class="num">4</span>QR studio</h2>
+        <p class="hint">One code per spot so scans are counted separately. Every code goes through /scan, so it follows the destination above.</p>
+        <div class="qr-grid">
+          <div>
+            <div class="field">
+              <label for="q-place">Placement name</label>
+              <input id="q-place" maxlength="32" value="window_sticker" spellcheck="false" autocomplete="off">
+              <span class="count">Lowercase letters, numbers, - and _ only.</span>
+            </div>
+            <div class="two">
+              <div class="field">
+                <label for="q-dark">Code colour</label>
+                <select id="q-dark">
+                  <option value="#0D5237">Green #0D5237</option>
+                  <option value="#000000">Black #000000</option>
+                  <option value="#B2872F">Gold deep #B2872F</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="q-light">Background</label>
+                <select id="q-light">
+                  <option value="#F2E7A4">Gold light #F2E7A4</option>
+                  <option value="#FFFFFF">White #FFFFFF (print stock)</option>
+                  <option value="#D4B662">Gold #D4B662</option>
+                </select>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="qbtn" id="q-svg" type="button">Download SVG</button>
+              <button class="qbtn line" id="q-png" type="button">Download PNG</button>
+            </div>
+          </div>
+          <div>
+            <div class="qr-out" id="qr-out"></div>
+            <p class="qr-url" id="qr-url"></p>
+            <p class="contrast" id="qr-contrast"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Stats -->
+      <div class="panel" id="p-stats">
+        <h2><span class="num">5</span>Scans by placement</h2>
+        <p class="hint">Counted at /scan. Days are New York time.</p>
+        <div class="table-wrap"><table id="stats"><thead><tr><th>Placement</th><th class="n">Today</th><th class="n">7 days</th><th class="n">30 days</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <!-- 6. History -->
+      <div class="panel" id="p-history">
+        <h2><span class="num">6</span>History</h2>
+        <p class="hint">Last 20 changes. Restore puts that version back live.</p>
+        <ul class="hist" id="history"></ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="/assets/ops-nav.js" defer></script>
+<script src="/assets/vendor/qrcode-generator.js"></script>
+<script>
+(function () {
+'use strict';
+var $ = function (s) { return document.querySelector(s); };
+var API = '/api/leads';
+var LAYOUT_TAGLINE = { green: 'white', black: 'white', 'gold-light': 'black' };
+var state = { config: null, layout: 'green' };
+
+// ─── boot / auth ──────────────────────────────────────────────────
+async function boot() {
+  var next = encodeURIComponent(location.pathname + location.search);
+  try {
+    var r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    var me = await r.json();
+    if (me.role !== 'operator') {
+      location.replace(me.role === 'baker' ? '/baker' : me.role === 'driver' ? '/driver' : '/signin');
+      return;
+    }
+    $('#boot').style.display = 'none';
+    $('#app').hidden = false;
+    $('#user-tag').textContent = me.name || '';
+    init();
+  } catch (e) { location.replace('/signin?next=' + next); }
+}
+
+function init() {
+  $('#logout-btn').onclick = async function () {
+    try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+    location.replace('/signin');
+  };
+  initRedirect();
+  initOffer();
+  initQr();
+  loadConfig();
+  loadStats();
+  loadHistory();
+}
+
+async function api(method, view, body) {
+  var url = API + '?resource=qr' + (view ? '&view=' + encodeURIComponent(view) : '');
+  var opts = { method: method, credentials: 'same-origin', cache: 'no-store', headers: {} };
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  var r = await fetch(url, opts);
+  var data = null;
+  try { data = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
+  return data;
+}
+
+function setStatus(el, cls, text) { el.className = 'status' + (cls ? ' ' + cls : ''); el.textContent = text || ''; }
+
+// ─── config ───────────────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    var c = await api('GET', 'config');
+    state.config = c;
+    var notes = [];
+    if (!c.readable) notes.push('Edge Config is not connected to this project yet, so /scan uses /free-pretzels and the page shows its built-in content.');
+    if (!c.writable) notes.push('Saving is off until EDGE_CONFIG_ID and EDGE_CONFIG_WRITE_TOKEN are set. You can still draft, preview and make QR codes.');
+    var n = $('#config-notice');
+    n.textContent = notes.join(' ');
+    n.hidden = notes.length === 0;
+    renderCurrentTarget(c.scan_target);
+    if (c.offer) fillOffer(c.offer);
+    $('#preview-state').textContent = 'Preview' + (c.offer ? ' (live offer is ' + c.offer_status + ')' : '');
+    ['#t-save', '#t-reset', '#o-publish'].forEach(function (s) { $(s).disabled = !c.writable; });
+  } catch (e) {
+    renderCurrentTarget(null);
+  }
+}
+
+// ─── 1. redirect ──────────────────────────────────────────────────
+// Same rules as parseTarget() in middleware.js and api/_qr.js.
+function checkTarget(v) {
+  v = (v || '').trim();
+  if (!v) return 'Pick a page or type a URL.';
+  if (v.length > 2000) return 'Too long.';
+  var url;
+  try {
+    if (v.charAt(0) === '/' && v.slice(0, 2) !== '//' && v.slice(0, 2) !== '/\\') url = new URL(v, location.origin);
+    else { url = new URL(v); if (url.protocol !== 'https:' && url.protocol !== 'http:') return 'Use a /path or a full http(s) URL.'; }
+  } catch (e) { return 'Use a /path or a full http(s) URL.'; }
+  if (url.host === location.host && /^\/scan\/?$/.test(url.pathname)) return 'That would loop back to /scan.';
+  return '';
+}
+function chosenTarget() { return $('#t-page').value || $('#t-custom').value.trim(); }
+function renderCurrentTarget(t) {
+  var el = $('#cur-target');
+  el.textContent = 'Now: ' + (t || '/free-pretzels');
+  var small = document.createElement('small');
+  small.textContent = t ? 'Set in Edge Config.' : 'Default fallback (nothing set yet).';
+  el.appendChild(small);
+}
+function initRedirect() {
+  function refresh() {
+    var err = checkTarget(chosenTarget());
+    $('#t-check').textContent = err;
+    $('#t-custom').disabled = !!$('#t-page').value;
+    return err;
+  }
+  $('#t-page').onchange = refresh;
+  $('#t-custom').oninput = refresh;
+  refresh();
+  $('#t-save').onclick = async function () {
+    if (refresh()) return;
+    var st = $('#t-status');
+    try {
+      var r = await api('POST', null, { action: 'set_target', scan_target: chosenTarget() });
+      setStatus(st, 'ok', '/scan now goes to ' + r.scan_target + '.');
+      renderCurrentTarget(r.scan_target);
+      loadHistory();
+    } catch (e) { setStatus(st, 'fail', e.message); }
+  };
+  $('#t-reset').onclick = async function () {
+    if (!confirm('Send /scan back to /free-pretzels?')) return;
+    var st = $('#t-status');
+    try {
+      var r = await api('POST', null, { action: 'reset_target' });
+      setStatus(st, 'ok', '/scan now goes to ' + r.scan_target + '.');
+      renderCurrentTarget(r.scan_target);
+      $('#t-page').value = '/free-pretzels';
+      refresh();
+      loadHistory();
+    } catch (e) { setStatus(st, 'fail', e.message); }
+  };
+}
+
+// ─── 2 + 3. offer ─────────────────────────────────────────────────
+function readOffer() {
+  return {
+    headline: $('#o-headline').value.trim(),
+    accent: $('#o-accent').value.trim(),
+    stamp: $('#o-stamp').value.trim(),
+    details: $('#o-details').value.trim(),
+    steps: Array.prototype.map.call(document.querySelectorAll('.o-step'), function (i) { return i.value.trim(); }).filter(Boolean),
+    fine_print: $('#o-fine').value.trim(),
+    layout: state.layout,
+    starts_at: $('#o-start').value,
+    ends_at: $('#o-end').value,
+  };
+}
+function fillOffer(o) {
+  $('#o-headline').value = o.headline || '';
+  $('#o-accent').value = o.accent || '';
+  $('#o-stamp').value = o.stamp || '';
+  $('#o-details').value = o.details || '';
+  var steps = Array.isArray(o.steps) ? o.steps : [];
+  document.querySelectorAll('.o-step').forEach(function (i, n) { i.value = steps[n] || ''; });
+  $('#o-fine').value = o.fine_print || '';
+  $('#o-start').value = o.starts_at || '';
+  $('#o-end').value = o.ends_at || '';
+  setLayout(o.layout || 'green');
+  onOfferChange();
+}
+function setLayout(l) {
+  if (!LAYOUT_TAGLINE[l]) l = 'green';
+  state.layout = l;
+  document.querySelectorAll('#layout-group .choice').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.layout === l)); });
+  $('#tagline-note').textContent = 'Tagline will be ' + LAYOUT_TAGLINE[l] + ' (locked).';
+}
+function today() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+function previewStatus(o) {
+  var t = today();
+  if (o.starts_at && t < o.starts_at) return 'scheduled';
+  if (o.ends_at && t > o.ends_at) return 'ended';
+  return 'live';
+}
+
+// Mirrors lintCopy() in api/_qr.js. Advisory only.
+var EMOJI_RE = /\p{Extended_Pictographic}/u;
+function lint(o) {
+  var out = [];
+  var fields = { headline: o.headline, details: o.details, 'fine print': o.fine_print, stamp: o.stamp, accent: o.accent };
+  o.steps.forEach(function (s, i) { fields['step ' + (i + 1)] = s; });
+  Object.keys(fields).forEach(function (f) {
+    var t = fields[f] || '';
+    if (!t) return;
+    if (/[\u2014\u2013]/.test(t)) out.push([f, 'Em or en dash. Use a period or comma.']);
+    if (EMOJI_RE.test(t)) out.push([f, 'Emoji. Brand copy uses words only.']);
+    if (/[!?]{2,}/.test(t)) out.push([f, 'Stacked ! or ?. One is plenty.']);
+  });
+  if (o.headline.length > 48) out.push(['headline', 'Over 48 characters. Keep it simple.']);
+  if (!o.headline) out.push(['headline', 'Required.']);
+  ['headline', 'stamp'].forEach(function (f) {
+    if (/made to crave/i.test(o[f] || '')) out.push([f, 'Tagline appears once, under the logo only.']);
+  });
+  if (/crave/i.test(o.stamp || '')) out.push(['stamp', 'Stamp sits by the lockup. Keep crave lines in the details.']);
+  if (o.accent && /\s/.test(o.accent)) out.push(['accent', 'One word only.']);
+  if (o.starts_at && o.ends_at && o.ends_at < o.starts_at) out.push(['schedule', 'End date is before start date.']);
+  return out;
+}
+function renderLint(items) {
+  var ul = $('#lint');
+  ul.textContent = '';
+  if (!items.length) {
+    var ok = document.createElement('li');
+    ok.className = 'clean';
+    ok.textContent = 'On brand. Nothing flagged.';
+    ul.appendChild(ok);
+    return;
+  }
+  items.forEach(function (it) {
+    var li = document.createElement('li');
+    var b = document.createElement('b');
+    b.textContent = it[0];
+    li.appendChild(b);
+    li.appendChild(document.createTextNode(it[1]));
+    ul.appendChild(li);
+  });
+}
+function updateCounts() {
+  document.querySelectorAll('.count[data-for]').forEach(function (c) {
+    var input = document.getElementById(c.dataset.for);
+    var max = Number(input.getAttribute('maxlength'));
+    var n = input.value.length;
+    c.textContent = n + ' / ' + max;
+    c.classList.toggle('over', input.id === 'o-headline' && n > 48);
+  });
+}
+var previewReady = false;
+function sendPreview() {
+  var f = $('#preview');
+  if (!previewReady || !f.contentWindow) return;
+  var o = readOffer();
+  var st = previewStatus(o);
+  var shown = o.headline ? o : Object.assign({}, o, { headline: 'Your headline here' });
+  f.contentWindow.postMessage({ type: 'offer-preview', offer: shown, status: st === 'scheduled' ? 'live' : st }, location.origin);
+  $('#preview-state').textContent = 'Preview: ' + st + (st === 'scheduled' ? ' (shown as live)' : '');
+}
+function onOfferChange() {
+  updateCounts();
+  renderLint(lint(readOffer()));
+  sendPreview();
+}
+function scalePhone() {
+  var screen = $('#phone-screen');
+  var s = screen.clientWidth / 375;
+  $('#preview').style.transform = 'scale(' + s + ')';
+}
+// vercel.json sends X-Frame-Options: DENY on every page, so the real
+// /free-pretzels HTML is loaded into a srcdoc iframe instead of by URL.
+// <base> fixes relative asset paths; the flag switches the page into
+// preview mode (renders postMessage data, skips the live fetch).
+async function loadPreview() {
+  try {
+    var r = await fetch('/free-pretzels', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var html = await r.text();
+    var inject = '<base href="/free-pretzels/"><script>window.__OFFER_PREVIEW__ = true;<\/script>';
+    html = html.replace(/<head([^>]*)>/i, function (m) { return m + inject; });
+    $('#preview').srcdoc = html;
+  } catch (e) {
+    $('#preview-state').textContent = 'Preview unavailable: could not load /free-pretzels.';
+  }
+}
+function initOffer() {
+  $('#offer-form').addEventListener('input', onOfferChange);
+  document.querySelectorAll('#layout-group .choice').forEach(function (b) {
+    b.onclick = function () { setLayout(b.dataset.layout); onOfferChange(); };
+  });
+  setLayout('green');
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'offer-preview-ready') return;
+    previewReady = true;
+    sendPreview();
+  });
+  window.addEventListener('resize', scalePhone);
+  scalePhone();
+  loadPreview();
+  onOfferChange();
+  $('#offer-form').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    var o = readOffer();
+    var st = $('#o-status');
+    if (!o.headline) { setStatus(st, 'fail', 'Headline is required.'); return; }
+    var flagged = lint(o).length;
+    if (flagged && !confirm(flagged + ' brand voice note(s). Publish anyway?')) return;
+    try {
+      var r = await api('POST', null, { action: 'publish_offer', offer: o });
+      setStatus(st, 'ok', 'Offer published. Live within about a minute.');
+      fillOffer(r.offer);
+      loadHistory();
+    } catch (e) { setStatus(st, 'fail', e.message); }
+  });
+}
+
+// ─── 4. QR studio ─────────────────────────────────────────────────
+function lum(hex) {
+  var c = [1, 3, 5].map(function (i) {
+    var v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contrast(a, b) {
+  var la = lum(a), lb = lum(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function placement() {
+  var v = $('#q-place').value.trim().toLowerCase();
+  return /^[a-z0-9_-]{1,32}$/.test(v) ? v : '';
+}
+function qrUrl() {
+  var p = placement();
+  return location.origin + '/scan' + (p && p !== 'window_sticker' ? '?utm_source=' + p : '');
+}
+// Brand palette only. Colours are looked up here, never copied from the
+// DOM, so nothing from a form field can reach the SVG markup.
+var QR_DARK = { '#0D5237': '#0D5237', '#000000': '#000000', '#B2872F': '#B2872F' };
+var QR_LIGHT = { '#F2E7A4': '#F2E7A4', '#FFFFFF': '#FFFFFF', '#D4B662': '#D4B662' };
+function qrColors() {
+  return {
+    dark: QR_DARK[$('#q-dark').value] || QR_DARK['#0D5237'],
+    light: QR_LIGHT[$('#q-light').value] || QR_LIGHT['#F2E7A4'],
+  };
+}
+var SVG_NS = 'http://www.w3.org/2000/svg';
+function qrModel() {
+  var qr = qrcode(0, 'M');
+  qr.addData(qrUrl());
+  qr.make();
+  var n = qr.getModuleCount();
+  var quiet = 4;
+  var path = '';
+  for (var r = 0; r < n; r++) {
+    for (var c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) path += 'M' + (c + quiet) + ' ' + (r + quiet) + 'h1v1h-1z';
+    }
+  }
+  var col = qrColors();
+  return { size: n + quiet * 2, path: path, dark: col.dark, light: col.light };
+}
+// On-page preview: built with DOM calls, no HTML parsing.
+function svgNode(m) {
+  var svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + m.size + ' ' + m.size);
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  var rect = document.createElementNS(SVG_NS, 'rect');
+  rect.setAttribute('width', String(m.size));
+  rect.setAttribute('height', String(m.size));
+  rect.setAttribute('fill', m.light);
+  var p = document.createElementNS(SVG_NS, 'path');
+  p.setAttribute('d', m.path);
+  p.setAttribute('fill', m.dark);
+  svg.appendChild(rect);
+  svg.appendChild(p);
+  return svg;
+}
+// Download file: serialise the same node, so markup is never hand-built.
+function buildSvg() {
+  return new XMLSerializer().serializeToString(svgNode(qrModel()));
+}
+function qrCheck() {
+  var col = qrColors();
+  var dark = col.dark, light = col.light;
+  var ratio = contrast(dark, light);
+  var darkOnLight = lum(dark) < lum(light);
+  var ok = ratio >= 4.5 && darkOnLight && !!placement();
+  var el = $('#qr-contrast');
+  el.className = 'contrast' + (ok ? '' : ' fail');
+  if (!placement()) el.textContent = 'Placement name: lowercase letters, numbers, - and _ only (max 32).';
+  else el.textContent = 'Contrast ' + ratio.toFixed(1) + ':1' + (ok ? '. Scans reliably.' : '. Needs 4.5:1 with a dark code on a light background.');
+  $('#q-svg').disabled = !ok;
+  $('#q-png').disabled = !ok;
+  return ok;
+}
+function renderQr() {
+  var ok = qrCheck();
+  var out = $('#qr-out');
+  if (!placement()) { out.textContent = ''; $('#qr-url').textContent = ''; return; }
+  out.replaceChildren(svgNode(qrModel()));
+  $('#qr-url').textContent = qrUrl();
+  out.style.opacity = ok ? '1' : '0.35';
+}
+function download(name, blob) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function initQr() {
+  ['#q-place', '#q-dark', '#q-light'].forEach(function (s) { $(s).addEventListener('input', renderQr); });
+  renderQr();
+  $('#q-svg').onclick = function () {
+    if (!qrCheck()) return;
+    download('ppf-qr-' + placement() + '.svg', new Blob([buildSvg()], { type: 'image/svg+xml' }));
+  };
+  $('#q-png').onclick = function () {
+    if (!qrCheck()) return;
+    var svg = buildSvg();
+    var img = new Image();
+    img.onload = function () {
+      var canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1200;
+      var ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, 1200, 1200);
+      canvas.toBlob(function (b) { if (b) download('ppf-qr-' + placement() + '.png', b); }, 'image/png');
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  };
+}
+
+// ─── 5. stats ─────────────────────────────────────────────────────
+async function loadStats() {
+  var tbody = $('#stats tbody');
+  try {
+    var s = await api('GET', 'stats');
+    tbody.textContent = '';
+    var names = Object.keys(s.d30).sort(function (a, b) { return (s.d30[b] || 0) - (s.d30[a] || 0); });
+    if (!names.length) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 4; td.className = 'empty';
+      td.textContent = s.configured ? 'No scans in the last 30 days yet.' : 'Scan counting needs Upstash Redis (same env vars as leads).';
+      tr.appendChild(td); tbody.appendChild(tr);
+      return;
+    }
+    var tot = [0, 0, 0];
+    names.forEach(function (n) {
+      var row = [n, s.today[n] || 0, s.d7[n] || 0, s.d30[n] || 0];
+      tot[0] += row[1]; tot[1] += row[2]; tot[2] += row[3];
+      tbody.appendChild(statRow(row));
+    });
+    tbody.appendChild(statRow(['All placements', tot[0], tot[1], tot[2]], true));
+  } catch (e) {
+    tbody.textContent = '';
+    tbody.appendChild(statRow(['Could not load stats', '', '', '']));
+  }
+}
+function statRow(cells, strong) {
+  var tr = document.createElement('tr');
+  cells.forEach(function (c, i) {
+    var td = document.createElement('td');
+    if (i) td.className = 'n';
+    td.textContent = String(c);
+    if (strong) td.style.fontWeight = '700';
+    tr.appendChild(td);
+  });
+  return tr;
+}
+
+// ─── 6. history ───────────────────────────────────────────────────
+function fmtWhen(iso) {
+  try { return new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+  catch (e) { return iso; }
+}
+async function loadHistory() {
+  var ul = $('#history');
+  try {
+    var h = (await api('GET', 'history')).history || [];
+    ul.textContent = '';
+    if (!h.length) {
+      var li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = 'No changes saved yet.';
+      ul.appendChild(li);
+      return;
+    }
+    h.forEach(function (e, i) {
+      var li = document.createElement('li');
+      var left = document.createElement('div');
+      var what = document.createElement('div');
+      what.className = 'what';
+      what.textContent = e.kind === 'scan_target' ? 'Destination: ' + e.scan_target : 'Offer: ' + ((e.offer && e.offer.headline) || '(untitled)');
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = fmtWhen(e.ts) + (e.by_name ? ' by ' + e.by_name : '') + (e.restored_from ? ' (restore)' : '') + (i === 0 ? ' . latest' : '');
+      left.appendChild(what); left.appendChild(meta);
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'qbtn line'; btn.textContent = 'Restore';
+      btn.disabled = !(state.config && state.config.writable);
+      btn.onclick = async function () {
+        if (!confirm('Restore this version and make it live?')) return;
+        try {
+          var r = await api('POST', null, { action: 'restore', ts: e.ts });
+          if (r.offer) fillOffer(r.offer);
+          if (r.scan_target) renderCurrentTarget(r.scan_target);
+          loadHistory();
+        } catch (err) { alert('Not restored. ' + err.message); }
+      };
+      li.appendChild(left); li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  } catch (e) {
+    ul.textContent = '';
+    var li2 = document.createElement('li');
+    li2.className = 'empty';
+    li2.textContent = 'Could not load history.';
+    ul.appendChild(li2);
+  }
+}
+
+boot();
+})();
+</script>
+</body>
+</html>

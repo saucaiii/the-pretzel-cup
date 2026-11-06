@@ -269,6 +269,11 @@ async function handleGet(req, res) {
 
 // ─── dispatcher ────────────────────────────────────────────────────
 module.exports = async (req, res) => {
+  // QR + offer control panel lives here to stay under the 12-function
+  // cap. Only ?resource=offer|qr is routed away; lead POST/GET below
+  // are unchanged.
+  const resource = req.query && typeof req.query.resource === 'string' ? req.query.resource : '';
+  if (resource === 'offer' || resource === 'qr') return require('./_qr').handle(req, res, resource);
   try {
     if (req.method === 'POST') return await handlePost(req, res);
     if (req.method === 'GET')  return await handleGet(req, res);
