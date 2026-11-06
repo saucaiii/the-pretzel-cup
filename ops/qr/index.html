@@ -255,7 +255,11 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
               <label for="o-ig">Instagram handle for the bonus pack (optional)</label>
               <input id="o-ig" maxlength="31" placeholder="handle, without @" autocomplete="off" spellcheck="false">
             </div>
-            <p class="hint">Game on: visitors pick 1 of 3 packs and every pack wins one free pretzel. Bonus packs: a verified email (+1) and an Instagram follow (+1, hidden until a handle is set). Max 3 per person. Limits reset when the start date changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
+            <div class="field">
+              <label for="o-app">App Store link for the bonus pack (optional)</label>
+              <input id="o-app" maxlength="300" placeholder="https://apps.apple.com/..." autocomplete="off" spellcheck="false" inputmode="url">
+            </div>
+            <p class="hint">Game on: visitors pick 1 of 3 packs and every pack wins one free pretzel. Bonus packs: email sign-up (+1), Instagram follow (+1) and app download (+1); the Instagram and app buttons stay hidden until their field is set. Max 4 per person. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
 
             <span class="lbl">Brand voice check</span>
             <ul class="lint" id="lint"></ul>
@@ -495,6 +499,7 @@ function readOffer() {
     ends_at: $('#o-end').value,
     game: state.game,
     instagram_handle: $('#o-ig').value.trim().replace(/^@/, ''),
+    app_store_url: $('#o-app').value.trim(),
   };
 }
 function fillOffer(o) {
@@ -510,6 +515,7 @@ function fillOffer(o) {
   setLayout(o.layout || 'green');
   setGame(o.game === true);
   $('#o-ig').value = o.instagram_handle || '';
+  $('#o-app').value = o.app_store_url || '';
   onOfferChange();
 }
 function setLayout(l) {
@@ -821,8 +827,8 @@ async function loadPackStats() {
     var s = await r.json();
     if (!r.ok) throw new Error(s && s.error);
     $('#pk-hint').textContent = 'Game is ' + (s.game ? 'on' : 'off') + '. Counts for this offer (round ' + s.offer_key + '). Emails verified and Instagram taps are all time.';
-    [['First packs opened', s.opened.first], ['Email bonus packs', s.opened.email], ['Instagram bonus packs', s.opened.instagram],
-     ['Codes redeemed', s.redeemed], ['Emails verified', s.emails_verified], ['Instagram taps', s.instagram_taps]]
+    [['First packs opened', s.opened.first], ['Email bonus packs', s.opened.email], ['Instagram bonus packs', s.opened.instagram], ['App bonus packs', s.opened.app || 0],
+     ['Codes redeemed', s.redeemed], ['Emails verified', s.emails_verified], ['Instagram taps', s.instagram_taps], ['App Store taps', s.app_taps || 0]]
       .forEach(function (row) { tbody.appendChild(statRow(row)); });
     tbody.appendChild(statRow(['All packs opened', s.opened.total], true));
   } catch (e) {
