@@ -154,6 +154,7 @@ body.game-on #claim-section { display: none !important; }
 .stage[hidden] { display: none; }
 .stage.settled { overflow-y: auto; }
 .st-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.st-canvas-front { z-index: 6; }
 .st-rays {
   position: absolute; left: 50%; top: 54%; width: 170vmax; height: 170vmax;
   margin: -85vmax 0 0 -85vmax; z-index: 2; opacity: 0; pointer-events: none;

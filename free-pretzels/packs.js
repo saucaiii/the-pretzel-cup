@@ -23,7 +23,9 @@
   var SOURCE_LABEL = { first: 'Free pretzel', email: 'Bonus pretzel: email', instagram: 'Bonus pretzel: Instagram' };
   var EMAIL_MSG = {
     verified: 'Email verified. Your bonus pack is ready.',
-    expired: 'That link has expired or was already used. Ask for a new one below.',
+    expired: 'That link has expired, was already used, or was opened on a different phone. Ask for a new one below.',
+    device: 'Open the link on the same phone and browser you used to ask for it.',
+    already: 'This phone already has a verified email.',
     invalid: 'That link did not work. Ask for a new one below.',
     busy: 'Too many tries. Wait a few minutes and open the link again.'
   };
@@ -220,7 +222,10 @@
 
   // ─── canvas FX: shards, sparkles, falling rivets ─────────────────
   var FX = (function () {
-    var cv, ctx, w = 0, h = 0, dpr = 1, raf = 0, last = 0;
+    // Back canvas (behind the rays): falling rivets, so they never cover
+    // the pretzel or the code. Front canvas (above the pretzel): the gold
+    // shard burst and sparkles.
+    var cv, ctx, cv2, ctx2, w = 0, h = 0, dpr = 1, raf = 0, last = 0;
     var rivets = [], shards = [], sparks = [];
     var spawnRivets = false, sparkleOn = false, spawnAcc = 0, maxRivets = 40, dtAvg = 16;
     var imgs = [];
@@ -243,11 +248,14 @@
     function size() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = cv.clientWidth; h = cv.clientHeight;
-      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      [cv, cv2].forEach(function (c) {
+        c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+        c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+      });
     }
-    function attach(canvas) {
-      cv = canvas; ctx = cv.getContext('2d');
+    function attach(back, front) {
+      cv = back; ctx = cv.getContext('2d');
+      cv2 = front; ctx2 = cv2.getContext('2d');
       size();
     }
     function rand(a, b) { return a + Math.random() * (b - a); }
@@ -275,13 +283,14 @@
     }
     function rain(on) { spawnRivets = on; if (on) start(); }
     function star(x, y, r, a) {
-      ctx.globalAlpha = a;
-      ctx.fillStyle = '#F2E7A4';
-      ctx.beginPath();
-      ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.28, y - r * 0.28); ctx.lineTo(x + r, y);
-      ctx.lineTo(x + r * 0.28, y + r * 0.28); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.28, y + r * 0.28);
-      ctx.lineTo(x - r, y); ctx.lineTo(x - r * 0.28, y - r * 0.28);
-      ctx.closePath(); ctx.fill();
+      var c = ctx2;
+      c.globalAlpha = a;
+      c.fillStyle = '#F2E7A4';
+      c.beginPath();
+      c.moveTo(x, y - r); c.lineTo(x + r * 0.28, y - r * 0.28); c.lineTo(x + r, y);
+      c.lineTo(x + r * 0.28, y + r * 0.28); c.lineTo(x, y + r); c.lineTo(x - r * 0.28, y + r * 0.28);
+      c.lineTo(x - r, y); c.lineTo(x - r * 0.28, y - r * 0.28);
+      c.closePath(); c.fill();
     }
     function frame(t) {
       var dt = Math.min(0.05, (t - (last || t)) / 1000);
@@ -289,6 +298,7 @@
       dtAvg = dtAvg * 0.9 + dt * 1000 * 0.1;
       if (dtAvg > 28 && maxRivets > 20) maxRivets = 20; // low frame rate: fewer rivets
       ctx.clearRect(0, 0, w, h);
+      ctx2.clearRect(0, 0, w, h);
       if (spawnRivets) {
         spawnAcc += dt * maxRivets / 2.4;
         while (spawnAcc >= 1) { spawnAcc -= 1; if (rivets.length < maxRivets) addRivet(); }
@@ -318,14 +328,14 @@
         if (s.life >= s.max) { shards.splice(j, 1); continue; }
         s.vy += 900 * dt; s.vx *= 0.985;
         s.x += s.vx * dt; s.y += s.vy * dt; s.rot += s.vr * dt;
-        ctx.save(); ctx.globalAlpha = 1 - s.life / s.max; ctx.fillStyle = s.c;
-        ctx.translate(s.x, s.y); ctx.rotate(s.rot);
-        ctx.beginPath(); ctx.moveTo(0, -s.s); ctx.lineTo(s.s * 0.6, s.s * 0.7); ctx.lineTo(-s.s * 0.6, s.s * 0.5); ctx.closePath(); ctx.fill();
-        ctx.restore();
+        ctx2.save(); ctx2.globalAlpha = 1 - s.life / s.max; ctx2.fillStyle = s.c;
+        ctx2.translate(s.x, s.y); ctx2.rotate(s.rot);
+        ctx2.beginPath(); ctx2.moveTo(0, -s.s); ctx2.lineTo(s.s * 0.6, s.s * 0.7); ctx2.lineTo(-s.s * 0.6, s.s * 0.5); ctx2.closePath(); ctx2.fill();
+        ctx2.restore();
       }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1; ctx2.globalAlpha = 1;
       if (spawnRivets || sparkleOn || rivets.length || shards.length || sparks.length) raf = requestAnimationFrame(frame);
-      else { raf = 0; last = 0; ctx.clearRect(0, 0, w, h); }
+      else { raf = 0; last = 0; ctx.clearRect(0, 0, w, h); ctx2.clearRect(0, 0, w, h); }
     }
     function start() { if (!raf && ctx) { last = 0; raf = requestAnimationFrame(frame); } }
     function stop() {
@@ -333,7 +343,7 @@
       rivets = []; shards = []; sparks = [];
       if (raf) cancelAnimationFrame(raf);
       raf = 0; last = 0;
-      if (ctx) ctx.clearRect(0, 0, w, h);
+      if (ctx) { ctx.clearRect(0, 0, w, h); ctx2.clearRect(0, 0, w, h); }
     }
     return { load: load, attach: attach, size: size, burst: burst, sparkle: sparkle, rain: rain, stop: stop,
       running: function () { return !!raf; }, count: function () { return rivets.length; } };
@@ -348,6 +358,7 @@
     function build() {
       root = $('stage');
       nodes.canvas = root.querySelector('.st-canvas');
+      nodes.front = root.querySelector('.st-canvas-front');
       nodes.rays = root.querySelector('.st-rays');
       nodes.center = root.querySelector('.st-center');
       nodes.prize = root.querySelector('.st-prize');
@@ -438,7 +449,7 @@
       freshPack();
       root.hidden = false;
       document.documentElement.classList.add('stage-open');
-      FX.attach(nodes.canvas);
+      FX.attach(nodes.canvas, nodes.front);
       FX.load();
       t0 = performance.now();
       T.t0 = t0;
@@ -706,6 +717,18 @@
     } catch (e) {}
   }
 
+  // Magic link: the email's GET redirects here with #pack_verify=<token>.
+  // Confirm with a same-origin POST, then drop the token from the URL.
+  function verifyFromLink() {
+    var m = /[#&]pack_verify=([A-Za-z0-9_-]{20,100})/.exec(location.hash);
+    if (!m) return null;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    return api('POST', { action: 'verify', token: m[1] }).then(function (r) {
+      setMsg(EMAIL_MSG[r.data && r.data.result] || (r.data && r.data.error) || EMAIL_MSG.invalid);
+      if (r.ok && r.data.state && r.data.state.game) render(r.data.state);
+    }, function () { setMsg('No connection. Open the link again in a moment.'); });
+  }
+
   function boot() {
     if (!$('game')) return;
     // /ops/qr preview (srcdoc iframe): show the picker, never call the API.
@@ -733,6 +756,7 @@
       showGame(true);
       render(r.data);
       emailResult();
+      verifyFromLink();
       FX.load();
     }).catch(function () { /* keep the plain offer page */ });
   }
