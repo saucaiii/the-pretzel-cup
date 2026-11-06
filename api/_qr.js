@@ -36,6 +36,9 @@ const LAYOUT_TAGLINE = { green: 'white', black: 'white', 'gold-light': 'black' }
 const LIMITS = { headline: 80, details: 600, step: 140, steps: 5, fine_print: 800, stamp: 40, accent: 24, instagram_handle: 30 };
 // Instagram usernames: letters, numbers, dot, underscore, up to 30.
 const IG_HANDLE_RE = /^[A-Za-z0-9._]{1,30}$/;
+// App Store links only (the 4th bonus pack).
+const APP_STORE_RE = /^https:\/\/apps\.apple\.com\/[A-Za-z0-9\/._~%?=&+-]*$/;
+const APP_STORE_MAX = 300;
 const HEADLINE_LINT_LEN = 48;
 
 // ─── pure helpers (unit-tested) ─────────────────────────────────────
@@ -100,8 +103,12 @@ function validateOffer(input) {
     // Pack game (api/_packs.js). Off unless explicitly true.
     game: o.game === true,
     instagram_handle: str(o.instagram_handle, LIMITS.instagram_handle + 1).replace(/^@/, ''),
+    app_store_url: str(o.app_store_url, APP_STORE_MAX),
   };
   if (!offer.headline) errors.push('headline is required');
+  if (offer.app_store_url && (offer.app_store_url.length > APP_STORE_MAX || !APP_STORE_RE.test(offer.app_store_url))) {
+    errors.push('app_store_url must be an https://apps.apple.com/ link');
+  }
   // Pack limits are keyed on the start date (api/_packs.js offerKey).
   if (offer.game && !offer.starts_at) errors.push('a start date is required when the pack game is on');
   if (offer.instagram_handle && !IG_HANDLE_RE.test(offer.instagram_handle)) {
@@ -434,6 +441,7 @@ module.exports = {
   readLiveOffer,
   defaultDeps,
   IG_HANDLE_RE,
+  APP_STORE_RE,
   parseTarget,
   isOwnSite,
   sanitizePlacement,

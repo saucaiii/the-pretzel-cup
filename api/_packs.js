@@ -8,12 +8,13 @@
 //                                         (mail scanners never POST)
 //   GET  ?resource=packs&view=stats       operator
 //   POST ?resource=packs {action, ...}    public, JSON + same-origin only
-//        actions: open, email, verify, instagram, redeem
+//        actions: open, email, verify, instagram, app, redeem
 //
 // Rules:
 //   - Every pack wins one free pretzel. No tiers, no chance.
 //   - One pack per player per offer, +1 after a verified email,
-//     +1 after an Instagram tap (honor system). Max 3. The DB's
+//     +1 after an Instagram tap, +1 after an App Store tap (both honor
+//     system). Max 4. The DB's
 //     unique (player_id, offer_key, source) enforces the cap and makes
 //     a double tap mint one voucher, not two.
 //   - Player identity: signed httpOnly cookie `ppf_player` (HMAC with
@@ -32,8 +33,8 @@ const crypto = require('crypto');
 
 const COOKIE = 'ppf_player';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 180;
-const MAX_PACKS = 3;
-const SOURCES = ['first', 'email', 'instagram'];
+const MAX_PACKS = 4;
+const SOURCES = ['first', 'email', 'instagram', 'app'];
 // No 0/O, 1/I/L: easy to read out loud and type at the counter.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CODE_LEN = 8;
@@ -50,6 +51,7 @@ const LIMITS = {
   verify: [20, 600],
   pin_code: [5, 600],
   instagram: [10, 600],
+  app: [10, 600],
   redeem: [12, 600],
 };
 
@@ -107,6 +109,7 @@ function unlockedSources(player) {
   const out = ['first'];
   if (player && player.email_verified_at) out.push('email');
   if (player && player.instagram_at) out.push('instagram');
+  if (player && player.app_at) out.push('app');
   return out;
 }
 
@@ -187,6 +190,7 @@ function bonusState(source, player, vouchers, available) {
 function playerState({ offer, status, player, vouchers, now }) {
   if (!gameLive(offer, status)) return { game: false, status };
   const ig = offer.instagram_handle || '';
+  const app = offer.app_store_url || '';
   const allowed = Math.min(MAX_PACKS, unlockedSources(player).length);
   return {
     game: true,
@@ -196,10 +200,12 @@ function playerState({ offer, status, player, vouchers, now }) {
     allowed,
     can_open: !!nextSource(player, vouchers),
     instagram: ig || null,
+    app_store_url: app || null,
     email_verified: !!(player && player.email_verified_at),
     bonuses: {
       email: bonusState('email', player, vouchers, true),
       instagram: bonusState('instagram', player, vouchers, !!ig),
+      app: bonusState('app', player, vouchers, !!app),
     },
     vouchers: vouchers.map((v) => publicVoucher(v, now)),
   };
@@ -312,28 +318,28 @@ function supabaseStore(sb) {
       };
       const v = () => sb.from('pack_vouchers').select('id', { count: 'exact', head: true }).eq('offer_key', key);
       const p = () => sb.from('pack_players').select('id', { count: 'exact', head: true });
-      const [first, email, instagram, redeemed, emails_verified, instagram_taps] = await Promise.all([
-        n(v().eq('source', 'first')), n(v().eq('source', 'email')), n(v().eq('source', 'instagram')),
+      const [first, email, instagram, app, redeemed, emails_verified, instagram_taps, app_taps] = await Promise.all([
+        n(v().eq('source', 'first')), n(v().eq('source', 'email')), n(v().eq('source', 'instagram')), n(v().eq('source', 'app')),
         n(v().not('redeemed_at', 'is', null)),
-        n(p().not('email_verified_at', 'is', null)), n(p().not('instagram_at', 'is', null)),
+        n(p().not('email_verified_at', 'is', null)), n(p().not('instagram_at', 'is', null)), n(p().not('app_at', 'is', null)),
       ]);
       return {
-        opened: { first, email, instagram, total: first + email + instagram },
-        redeemed, emails_verified, instagram_taps,
+        opened: { first, email, instagram, app, total: first + email + instagram + app },
+        redeemed, emails_verified, instagram_taps, app_taps,
       };
     },
   };
 }
 
-function summarize(rows, emails_verified, instagram_taps) {
-  const opened = { first: 0, email: 0, instagram: 0, total: 0 };
+function summarize(rows, emails_verified, instagram_taps, app_taps = 0) {
+  const opened = { first: 0, email: 0, instagram: 0, app: 0, total: 0 };
   let redeemed = 0;
   for (const r of rows) {
     if (opened[r.source] != null) opened[r.source]++;
     opened.total++;
     if (r.redeemed_at) redeemed++;
   }
-  return { opened, redeemed, emails_verified, instagram_taps };
+  return { opened, redeemed, emails_verified, instagram_taps, app_taps };
 }
 
 // ─── IO (injectable for tests) ──────────────────────────────────────
@@ -558,6 +564,7 @@ async function handleVerify(req, res, deps, ctx, body) {
       await store.moveVouchers(link.player_id, owner.id, now.toISOString());
       const patch = {};
       if (!owner.instagram_at && ctx.player.instagram_at) patch.instagram_at = ctx.player.instagram_at;
+      if (!owner.app_at && ctx.player.app_at) patch.app_at = ctx.player.app_at;
       if (link.marketing_opt_in && !owner.marketing_opt_in) patch.marketing_opt_in = true;
       if (Object.keys(patch).length) await store.updatePlayer(owner.id, patch);
     }
@@ -569,13 +576,20 @@ async function handleVerify(req, res, deps, ctx, body) {
   return res.status(200).json({ ok: true, result: 'verified', state: await stateOf(ctx, deps) });
 }
 
-async function handleInstagram(req, res, deps, ctx) {
+// Honor-system bonuses: the follow or download cannot be checked, so a
+// tap unlocks the pack once per player. kind: 'instagram' | 'app'.
+const HONOR = {
+  instagram: { field: 'instagram_at', enabled: (o) => !!o.instagram_handle, off: 'The Instagram bonus is not on right now.' },
+  app: { field: 'app_at', enabled: (o) => !!o.app_store_url, off: 'The app bonus is not on right now.' },
+};
+async function handleHonor(req, res, deps, ctx, kind) {
+  const h = HONOR[kind];
   if (!ctx.live) return res.status(409).json({ error: MSG.off });
-  if (!ctx.offer.instagram_handle) return res.status(409).json({ error: 'The Instagram bonus is not on right now.' });
-  if (await overLimit(deps, 'instagram', clientIpHash(req, deps.env))) return res.status(429).json({ error: MSG.busy });
+  if (!h.enabled(ctx.offer)) return res.status(409).json({ error: h.off });
+  if (await overLimit(deps, kind, clientIpHash(req, deps.env))) return res.status(429).json({ error: MSG.busy });
   const player = await ensurePlayer(ctx, res);
-  if (!player.instagram_at) {
-    const r = await ctx.store.updatePlayer(player.id, { instagram_at: deps.now().toISOString() });
+  if (!player[h.field]) {
+    const r = await ctx.store.updatePlayer(player.id, { [h.field]: deps.now().toISOString() });
     if (r.ok) ctx.player = r.player;
   }
   return res.status(200).json({ ok: true, state: await stateOf(ctx, deps) });
@@ -648,7 +662,7 @@ async function handle(req, res, deps = defaultDeps()) {
     if (body.action === 'open') return await handleOpen(req, res, deps, ctx);
     if (body.action === 'email') return await handleEmail(req, res, deps, ctx, body);
     if (body.action === 'verify') return await handleVerify(req, res, deps, ctx, body);
-    if (body.action === 'instagram') return await handleInstagram(req, res, deps, ctx);
+    if (body.action === 'instagram' || body.action === 'app') return await handleHonor(req, res, deps, ctx, body.action);
     return res.status(400).json({ error: 'unknown action' });
   } catch (e) {
     console.error('[packs] unhandled:', e.message || e);

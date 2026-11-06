@@ -19,6 +19,7 @@ const HOST = 'the-pretzel-cup.vercel.app';
 const NOW = new Date('2026-11-05T15:00:00Z');
 const OFFER = {
   headline: 'Free Pretzel', game: true, instagram_handle: 'example_pretzels',
+  app_store_url: 'https://apps.apple.com/us/app/example/id000000000',
   starts_at: '2026-11-01', ends_at: '2026-11-30', layout: 'green',
 };
 
@@ -32,7 +33,7 @@ function memStore() {
     players, vouchers, links,
     async getPlayer(id) { return players.get(id) || null; },
     async createPlayer() {
-      const p = { id: randomUUID(), email: null, email_verified_at: null, marketing_opt_in: false, instagram_at: null };
+      const p = { id: randomUUID(), email: null, email_verified_at: null, marketing_opt_in: false, instagram_at: null, app_at: null };
       players.set(p.id, p);
       return { ...p };
     },
@@ -76,7 +77,7 @@ function memStore() {
     async stats(key) {
       const rows = vouchers.filter((v) => v.offer_key === key);
       const all = [...players.values()];
-      return packs.summarize(rows, all.filter((p) => p.email_verified_at).length, all.filter((p) => p.instagram_at).length);
+      return packs.summarize(rows, all.filter((p) => p.email_verified_at).length, all.filter((p) => p.instagram_at).length, all.filter((p) => p.app_at).length);
     },
   };
 }
@@ -171,7 +172,7 @@ test('normalizeEmail', () => {
   }
 });
 
-test('allowance: first, then email, then instagram, max 3', () => {
+test('allowance: first, email, instagram, app, max 4', () => {
   const p = { email_verified_at: null, instagram_at: null };
   assert.deepEqual(packs.unlockedSources(p), ['first']);
   assert.equal(packs.nextSource(p, []), 'first');
@@ -181,6 +182,12 @@ test('allowance: first, then email, then instagram, max 3', () => {
   assert.equal(packs.nextSource(full, [{ source: 'first' }, { source: 'email' }]), 'instagram');
   assert.equal(packs.nextSource(full, [{ source: 'first' }, { source: 'email' }, { source: 'instagram' }]), null);
   assert.equal(packs.nextSource({ instagram_at: 'y' }, [{ source: 'first' }]), 'instagram');
+  const all = { email_verified_at: 'x', instagram_at: 'y', app_at: 'z' };
+  assert.deepEqual(packs.unlockedSources(all), ['first', 'email', 'instagram', 'app']);
+  assert.equal(packs.nextSource(all, [{ source: 'first' }, { source: 'email' }, { source: 'instagram' }]), 'app');
+  assert.equal(packs.nextSource(all, packs.SOURCES.map((source) => ({ source }))), null);
+  assert.equal(packs.nextSource({ app_at: 'z' }, [{ source: 'first' }]), 'app');
+  assert.equal(packs.MAX_PACKS, 4);
 });
 
 test('player cookie: signed, tamper-proof', () => {
@@ -246,6 +253,9 @@ test('state: new visitor can open one pack, game on', async () => {
   assert.equal(r.body.can_open, true);
   assert.equal(r.body.bonuses.email, 'locked');
   assert.equal(r.body.bonuses.instagram, 'locked');
+  assert.equal(r.body.bonuses.app, 'locked');
+  assert.equal(r.body.app_store_url, OFFER.app_store_url);
+  assert.equal(r.body.max, 4);
   assert.equal(r.headers['cache-control'], 'no-store');
   assert.equal(d.s.players.size, 0, 'state never creates a player');
 });
@@ -322,7 +332,7 @@ test('open: forged cookie is ignored (new player)', async () => {
   assert.equal(d.s.players.size, 2);
 });
 
-test('full run: first + email + instagram = 3, then a 4th is impossible', async () => {
+test('full run: first + email + instagram + app = 4, then a 5th is impossible', async () => {
   const d = deps();
   let c = cookieOf(await openPack(d));
   const v = await verifyEmail(d, c);
@@ -334,11 +344,40 @@ test('full run: first + email + instagram = 3, then a 4th is impossible', async 
   const ig = await call(d, post({ action: 'instagram' }, { cookie: c }));
   assert.equal(ig.body.state.bonuses.instagram, 'unlocked');
   assert.equal((await openPack(d, c)).body.voucher.source, 'instagram');
-  const fourth = await openPack(d, c);
-  assert.equal(fourth.statusCode, 409);
-  assert.equal(fourth.body.state.used, 3);
-  assert.equal(fourth.body.state.bonuses.email, 'used');
-  assert.equal(fourth.body.state.bonuses.instagram, 'used');
+  const app = await call(d, post({ action: 'app' }, { cookie: c }));
+  assert.equal(app.body.state.bonuses.app, 'unlocked');
+  assert.equal((await openPack(d, c)).body.voucher.source, 'app');
+  const fifth = await openPack(d, c);
+  assert.equal(fifth.statusCode, 409);
+  assert.equal(fifth.body.state.used, 4);
+  assert.equal(fifth.body.state.bonuses.email, 'used');
+  assert.equal(fifth.body.state.bonuses.instagram, 'used');
+  assert.equal(fifth.body.state.bonuses.app, 'used');
+});
+
+test('app tap counts once and is off without an App Store URL', async () => {
+  const d = deps();
+  const c = cookieOf(await openPack(d));
+  await call(d, post({ action: 'app' }, { cookie: c }));
+  const first = [...d.s.players.values()][0].app_at;
+  assert.ok(first);
+  await call(d, post({ action: 'app' }, { cookie: c }));
+  assert.equal([...d.s.players.values()][0].app_at, first);
+  assert.equal((await openPack(d, c)).body.voucher.source, 'app');
+  assert.equal((await openPack(d, c)).statusCode, 409);
+  const off = deps({ readOffer: async () => ({ offer: { ...OFFER, app_store_url: '' }, status: 'live' }) });
+  assert.equal((await call(off, get('view=state'))).body.bonuses.app, 'off');
+  assert.equal((await call(off, post({ action: 'app' }))).statusCode, 409);
+  assert.equal(off.s.players.size, 0);
+});
+
+test('validateOffer: app_store_url must be an App Store link', () => {
+  const base = { headline: 'x' };
+  assert.equal(qr.validateOffer({ ...base, app_store_url: 'https://apps.apple.com/us/app/ppf/id123' }).offer.app_store_url, 'https://apps.apple.com/us/app/ppf/id123');
+  assert.equal(qr.validateOffer(base).offer.app_store_url, '');
+  for (const bad of ['http://apps.apple.com/x', 'https://apps.apple.com.evil.example.com/x', 'https://example.com/app', 'javascript:alert(1)', 'https://apps.apple.com/' + 'a'.repeat(300), 'https://apps.apple.com/x"><b>']) {
+    assert.ok(qr.validateOffer({ ...base, app_store_url: bad }).errors, bad);
+  }
 });
 
 test('instagram tap counts once', async () => {
@@ -465,6 +504,7 @@ test('verify on a new device merges into the email player; limit follows the per
   // Phone B: fresh cookie, first pack (the accepted cookie-clearing gap).
   let b = cookieOf(await openPack(d));
   await call(d, post({ action: 'instagram' }, { cookie: b }));
+  await call(d, post({ action: 'app' }, { cookie: b }));
   // Phone B verifies the same email -> becomes the same person.
   b = (await verifyEmail(d, b)).cookie;
   const idA = packs.verifyPlayerCookie(a.split('=')[1], SECRET);
@@ -474,13 +514,15 @@ test('verify on a new device merges into the email player; limit follows the per
   const s = (await call(d, get('view=state', b))).body;
   assert.equal(s.bonuses.email, 'used');
   assert.equal(s.bonuses.instagram, 'unlocked');
+  assert.equal(s.bonuses.app, 'unlocked', 'app tap carried over on merge');
   assert.equal((await openPack(d, b)).body.voucher.source, 'instagram');
-  assert.equal((await openPack(d, b)).statusCode, 409, 'no 4th pack on the merged player');
+  assert.equal((await openPack(d, b)).body.voucher.source, 'app');
+  assert.equal((await openPack(d, b)).statusCode, 409, 'no 5th pack on the merged player');
   const owned = d.s.vouchers.filter((v) => v.player_id === idA);
-  assert.equal(owned.length, 3);
-  // Phone B's duplicate first pack was voided: 3 live codes for this email, not 4.
+  assert.equal(owned.length, 4);
+  // Phone B's duplicate first pack was voided: 4 live codes for this email, not 5.
   const live = d.s.vouchers.filter((v) => !v.redeemed_at && v.expires_at > NOW.toISOString());
-  assert.equal(live.length, 3);
+  assert.equal(live.length, 4);
 });
 
 test('email already verified -> 409', async () => {
@@ -633,7 +675,8 @@ test('stats: operator only, counts per offer', async () => {
   const r = await call(d, get('view=stats'));
   assert.equal(r.statusCode, 200);
   assert.equal(r.body.offer_key, 'o:2026-11-01');
-  assert.deepEqual(r.body.opened, { first: 2, email: 0, instagram: 0, total: 2 });
+  assert.deepEqual(r.body.opened, { first: 2, email: 0, instagram: 0, app: 0, total: 2 });
+  assert.equal(r.body.app_taps, 0);
   assert.equal(r.body.redeemed, 1);
   assert.equal(r.body.emails_verified, 1);
   const anon = deps({ readSession: async () => null });

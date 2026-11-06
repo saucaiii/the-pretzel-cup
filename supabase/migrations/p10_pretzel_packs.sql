@@ -3,8 +3,8 @@
 -- HUMAN STEP: apply this by hand in Supabase. Agents do not run it.
 --
 -- Every pack wins one free pretzel. A player gets one pack per offer,
--- plus one for a verified email and one for an Instagram follow:
--- at most 3 per player per offer. The cap and the double-open race are
+-- plus one for a verified email, one for an Instagram follow and one for
+-- an App Store download tap: at most 4 per player per offer. The cap and the double-open race are
 -- enforced by the unique (player_id, offer_key, source) constraint, so
 -- two taps at once can never mint two vouchers for the same slot.
 --
@@ -21,6 +21,7 @@ create table if not exists public.pack_players (
   email_verified_at  timestamptz,
   marketing_opt_in   boolean not null default false,
   instagram_at       timestamptz,
+  app_at             timestamptz,                 -- App Store download tap (honor system)
   created_at         timestamptz not null default now(),
   check (email is null or email = lower(email)),
   check ((email is null) = (email_verified_at is null))
@@ -32,7 +33,7 @@ create table if not exists public.pack_vouchers (
                   check (code ~ '^[A-Z0-9]{8}$'),
   player_id       uuid not null references public.pack_players(id) on delete cascade,
   offer_key       text not null,
-  source          text not null check (source in ('first','email','instagram')),
+  source          text not null check (source in ('first','email','instagram','app')),
   created_at      timestamptz not null default now(),
   expires_at      timestamptz not null,
   redeemed_at     timestamptz,
