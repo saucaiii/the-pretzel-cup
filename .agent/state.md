@@ -30,5 +30,13 @@ Started: 2026-11-06T03:15Z
 ## Not verified
 - Supabase adapter against a real DB. Real Gmail send. Frame rate on a real phone. OS-level prefers-reduced-motion (JS path verified). Code scanning alerts (GitHub MCP down).
 
+## v2 (plan v2 approved via approve-plan.sh)
+- Retry 1 (local mock restart): curl URL with unquoted `?` hit zsh globbing. Root cause: tool misuse. Change: quote URLs, start the server with run_in_background.
+- Built: app source + cap 4 (be2424c), three.js vendored (8eef382, sha512 matches registry), 3D packs + carousel (307e205), ops App Store field (7a07893). npm test 166/166, guardrails 106/106.
+- Visual (local mock, 375px + desktop): 3D gold foil carousel, drag snaps, 3D stage spin/tear/rip, beats 0/0.9/2.0/2.5/3.3/6.0 s, App Store tap opens the real link and unlocks, no-3D fallback (three.js refused) works.
+- User-directed design changes after approval: plain gold foil + logo only, tear at top 20%, hint "Swipe to rip the pack!" (decisions.md).
+- Values from the user for /ops/qr (human publishes): App Store https://apps.apple.com/us/app/philly-pretzel-factory/id1185574639 ; Instagram phillypretzelfactory_fs.
+- Official badge files not supplied: text buttons until free-pretzels/packs/app-store-badge.svg and instagram-glyph.svg exist.
+
 ## Handoffs
 - implementer (this session) -> reviewer subagent: branch diff vs agent/qr-scan-redirect. Result: not ready, 8 findings + 2 deviations; all fixed in 2d62104, 44beb15.
