@@ -641,25 +641,55 @@ function qrUrl() {
   var p = placement();
   return location.origin + '/scan' + (p && p !== 'window_sticker' ? '?utm_source=' + p : '');
 }
-function buildSvg(dark, light) {
+// Brand palette only. Colours are looked up here, never copied from the
+// DOM, so nothing from a form field can reach the SVG markup.
+var QR_DARK = { '#0D5237': '#0D5237', '#000000': '#000000', '#B2872F': '#B2872F' };
+var QR_LIGHT = { '#F2E7A4': '#F2E7A4', '#FFFFFF': '#FFFFFF', '#D4B662': '#D4B662' };
+function qrColors() {
+  return {
+    dark: QR_DARK[$('#q-dark').value] || QR_DARK['#0D5237'],
+    light: QR_LIGHT[$('#q-light').value] || QR_LIGHT['#F2E7A4'],
+  };
+}
+var SVG_NS = 'http://www.w3.org/2000/svg';
+function qrModel() {
   var qr = qrcode(0, 'M');
   qr.addData(qrUrl());
   qr.make();
   var n = qr.getModuleCount();
   var quiet = 4;
-  var size = n + quiet * 2;
   var path = '';
   for (var r = 0; r < n; r++) {
     for (var c = 0; c < n; c++) {
       if (qr.isDark(r, c)) path += 'M' + (c + quiet) + ' ' + (r + quiet) + 'h1v1h-1z';
     }
   }
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="crispEdges">' +
-    '<rect width="' + size + '" height="' + size + '" fill="' + light + '"/>' +
-    '<path d="' + path + '" fill="' + dark + '"/></svg>';
+  var col = qrColors();
+  return { size: n + quiet * 2, path: path, dark: col.dark, light: col.light };
+}
+// On-page preview: built with DOM calls, no HTML parsing.
+function svgNode(m) {
+  var svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + m.size + ' ' + m.size);
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  var rect = document.createElementNS(SVG_NS, 'rect');
+  rect.setAttribute('width', String(m.size));
+  rect.setAttribute('height', String(m.size));
+  rect.setAttribute('fill', m.light);
+  var p = document.createElementNS(SVG_NS, 'path');
+  p.setAttribute('d', m.path);
+  p.setAttribute('fill', m.dark);
+  svg.appendChild(rect);
+  svg.appendChild(p);
+  return svg;
+}
+// Download file: serialise the same node, so markup is never hand-built.
+function buildSvg() {
+  return new XMLSerializer().serializeToString(svgNode(qrModel()));
 }
 function qrCheck() {
-  var dark = $('#q-dark').value, light = $('#q-light').value;
+  var col = qrColors();
+  var dark = col.dark, light = col.light;
   var ratio = contrast(dark, light);
   var darkOnLight = lum(dark) < lum(light);
   var ok = ratio >= 4.5 && darkOnLight && !!placement();
@@ -675,7 +705,7 @@ function renderQr() {
   var ok = qrCheck();
   var out = $('#qr-out');
   if (!placement()) { out.textContent = ''; $('#qr-url').textContent = ''; return; }
-  out.innerHTML = buildSvg($('#q-dark').value, $('#q-light').value); // generated locally, no user text inside
+  out.replaceChildren(svgNode(qrModel()));
   $('#qr-url').textContent = qrUrl();
   out.style.opacity = ok ? '1' : '0.35';
 }
@@ -692,11 +722,11 @@ function initQr() {
   renderQr();
   $('#q-svg').onclick = function () {
     if (!qrCheck()) return;
-    download('ppf-qr-' + placement() + '.svg', new Blob([buildSvg($('#q-dark').value, $('#q-light').value)], { type: 'image/svg+xml' }));
+    download('ppf-qr-' + placement() + '.svg', new Blob([buildSvg()], { type: 'image/svg+xml' }));
   };
   $('#q-png').onclick = function () {
     if (!qrCheck()) return;
-    var svg = buildSvg($('#q-dark').value, $('#q-light').value);
+    var svg = buildSvg();
     var img = new Image();
     img.onload = function () {
       var canvas = document.createElement('canvas');
