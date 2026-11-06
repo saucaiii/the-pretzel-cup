@@ -1,185 +1,238 @@
-# Plan: qr-control-panel (`/ops/qr`), stacked on PR #26
+# Plan: pretzel-packs (pack-opening minigame on /free-pretzels)
 
-Branch: `agent/qr-scan-redirect` (stack on draft PR saucaiii/the-pretzel-cup#26).
-Design approved by the human in chat ("Approve plan as written"), 2026-11-05.
-This file still needs `scripts/agent/approve-plan.sh` before any edit.
+Draft, 2026-11-05. Not approved. Stacks on draft PR #26 (needs its live
+offer + /ops/qr). Becomes `.agent/plan.md` in the task's own worktree once
+the human runs `scripts/agent/new-task.sh` (see "Isolation").
 
 ## Risk
-**HIGH overall, with CRITICAL parts that are prepare-only.**
-- HIGH (security): new operator-only write path that changes what a
-  printed QR sticker points at and what the public offer page says.
-  Auth via the existing `readSession`/`requireRole` (role `operator`).
-  `api/_lib/` is NOT edited.
-- MEDIUM (operational): `middleware.js` gains Redis counters; `api/leads.js`
-  gains a `?resource=` dispatcher; `assets/ops-nav.js` gains one link.
-- LOW: `/ops/qr` page, `/free-pretzels` live-offer rendering, vendored QR lib.
-- CRITICAL, human only: creating the Vercel access token
-  (`EDGE_CONFIG_WRITE_TOKEN`), setting env vars `EDGE_CONFIG_WRITE_TOKEN`
-  and `EDGE_CONFIG_ID`, creating + connecting the Edge Config store,
-  seeding `scan_target` and `offer`, any deploy. The agent writes the
-  exact steps into the PR and `.agent/state.md`; it never runs them.
-- Fairness/automated decisions about people: none.
+**CRITICAL (personal data), with HIGH parts.** Take the highest.
+- CRITICAL (compliance): collects email addresses, sends a sign-in email,
+  stores players. Agent writes the code; the human applies the migration,
+  sets secrets, turns the game on and deploys.
+- HIGH (security): new sign-in (magic link) and a redemption write path;
+  new `supabase/migrations/` file (HIGH-risk path in this repo).
+- MEDIUM: `api/leads.js` dispatcher, `api/_qr.js` game flag, `/ops/qr` toggle.
+- LOW: game UI and the gold win animation.
+- Automated decisions about people: none. Everyone gets the same prize.
+- Promotion law: no chance element in the prize (every pack wins the same
+  free pretzel), so this is not a sweepstakes. Extra pretzels for an email
+  or an Instagram follow are a fixed reward, not a draw. Flag for the
+  human to confirm with whoever reviews promos.
 
 ## Goal
-An operator can, from `/ops/qr` and without a redeploy: change where `/scan`
-sends people, edit and schedule the `/free-pretzels` offer with a live phone
-preview, lint copy against brand voice, generate per-placement QR codes in
-brand colours, see scan counts by placement, and restore any of the last 20
-versions in one click.
+Turn the free pretzel into a short, fun moment: the player picks 1 of 3
+packs, tears it open, and gets a gold celebration and a voucher for a free
+pretzel. Every pack wins. They can earn more pretzels by verifying an email
+and by following on Instagram, each worth one more pack.
 
-## Scope (files the human should list in `.agent-control/scope.txt`)
-- `api/leads.js` (add `?resource=offer` and `?resource=qr` dispatch; existing lead POST/GET unchanged)
-- `api/_qr.js` (new; underscore = not a serverless function, so the 12-function cap is untouched)
-- `middleware.js` (Redis scan counters, reject self-loop `/scan` targets)
-- `ops/qr/index.html` (new)
-- `assets/ops-nav.js` (one "QR + Offer" link under Sales)
-- `assets/vendor/qrcode-generator.js`, `assets/vendor/qrcode-generator.LICENSE` (new, vendored, MIT)
-- `free-pretzels/index.html`
-- `tests/scan-redirect.test.mjs` (extend), `tests/qr-config.test.mjs` (new)
-- `package.json` (only to add a `test` script; no new dependencies)
-- `.agent/plan.md`, `.agent/state.md`, `.agent/decisions.md`
+## Decisions (user)
+- No rarity tiers, not even cosmetic. Every pack = one free pretzel.
+- Win moment is a **golden celebration** (gold burst + shimmer).
+- Opening sequence timed like the user's reference clip (table below).
+- **Our logo is on the pack**, and **the real pretzel pops out** of it.
+- **Rivets fall from the top** in the background during the win.
 
-Not touched: `api/_lib/`, `vercel.json`, `scripts/`, `.github/`, `supabase/`, hooks, settings.
+## Assets (received 2026-11-05)
+- Pretzel: transparent WebP, 646x1468 (from the user).
+- Logo: transparent WebP, 1864x1725 (from the user), unaltered.
+- Rivets: 4 transparent PNG cutouts made by the agent from the user's
+  "personality test" post (colour mask, hole fill, 1 px soft edge, green
+  despill): `rivet-plain` 116x176, `rivet-salted-short` 91x123,
+  `rivet-salted-long` 86x170, `rivet-pair` 220x135. Low resolution, so
+  they are only used small (falling, about 40 to 70 px). Checked on black,
+  green and gold-light. Replace with real cutouts later if available.
+- Staging copy: the session scratchpad `rivets/` folder. They move into
+  `free-pretzels/packs/` in the task worktree (inside the planned
+  `free-pretzels/` scope), converted to WebP with PNG fallback.
+
+## Defaults (confirmed by the user 2026-11-05: "Defaults OK")
+1. **Redemption:** pack reveal shows a short one-time code. At the counter,
+   staff enters the 4-digit store PIN on the customer's phone to burn it.
+   Codes expire at the offer's end date. (Alternative: show-screen only.)
+2. **Bonus packs:** email = 1 pack after clicking a magic link (verified).
+   Instagram = 1 pack on an honor tap (follows cannot be verified by API).
+   **Max 3 pretzels per person per offer.**
+3. **Placement:** the game replaces the offer block on `/free-pretzels`,
+   switched on and off from `/ops/qr`. Locations and fine print stay.
+4. **Instagram handle:** not given yet. Built as a setting on the offer
+   in `/ops/qr` (`instagram_handle`, validated `[A-Za-z0-9._]{1,30}`). The
+   Instagram button stays hidden until it is set, so this does not block
+   the build.
+
+## Scope (proposed `.agent-control/scope.txt` for the new worktree)
+- `api/leads.js` (add `?resource=packs` dispatch only)
+- `api/_packs.js` (new; underscore = not a function, cap stays at 12)
+- `api/_qr.js` (offer gets `game: true|false`)
+- `ops/qr/index.html` (game toggle + pack stats)
+- `free-pretzels/` (`index.html`, new `packs.js`, `packs.css`, pack art SVG)
+- `supabase/migrations/p10_pretzel_packs.sql` (new, HIGH)
+- `tests/packs.test.mjs` (new), `tests/qr-config.test.mjs` (game flag)
+- `.agent/`
+
+Not touched: `api/_lib/` (gmail.js and auth.js are used, not edited),
+`vercel.json`, `middleware.js`, `scripts/`, `.github/`.
+
+## Design
+**Flow (`/free-pretzels`, game on):**
+0. "Pick a pack": three sealed packs side by side (a fan on phones).
+   Tapping one sends the other two off screen, and the stage goes to
+   solid brand black.
+
+**Opening sequence.** The beat timing follows the user's reference clip
+(an 8.5 s pack-rip video, observed 2026-11-05). We copy only its timing
+and staging: no artwork, icons, card or slab frames, wording or colours
+from it (it uses another company's characters).
+
+| Beat | Time | Reference clip | Ours |
+| --- | --- | --- | --- |
+| 1 Spin-in | 0 to 0.9 s | Pack spins in on its vertical axis from edge-on to face-front, foil glint | Chosen pack spins in from edge-on, one gold glint sweeps across the foil |
+| 2 Charge | 0.9 to 2.0 s | Pack holds; a bright horizontal line draws across its middle | Pack holds and breathes slightly; a gold tear line draws across the middle and brightens. The player **swipes along the line** (tap or Enter also works) |
+| 3 Rip | 2.0 to 2.5 s | Pack splits on the line: top flies up and away, bottom drops; card rises; rays start behind | Same split: top half flies up and off; bottom half (with the logo) drops straight down, no rotation. **The real pretzel pops up out of the pack.** Gold-light rays fan out behind it |
+| 4 Land | 2.5 to 3.3 s | Card settles centre, rays slowly turn, sparkles | The pretzel overshoots slightly, then settles centre; rays turn slowly; gold sparkles start |
+| 5 Payoff | 3.3 to 6 s | Big headline slams in above the card, a number counts up, a multiplier badge stamps on | **Golden win**: "YOU WON" slams in above, then **FREE PRETZEL**; a gold shard burst and one gold shimmer pass over the pretzel; a round gold **FREE** stamp hits beside it; **pretzel rivets rain down from the top in the background** behind the rays |
+| 6 Settle | 6 s on | Fades out and loops | No loop. Rivets stop spawning and fall away; the pretzel shrinks up into the voucher view: code, expiry, "Show this at the counter" |
+
+- "Skip" is always visible from beat 1 and jumps to beat 6.
+- `prefers-reduced-motion`: no spin, rip or burst; a single crossfade to
+  the gold card.
+- Rays are solid gold-light wedges at low opacity, not a gradient.
+  Shimmer is gold to gold. No green and gold gradient anywhere.
+- **Logo on the pack (user decision, 2026-11-05).** The brand guide says
+  never tilt, crop or recolour the logo, and the pack spins, so:
+  - the logo is not shown while the pack spins in (beat 1); it fades in
+    flat and upright once the pack faces front, then stays still;
+  - it sits on the **lower half**, below the tear line, with clear space
+    of at least one "P" height, so the rip never cuts through it;
+  - the lower half drops straight down in beat 3 with no rotation;
+  - unaltered artwork, no outline, glow or ring.
+  Rest of the pack art: diamond plate foil, gold "FREE PRETZEL" in Archivo
+  Black above the tear line, a plain gold tear strip. No tagline on the
+  pack. The page header keeps the logo with "Made to Crave®".
+- **Pretzel:** the user's transparent pretzel photo (646x1468 WebP with
+  alpha) is the prize, served as WebP plus a PNG fallback, about 300 px wide
+  on phones. Never recoloured; the gold shimmer passes over it as a light
+  sweep only.
+- **Rivets:** 3 to 4 transparent pretzel-rivet cutouts, each falling with
+  random x, size, spin and speed on the canvas, about 40 at once on phones
+  and fewer with low battery or low frame rate. Behind the rays, so they
+  never cover the pretzel or the code.
+- Built with CSS 3D transforms plus one `<canvas>` for shards and
+  sparkles. No library. Target 60 fps on a mid-range phone; the canvas
+  stops when the sequence ends.
+
+7. Under the voucher: "Want another?" with **Verify email (+1)** and
+   **Follow on Instagram (+1)**, each greyed out once used, then a
+   "3 of 3 used" state. A bonus pack replays beats 0 to 6.
+
+**Brand:** solid brand colours. Gold-to-gold shimmer only (no green+gold
+gradient). Logo printed flat and upright on the pack, never tilted,
+cropped, recoloured or animated. Tagline "Made to Crave®" stays under the
+page logo only, not on the packs. Pack wrapper uses the diamond plate
+pattern. Archivo Black / Montserrat stand-ins. No emojis, no em dashes.
+Original pack design. Nothing borrowed from any existing trading card game
+(no ball icons, card frames, energy symbols or similar trade dress).
+
+**Identity and limits:**
+- First pack needs nothing. The player gets a signed, httpOnly
+  `ppf_player` cookie (random id, HMAC with `APP_JWT_SECRET`, which already
+  exists).
+- Email: player types email + optional separate marketing opt-in box
+  (unticked). We send a magic link via `api/_lib/gmail.js` `sendEmail`.
+  Clicking it verifies the email, merges the cookie player into the email
+  player and unlocks +1. Same email on a new device = same player, so the
+  limit follows the person, not the phone.
+- Instagram: tap opens the profile in a new tab and unlocks +1 on return
+  (honor system, once per player).
+- Hard cap 3 per player per offer, enforced server-side. Per-IP hashed
+  rate limit on pack opens and magic-link sends (same pattern as leads.js).
+  Clearing cookies can still get a stranger one extra first pack; accepted
+  (it is one pretzel, and codes are burned at the counter).
+
+**API (`/api/leads?resource=packs`, logic in `api/_packs.js`):**
+- `GET  &view=state` player state: offer live?, packs used/allowed,
+  unlocked bonuses, active vouchers.
+- `POST {action:'open'}` opens a pack if allowance remains, returns voucher.
+- `POST {action:'email', email, marketing_opt_in}` sends magic link.
+- `GET  &verify=<token>` verifies email, redirects to `/free-pretzels`.
+- `POST {action:'instagram'}` unlocks the IG pack (once).
+- `POST {action:'redeem', code, pin}` burns a voucher with the store PIN.
+- Operator `GET &view=stats` (opened, redeemed, emails verified, IG taps).
+- CSRF same as `/ops/qr`: JSON only + Origin check. Every error answers
+  with a friendly message; the free first pack must never be blocked by an
+  email or Redis outage.
+
+**Data (Supabase, RLS deny-all like the rest of the schema):**
+- `pack_players(id, email unique null, email_verified_at, marketing_opt_in,
+  instagram_at, created_at)`.
+- `pack_vouchers(code unique, player_id, offer_key, source
+  ('first'|'email'|'instagram'), created_at, expires_at, redeemed_at,
+  redeemed_store)`.
+- `pack_magic_links(token_hash, player_id, email, expires_at, used_at)`.
+- Retention: emails without marketing opt-in are deleted 30 days after the
+  offer ends (documented, run by a scheduled job later; noted as a
+  follow-up, not built here).
+
+**`/ops/qr`:** "Pack game" on/off on the offer, plus stats tiles.
 
 ## Steps
-1. **`api/_qr.js`** (CommonJS, pure where possible so it is unit-testable):
-   - `parseTarget` with the same rules as `middleware.js` (relative `/path`,
-     not `//` or `/\`, or absolute http/https), plus: reject own-host `/scan`
-     (redirect loop), max 2000 chars.
-   - `validateOffer`: headline <= 80, details <= 600, steps 0..5 each <= 140,
-     fine_print <= 800, stamp <= 40, layout in {green, black, gold-light},
-     starts_at/ends_at ISO dates with ends >= starts. Unknown keys dropped.
-   - `lintCopy`: flags em/en dashes, emojis (Extended_Pictographic),
-     `!!`/`?!` stacks, headline > 48 chars. Advisory only, returned to UI.
-   - `sanitizePlacement`: `[a-z0-9_-]{1,32}` else `other`.
-   - Edge Config write: `PATCH https://api.vercel.com/v1/edge-config/{EDGE_CONFIG_ID}/items`
-     with `Authorization: Bearer ${EDGE_CONFIG_WRITE_TOKEN}`, items
-     `[{operation:'upsert', key, value}]`, 8s timeout. Missing env -> 503
-     with a clear "not configured" message (never crashes).
-   - Read path: `@vercel/edge-config` `get()` (already a dependency).
-   - Redis (existing `@upstash/redis`, same env vars as leads.js):
-     history `LPUSH qr:history` + `LTRIM 0 19`, entry
-     `{v, ts, by_sub, by_name, kind, scan_target?, offer?}`;
-     stats from `qr:scans:<YYYY-MM-DD>` hashes.
-2. **`api/leads.js`**: at the top of the handler, if `req.query.resource`
-   is `offer` or `qr`, hand off to `api/_qr.js`; otherwise existing code runs
-   byte-for-byte as today.
-   - `GET ?resource=offer` public; `Cache-Control: public, s-maxage=30, stale-while-revalidate=120`;
-     returns `{offer, status: 'scheduled'|'live'|'ended'}`.
-   - `GET ?resource=qr&view=config|history|stats` operator.
-   - `POST ?resource=qr` operator, `{action: 'publish_offer'|'set_target'|'reset_target'|'restore', ...}`.
-     CSRF: require `Content-Type: application/json` and `Origin` matching the host.
-     Write Edge Config first, then history; history failure is logged, not fatal.
-3. **`middleware.js`**: inside the existing `waitUntil`, `HINCRBY qr:scans:<date> <placement> 1`
-   + `EXPIRE 40d`, using the REST client; any error swallowed. Date uses the
-   timezone already used elsewhere in the repo (checked at implement time;
-   UTC if none). Self-loop targets fall back to `/free-pretzels`.
-   Redirect behaviour and 800ms Edge Config timeout unchanged.
-4. **Vendor QR lib**: `qrcode-generator@1.4.4` (Kazuhiko Arase, MIT) via
-   `npm pack` into the scratchpad, copy the single browser file + licence into
-   `assets/vendor/`. Pinned, no runtime CDN, noted in the PR.
-5. **`ops/qr/index.html`** using `assets/ops-chrome.css` + `assets/ops-nav.js`:
-   1) redirect picker (site pages list + custom URL, inline validation,
-      test link, reset to `/free-pretzels`);
-   2) offer editor with live phone preview (iframe of the real
-      `/free-pretzels?preview=1` fed via `postMessage`);
-   3) creative tools: green/black/gold-light hero, optional stamp line, start/end
-      schedule, brand-voice lint panel;
-   4) QR studio: placement name -> `/scan?utm_source=<name>`, SVG + PNG
-      download, colours limited to the brand palette, contrast check
-      (WCAG ratio >= 4.5 and dark-on-light module colour) that blocks download on fail;
-   5) scan stats today / 7d / 30d by placement;
-   6) history list with one-click restore (confirm dialog).
-   Brand rules: see "Brand rules (from the brand guide)" below; they apply
-   to the editor, the preview and every QR/hero option. Hero layouts are
-   **green / black / gold-light (#F2E7A4)**; there is no cream option.
-   Lint and layout options enforce: tagline colour locked to white or black,
-   diamond plate top-only, no green+gold gradient (all backgrounds solid),
-   no off-palette colours, no second "crave" line next to the lockup.
-6. **`free-pretzels/index.html`**: apply the brand fixes below to the
-   current static page first (tagline, diamond plate, palette, type), then
-   fetch `/api/leads?resource=offer` (2.5s
-   timeout); render headline/details/steps/fine print/stamp/layout; if
-   status `ended`, show "This offer has ended" plus the two locations; on any
-   failure keep today's static content. `?preview=1` accepts `postMessage`
-   from the same origin only.
-7. **Tests** (`node --test`): validation tables for target/offer/lint/
-   placement; parity test that `_qr.js` and `middleware.js` `parseTarget`
-   agree on a shared input table; middleware counter path with a stub Redis
-   (success, Redis throws, Redis missing) never changes the 302; self-loop
-   fallback; handler auth (no session 401, wrong role 403, bad Origin 403)
-   with stubbed auth.
-8. **Validate**: tests, `tests/guardrails.sh`, `scripts/agent/eval-report.sh`,
-   reviewer subagent; visual check of `/ops/qr` and `/free-pretzels` at
-   375px and desktop in a local static server with mocked API responses.
-9. **Record + propose**: update `.agent/state.md` and `.agent/decisions.md`,
-   commit (Conventional Commits) and push to `agent/qr-scan-redirect`, update
-   the draft PR body with Evidence and the human steps. Never merge, deploy,
-   set secrets or force-push.
-
-## Brand rules (from the brand guide)
-Source: internal brand guide PDF held by the user. It is marked internal and
-this repo is public: never commit it, copy pages from it, or quote it at
-length in code or the PR. Short rule summaries in comments are fine.
-- **Tagline** "Made to Crave®" (with ®), title case, centred directly under
-  the logo, gap = one tagline height, colour white or black only (white on
-  green here; today it is gold-light, which is wrong). One tagline only, no
-  stacked "crave" lines under it.
-- **Diamond plate** at the very top of the page, flush to the edge, exactly
-  3 rows (48x24 tile, so 36px tall at 2 diamonds per tile row), white at
-  75% opacity on green, even unaltered spacing. Never top and bottom.
-  Remove the thin strip under the hero.
-- **Logo** clear space >= height of the "P" in Philly on every side; nothing
-  over it; no recolour, tilt, crop, outline or ring.
-- **Colour** solid only: green #0D5237 dominant, black, gold #D4B662 /
-  #B2872F / #F2E7A4 (light panels). Secondary text cool gray #6D6E71.
-  Cream #FAF4E1 is removed everywhere. No gradients at all.
-- **Type** headlines Archivo Black (FatFrank stand-in) at +0.01em
-  letter-spacing, never tightened; body Montserrat 400/500/700 (Gotham
-  stand-in); optional script accent word in Caveat (SantElia stand-in);
-  never BullPen.
-- **Voice** bold, confident, flavourful, simple. "Crave" lines are welcome
-  in promo body copy, never next to the logo + tagline lockup. Plus the
-  standing rules: no emojis, em dashes, shadows, hover animation, soft
-  rounded cards, pure white backgrounds, Inter/Geist.
+1. Migration `p10_pretzel_packs.sql` (tables, indexes, RLS deny-all).
+2. `api/_packs.js` pure helpers (code gen, allowance math, email check,
+   token hash, PIN check) + handlers with injectable deps; dispatch in
+   `api/leads.js`.
+3. `api/_qr.js` + `/ops/qr`: `game` flag and stats.
+4. `free-pretzels/`: pack picker, open animation, gold celebration,
+   voucher, bonus buttons, redeem sheet, reduced-motion path; static
+   fallback when the API fails or the game is off.
+5. Magic-link email (plain, branded, no emojis), sent with `sendEmail`.
+6. Tests: allowance + cap, double-open race, merge on verify, expired or
+   used tokens, voucher burn with wrong or right PIN, rate limits, game off,
+   API down = static page.
+7. Validate: `npm test`, `tests/guardrails.sh`, `eval-report.sh`, reviewer
+   subagent, visual check at 375px and desktop with a mocked API, motion
+   check with reduced motion on.
+8. Record in `.agent/`, commit, push, draft PR stacked on #26.
 
 ## Success criteria
-- Quantitative: all `node --test` suites pass (existing 20 plus new);
-  `tests/guardrails.sh` passes; only files in Scope change (CI scope-check);
-  serverless function count unchanged (`api/_qr.js` is underscore-prefixed);
-  no new npm dependencies.
-- Qualitative: with env vars unset, every write returns a clear 503 and the
-  public page and `/scan` still work exactly as on PR #26; an operator can
-  restore a prior version in one click; the QR studio cannot export a
-  low-contrast or off-brand code; brand lint catches each listed pattern;
-  `/free-pretzels` shows "Made to Crave®" in white under the logo, a
-  3-row diamond plate at the top only, and no #FAF4E1 anywhere in the repo
-  files touched (grep check); the brand PDF is not in git.
+- Quantitative: all tests pass; only scoped files change; function count
+  unchanged; no new npm dependencies; no new CodeQL alerts.
+- Qualitative: on a phone, scan to gold celebration in under 10 seconds;
+  the six beats land at the times in the table (within about 0.2 s) and
+  feel like the reference clip side by side; Skip and reduced motion work;
+  every pack wins; a 4th pretzel is impossible for the same email; a burned
+  code cannot be used twice; with email or Redis down, the first pack still
+  works; with the game off, the page is exactly today's offer page.
 
 ## Risks + mitigations
-- **Write token blast radius**: a Vercel access token can do more than edit
-  Edge Config. Mitigation: human creates it scoped to the team with an
-  expiry; only read server-side; never sent to the browser or logged.
-- **Bad target bricks the sticker**: validation server-side and in middleware;
-  middleware still falls back on anything invalid; reset button.
-- **Self-redirect loop**: `/scan` targets rejected in both places.
-- **CSRF on operator POST**: JSON content type + Origin check + existing
-  session cookie.
-- **Redis counters slow or break `/scan`**: inside `waitUntil`, errors
-  swallowed, test proves the 302 is unchanged when Redis throws.
-- **Unbounded Redis keys**: placement sanitised; day hashes expire in 40 days;
-  history trimmed to 20.
-- **Edge Config propagation delay (seconds)**: UI says "live within about a
-  minute" and re-reads after publish.
-- **Stored XSS via offer text**: page renders with `textContent` only; length limits.
-- **Leads endpoint regression**: dispatcher only triggers on `resource`;
-  existing POST/GET paths untouched; reviewer checks the diff.
+- **Personal data:** collect email only; marketing opt-in separate and off
+  by default; short privacy note next to the field; retention rule above;
+  emails never logged (hash in logs).
+- **Gmail sending:** the existing sender needs Workspace delegation or
+  OAuth; if it fails, the email spin shows "try again later" and the
+  first pack is unaffected. Human confirms the sender works before launch.
+- **Instagram can't be verified:** honor system, capped at one pack.
+- **Staff PIN on a customer phone:** 4 digits, rate-limited (5 tries per
+  code), rotatable env var `PACKS_STAFF_PIN` set by the human.
+- **Motion sickness / accessibility:** reduced-motion path, full keyboard
+  support, the result and code announced to screen readers.
+- **Brand drift:** lint the pack copy with the existing brand lint; logo
+  never animated.
 
 ## Rollback / escalation
-- Code: `git revert` the commits on this branch (no history rewrite). PR #26
-  behaviour returns.
-- Config: restore from history in `/ops/qr`, or the human sets `scan_target`
-  in the Vercel dashboard. Deleting the `offer` key makes `/free-pretzels`
-  show its static content.
-- Escalate: any need to touch `api/_lib/`, `vercel.json`, or a new
-  serverless function; 2 failed retries; any scope change.
+- Turn the game off in `/ops/qr` (no deploy): `/free-pretzels` is the plain
+  offer page again.
+- Code: `git revert`. Data: the migration only adds tables; dropping them is
+  a human step.
+- Escalate on any need to edit `api/_lib/`, `vercel.json`, or add a function.
+
+## Isolation
+This branch (`agent/qr-scan-redirect`) holds draft PR #26 and its approved
+plan, so this work needs its own branch. The human runs:
+`scripts/agent/new-task.sh pretzel-packs <scope paths above>`
+(branch `agent/pretzel-packs` cut from `agent/qr-scan-redirect`), copies
+this file to `.agent/plan.md` there, and runs `approve-plan.sh` in it.
+
+## Human steps (CRITICAL, prepare only)
+- Apply `p10_pretzel_packs.sql` to Supabase.
+- Set `PACKS_STAFF_PIN` (Preview + Production) and confirm Gmail sending.
+- Give the Instagram handle.
+- Deploy preview, play it on a phone, turn the game on in `/ops/qr`, deploy.
