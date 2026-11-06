@@ -300,19 +300,14 @@
        claim blocks while it shows. See free-pretzels/packs.js. -->
   <section class="game" id="game" hidden aria-labelledby="game-title">
     <div class="wrap">
-      <p class="g-eyebrow">Free pretzel pack</p>
       <h2 id="game-title">Pick a pack</h2>
-      <p class="g-sub" id="game-sub">Every pack wins a free pretzel. Swipe and pick one.</p>
+      <p class="g-sub" id="game-sub">Pull a pretzel and WIN a pretzel!</p>
       <div class="carousel" id="carousel">
         <canvas class="car-gl" id="car-gl" aria-hidden="true"></canvas>
-        <div class="picker" id="picker" role="group" aria-roledescription="carousel" aria-label="Five packs. Swipe to browse."></div>
+        <div class="picker" id="picker" role="group" aria-roledescription="carousel" aria-label="Five packs. Swipe to choose, tap the middle pack to open it."></div>
         <p class="sr-only" id="car-live" aria-live="polite"></p>
       </div>
-      <div class="car-controls" id="car-controls">
-        <button class="car-arrow" id="car-prev" type="button" aria-label="Previous pack"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" stroke-width="3"/></svg></button>
-        <button class="btn btn-solid" id="car-open" type="button">Open this pack</button>
-        <button class="car-arrow" id="car-next" type="button" aria-label="Next pack"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="m9 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="3"/></svg></button>
-      </div>
+      <p class="g-hint" id="g-hint">Swipe to select &amp; tap pack to open</p>
       <p class="g-msg" id="game-msg" role="status"></p>
       <div class="vouchers" id="vouchers"></div>
 
@@ -353,6 +348,20 @@
         </div>
 
         <p class="all-used" id="all-used" hidden>All packs used. See you at the counter.</p>
+      </div>
+    </div>
+    <!-- Welcome popup over the carousel. Logo, tagline, the offer
+         headline slams in, then "Pull a pretzel" reveals the packs. -->
+    <div class="g-pop" id="g-pop" hidden role="dialog" aria-modal="true" aria-labelledby="g-pop-title">
+      <div class="g-pop-card" id="g-pop-card">
+        <picture>
+          <source srcset="/free-pretzels/packs/ppf-logo-1864.webp" type="image/webp" />
+          <img class="g-pop-logo" src="/free-pretzels/packs/ppf-logo-600.png" width="600" height="555" alt="Philly Pretzel Factory" />
+        </picture>
+        <p class="g-pop-tag">Made to Crave&reg;</p>
+        <h2 class="g-pop-title" id="g-pop-title">Free Pretzel. On Us.</h2>
+        <p class="g-pop-stamp" id="g-pop-stamp" hidden></p>
+        <button class="btn btn-solid g-pop-go" id="g-pop-go" type="button">Pull a pretzel</button>
       </div>
     </div>
   </section>

@@ -151,11 +151,6 @@
       if (e.key === 'ArrowRight') { e.preventDefault(); goTo(S.center + 1, true); }
       if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(S.center - 1, true); }
     });
-    if (!preview) {
-      $('car-prev').addEventListener('click', function () { goTo(S.center - 1); });
-      $('car-next').addEventListener('click', function () { goTo(S.center + 1); });
-      $('car-open').addEventListener('click', function () { onPick(S.center); });
-    }
     window.addEventListener('resize', function () { goTo(S.center, false, true); });
   }
   function markCenter() {
@@ -173,11 +168,6 @@
       s.classList.toggle('is-center', i === best);
       if (i === best) s.setAttribute('aria-current', 'true'); else s.removeAttribute('aria-current');
     });
-    var focused = document.activeElement;
-    $('car-prev').disabled = best === 0;
-    $('car-next').disabled = best === PACKS - 1;
-    // Keep keyboard focus on something usable when an arrow turns off.
-    if (focused && focused.disabled) $('car-open').focus({ preventScroll: true });
   }
   function goTo(i, focus, instant) {
     i = Math.max(0, Math.min(PACKS - 1, i));
@@ -199,10 +189,10 @@
     var canOpen = preview || (st && st.can_open);
     buildCarousel(preview);
     $('carousel').hidden = !canOpen;
-    $('car-controls').hidden = !canOpen || !!preview;
+    $('g-hint').hidden = !canOpen;
     $('picker').classList.remove('leaving');
     $('game-title').textContent = !canOpen ? 'Your free pretzel' : (st && st.used > 0 ? 'Pick your bonus pack' : 'Pick a pack');
-    $('game-sub').textContent = canOpen ? 'Every pack wins a free pretzel. Swipe and pick one.' : 'Show the code at the counter.';
+    $('game-sub').textContent = canOpen ? 'Pull a pretzel and WIN a pretzel!' : 'Show the code at the counter.';
     slots().forEach(function (s) { s.getAnimations && s.getAnimations().forEach(function (a) { a.cancel(); }); });
     if (canOpen) {
       requestAnimationFrame(function () { goTo(S.center, false, true); });
@@ -859,6 +849,61 @@
 
   }
 
+  // ─── welcome popup ────────────────────────────────────────────────
+  // Logo and tagline, the offer headline slams in, the card rumbles.
+  // "Pull a pretzel" closes it and shows the pack carousel behind it.
+  function showPopup(st, preview) {
+    var pop = $('g-pop');
+    if (st && st.headline) $('g-pop-title').textContent = st.headline;
+    var stamp = $('g-pop-stamp');
+    stamp.textContent = (st && st.stamp) || '';
+    stamp.hidden = !(st && st.stamp);
+    pop.hidden = false;
+    if (preview) { $('g-pop-go').disabled = true; return; }
+    document.documentElement.classList.add('stage-open');
+    var go = $('g-pop-go');
+    go.focus({ preventScroll: true });
+    if (reduced()) return;
+    var title = $('g-pop-title'), card = $('g-pop-card');
+    title.animate([
+      { opacity: 0, transform: 'scale(3)' },
+      { opacity: 1, transform: 'scale(0.94)', offset: 0.75 },
+      { opacity: 1, transform: 'scale(1)' }
+    ], { duration: 320, delay: 450, easing: 'ease-in', fill: 'backwards' });
+    card.animate([
+      { transform: 'translate(0, 0)' }, { transform: 'translate(-7px, 3px)' }, { transform: 'translate(6px, -3px)' },
+      { transform: 'translate(-5px, 2px)' }, { transform: 'translate(4px, -1px)' }, { transform: 'translate(-2px, 1px)' },
+      { transform: 'translate(0, 0)' }
+    ], { duration: 380, delay: 700, easing: 'linear' });
+    go.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 1000, fill: 'backwards' });
+  }
+  function hidePopup() {
+    var pop = $('g-pop');
+    if (pop.hidden) return;
+    var closed = false;
+    var done = function () {
+      if (closed) return;
+      closed = true;
+      pop.hidden = true;
+      if ($('stage').hidden) document.documentElement.classList.remove('stage-open');
+      var c = slots()[S.center];
+      if (c) c.focus({ preventScroll: true });
+      if (S.car) S.car.reset();
+    };
+    if (reduced() || !pop.animate) return done();
+    pop.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-out', fill: 'forwards' }).onfinish = done;
+    setTimeout(done, 400); // never leave the popup up if the animation stalls
+    // Reset the fade so the popup shows normally if it is opened again.
+    setTimeout(function () { pop.getAnimations().forEach(function (an) { an.cancel(); }); }, 450);
+  }
+  function initPopup() {
+    $('g-pop-go').addEventListener('click', hidePopup);
+    $('g-pop').addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); hidePopup(); }
+      if (e.key === 'Tab') { e.preventDefault(); $('g-pop-go').focus(); }
+    });
+  }
+
   function tryBadge(btnId, imgId, src) {
     var img = $(imgId);
     img.onload = function () { img.hidden = false; $(btnId).classList.add('has-badge'); };
@@ -900,6 +945,7 @@
         showGame(on);
         if (on) {
           renderPicker(null, true);
+          showPopup({ headline: e.data.offer.headline, stamp: e.data.offer.stamp }, true);
           $('game-sub').textContent = 'Preview. Packs open on the live page.';
           $('vouchers').textContent = '';
           $('bonus').hidden = true;
@@ -912,10 +958,15 @@
     }
     initBonus();
     initRedeem();
+    initPopup();
     api('GET', null, '&view=state', 2500).then(function (r) {
       if (!r.ok || !r.data || r.data.game !== true) return; // plain offer page
       showGame(true);
       render(r.data);
+      // Welcome popup on a first visit; skipped when returning from an
+      // email link or with packs already opened.
+      var returning = /pack_email=|pack_verify=/.test(location.search + location.hash);
+      if (r.data.can_open && r.data.used === 0 && !returning) showPopup(r.data);
       emailResult();
       verifyFromLink();
       FX.load();
