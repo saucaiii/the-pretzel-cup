@@ -30,7 +30,10 @@ const C = { green: '#0D5237', gold: '#D4B662', deep: '#B2872F', light: '#F2E7A4'
 export function webglOK() {
   try {
     const c = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    const gl = window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'));
+    const lose = gl && gl.getExtension('WEBGL_lose_context');
+    if (lose) lose.loseContext();
+    return !!gl;
   } catch (e) {
     return false;
   }
@@ -196,6 +199,7 @@ function studio(renderer) {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const env = pmrem.fromScene(scene, 0.035).texture;
   pmrem.dispose();
+  scene.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
   return env;
 }
 
@@ -292,8 +296,21 @@ class Base {
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.slow = 0;
     this.visible = true;
+    this.paused = false;
+    this.lost = false;
+    this.onLost = null;
     this.frame = this.frame.bind(this);
+    // The browser can drop a WebGL context (memory pressure, GPU reset).
+    // Stop drawing and let packs.js fall back to the CSS packs.
+    cv.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      this.lost = true;
+      this.stop();
+      if (this.onLost) this.onLost();
+    });
   }
+  pause() { this.paused = true; this.stop(); }
+  resume() { this.paused = false; this.kick(); }
   size() {
     const w = this.cv.clientWidth, h = this.cv.clientHeight;
     if (!w || !h) return false;
@@ -312,7 +329,7 @@ class Base {
       this.kick();
     });
   }
-  kick() { if (!this.raf && this.visible) { this.last = 0; this.raf = requestAnimationFrame(this.frame); } }
+  kick() { if (!this.raf && this.visible && !this.paused && !this.lost) { this.last = 0; this.raf = requestAnimationFrame(this.frame); } }
   frame(t) {
     this.raf = 0;
     if (this.last) {
@@ -332,7 +349,7 @@ class Base {
     });
     const more = this.update(t) || active;
     this.r.render(this.scene, this.cam);
-    if (more && this.visible) this.raf = requestAnimationFrame(this.frame);
+    if (more && this.visible && !this.paused) this.raf = requestAnimationFrame(this.frame);
   }
   update() { return false; }
   stop() {
@@ -340,6 +357,10 @@ class Base {
     this.raf = 0;
     this.tweens.forEach((tw) => tw.done());
     this.tweens = [];
+  }
+  disposeScene() {
+    if (this.scene.environment) this.scene.environment.dispose();
+    this.r.dispose();
   }
 }
 
@@ -365,24 +386,29 @@ class Carousel extends Base {
     });
     this.chosen = -1;
     this.sway = 0;
-    this.pointer = { x: 0, y: 0 };
-    this.onScroll = () => this.kick();
-    this.onResize = () => { this.size(); this.kick(); };
+    this.pointer = { x: 0 };
+    this.inView = true;
+    this.lastActive = performance.now();
+    // Render only while something moves: scrolling, a pointer, tweens, or
+    // a short idle sway after the last interaction. Then the loop stops.
+    this.poke = () => { this.lastActive = performance.now(); this.kick(); };
+    this.onScroll = this.poke;
+    this.onResize = () => { this.size(); this.poke(); };
     track.addEventListener('scroll', this.onScroll, { passive: true });
     window.addEventListener('resize', this.onResize);
     this.onMove = (e) => {
       const r = cv.getBoundingClientRect();
       this.pointer.x = clamp((e.clientX - r.left) / r.width * 2 - 1, -1, 1);
-      this.pointer.y = clamp((e.clientY - r.top) / r.height * 2 - 1, -1, 1);
-      this.kick();
+      this.poke();
     };
     track.addEventListener('pointermove', this.onMove, { passive: true });
     this.io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => {
-      this.visible = es[0].isIntersecting && !document.hidden;
-      this.kick();
+      this.inView = es[0].isIntersecting;
+      this.visible = this.inView && !document.hidden;
+      if (this.visible) this.poke();
     }) : null;
     if (this.io) this.io.observe(cv);
-    this.onVis = () => { this.visible = !document.hidden; this.kick(); };
+    this.onVis = () => { this.visible = this.inView && !document.hidden; if (this.visible) this.poke(); };
     document.addEventListener('visibilitychange', this.onVis);
     this.size();
     this.kick();
@@ -392,8 +418,11 @@ class Carousel extends Base {
     const box = this.cv.getBoundingClientRect();
     const mid = box.left + box.width / 2;
     let moving = false;
-    // Gentle idle sway on the centred pack so the foil catches light.
-    this.sway = Math.sin(t / 1400) * 0.09;
+    // Gentle sway on the centred pack so the foil catches light, for a
+    // few seconds after the last interaction only (battery).
+    const idleFor = performance.now() - this.lastActive;
+    const swaying = idleFor < 4000;
+    this.sway = Math.sin(t / 1400) * 0.09 * (swaying ? Math.min(1, (4000 - idleFor) / 800) : 0);
     this.packs.forEach((p, i) => {
       const s = this.slots[i];
       const pk = s.querySelector('.pk') || s;
@@ -407,12 +436,12 @@ class Carousel extends Base {
       g.position.set((cx - mid) * this.wpp, ((box.top + box.height / 2) - (r.top + r.height / 2)) * this.wpp, -ad * 0.35);
       g.scale.setScalar(base * (1 - 0.12 * Math.min(ad, 1)));
       const yaw = clamp(-d * 0.6, -MAX_YAW, MAX_YAW) + (ad < 0.5 ? this.sway + this.pointer.x * 0.12 : 0);
-      g.rotation.set(ad < 0.5 ? this.pointer.y * 0.06 : 0, clamp(yaw, -MAX_YAW, MAX_YAW), 0);
+      g.rotation.set(0, clamp(yaw, -MAX_YAW, MAX_YAW), 0); // yaw only: the logo never tilts in-plane
       p.mats.front.envMapIntensity = p.mats.back.envMapIntensity = 1.15 - 0.5 * Math.min(ad, 1);
       if (Math.abs(d - (p.lastD || 0)) > 0.001) moving = true;
       p.lastD = d;
     });
-    return true; // idle sway keeps rendering while visible
+    return moving || swaying;
   }
   // Chosen pack rises and grows, the others drop away.
   choose(i, ms) {
@@ -424,7 +453,7 @@ class Carousel extends Base {
     });
     return Promise.all(jobs);
   }
-  reset() { this.chosen = -1; this.packs.forEach((p) => { p.lastD = null; }); this.kick(); }
+  reset() { this.chosen = -1; this.packs.forEach((p) => { p.lastD = null; }); this.paused = false; this.poke(); }
   dispose() {
     this.stop();
     this.track.removeEventListener('scroll', this.onScroll);
@@ -432,7 +461,7 @@ class Carousel extends Base {
     window.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVis);
     if (this.io) this.io.disconnect();
-    this.r.dispose();
+    this.disposeScene();
   }
 }
 
@@ -514,5 +543,5 @@ class StagePack extends Base {
     }, easeIn).then(() => this.hide());
   }
   hide() { this.stop(); this.cv.style.visibility = 'hidden'; }
-  dispose() { this.stop(); window.removeEventListener('resize', this.onResize); this.r.dispose(); }
+  dispose() { this.stop(); window.removeEventListener('resize', this.onResize); this.disposeScene(); }
 }

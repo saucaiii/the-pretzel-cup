@@ -106,7 +106,6 @@
     for (var i = 0; i < PACKS; i++) {
       var b = el('button', 'pick');
       b.type = 'button';
-      b.setAttribute('aria-roledescription', 'slide');
       b.setAttribute('aria-label', 'Pack ' + (i + 1) + ' of ' + PACKS + '. Every pack wins a free pretzel.');
       var pk = buildPack();
       pk.appendChild(el('span', 'pk-perf'));
@@ -168,13 +167,17 @@
       var d = Math.abs(r.left + r.width / 2 - mid);
       if (d < bestD) { bestD = d; best = i; }
     });
+    if (best !== S.center && $('car-live')) $('car-live').textContent = 'Pack ' + (best + 1) + ' of ' + PACKS;
     S.center = best;
     slots().forEach(function (s, i) {
       s.classList.toggle('is-center', i === best);
       if (i === best) s.setAttribute('aria-current', 'true'); else s.removeAttribute('aria-current');
     });
+    var focused = document.activeElement;
     $('car-prev').disabled = best === 0;
     $('car-next').disabled = best === PACKS - 1;
+    // Keep keyboard focus on something usable when an arrow turns off.
+    if (focused && focused.disabled) $('car-open').focus({ preventScroll: true });
   }
   function goTo(i, focus, instant) {
     i = Math.max(0, Math.min(PACKS - 1, i));
@@ -204,6 +207,8 @@
     if (canOpen) {
       requestAnimationFrame(function () { goTo(S.center, false, true); });
       if (S.car) S.car.reset();
+    } else if (S.car) {
+      S.car.pause();
     }
   }
 
@@ -216,11 +221,20 @@
       return m.createKit({ assets: ASSETS });
     }).then(function (kit) {
       if (!kit) return;
-      S.kit = kit;
-      S.car = kit.carousel($('car-gl'), $('picker'), slots());
-      S.stage3d = kit.stage($('st-gl'), stageAnchor);
+      // Build both first, so a failure leaves no half-3D state.
+      var car = kit.carousel($('car-gl'), $('picker'), slots());
+      var stage = kit.stage($('st-gl'), stageAnchor);
+      car.onLost = stage.onLost = drop3D;
+      S.kit = kit; S.car = car; S.stage3d = stage;
       $('carousel').classList.add('gl');
-    }).catch(function () { /* CSS packs stay */ });
+    }).catch(function () { drop3D(); });
+  }
+  // Back to the CSS packs (load failure or a lost WebGL context).
+  function drop3D() {
+    $('carousel').classList.remove('gl');
+    var st = $('stage');
+    if (st) st.classList.remove('gl');
+    S.car = null; S.stage3d = null;
   }
   // Where the stage's DOM pack box sits (unaffected by its spin transform).
   function stageAnchor() {
@@ -310,8 +324,10 @@
     var picks = slots();
     var started = performance.now();
     if (S.car) {
-      // Beat 0 (3D): the chosen pack rises, the others drop away.
-      S.car.choose(i, 380);
+      // Beat 0 (3D): the chosen pack rises, the others drop away, then
+      // the carousel stops drawing while the stage runs.
+      var car = S.car;
+      car.choose(i, 380).then(function () { car.pause(); });
     } else if (!reduced()) {
       // Beat 0: the others leave the screen.
       picks.forEach(function (p, n) {
@@ -840,9 +856,7 @@
       var st = S.state;
       if (st && st.app_store_url && /^https:\/\/apps\.apple\.com\//.test(st.app_store_url)) honor('app', st.app_store_url, 'app-status');
     });
-    // Official badge artwork, if the files have been added. Text until then.
-    tryBadge('ig-btn', 'ig-badge', ASSETS + 'instagram-glyph.svg');
-    tryBadge('app-btn', 'app-badge', ASSETS + 'app-store-badge.svg');
+
   }
 
   function tryBadge(btnId, imgId, src) {
@@ -906,9 +920,12 @@
       verifyFromLink();
       FX.load();
       init3D();
+      // Official badge artwork, if the files have been added. Text until then.
+      tryBadge('ig-btn', 'ig-badge', ASSETS + 'instagram-glyph.svg');
+      tryBadge('app-btn', 'app-badge', ASSETS + 'app-store-badge.svg');
     }).catch(function () { /* keep the plain offer page */ });
   }
 
-  window.__ppfPacks = { stage: Stage, fx: FX };
+  window.__ppfPacks = { stage: Stage, fx: FX, state: S };
   boot();
 })();
