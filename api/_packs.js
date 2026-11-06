@@ -195,6 +195,8 @@ function playerState({ offer, status, player, vouchers, now }) {
   return {
     game: true,
     status,
+    headline: offer.headline || '',
+    stamp: offer.stamp || '',
     max: MAX_PACKS,
     used: vouchers.length,
     allowed,

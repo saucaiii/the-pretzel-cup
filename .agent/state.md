@@ -38,5 +38,12 @@ Started: 2026-11-06T03:15Z
 - Values from the user for /ops/qr (human publishes): App Store https://apps.apple.com/us/app/philly-pretzel-factory/id1185574639 ; Instagram phillypretzelfactory_fs.
 - Official badge files not supplied: text buttons until free-pretzels/packs/app-store-badge.svg and instagram-glyph.svg exist.
 
+## Go-live (after PR #27 merged; user explicitly authorized the agent in chat to run these, waiving "prepare only")
+- Migration p10_pretzel_packs applied via Supabase MCP; 3 tables, RLS on.
+- PACKS_STAFF_PIN generated locally, set (sensitive, prod+preview) via vercel CLI; value only in ~/Desktop/PPF-staff-PIN.txt (0600), never printed.
+- Edge Config store pretzel-cup-offer (ecfg_bjjjvawtdnkrwswuq0qiovim08ud) created with offer (2026-11-05..12, game on) + scan_target; read token created; EDGE_CONFIG (sensitive) and EDGE_CONFIG_ID set prod+preview.
+- Production deploy: refused by the session permission check. Human runs `npm run deploy`.
+- Still human: EDGE_CONFIG_WRITE_TOKEN (Vercel account token) so /ops/qr can edit the offer.
+
 ## Handoffs
 - implementer (this session) -> reviewer subagent: branch diff vs agent/qr-scan-redirect. Result: not ready, 8 findings + 2 deviations; all fixed in 2d62104, 44beb15.
