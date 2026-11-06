@@ -8,10 +8,18 @@
 <meta name="theme-color" content="#0D5237" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- Brand type stand-ins (font files are not in the repo):
-     FatFrank -> Archivo Black (headlines, letter-spacing >= +0.01em, never tightened)
-     Gotham   -> Montserrat 400/500/700 (body)
-     SantElia -> Caveat (one optional warm accent word only)
+<!-- Brand type: FatFrank (headlines, letter-spacing >= +0.01em, never
+     tightened), Gotham (body), SantElia Script (one optional warm accent
+     word). Bullpen is signage-only and never used on the web.
+     The brand fonts come first in every stack below and load from the
+     licensed web kits linked here (font files are never committed: the repo
+     is public). Until a kit is linked, the stand-ins in each stack show:
+     Archivo Black, Montserrat, Caveat.
+     BRAND WEB FONT KITS (add when available):
+       Adobe Fonts project for Fat Frank:
+         <link rel="stylesheet" href="https://use.typekit.net/PROJECT_ID.css" />
+       Hoefler & Co. Cloud.typography project for Gotham:
+         <link rel="stylesheet" href="https://cloud.typography.com/ACCOUNT/PROJECT/css/fonts.css" /> -->
      BullPen is signage-only and never used on the web. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@700&family=Montserrat:wght@400;500;700&display=swap" />
 <link rel="stylesheet" href="/free-pretzels/packs.css" />
@@ -33,9 +41,10 @@
     --white: #FFFFFF;
     --gray: #6D6E71;
 
-    --display: 'Archivo Black', 'Arial Black', Impact, sans-serif;
-    --body: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
-    --script: 'Caveat', 'Brush Script MT', cursive;
+    /* Brand font first (web kit name, then installed name), then stand-in. */
+    --display: 'fat-frank', 'Fat Frank', 'FatFrank', 'Archivo Black', 'Arial Black', Impact, sans-serif;
+    --body: 'Gotham SSm A', 'Gotham SSm B', 'Gotham A', 'Gotham B', 'Gotham', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+    --script: 'santelia-script', 'SantElia Script', 'Caveat', 'Brush Script MT', cursive;
 
     --logo-w: min(64vw, 280px);
     --logo-clear: calc(var(--logo-w) * 0.125);
