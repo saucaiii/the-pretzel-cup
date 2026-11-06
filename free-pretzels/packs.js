@@ -20,7 +20,8 @@
   var ASSETS = '/free-pretzels/packs/';
   var BEAT = { charge: 900, rip: 2000, land: 500, payoff: 1300, settle: 4000, autoRip: 8000 };
   var NY = 'America/New_York';
-  var SOURCE_LABEL = { first: 'Free pretzel', email: 'Bonus pretzel: email', instagram: 'Bonus pretzel: Instagram' };
+  var SOURCE_LABEL = { first: 'Free pretzel', email: 'Bonus pretzel: email', instagram: 'Bonus pretzel: Instagram', app: 'Bonus pretzel: app' };
+  var PACKS = 5;
   var EMAIL_MSG = {
     verified: 'Email verified. Your bonus pack is ready.',
     expired: 'That link has expired, was already used, or was opened on a different phone. Ask for a new one below.',
@@ -30,7 +31,7 @@
     busy: 'Too many tries. Wait a few minutes and open the link again.'
   };
 
-  var S = { state: null, picking: false };
+  var S = { state: null, picking: false, kit: null, car: null, stage3d: null, center: 2 };
   var $ = function (id) { return document.getElementById(id); };
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -70,6 +71,7 @@
     var img = el('img', 'pk-logo');
     img.src = ASSETS + 'ppf-logo-600.png';
     img.alt = '';
+    img.draggable = false;
     img.width = 600; img.height = 555;
     img.decoding = 'async';
     pic.appendChild(src); pic.appendChild(img);
@@ -79,11 +81,6 @@
     var pk = el('div', 'pk');
     var top = el('div', 'pk-top');
     top.appendChild(el('span', 'pk-crimp'));
-    var word = el('span', 'pk-word');
-    word.appendChild(document.createTextNode('Free'));
-    word.appendChild(document.createElement('br'));
-    word.appendChild(document.createTextNode('Pretzel'));
-    top.appendChild(word);
     var bot = el('div', 'pk-bot');
     bot.appendChild(logoImg());
     bot.appendChild(el('span', 'pk-crimp'));
@@ -99,26 +96,139 @@
   }
   function setMsg(text) { $('game-msg').textContent = text || ''; }
 
-  function renderPicker(st, preview) {
+  // ─── carousel ─────────────────────────────────────────────────────
+  // Five slots in a native scroll-snap row. Built once; the 3D renderer
+  // (pack3d.js) follows the slots' positions.
+  function slots() { return Array.prototype.slice.call($('picker').querySelectorAll('.pick')); }
+  function buildCarousel(preview) {
     var picker = $('picker');
-    picker.textContent = '';
-    picker.classList.remove('leaving');
-    var canOpen = preview || (st && st.can_open);
-    picker.hidden = !canOpen;
-    $('game-title').textContent = !canOpen ? 'Your free pretzel' : (st && st.used > 0 ? 'Pick your bonus pack' : 'Pick a pack');
-    $('game-sub').textContent = canOpen ? 'Every pack wins a free pretzel. Tap one.' : 'Show the code at the counter.';
-    if (!canOpen) return;
-    for (var i = 0; i < 3; i++) {
+    if (picker.children.length) return;
+    for (var i = 0; i < PACKS; i++) {
       var b = el('button', 'pick');
       b.type = 'button';
-      b.setAttribute('aria-label', 'Pack ' + (i + 1) + ' of 3. Every pack wins a free pretzel.');
+      b.setAttribute('aria-roledescription', 'slide');
+      b.setAttribute('aria-label', 'Pack ' + (i + 1) + ' of ' + PACKS + '. Every pack wins a free pretzel.');
       var pk = buildPack();
       pk.appendChild(el('span', 'pk-perf'));
       b.appendChild(pk);
       if (preview) b.disabled = true;
-      else b.addEventListener('click', onPick.bind(null, i));
+      else b.addEventListener('click', onSlot.bind(null, i));
       picker.appendChild(b);
     }
+    var raf = 0;
+    picker.addEventListener('scroll', function () {
+      if (raf) return;
+      raf = requestAnimationFrame(function () { raf = 0; markCenter(); });
+    }, { passive: true });
+    // Mouse drag to swipe (touch already scrolls natively). A drag never
+    // counts as a tap on a pack.
+    var drag = null, dragged = false;
+    picker.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      drag = { x: e.clientX, s: picker.scrollLeft };
+      dragged = false;
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dx = e.clientX - drag.x;
+      if (!dragged && Math.abs(dx) > 6) { dragged = true; picker.style.scrollSnapType = 'none'; }
+      if (dragged) picker.scrollLeft = drag.s - dx;
+    });
+    function endDrag() {
+      if (!drag) return;
+      drag = null;
+      if (!dragged) return;
+      picker.style.scrollSnapType = '';
+      markCenter();
+      goTo(S.center);
+    }
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    picker.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    picker.addEventListener('click', function (e) {
+      if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; }
+    }, true);
+    picker.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(S.center + 1, true); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(S.center - 1, true); }
+    });
+    if (!preview) {
+      $('car-prev').addEventListener('click', function () { goTo(S.center - 1); });
+      $('car-next').addEventListener('click', function () { goTo(S.center + 1); });
+      $('car-open').addEventListener('click', function () { onPick(S.center); });
+    }
+    window.addEventListener('resize', function () { goTo(S.center, false, true); });
+  }
+  function markCenter() {
+    var picker = $('picker');
+    var mid = picker.getBoundingClientRect().left + picker.clientWidth / 2;
+    var best = 0, bestD = Infinity;
+    slots().forEach(function (s, i) {
+      var r = s.getBoundingClientRect();
+      var d = Math.abs(r.left + r.width / 2 - mid);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    S.center = best;
+    slots().forEach(function (s, i) {
+      s.classList.toggle('is-center', i === best);
+      if (i === best) s.setAttribute('aria-current', 'true'); else s.removeAttribute('aria-current');
+    });
+    $('car-prev').disabled = best === 0;
+    $('car-next').disabled = best === PACKS - 1;
+  }
+  function goTo(i, focus, instant) {
+    i = Math.max(0, Math.min(PACKS - 1, i));
+    var s = slots()[i];
+    if (!s) return;
+    var picker = $('picker');
+    var left = s.offsetLeft + s.offsetWidth / 2 - picker.clientWidth / 2;
+    picker.scrollTo({ left: left, behavior: instant || reduced() ? 'auto' : 'smooth' });
+    if (focus) s.focus({ preventScroll: true });
+    if (instant) markCenter();
+  }
+  // Tap a side pack: bring it to the centre. Tap the centre pack: open it.
+  function onSlot(i) {
+    if (i === S.center) onPick(i);
+    else goTo(i);
+  }
+
+  function renderPicker(st, preview) {
+    var canOpen = preview || (st && st.can_open);
+    buildCarousel(preview);
+    $('carousel').hidden = !canOpen;
+    $('car-controls').hidden = !canOpen || !!preview;
+    $('picker').classList.remove('leaving');
+    $('game-title').textContent = !canOpen ? 'Your free pretzel' : (st && st.used > 0 ? 'Pick your bonus pack' : 'Pick a pack');
+    $('game-sub').textContent = canOpen ? 'Every pack wins a free pretzel. Swipe and pick one.' : 'Show the code at the counter.';
+    slots().forEach(function (s) { s.getAnimations && s.getAnimations().forEach(function (a) { a.cancel(); }); });
+    if (canOpen) {
+      requestAnimationFrame(function () { goTo(S.center, false, true); });
+      if (S.car) S.car.reset();
+    }
+  }
+
+  // 3D packs. Optional: any failure keeps the CSS packs.
+  function init3D() {
+    if (reduced() || S.kit || S.kitLoading) return;
+    S.kitLoading = true;
+    import('/free-pretzels/pack3d.js').then(function (m) {
+      if (!m.webglOK()) return null;
+      return m.createKit({ assets: ASSETS });
+    }).then(function (kit) {
+      if (!kit) return;
+      S.kit = kit;
+      S.car = kit.carousel($('car-gl'), $('picker'), slots());
+      S.stage3d = kit.stage($('st-gl'), stageAnchor);
+      $('carousel').classList.add('gl');
+    }).catch(function () { /* CSS packs stay */ });
+  }
+  // Where the stage's DOM pack box sits (unaffected by its spin transform).
+  function stageAnchor() {
+    var pk = document.querySelector('#stage .st-pack .pk');
+    var c = document.querySelector('#stage .st-center');
+    if (!pk || !c) return null;
+    var r = c.getBoundingClientRect();
+    return { left: r.left - pk.offsetWidth / 2, top: r.top - pk.offsetHeight / 2, width: pk.offsetWidth, height: pk.offsetHeight };
   }
 
   function renderVouchers(st) {
@@ -165,6 +275,14 @@
     igDone.hidden = ig === 'locked';
     igDone.textContent = ig === 'used' ? 'Used. Thanks for the follow.' : 'Thanks. Your bonus pack is ready above.';
     $('ig-handle').textContent = st.instagram ? '@' + st.instagram : '';
+    // App Store
+    var ba = $('b-app'), apBtn = $('app-btn'), apDone = $('b-app-done');
+    var ap = st.bonuses.app || 'off';
+    ba.hidden = ap === 'off';
+    ba.classList.toggle('used', ap === 'used');
+    apBtn.hidden = ap !== 'locked';
+    apDone.hidden = ap === 'locked';
+    apDone.textContent = ap === 'used' ? 'Used. Thanks for downloading.' : 'Thanks. Your bonus pack is ready above.';
     $('all-used').hidden = st.used < st.max;
   }
 
@@ -189,13 +307,16 @@
     setMsg('');
     var picker = $('picker');
     picker.classList.add('leaving');
-    var picks = picker.querySelectorAll('.pick');
+    var picks = slots();
     var started = performance.now();
-    if (!reduced()) {
-      // Beat 0: the other two leave the screen.
-      Array.prototype.forEach.call(picks, function (p, n) {
+    if (S.car) {
+      // Beat 0 (3D): the chosen pack rises, the others drop away.
+      S.car.choose(i, 380);
+    } else if (!reduced()) {
+      // Beat 0: the others leave the screen.
+      picks.forEach(function (p, n) {
         if (n === i) return;
-        p.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (n < i ? -120 : 120) + 'vw)' }],
+        p.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(60vh)', opacity: 0 }],
           { duration: 380, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' });
       });
     }
@@ -351,6 +472,7 @@
 
   // ─── stage: the six beats ─────────────────────────────────────────
   var Stage = (function () {
+    var gl = null;
     var root, nodes = {}, timers = [], voucher = null, onDone = null, t0 = 0, ripAt = 0, torn = false, phase = '', opener = null;
     var T = { marks: {} };
     window.__ppfPackTimeline = T;
@@ -431,6 +553,9 @@
     function reset() {
       timers.forEach(clearTimeout); timers = [];
       FX.stop();
+      if (gl) gl.hide();
+      gl = null;
+      root.classList.remove('gl');
       root.getAnimations && root.getAnimations({ subtree: true }).forEach(function (a) { a.cancel(); });
       root.classList.remove('settled', 'error');
       nodes.rays.classList.remove('turning');
@@ -456,6 +581,9 @@
       T.reduced = reduced();
       if (T.reduced) return playReduced();
       nodes.skip.focus({ preventScroll: true });
+      gl = S.stage3d || null;
+      root.classList.toggle('gl', !!gl);
+      if (gl) { gl.reset(); gl.spinIn(900); }
 
       // Beat 1: spin-in with one gold glint. Logo hidden while turning.
       phase = 'spin'; mark('spin');
@@ -469,10 +597,11 @@
         anim(nodes.pack, [{ transform: 'scale(1)' }, { transform: 'scale(1.025)' }, { transform: 'scale(1)' }], { duration: 1100, easing: 'ease-in-out', fill: 'none' });
         anim(nodes.tear, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 600, easing: 'cubic-bezier(.3,.6,.3,1)' });
         anim(nodes.hint, [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 400 });
-        nodes.hint.textContent = 'Swipe along the gold line';
+        nodes.hint.textContent = 'Swipe to rip the pack!';
         nodes.hit.focus({ preventScroll: true });
+        if (gl) { gl.showLogo(200); gl.breathe(1100); gl.drawTear(600); }
       });
-      at(BEAT.charge + 600, function () { nodes.tear.classList.add('bright'); });
+      at(BEAT.charge + 600, function () { nodes.tear.classList.add('bright'); if (gl) gl.brighten(400); });
       at(BEAT.rip, function () {
         if (torn) return;
         nodes.hint.classList.add('wait');
@@ -498,6 +627,7 @@
       anim(nodes.tear, [{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
       anim(nodes.top, [{ transform: 'translateY(0) rotate(0)' }, { transform: 'translateY(-120vh) rotate(-14deg)' }], { duration: 500, easing: 'cubic-bezier(.4,0,.9,.6)' });
       anim(nodes.bot, [{ transform: 'translateY(0)' }, { transform: 'translateY(120vh)' }], { duration: 500, easing: 'cubic-bezier(.5,0,1,.5)' });
+      if (gl) gl.rip(500);
       anim(nodes.prize, [
         { opacity: 0, transform: 'translate(-50%, -30%) scale(0.45)' },
         { opacity: 1, transform: 'translate(-50%, -58%) scale(1.06)' }
@@ -541,6 +671,7 @@
       if (phase === 'settled') return;
       phase = 'settled'; mark('settle');
       timers.forEach(clearTimeout); timers = [];
+      if (gl) gl.hide();
       FX.rain(false);
       FX.sparkle(null);
       if (fromSkip === true) FX.stop();
@@ -683,26 +814,42 @@
       });
     });
 
-    $('ig-btn').addEventListener('click', function () {
-      var st = S.state;
-      if (!st || !st.instagram) return;
-      // Honor system: the follow cannot be checked, so the bonus unlocks
-      // when the player comes back from Instagram.
-      window.open('https://www.instagram.com/' + encodeURIComponent(st.instagram) + '/', '_blank', 'noopener');
+    // Honor system: a follow or a download cannot be checked, so the
+    // bonus unlocks when the player comes back from Instagram or the store.
+    function honor(kind, url, statusId) {
+      window.open(url, '_blank', 'noopener');
       var sent = false;
       function unlock() {
         if (sent) return;
         sent = true;
         document.removeEventListener('visibilitychange', onVis);
-        api('POST', { action: 'instagram' }).then(function (r) {
+        api('POST', { action: kind }).then(function (r) {
           if (r.ok && r.data.state) render(r.data.state);
-          else $('ig-status').textContent = (r.data && r.data.error) || 'Could not unlock right now. Try again.';
-        }, function () { sent = false; $('ig-status').textContent = 'No connection. Try again.'; });
+          else $(statusId).textContent = (r.data && r.data.error) || 'Could not unlock right now. Try again.';
+        }, function () { sent = false; $(statusId).textContent = 'No connection. Try again.'; });
       }
       function onVis() { if (document.visibilityState === 'visible') unlock(); }
       document.addEventListener('visibilitychange', onVis);
       setTimeout(unlock, 8000);
+    }
+    $('ig-btn').addEventListener('click', function () {
+      var st = S.state;
+      if (st && st.instagram) honor('instagram', 'https://www.instagram.com/' + encodeURIComponent(st.instagram) + '/', 'ig-status');
     });
+    $('app-btn').addEventListener('click', function () {
+      var st = S.state;
+      if (st && st.app_store_url && /^https:\/\/apps\.apple\.com\//.test(st.app_store_url)) honor('app', st.app_store_url, 'app-status');
+    });
+    // Official badge artwork, if the files have been added. Text until then.
+    tryBadge('ig-btn', 'ig-badge', ASSETS + 'instagram-glyph.svg');
+    tryBadge('app-btn', 'app-badge', ASSETS + 'app-store-badge.svg');
+  }
+
+  function tryBadge(btnId, imgId, src) {
+    var img = $(imgId);
+    img.onload = function () { img.hidden = false; $(btnId).classList.add('has-badge'); };
+    img.onerror = function () { img.removeAttribute('src'); };
+    img.src = src;
   }
 
   // ─── boot ─────────────────────────────────────────────────────────
@@ -758,6 +905,7 @@
       emailResult();
       verifyFromLink();
       FX.load();
+      init3D();
     }).catch(function () { /* keep the plain offer page */ });
   }
 

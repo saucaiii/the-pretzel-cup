@@ -302,8 +302,16 @@
     <div class="wrap">
       <p class="g-eyebrow">Free pretzel pack</p>
       <h2 id="game-title">Pick a pack</h2>
-      <p class="g-sub" id="game-sub">Every pack wins a free pretzel. Tap one.</p>
-      <div class="picker" id="picker" role="group" aria-label="Three packs"></div>
+      <p class="g-sub" id="game-sub">Every pack wins a free pretzel. Swipe and pick one.</p>
+      <div class="carousel" id="carousel">
+        <canvas class="car-gl" id="car-gl" aria-hidden="true"></canvas>
+        <div class="picker" id="picker" role="group" aria-roledescription="carousel" aria-label="Five packs. Swipe to browse."></div>
+      </div>
+      <div class="car-controls" id="car-controls">
+        <button class="car-arrow" id="car-prev" type="button" aria-label="Previous pack"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" stroke-width="3"/></svg></button>
+        <button class="btn btn-solid" id="car-open" type="button">Open this pack</button>
+        <button class="car-arrow" id="car-next" type="button" aria-label="Next pack"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="m9 4 8 8-8 8" fill="none" stroke="currentColor" stroke-width="3"/></svg></button>
+      </div>
       <p class="g-msg" id="game-msg" role="status"></p>
       <div class="vouchers" id="vouchers"></div>
 
@@ -312,7 +320,7 @@
         <p class="b-count" id="b-count"></p>
 
         <div class="b-item" id="b-email">
-          <h4>Verify email (+1)</h4>
+          <h4>Sign up with email (+1)</h4>
           <form id="email-form" novalidate>
             <p>We email you a link. Tap it to unlock one more pack.</p>
             <div class="field-row">
@@ -330,12 +338,20 @@
         <div class="b-item" id="b-ig">
           <h4>Follow on Instagram (+1)</h4>
           <p>Follow <span id="ig-handle"></span>, then come back here.</p>
-          <button class="btn btn-solid" id="ig-btn" type="button">Follow on Instagram</button>
+          <button class="btn btn-solid" id="ig-btn" type="button"><img class="badge" id="ig-badge" alt="" hidden /><span>Follow on Instagram</span></button>
           <p class="b-done" id="b-ig-done" hidden></p>
           <p class="b-status" id="ig-status" role="status"></p>
         </div>
 
-        <p class="all-used" id="all-used" hidden>3 of 3 used. See you at the counter.</p>
+        <div class="b-item" id="b-app">
+          <h4>Download the app (+1)</h4>
+          <p>Get the Philly Pretzel Factory app, then come back here.</p>
+          <button class="btn btn-solid" id="app-btn" type="button"><img class="badge" id="app-badge" alt="" hidden /><span>Download on the App Store</span></button>
+          <p class="b-done" id="b-app-done" hidden></p>
+          <p class="b-status" id="app-status" role="status"></p>
+        </div>
+
+        <p class="all-used" id="all-used" hidden>All packs used. See you at the counter.</p>
       </div>
     </div>
   </section>
@@ -395,6 +411,7 @@
 <div class="stage" id="stage" hidden role="dialog" aria-modal="true" aria-label="Opening your pack">
   <canvas class="st-canvas" aria-hidden="true"></canvas>
   <div class="st-rays" aria-hidden="true"><svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid slice"><g fill="#F2E7A4"><polygon points="0,0 141.2,-14.8 141.2,14.8"/><polygon points="0,0 129.7,57.8 114.9,83.5"/><polygon points="0,0 83.5,114.9 57.8,129.7"/><polygon points="0,0 14.8,141.2 -14.8,141.2"/><polygon points="0,0 -57.8,129.7 -83.5,114.9"/><polygon points="0,0 -114.9,83.5 -129.7,57.8"/><polygon points="0,0 -141.2,14.8 -141.2,-14.8"/><polygon points="0,0 -129.7,-57.8 -114.9,-83.5"/><polygon points="0,0 -83.5,-114.9 -57.8,-129.7"/><polygon points="0,0 -14.8,-141.2 14.8,-141.2"/><polygon points="0,0 57.8,-129.7 83.5,-114.9"/><polygon points="0,0 114.9,-83.5 129.7,-57.8"/></g></svg></div>
+  <canvas class="st-gl" id="st-gl" aria-hidden="true"></canvas>
   <div class="st-center"></div>
   <div class="st-prize" aria-hidden="true">
     <picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="" /></picture>

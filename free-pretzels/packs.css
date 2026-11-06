@@ -27,8 +27,8 @@ body.game-on #claim-section { display: none !important; }
 
 /* ─── the pack (shared by picker and stage) ─────────────────────── */
 /* Width drives everything: --w on the .pk element. Height = 1.55w.
-   Top 40% = diamond plate foil + words. Bottom 60% = logo on solid
-   green with clear space on every side. */
+   Plain gold foil. Top 20% = tear-off strip (like a real card pack);
+   the logo sits in the middle with clear space on every side. */
 .pk {
   --w: 120px;
   position: relative;
@@ -39,12 +39,10 @@ body.game-on #claim-section { display: none !important; }
 }
 .pk-top, .pk-bot { position: absolute; left: 0; right: 0; overflow: hidden; }
 .pk-top {
-  top: 0; height: 40%;
-  background-color: var(--green);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'><g fill='%23D4B662'><polygon points='2,10 18,5 22,8 6,13'/><polygon points='26,18 42,13 46,16 30,21'/></g></svg>");
-  background-size: calc(var(--w) * 0.2) calc(var(--w) * 0.1);
+  top: 0; height: 20%;
+  background: var(--gold);
 }
-.pk-bot { bottom: 0; height: 60%; background: var(--green); }
+.pk-bot { bottom: 0; height: 80%; background: var(--gold); }
 /* Crimped seals, top and bottom: a solid zigzag strip. */
 .pk-crimp {
   position: absolute; left: 0; right: 0; height: calc(var(--w) * 0.07);
@@ -54,49 +52,61 @@ body.game-on #claim-section { display: none !important; }
 }
 .pk-top .pk-crimp { top: 0; }
 .pk-bot .pk-crimp { bottom: 0; transform: scaleY(-1); }
-.pk-word {
-  position: absolute; left: 8%; right: 8%; top: 27%;
-  padding: calc(var(--w) * 0.035) 0;
-  background: var(--black);
-  font-size: calc(var(--w) * 0.13);
-  line-height: 1.02;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  text-align: center;
-  color: var(--gold);
-}
-/* Logo: 64% of pack width, clear space >= one "P" height (12.5% of
-   logo width) from the tear line, the crimp and the sides. */
+/* Logo: 62% of pack width, centred on the pack, clear space >= one "P"
+   height (12.5% of logo width) from the tear line, crimp and sides. */
 .pk-logo {
   position: absolute;
-  left: 18%; width: 64%;
-  top: calc(var(--w) * 0.12);
+  left: 19%; width: 62%;
+  top: calc(var(--w) * 0.21); /* centre at 52% of pack height, like the 3D pack */
   height: auto;
 }
 /* Perforation hint on the picker packs. */
 .pk-perf {
-  position: absolute; left: 0; right: 0; top: 40%; height: 2px; margin-top: -1px;
+  position: absolute; left: 0; right: 0; top: 20%; height: 2px; margin-top: -1px;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='2'><rect width='5' height='2' fill='%23D4B662'/></svg>");
   background-size: 8px 2px;
 }
 
-/* ─── picker ──────────────────────────────────────────────────── */
-.picker { display: flex; justify-content: center; align-items: flex-start; gap: 10px; min-height: 10px; }
+/* ─── carousel (pick a pack) ──────────────────────────────────── */
+/* Native scroll-snap row: real swiping, momentum and buttons. With 3D on,
+   pack3d.js draws the foil packs on .car-gl at each slot's position and
+   the CSS packs become invisible tap targets. */
+.carousel { position: relative; margin: 0 -20px; --slot: min(62vw, 250px); }
+.carousel[hidden], .car-controls[hidden] { display: none; }
+.car-gl { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.picker {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 0;
+  overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scrollbar-width: none;
+  padding: 18px calc(50% - var(--slot) / 2) 22px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+}
+.picker img { -webkit-user-drag: none; }
+.picker::-webkit-scrollbar { display: none; }
 .picker[hidden] { display: none; }
+.car-controls { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 4px 0 0; }
+.car-arrow {
+  display: inline-grid; place-items: center; width: 48px; height: 48px; padding: 0;
+  background: transparent; color: var(--gold-light); border: 2px solid var(--gold-deep); border-radius: 0; cursor: pointer;
+}
+.car-arrow:disabled { opacity: 0.35; cursor: default; }
+.car-arrow:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
 .pick {
   appearance: none; border: 0; padding: 0; margin: 0; background: transparent;
   cursor: pointer; border-radius: 0;
 }
-.pick .pk { --w: min(28vw, 104px); }
-/* Fan on phones: middle pack raised, no rotation (the logo never tilts). */
-.pick:nth-child(1), .pick:nth-child(3) { margin-top: 16px; }
-.pick:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 4px; }
+.pick { flex: 0 0 var(--slot); display: flex; justify-content: center; scroll-snap-align: center; }
+.pick .pk { --w: calc(var(--slot) * 0.78); transition: transform 0.2s linear, opacity 0.2s linear; }
+.pick:not(.is-center) .pk { transform: scale(0.86); opacity: 0.6; }
+.carousel.gl .pick .pk { opacity: 0; }
+.pick:focus-visible { outline: 3px solid var(--gold-light); outline-offset: -3px; }
 .pick[disabled] { cursor: default; }
-@media (min-width: 720px) {
-  .picker { gap: 28px; }
-  .pick .pk { --w: 150px; }
-  .pick:nth-child(1), .pick:nth-child(3) { margin-top: 0; }
-}
+@media (min-width: 720px) { .carousel { --slot: 250px; margin: 0; } }
+.btn .badge { height: 40px; width: auto; display: block; }
+.btn.has-badge { padding: 0; border: 0; background: transparent; min-height: 40px; }
+.btn.has-badge span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .picker.leaving .pick { pointer-events: none; }
 
 /* ─── vouchers on the page ────────────────────────────────────── */
@@ -163,6 +173,11 @@ body.game-on #claim-section { display: none !important; }
 .st-rays.turning svg { animation: st-turn 40s linear infinite; }
 @keyframes st-turn { to { transform: rotate(360deg); } }
 
+.st-gl { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; visibility: hidden; }
+/* 3D on: the WebGL pack replaces the CSS pack art; the DOM pack box stays
+   as the swipe target. */
+.stage.gl .st-pack .pk-top, .stage.gl .st-pack .pk-bot,
+.stage.gl .st-glint-clip, .stage.gl .st-tear { visibility: hidden; }
 .st-center { position: absolute; left: 50%; top: 54%; width: 0; height: 0; z-index: 4; perspective: 900px; }
 .st-pack {
   position: absolute; left: calc(var(--pw) / -2); top: calc(var(--ph) / -2);
@@ -178,7 +193,7 @@ body.game-on #claim-section { display: none !important; }
 }
 .st-glint-clip { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .st-tear {
-  position: absolute; left: -3%; right: -3%; top: 40%; height: 4px; margin-top: -2px;
+  position: absolute; left: -3%; right: -3%; top: 20%; height: 4px; margin-top: -2px;
   background: var(--gold); transform: scaleX(0); transform-origin: 0 50%; z-index: 4;
 }
 .st-tear.bright { background: var(--gold-light); height: 6px; margin-top: -3px; }
