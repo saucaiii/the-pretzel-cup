@@ -860,6 +860,9 @@
     stamp.hidden = !(st && st.stamp);
     pop.hidden = false;
     if (preview) { $('g-pop-go').disabled = true; return; }
+    // The game screen is the top of the page; start there even if the
+    // browser restored an old scroll position.
+    window.scrollTo(0, 0);
     document.documentElement.classList.add('stage-open');
     var go = $('g-pop-go');
     go.focus({ preventScroll: true });
@@ -876,6 +879,10 @@
       { transform: 'translate(0, 0)' }
     ], { duration: 380, delay: 700, easing: 'linear' });
     go.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 1000, fill: 'backwards' });
+    // Never leave the headline or button invisible if animations stall.
+    setTimeout(function () {
+      [title, card, go].forEach(function (n) { n.getAnimations().forEach(function (an) { try { an.finish(); } catch (e) {} }); });
+    }, 1600);
   }
   function hidePopup() {
     var pop = $('g-pop');
@@ -956,6 +963,9 @@
       try { window.parent.postMessage({ type: 'offer-preview-ready' }, window.origin); } catch (err) {}
       return;
     }
+    // The game screen is the top of the page: do not let the browser jump
+    // back to an old scroll position on reload.
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
     initBonus();
     initRedeem();
     initPopup();

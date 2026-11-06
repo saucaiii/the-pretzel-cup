@@ -187,7 +187,7 @@ body.game-on .hero { display: none !important; }
 .check { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 0; font-size: 14px; }
 .check input { width: 22px; height: 22px; margin: 0; accent-color: var(--gold); flex: none; }
 .privacy { margin: 10px 0 0 !important; font-size: 13px !important; color: var(--gold-light); }
-.game .btn, .stage .btn, .sheet .btn { cursor: pointer; font-family: var(--body); }
+.game .btn, .stage .btn, .sheet .btn { cursor: pointer; }
 .game .btn[disabled], .sheet .btn[disabled] { opacity: 0.5; cursor: default; }
 .b-status { margin: 10px 0 0 !important; font-weight: 700; color: var(--gold-light); min-height: 1.2em; }
 .b-status:empty { display: none; }

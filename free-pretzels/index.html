@@ -11,19 +11,19 @@
 <!-- Brand type: FatFrank (headlines, letter-spacing >= +0.01em, never
      tightened), Gotham (body), SantElia Script (one optional warm accent
      word). Bullpen is signage-only and never used on the web.
-     The brand fonts come first in every stack below and load from the
-     licensed web kits linked here (font files are never committed: the repo
-     is public). Until a kit is linked, the stand-ins in each stack show:
-     Archivo Black, Montserrat, Caveat.
-     BRAND WEB FONT KITS (add when available):
-       Adobe Fonts project for Fat Frank:
-         <link rel="stylesheet" href="https://use.typekit.net/PROJECT_ID.css" />
-       Hoefler & Co. Cloud.typography project for Gotham:
-         <link rel="stylesheet" href="https://cloud.typography.com/ACCOUNT/PROJECT/css/fonts.css" /> -->
-     BullPen is signage-only and never used on the web. -->
+     Archivo Black, Montserrat and Caveat stay loaded as fallbacks. -->
+<link rel="preload" href="/free-pretzels/fonts/fat-frank-heavy.otf" as="font" type="font/otf" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@700&family=Montserrat:wght@400;500;700&display=swap" />
 <link rel="stylesheet" href="/free-pretzels/packs.css" />
 <style>
+  /* Licensed brand fonts, served from /free-pretzels/fonts/ (files kept
+     out of git: the repo is public). Stand-ins follow in each stack in
+     case a deploy is missing them. Only Gotham Book is installed, so
+     Gotham bold weights are synthesized until Medium/Bold are added. */
+  @font-face { font-family: 'FatFrank'; src: url('/free-pretzels/fonts/fat-frank-heavy.otf') format('opentype'); font-weight: 100 900; font-display: swap; }
+  @font-face { font-family: 'Gotham'; src: url('/free-pretzels/fonts/gotham-book.otf') format('opentype'); font-weight: 400; font-display: swap; }
+  @font-face { font-family: 'SantElia Script'; src: url('/free-pretzels/fonts/santelia-script-bold.otf') format('opentype'); font-weight: 100 900; font-display: swap; }
+
   /* Brand rules (summary of the internal brand guide):
      - Solid brand colours only. Green dominant; black; golds. No gradients.
      - Tagline "Made to Crave®" sits centred under the logo, one tagline
@@ -42,9 +42,9 @@
     --gray: #6D6E71;
 
     /* Brand font first (web kit name, then installed name), then stand-in. */
-    --display: 'fat-frank', 'Fat Frank', 'FatFrank', 'Archivo Black', 'Arial Black', Impact, sans-serif;
-    --body: 'Gotham SSm A', 'Gotham SSm B', 'Gotham A', 'Gotham B', 'Gotham', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
-    --script: 'santelia-script', 'SantElia Script', 'Caveat', 'Brush Script MT', cursive;
+    --display: 'FatFrank', 'Archivo Black', 'Arial Black', Impact, sans-serif;
+    --body: 'Gotham', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+    --script: 'SantElia Script', 'Caveat', 'Brush Script MT', cursive;
 
     --logo-w: min(64vw, 280px);
     --logo-clear: calc(var(--logo-w) * 0.125);
@@ -247,7 +247,8 @@
     padding: 0 18px;
     border: 2px solid var(--gold);
     border-radius: 2px;
-    font-weight: 700;
+    font-family: var(--display); /* FatFrank: bold CTA until Gotham Medium/Bold are added */
+    font-weight: 400;
     font-size: 15px;
     letter-spacing: 0.04em;
     text-transform: uppercase;

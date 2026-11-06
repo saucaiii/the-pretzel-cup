@@ -13,13 +13,21 @@
 <link rel="stylesheet" href="/brand.css">
 <link rel="stylesheet" href="/assets/ops-chrome.css">
 <style>
+/* Licensed brand fonts, served from /free-pretzels/fonts/ (files kept
+   out of git: the repo is public). Stand-ins follow in each stack in
+   case a deploy is missing them. Only Gotham Book is installed, so
+   Gotham bold weights are synthesized until Medium/Bold are added. */
+@font-face { font-family: 'FatFrank'; src: url('/free-pretzels/fonts/fat-frank-heavy.otf') format('opentype'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Gotham'; src: url('/free-pretzels/fonts/gotham-book.otf') format('opentype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'SantElia Script'; src: url('/free-pretzels/fonts/santelia-script-bold.otf') format('opentype'); font-weight: 100 900; font-display: swap; }
+
 /* This page follows the brand guide strictly: solid palette colours,
    square corners, no shadows, no hover animation. It reuses the ops
    chrome (header, nav) and overrides type to the brand stand-ins. */
 :root {
-  /* Brand fonts first (licensed web kits / installed), stand-ins after. */
-  --display: 'fat-frank', 'Fat Frank', 'FatFrank', 'Archivo Black', 'Arial Black', Impact, sans-serif;
-  --body: 'Gotham SSm A', 'Gotham SSm B', 'Gotham A', 'Gotham B', 'Gotham', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  /* Brand fonts first, stand-ins after. */
+  --display: 'FatFrank', 'Archivo Black', 'Arial Black', Impact, sans-serif;
+  --body: 'Gotham', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
   --qr-green: #0D5237;
   --qr-black: #000000;
   --qr-gold: #D4B662;
