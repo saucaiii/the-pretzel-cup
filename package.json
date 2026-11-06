@@ -6,7 +6,8 @@
   "scripts": {
     "deploy": "bash scripts/deploy.sh",
     "deploy:preview": "bash scripts/deploy.sh preview",
-    "contacts:import": "node --env-file=.env scripts/import-store-contacts.mjs"
+    "contacts:import": "node --env-file=.env scripts/import-store-contacts.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

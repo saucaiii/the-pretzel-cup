@@ -85,3 +85,61 @@ test('preview deployment host counts as own site', () => {
   assert.equal(loc.host, 'the-pretzel-cup-git-x.vercel.app');
   assert.equal(loc.searchParams.get('utm_source'), 'window_sticker');
 });
+
+// ─── self-loop guard + scan counters ───────────────────────────────
+
+test('target pointing back at /scan falls back (no redirect loop)', () => {
+  for (const t of ['/scan', '/scan/', 'https://the-pretzel-cup.vercel.app/scan']) {
+    assert.equal(mw.buildLocation(t, REQ).pathname, '/free-pretzels');
+  }
+});
+
+function stubRedis(opts = {}) {
+  const calls = [];
+  return {
+    calls,
+    async hincrby(k, f, n) { calls.push(['hincrby', k, f, n]); if (opts.throws) throw new Error('down'); },
+    async expire(k, s) { calls.push(['expire', k, s]); },
+  };
+}
+
+test('countScan: default placement window_sticker, New York day key, 40d TTL', async () => {
+  const r = stubRedis();
+  const ok = await mw.countScan(r, REQ, new Date('2026-11-06T03:00:00Z')); // 10pm Nov 5 in NY
+  assert.equal(ok, true);
+  assert.deepEqual(r.calls[0], ['hincrby', 'qr:scans:2026-11-05', 'window_sticker', 1]);
+  assert.deepEqual(r.calls[1], ['expire', 'qr:scans:2026-11-05', 40 * 24 * 60 * 60]);
+});
+
+test('countScan: utm_source is sanitised into the placement', async () => {
+  const r = stubRedis();
+  await mw.countScan(r, `${REQ}?utm_source=Door_Sticker`);
+  assert.equal(r.calls[0][2], 'door_sticker');
+  const r2 = stubRedis();
+  await mw.countScan(r2, `${REQ}?utm_source=${'x'.repeat(50)}`);
+  assert.equal(r2.calls[0][2], 'other');
+});
+
+test('countScan: never throws (redis error or no client)', async () => {
+  assert.equal(await mw.countScan(stubRedis({ throws: true }), REQ), false);
+  assert.equal(await mw.countScan(null, REQ), false);
+});
+
+test('redis throwing does not change the 302', async () => {
+  const r = stubRedis({ throws: true });
+  mw.__setRedisForTests(r);
+  const pending = [];
+  const res = await mw.default(new Request(`${REQ}?utm_source=door`), { waitUntil(p) { pending.push(p); } });
+  await Promise.all(pending);
+  assert.equal(res.status, 302);
+  assert.equal(new URL(res.headers.get('location')).pathname, '/free-pretzels');
+  assert.equal(r.calls[0][2], 'door');
+  mw.__setRedisForTests(null);
+});
+
+test('redis client that throws synchronously does not change the 302', async () => {
+  mw.__setRedisForTests({ hincrby() { throw new Error('boom'); }, expire() {} });
+  const res = await mw.default(new Request(REQ), { waitUntil() {} });
+  assert.equal(res.status, 302);
+  mw.__setRedisForTests(null);
+});
