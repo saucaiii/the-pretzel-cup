@@ -48,6 +48,9 @@ Started: 2026-11-06
 - Win card + step popup on the new theme; win card has one CTA to the next pretzel
   with pips and "N more to the Golden Ticket" (rip beats unchanged).
 - Dog + rivet cup are cutouts on plate frames; ticket text has no pill.
+- Golden Ticket spins: 4x3 grid, spins 1-3 miss, spin 4 lines up 4 pretzels; screen
+  says the 4th spin lands it. Review round 3 fixed (lost-response recovery, modal gates).
+- Every new modal must be added to the renderStep, closeStep and closeRedeem gates.
 - Map dropped; binder shows Collected (tick) vs Open (action, tap to unlock), no
   flavour words; food band side photos = pretzel dog + cinnamon rivets cup.
 

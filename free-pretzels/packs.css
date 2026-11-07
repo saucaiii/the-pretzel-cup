@@ -635,6 +635,8 @@ html.stage-open, html.stage-open body { overflow: hidden; }
 .cell img { width: 100%; height: 100%; padding: 6px; object-fit: contain; display: block; }
 .cell.hit { box-shadow: 0 0 0 3px var(--green), 0 0 18px rgba(242, 231, 164, 1); animation: cell-win 0.45s ease-in-out 4 alternate; }
 @keyframes cell-win { to { transform: scale(1.08); } }
+.reels.waiting .cell img { animation: cell-wait 0.35s ease-in-out infinite alternate; }
+@keyframes cell-wait { from { transform: translateY(-6%); filter: blur(1px); } to { transform: translateY(6%); filter: blur(2px); } }
 .slot-count { margin: 12px 0 10px; font-family: var(--marker); font-size: 20px; color: var(--gold-light); }
 .slot .btn { width: 100%; min-height: 54px; border-radius: 12px; font-size: 16px; cursor: pointer; }
 .slot .btn-solid { background: var(--gold); border-color: var(--gold); color: var(--black); box-shadow: var(--glow); }

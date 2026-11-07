@@ -525,7 +525,7 @@
     resume.hidden = !(waiting && waiting !== 'end' && !panel);
     if (waiting === 'quest' && QUEST[st.next_quest]) resume.textContent = QUEST[st.next_quest].resume;
     if (waiting === 'deal') resume.textContent = 'Keep or spin?';
-    if (panel && $('g-pop').hidden && $('stage').hidden) openStep(panel);
+    if (panel && $('g-pop').hidden && $('stage').hidden && $('slot').hidden) openStep(panel);
     else if (!panel && !pop.hidden) closeStep();
   }
   function openStep(panel) {
@@ -554,7 +554,7 @@
     var pop = $('g-step');
     if (pop.hidden) return;
     pop.hidden = true;
-    if ($('stage').hidden && $('redeem').hidden) document.documentElement.classList.remove('stage-open');
+    if ($('stage').hidden && $('redeem').hidden && $('slot').hidden) document.documentElement.classList.remove('stage-open');
     if (S.backdrop) { S.backdrop = false; if (S.state) renderPicker(S.state); }
     if (S.car && !$('carousel').hidden) S.car.reset();
     if (focusEl && focusEl.focus) focusEl.focus({ preventScroll: true });
@@ -1067,7 +1067,7 @@
     var f = Array.prototype.filter.call(scope.querySelectorAll('button, input, a[href]'), function (n) {
       return !n.disabled && n.offsetParent !== null;
     });
-    if (!f.length) return;
+    if (!f.length) { e.preventDefault(); return; }
     var first = f[0], last = f[f.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -1093,7 +1093,7 @@
   }
   function closeRedeem() {
     $('redeem').hidden = true;
-    if ($('stage').hidden) document.documentElement.classList.remove('stage-open');
+    if ($('stage').hidden && $('slot').hidden && $('g-step').hidden) document.documentElement.classList.remove('stage-open');
     if (redeemOpener && redeemOpener.focus) redeemOpener.focus();
   }
   function initRedeem() {
@@ -1325,7 +1325,7 @@
     function count() {
       $('slot-count').textContent = 'Spin ' + Math.min(spun + 1, 4) + ' of 4';
       $('slot-spin').textContent = spun === 3 ? 'Spin for the Golden Ticket' : 'Spin';
-      $('slot-later').hidden = spun >= 3 && busy;
+      $('slot-later').hidden = busy || spun >= 4;
     }
     // Cascade: every symbol drops out, then the new board falls in,
     // column by column.
@@ -1354,6 +1354,7 @@
       busy = true;
       $('slot-spin').disabled = true;
       $('slot-status').textContent = '';
+      $('slot-later').hidden = true;
       var i = spun;
       if (i < 3) {
         cascade(BOARDS[i + 1]).then(function () {
@@ -1368,27 +1369,36 @@
       }
       // Spin 4: the server opens the Golden Ticket (this is the trade).
       count();
+      $('reels').classList.add('waiting');
+      $('slot-count').textContent = 'Spinning...';
       api('POST', { action: 'open' }).then(function (r) {
+        var st = r.data && r.data.state;
         var v = r.ok && r.data && r.data.voucher;
+        // A lost response or a second tab: the ticket may already exist.
+        if ((!v || v.source !== 'bonus') && st && st.traded) {
+          v = (st.vouchers || []).filter(function (x) { return x.source === 'bonus'; })[0] || null;
+        }
+        $('reels').classList.remove('waiting');
         if (!v || v.source !== 'bonus') {
           busy = false;
           $('slot-spin').disabled = false;
           count();
-          if (r.data && r.data.state && r.data.state.game) S.state = r.data.state;
-          $('slot-status').textContent = (r.data && r.data.error) || 'We could not finish the spin. Your pretzels are safe. Try again.';
+          if (st && st.game) S.state = st;
+          $('slot-status').textContent = (r.data && r.data.error) || 'We could not finish the spin. Try again.';
           return;
         }
-        S.state = r.data.state;
+        S.state = st;
         voucher = v;
         cascade(BOARDS[4]).then(function () {
           cells().slice(4, 8).forEach(function (c) { c.classList.add('hit'); });
           win();
         });
       }, function () {
+        $('reels').classList.remove('waiting');
         busy = false;
         $('slot-spin').disabled = false;
         count();
-        $('slot-status').textContent = 'No connection. Your pretzels are safe. Try again.';
+        $('slot-status').textContent = 'Check your connection and try again.';
       });
     }
     function win() {
@@ -1401,7 +1411,15 @@
         var box = $('slot-ticket');
         box.textContent = '';
         var art = el('div', 'bt-art');
-        art.appendChild(ticketVideo(voucher.code, false));
+        // Its own video (not the binder's cached one); the binder then shows
+        // the poster, so the shimmer plays once.
+        var vid = el('video');
+        vid.muted = true; vid.playsInline = true; vid.setAttribute('muted', ''); vid.setAttribute('playsinline', '');
+        vid.poster = ART + 'ticket-shimmer-poster.webp'; vid.width = 640; vid.height = 360;
+        vid.setAttribute('aria-hidden', 'true');
+        uiSet({ shimmer: voucher.code });
+        if (!reduced()) { vid.src = ART + 'ticket-shimmer.mp4'; var pl = vid.play(); if (pl && pl.catch) pl.catch(function () {}); }
+        art.appendChild(vid);
         var face = el('div', 'bt-face');
         face.appendChild(el('p', 'bt-name', voucher.title || 'Golden Ticket'));
         face.appendChild(el('p', 'vc-code', voucher.code));
@@ -1413,6 +1431,7 @@
       }, reduced() ? 0 : 1300);
     }
     function later() {
+      if (spun >= 4) return done();
       close();
       S.dealLater = true;
       if (S.state) render(S.state);
@@ -1423,6 +1442,9 @@
       if (S.state) { uiSet({ endSeen: endKey(S.state) }); render(S.state); }
       var b = $('binder');
       if (b && !b.hidden) b.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+      var t = $('game-title');
+      t.setAttribute('tabindex', '-1');
+      t.focus({ preventScroll: true });
     }
     function close() {
       $('slot').hidden = true;
