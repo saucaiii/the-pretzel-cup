@@ -291,11 +291,14 @@
   }
 
   // ─── collector's binder (mockup C) ───────────────────────────────
-  // Four slots in quest order, then the Golden Ticket. Labels and script
-  // words are the mockup's. Won slots keep the code and "Staff: redeem".
+  // Four slots in quest order, then the Golden Ticket. A collected slot
+  // is solid gold with a tick, its code and "Staff: redeem"; an open slot
+  // is dashed and says what to do to unlock it.
   var SLOT = {
-    first: { tag: 'Free', word: 'Classic', r: '-2deg' }, instagram: { tag: 'Insta', word: 'Salted', r: '2deg' },
-    email: { tag: 'Email', word: 'Cinnamon', r: '1deg' }, app: { tag: 'App', word: 'Philly', r: '-1deg' }
+    first: { name: 'Free pack', todo: 'Open your free pack', r: '-2deg' },
+    instagram: { name: 'Instagram', todo: 'Follow us on Instagram', r: '2deg' },
+    email: { name: 'Email', todo: 'Add your email', r: '1deg' },
+    app: { name: 'App', todo: 'Get the app', r: '-1deg' }
   };
   var ART = '/free-pretzels/art/';
   function voucherMeta(v) {
@@ -314,8 +317,13 @@
     var done = !!v.redeemed_at || v.expired;
     var card = el('div', 'bd-card' + (v.traded ? ' traded' : (done ? ' done' : '')));
     card.style.setProperty('--r', t.r);
-    card.appendChild(el('p', 'bd-tag', t.tag));
-    card.appendChild(el('p', 'bd-word', t.word));
+    var head = el('p', 'bd-tag');
+    head.appendChild(el('span', 'bd-tick', '\u2713'));
+    head.appendChild(document.createTextNode(' ' + t.name));
+    card.appendChild(head);
+    card.appendChild(el('p', 'bd-state', v.traded ? 'Collected' : (done ? 'Used' : 'Collected')));
+    card.setAttribute('aria-label', t.name + ' pretzel: collected');
+    card.setAttribute('role', 'group');
     if (v.traded) {
       card.appendChild(el('p', 'vc-meta', 'Traded for the Golden Ticket.'));
       return card;
@@ -328,10 +336,11 @@
   function emptySlot(key, node, st) {
     var b = el('button', 'bd-empty');
     b.type = 'button';
-    b.appendChild(document.createTextNode(SLOT[key].tag));
     var ready = node && node.state === 'ready';
-    b.appendChild(el('span', null, ready ? 'ready to open' : 'tap to unlock'));
-    b.setAttribute('aria-label', SLOT[key].tag + ': ' + (ready ? 'pack ready to open' : 'tap to unlock'));
+    b.appendChild(el('span', 'bd-open', ready ? 'Ready' : 'Open'));
+    b.appendChild(el('strong', null, ready ? 'Your pack is waiting' : SLOT[key].todo));
+    b.appendChild(el('span', null, ready ? 'Tap to open it' : 'Tap to unlock'));
+    b.setAttribute('aria-label', SLOT[key].name + ' pretzel: ' + (ready ? 'pack ready, tap to open it' : 'not collected yet. ' + SLOT[key].todo));
     b.addEventListener('click', function () {
       if (S.state && packShown(S.state)) {
         window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
@@ -442,37 +451,6 @@
       row.appendChild(li);
     });
     $('trail-count').textContent = st.traded ? 'All 4 traded for the Golden Ticket' : st.used + ' of 4 collected';
-    renderMap(st);
-  }
-
-  // Factory floor quest map on the page (mockup B): Mix, Twist, Bake, Win.
-  // "you are here" sits on the pack waiting to open, else the next step.
-  var MAP = {
-    first: ['Mix', 'grab your free pack'], instagram: ['Twist', 'follow on Instagram'],
-    email: ['Bake', 'unlock by email'], app: ['Win', 'get the app']
-  };
-  function renderMap(st) {
-    var list = $('qmap-list');
-    if (!list) return;
-    $('qmap').hidden = false;
-    list.textContent = '';
-    var here = st.ended ? null : (st.can_open && MAP[st.next_source] ? st.next_source : st.next_quest);
-    var n = 0;
-    (st.trail || []).forEach(function (node) {
-      if (!MAP[node.key] || node.state === 'off') return;
-      n++;
-      var m = MAP[node.key];
-      var li = el('li', node.state === 'done' ? 'done' : (node.key === here ? 'current' : 'locked'));
-      li.appendChild(el('span', 'qm-dot', String(n)));
-      var t = el('span', 'qm-text');
-      t.appendChild(el('span', 'qm-name', m[0] + ':'));
-      t.appendChild(document.createTextNode(' ' + m[1]));
-      li.appendChild(t);
-      var words = node.state === 'done' ? 'done' : (node.key === here ? 'you are here' : 'not yet');
-      li.setAttribute('aria-label', m[0] + ', ' + m[1] + ', pretzel ' + n + ': ' + words);
-      if (node.key === here) li.appendChild(el('span', 'qmap-here', 'you are here'));
-      list.appendChild(li);
-    });
   }
 
   // ─── step popup: one step at a time, between pulls ──────────────
@@ -1361,7 +1339,7 @@
           showPopup({ headline: e.data.offer.headline, stamp: e.data.offer.stamp }, true);
           $('game-sub').textContent = 'Preview. Packs open on the live page.';
           $('vouchers').textContent = '';
-          ['g-step', 'q-resume', 'qmap', 'binder'].forEach(function (id) { $(id).hidden = true; });
+          ['g-step', 'q-resume', 'binder'].forEach(function (id) { $(id).hidden = true; });
         }
       });
       // Ask the panel to resend now that this listener exists (the inline

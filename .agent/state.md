@@ -19,7 +19,7 @@ Started: 2026-11-06
 - Hero + welcome popup = mockup A (plate strip, logo, tilted word wall, CRAVE lit,
   copy line, "Rip your free pack" with foil pack, "every pack wins").
 - Food band (earlier take): real pretzel + rivet photos breaking out of plate frames.
-- Quest map = mockup B section (Mix/Twist/Bake/Win, "you are here") via renderTrail.
+- Quest map (mockup B) REMOVED 2026-11-07 at the user's request.
 - Binder = mockup C (Your set, N of 4, tilted gold cards, empty slots reopen the
   quest, Golden Ticket card with ticket art, shimmer once on win).
 - Offer/claim/stores restyled (12px radius gold cards); rip stage buttons unchanged.
@@ -44,11 +44,12 @@ Started: 2026-11-06
 - Accepted: F4 reduced-motion block also makes the carousel's 0.2s scale instant;
   F8 logos sit on a 0.16-alpha glow (clear space kept). Code scanning not checked.
 
-## Open question for the user
-- Binder script words are the mockup's (Classic, Salted, Cinnamon) plus Philly for
-  App. Every pack wins the same free pretzel, so flavour names may set wrong
-  expectations at the counter. Kept as the mockup; flagged in the PR.
+## User changes 2026-11-07 (done)
+- Map dropped; binder shows Collected (tick) vs Open (action, tap to unlock), no
+  flavour words; food band side photos = pretzel dog + cinnamon rivets cup.
 
 ## Retries
 - npm test 71/73: context/environment issue (no node_modules). npm ci --ignore-scripts.
 - one-liner exit 1: tool misuse (zsh `echo ===`). Ran eval-report on its own.
+- image-branch push exit 128: tool misuse (git mktree input lost its tab inside a shell
+  variable). Change before retry: build the mktree input with printf per line.
