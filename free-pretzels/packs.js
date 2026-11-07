@@ -273,7 +273,7 @@
       car.onLost = stage.onLost = drop3D;
       S.kit = kit; S.car = car; S.stage3d = stage;
       $('carousel').classList.add('gl');
-    }).catch(function () { drop3D(); });
+    }).catch(function () { drop3D(); }).then(function () { S.kitLoading = false; });
   }
   // Back to the CSS packs (load failure or a lost WebGL context).
   function drop3D() {

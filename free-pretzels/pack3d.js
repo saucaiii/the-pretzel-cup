@@ -255,7 +255,9 @@ function timeout(p, ms) {
 export async function createKit({ assets }) {
   if (!webglOK()) throw new Error('no webgl');
   if (document.fonts && document.fonts.load) {
-    await timeout(Promise.all([document.fonts.load('400 100px "FatFrank"'), document.fonts.load('400 100px "Archivo Black"')]), 1500);
+    // A missing font file must never stop the 3D packs (a failed load
+    // rejects): wait at most 1.5 s and ignore errors.
+    await timeout(Promise.all([document.fonts.load('400 100px "FatFrank"'), document.fonts.load('400 100px "Archivo Black"')]).catch(() => null), 1500);
   }
   const logoImg = await loadImage([assets + 'ppf-logo-1864.webp', assets + 'ppf-logo-600.png']);
   const res = Math.min(1024, Math.max(512, Math.round(Math.min(window.innerWidth, 600) * Math.min(window.devicePixelRatio || 1, 2))));

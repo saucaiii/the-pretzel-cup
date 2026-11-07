@@ -42,6 +42,13 @@ Started: 2026-11-06
   on their own. Visual: deal card, trade > ticket > end, keep > end (survives reload),
   staff sheet with surprise line. npm test 187/187.
 
+## Live incident 2026-11-07
+- PR #29 was merged at c5ce235 (green version) before c2930a7 (live look) was pushed,
+  then deployed from a checkout WITHOUT the font files (FatFrank/Gotham 404 live).
+- The FatFrank 404 made pack3d's font wait reject -> createKit threw -> flat CSS packs.
+  Root cause: reasoning error (font load not made fail-safe). Fixed: catch + timeout.
+- Follow-up PR from agent/pretzel-packs-popups carries c2930a7 + the font fix.
+
 ## Live look restored (user, directly, 2026-11-07)
 - Black game/stage/sheet, original foil (roughness 1, black studio), 5-pack carousel every
   pull (all golden for the ticket pull). Steps/deal/end are popups (grey card) over the
@@ -50,6 +57,8 @@ Started: 2026-11-06
   popup shows once.
 
 ## Retries
+- 2: zsh read `$c:free-pretzels/...` as a `:f` history modifier. Root cause: tool misuse.
+  Change: quote as "${c}:path".
 - 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).
   Root cause: tool misuse. Change: read the file with the Read tool instead.
 
