@@ -402,39 +402,28 @@
     if (!vid.paused) raf = requestAnimationFrame(loop);
   }
 
-  // One element per ticket code, reused across renders so the single
-  // play is not cut short by a re-render.
-  function ticketVideo(code, done) {
-    if (S.ticketVid && S.ticketVid.code === code) return S.ticketVid.node;
-    var vid = el('video');
-    vid.muted = true; vid.playsInline = true; vid.preload = 'none';
-    vid.setAttribute('muted', ''); vid.setAttribute('playsinline', '');
-    vid.poster = ART + 'ticket-shimmer-poster.webp';
-    vid.width = 640; vid.height = 360;
-    vid.setAttribute('aria-hidden', 'true');
-    S.ticketVid = { code: code, node: vid };
-    // Once per ticket on this device; never on a used ticket.
-    if (!reduced() && !done && uiGet().shimmer !== code) {
-      uiSet({ shimmer: code });
-      vid.src = ART + 'ticket-shimmer.mp4';
-      var p = vid.play();
-      if (p && p.catch) p.catch(function () {});
-    }
-    return vid;
-  }
+  // Where the main body sits in the transparent ticket still
+  // (golden-ticket-*.webp): centre x %, centre y %, tilt deg, length %.
+  var TICKET_STILL = [43.42, 48, -5.17, 76.95];
   function ticketCard(st, v) {
     var box = el('div', 'bd-ticket');
     if (v) {
       var done = !!v.redeemed_at || v.expired;
       box.className = 'bd-ticket won' + (done ? ' done' : '');
+      // The transparent ticket still (no green box on the plate), the code
+      // on its body, and a gold sweep clipped to the ticket's shape.
       var art = el('div', 'bt-art');
-      art.appendChild(ticketVideo(v.code, done));
+      art.appendChild(ticketPicture());
+      art.appendChild(el('span', 'bt-shine'));
       var face = el('div', 'bt-face');
       face.appendChild(el('p', 'bt-name', v.title || 'Golden Ticket'));
       face.appendChild(el('p', 'vc-code', v.code));
+      face.style.left = TICKET_STILL[0] + '%';
+      face.style.top = TICKET_STILL[1] + '%';
+      face.style.transform = 'translate(-50%, -50%) rotate(' + TICKET_STILL[2] + 'deg)';
+      face.style.setProperty('--s', (TICKET_STILL[3] / 73).toFixed(3));
       art.appendChild(face);
       box.appendChild(art);
-      syncFace(art.querySelector('video'), face);
       var below = el('div', 'bt-below');
       below.appendChild(el('p', 'bt-text', v.text || 'Show this at the counter.'));
       below.appendChild(el('p', 'vc-meta', voucherMeta(v) + (done ? '' : ' Show this at the counter.')));

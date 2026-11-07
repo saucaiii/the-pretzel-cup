@@ -760,3 +760,33 @@ html.stage-open, html.stage-open body { overflow: hidden; }
 #g-step-card { padding-top: 22px; }
 .slot-card { padding-top: 22px; }
 #g-step .q-body p, #g-step .quest.deal p, .slot-intro, .slot-text, .slot-meta { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+
+/* 2026-11-07 (user): Your set on the plate photo; the Golden Ticket art is
+   a transparent cut-out so no dark green box clashes with our green. */
+.binder {
+  background:
+    radial-gradient(ellipse 75% 22% at 50% 0%, rgba(242, 231, 164, 0.28), transparent 70%),
+    linear-gradient(180deg, rgba(8, 53, 33, 0.3), rgba(8, 53, 33, 0.65)),
+    var(--plate-photo) center / cover, var(--green);
+  border-color: var(--gold);
+}
+.binder .plate-strip { display: none; }
+.bd-head { padding-top: 18px; }
+.bd-title, .bd-note { text-shadow: 0 2px 3px rgba(0, 0, 0, 0.55); }
+.bd-ticket { background: transparent; box-shadow: none; overflow: visible; }
+.bd-ticket picture img { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45)); }
+.bt-below { border-radius: 12px; background: rgba(8, 53, 33, 0.82); }
+.bt-shine {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  -webkit-mask: url('/free-pretzels/art/golden-ticket-540.webp') center / 100% 100% no-repeat;
+          mask: url('/free-pretzels/art/golden-ticket-540.webp') center / 100% 100% no-repeat;
+}
+.bt-shine::after {
+  content: ''; position: absolute; top: -10%; bottom: -10%; left: 0; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 252, 225, 0.75), transparent);
+  transform: translateX(-140%) skewX(-18deg);
+  animation: bt-sweep 3.6s ease-in-out 0.6s infinite;
+}
+@keyframes bt-sweep { 0% { transform: translateX(-140%) skewX(-18deg); } 45%, 100% { transform: translateX(420%) skewX(-18deg); } }
+.bd-ticket.done .bt-shine { display: none; }
+.bd-ticket .bt-lock { left: 43.4%; top: 48%; transform: translate(-50%, -50%) rotate(-5.2deg); }
