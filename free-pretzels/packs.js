@@ -353,16 +353,19 @@
   }
   // Won ticket: the shimmer plays once (muted, no loop) and holds its
   // last frame; with reduced motion only the poster shows.
+  // One element per ticket code, reused across renders so the single
+  // play is not cut short by a re-render.
   function ticketVideo(code) {
+    if (S.ticketVid && S.ticketVid.code === code) return S.ticketVid.node;
     var vid = el('video');
     vid.muted = true; vid.playsInline = true; vid.preload = 'none';
     vid.setAttribute('muted', ''); vid.setAttribute('playsinline', '');
     vid.poster = ART + 'ticket-shimmer-poster.webp';
     vid.width = 640; vid.height = 360;
     vid.setAttribute('aria-hidden', 'true');
-    if (!reduced() && S.shimmer !== code) {
+    S.ticketVid = { code: code, node: vid };
+    if (!reduced()) {
       vid.src = ART + 'ticket-shimmer.mp4';
-      S.shimmer = code;
       var p = vid.play();
       if (p && p.catch) p.catch(function () {});
     }
@@ -373,11 +376,13 @@
     if (v) {
       var done = !!v.redeemed_at || v.expired;
       box.className = 'bd-ticket won' + (done ? ' done' : '');
-      box.appendChild(ticketVideo(v.code));
+      var art = el('div', 'bt-art');
+      art.appendChild(ticketVideo(v.code));
       var face = el('div', 'bt-face');
       face.appendChild(el('p', 'bt-name', v.title || 'Golden Ticket'));
       face.appendChild(el('p', 'vc-code', v.code));
-      box.appendChild(face);
+      art.appendChild(face);
+      box.appendChild(art);
       var below = el('div', 'bt-below');
       below.appendChild(el('p', 'bt-text', v.text || 'Show this at the counter.'));
       below.appendChild(el('p', 'vc-meta', voucherMeta(v) + (done ? '' : ' Show this at the counter.')));

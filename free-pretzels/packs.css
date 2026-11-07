@@ -274,6 +274,7 @@ body.game-on .hero { display: none !important; }
 .bt-name { font-family: var(--display); font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; }
 .bt-hint { font-size: 13px; font-weight: 700; }
 /* Won: the code sits on the ticket face, tilted with the art. */
+.bt-art { position: relative; }
 .bd-ticket.won .bt-face {
   position: absolute; left: 40%; top: 46%; transform: translate(-50%, -50%) rotate(-7deg);
   text-align: center; color: var(--black); pointer-events: none;
