@@ -314,7 +314,14 @@
   }
 
   section { padding: 36px 0; }
-  .panel { background: var(--gold-light); color: var(--black); }
+  /* Offer + claim: gold cards on the green page (mockup radius 12). */
+  .panel { background: var(--green); color: var(--black); padding: 14px 0; }
+  .panel .wrap {
+    width: calc(100% - 32px); padding: 22px 20px;
+    background: var(--gold-light); border-radius: 12px; box-shadow: var(--shadow-2);
+  }
+  #offer-section { padding-top: 28px; }
+  #claim-section { padding-bottom: 28px; }
   .eyebrow {
     margin: 0 0 6px;
     font-family: var(--display);
@@ -366,23 +373,27 @@
     gap: 12px;
     align-items: start;
     padding: 12px 0;
-    border-top: 2px solid var(--green);
+    align-items: center;
   }
-  ol.steps li:last-child { border-bottom: 2px solid var(--green); }
+  ol.steps li + li { border-top: 2px solid rgba(13, 82, 55, 0.25); }
   ol.steps li::before {
     content: counter(s);
-    font-family: var(--display);
-    font-size: 30px;
-    line-height: 1;
-    color: var(--green);
+    display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--green); color: var(--gold-light);
+    font-family: var(--display); font-size: 20px; line-height: 1;
   }
   ol.steps li p { margin: 0; }
 
   /* Locations */
-  .locations { background: var(--green); color: var(--white); }
+  .locations {
+    color: var(--white);
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(242, 231, 164, 0.14), transparent 70%), var(--green-deep);
+  }
   .locations h2 { color: var(--gold); }
-  .store { padding: 18px 0; border-top: 2px solid var(--gold-deep); }
-  .store:last-child { border-bottom: 2px solid var(--gold-deep); }
+  .store {
+    padding: 18px; margin: 0 0 14px; border-radius: 12px;
+    background: var(--green); border: 1px solid rgba(212, 182, 98, 0.45); box-shadow: var(--shadow-1);
+  }
   .store h3 {
     margin: 0;
     font-family: var(--display);
@@ -401,7 +412,8 @@
     min-height: 48px;
     padding: 0 18px;
     border: 2px solid var(--gold);
-    border-radius: 2px;
+    border-radius: 12px;
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
     font-family: var(--display); /* FatFrank: bold CTA until Gotham Medium/Bold are added */
     font-weight: 400;
     font-size: 15px;
@@ -410,12 +422,16 @@
     text-decoration: none;
   }
   .btn-solid { background: var(--gold); color: var(--black); }
+  a.btn:hover, button.btn:not([disabled]):hover { transform: translateY(-2px); box-shadow: var(--glow); }
+  /* The rip stage keeps its live look: square buttons, no lift. */
+  .stage .btn { border-radius: 2px; transition: none; }
+  .stage .btn:hover { transform: none; box-shadow: none; }
   .btn-line { background: transparent; color: var(--gold-light); }
 
   footer {
-    background: var(--black);
+    background: linear-gradient(var(--black), var(--black)) 0 36px / 100% 100% no-repeat, var(--diamond) 0 0 / 48px 24px, var(--black);
     color: var(--white);
-    padding: 28px 0 calc(28px + env(safe-area-inset-bottom));
+    padding: 64px 0 calc(28px + env(safe-area-inset-bottom));
     font-size: 14px;
   }
   footer .fine { margin: 0; white-space: pre-line; }
