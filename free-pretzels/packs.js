@@ -372,6 +372,36 @@
   }
   // Won ticket: the shimmer plays once (muted, no loop) and holds its
   // last frame; with reduced motion only the poster shows.
+  // Where the ticket's main body sits in ticket-shimmer.mp4, sampled every
+  // 3 frames: [time s, centre x %, centre y %, tilt deg, ticket length %].
+  // Measured from the video (gold pixels, principal axis), so the code and
+  // title ride on the ticket as it drifts and tilts.
+  var TICKET_TRACK = [[0,42.78,44.77,-7.22,73.11],[0.125,42.77,44.71,-7.46,73.06],[0.25,42.76,44.83,-7.86,73.22],[0.375,42.99,44.95,-8.17,73.27],[0.5,43.19,45.11,-8.37,73.35],[0.625,43.24,45.09,-8.19,73.46],[0.75,43.46,45.23,-8.12,73.63],[0.875,43.75,45.17,-7.89,73.73],[1,43.97,44.86,-7.27,73.74],[1.125,44.02,45.01,-7.26,73.76],[1.25,44.1,44.94,-6.67,73.75],[1.375,44.07,44.99,-6.33,73.92],[1.5,44.1,44.96,-5.94,73.87],[1.625,43.97,44.99,-5.68,74.05],[1.75,43.89,45.04,-5.4,74.17],[1.875,43.74,45.08,-5.16,74.64],[2,43.57,45.18,-4.99,75.02],[2.125,43.43,45.12,-4.97,75.23],[2.25,43.15,45.01,-5.03,75.49],[2.375,43.03,44.83,-5.24,75.44],[2.5,42.82,44.75,-5.74,75.43],[2.625,42.69,44.84,-6.2,75.45],[2.75,42.44,45.63,-7.9,75.17],[2.875,42.23,46.24,-9.14,74.93],[3,42.13,46.36,-9.66,74.93],[3.125,42.06,46.36,-10.36,74.8],[3.25,41.86,46.22,-10.65,74.85],[3.375,41.73,45.94,-10.45,74.8],[3.5,41.57,45.43,-9.87,74.92],[3.625,41.47,45.34,-9.9,74.97],[3.75,41.33,45.33,-9.75,75.08],[3.875,41.26,45.46,-9.66,75.03],[4,41.27,45.54,-9.38,75.02],[4.125,41.29,45.6,-9.43,74.92],[4.25,41.34,45.57,-9.32,74.8],[4.375,41.47,45.54,-9.11,74.48],[4.5,41.72,45.42,-8.86,74.32],[4.625,42.04,45.12,-8.46,74.05],[4.75,42.54,44.79,-7.88,73.62],[4.875,42.88,44.54,-7.22,73.4],[5,43.03,44.44,-6.91,73.29]];
+  function placeFace(face, t) {
+    var a = TICKET_TRACK, i = 0;
+    while (i < a.length - 2 && a[i + 1][0] <= t) i++;
+    var p = a[i], q = a[i + 1] || p, k = q[0] > p[0] ? Math.min(1, Math.max(0, (t - p[0]) / (q[0] - p[0]))) : 0;
+    function m(j) { return p[j] + (q[j] - p[j]) * k; }
+    face.style.left = m(1) + '%';
+    face.style.top = m(2) + '%';
+    face.style.transform = 'translate(-50%, -50%) rotate(' + m(3) + 'deg)';
+    face.style.setProperty('--s', (m(4) / 73).toFixed(3));
+  }
+  // Keep a face on the ticket for as long as the video plays.
+  function syncFace(vid, face) {
+    var raf = 0;
+    function now() { return vid.ended ? TICKET_TRACK[TICKET_TRACK.length - 1][0] : (vid.currentTime || 0); }
+    function loop() {
+      placeFace(face, now());
+      raf = (!vid.paused && !vid.ended && face.isConnected) ? requestAnimationFrame(loop) : 0;
+    }
+    placeFace(face, now());
+    vid.addEventListener('play', function () { if (!raf) raf = requestAnimationFrame(loop); });
+    vid.addEventListener('ended', function () { placeFace(face, now()); });
+    vid.addEventListener('seeked', function () { placeFace(face, now()); });
+    if (!vid.paused) raf = requestAnimationFrame(loop);
+  }
+
   // One element per ticket code, reused across renders so the single
   // play is not cut short by a re-render.
   function ticketVideo(code, done) {
@@ -404,6 +434,7 @@
       face.appendChild(el('p', 'vc-code', v.code));
       art.appendChild(face);
       box.appendChild(art);
+      syncFace(art.querySelector('video'), face);
       var below = el('div', 'bt-below');
       below.appendChild(el('p', 'bt-text', v.text || 'Show this at the counter.'));
       below.appendChild(el('p', 'vc-meta', voucherMeta(v) + (done ? '' : ' Show this at the counter.')));
@@ -1466,6 +1497,7 @@
         face.appendChild(el('p', 'vc-code', voucher.code));
         art.appendChild(face);
         box.appendChild(art);
+        syncFace(vid, face);
         $('slot-text').textContent = voucher.text || 'Show this at the counter.';
         $('slot-meta').textContent = 'Good through ' + fmtDay(voucher.expires_at) + '. Show this at the counter.';
         $('slot-done').focus({ preventScroll: true });

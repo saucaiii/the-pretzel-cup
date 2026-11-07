@@ -676,3 +676,20 @@ html.stage-open, html.stage-open body { overflow: hidden; }
   box-shadow: 0 0 0 4px var(--green), 0 0 40px rgba(242, 231, 164, 0.9), var(--shadow-2);
 }
 .slot.party #slot-spin, .slot.party #slot-status { visibility: hidden; }
+
+/* Ticket face: placed per frame by syncFace (packs.js) from the measured
+   ticket track; these are the first frame's values as a fallback. Sizes
+   follow the ticket's width (--s) so the code always fits the body. */
+.bt-art { position: relative; container-type: inline-size; }
+.bd-ticket.won .bt-face, .slot-ticket .bt-face {
+  position: absolute; left: 42.8%; top: 44.8%; width: 56%;
+  transform: translate(-50%, -50%) rotate(-7.2deg);
+  padding: 0; background: none; text-align: center; color: var(--black); pointer-events: none;
+  --s: 1;
+}
+.bd-ticket.won .bt-face .bt-name, .slot-ticket .bt-face .bt-name {
+  font-family: var(--display); font-size: calc(4.2cqw * var(--s)); line-height: 1; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.bd-ticket.won .bt-face .vc-code, .slot-ticket .bt-face .vc-code {
+  margin-top: 0.15em; font-family: var(--display); font-size: calc(6.6cqw * var(--s)); line-height: 1; letter-spacing: 0.05em; white-space: nowrap;
+}
