@@ -336,6 +336,37 @@
       row.appendChild(li);
     });
     $('trail-count').textContent = st.traded ? 'All 4 traded for the Golden Ticket' : st.used + ' of 4 collected';
+    renderMap(st);
+  }
+
+  // Factory floor quest map on the page (mockup B): Mix, Twist, Bake, Win.
+  // "you are here" sits on the pack waiting to open, else the next step.
+  var MAP = {
+    first: ['Mix', 'grab your free pack'], instagram: ['Twist', 'follow on Instagram'],
+    email: ['Bake', 'unlock by email'], app: ['Win', 'get the app']
+  };
+  function renderMap(st) {
+    var list = $('qmap-list');
+    if (!list) return;
+    $('qmap').hidden = false;
+    list.textContent = '';
+    var here = st.ended ? null : (st.can_open && MAP[st.next_source] ? st.next_source : st.next_quest);
+    var n = 0;
+    (st.trail || []).forEach(function (node) {
+      if (!MAP[node.key] || node.state === 'off') return;
+      n++;
+      var m = MAP[node.key];
+      var li = el('li', node.state === 'done' ? 'done' : (node.key === here ? 'current' : 'locked'));
+      li.appendChild(el('span', 'qm-dot', String(n)));
+      var t = el('span', 'qm-text');
+      t.appendChild(el('span', 'qm-name', m[0] + ':'));
+      t.appendChild(document.createTextNode(' ' + m[1]));
+      li.appendChild(t);
+      var words = node.state === 'done' ? 'done' : (node.key === here ? 'you are here' : 'not yet');
+      li.setAttribute('aria-label', m[0] + ', ' + m[1] + ', pretzel ' + n + ': ' + words);
+      if (node.key === here) li.appendChild(el('span', 'qmap-here', 'you are here'));
+      list.appendChild(li);
+    });
   }
 
   // ─── step popup: one step at a time, between pulls ──────────────
@@ -1216,7 +1247,7 @@
           showPopup({ headline: e.data.offer.headline, stamp: e.data.offer.stamp }, true);
           $('game-sub').textContent = 'Preview. Packs open on the live page.';
           $('vouchers').textContent = '';
-          ['g-step', 'q-resume'].forEach(function (id) { $(id).hidden = true; });
+          ['g-step', 'q-resume', 'qmap'].forEach(function (id) { $(id).hidden = true; });
         }
       });
       // Ask the panel to resend now that this listener exists (the inline
