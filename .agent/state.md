@@ -1,28 +1,54 @@
 # Working memory (short-term). Keep under 60 lines.
 Branch: agent/pretzel-redesign
 Task: pretzel-redesign (make /free-pretzels as fun as the game, outside the rip)
-Status: building
+Status: review fixed, opening draft PR
 Started: 2026-11-06
 
 ## Context
-- Started by session local_7433b014 (relays the user's picks). Plan drafted by the
-  planner subagent in session local_a6387455, saved as .agent/plan.md. Risk medium,
-  no approve-plan gate. scope.txt: free-pretzels/, .agent/.
-- Base origin/main 18e87d6 (PR #29, #30 merged). Previous task notes are in git history.
-- Defaults C1 to C6 in plan.md hold until the user says otherwise (stage black,
-  procedural 3D foil).
-- Brand guide PDF is internal: never commit or quote it. No Higgsfield generation
-  without asking the user and naming the cost.
+- Started by session local_7433b014. Plan in .agent/plan.md (medium, no gate).
+  scope.txt: free-pretzels/, .agent/. Base origin/main 18e87d6.
+- USER (directly, mid-task): follow their mockup pretzel_site_mockup_three_directions.html
+  (A word wall, B factory floor quest map, C collector's binder) closely, mix in the
+  Higgsfield art and some of the agent's take, do NOT touch the pack ripping, and no
+  fixes they did not ask for. Recorded in decisions.md.
+- Brand guide PDF is internal: never commit or quote it.
 
-## Progress
-- Step 1 memory: plan.md, this file, decisions appended.
-- Step 2 assets: copied from the notes folder into free-pretzels/art/.
-  golden-ticket-540/900 re-cropped from the original (old 900 clipped the top-right
-  corner): ffmpeg crop=2688:1314:0:90, scale, cwebp -q 78 -m 6.
+## Progress (commits on this branch)
+- Memory + plan; art copied (ticket re-cropped so no corner clips).
+- Tokens, Rock Salt, reduced-motion block.
+- Hero + welcome popup = mockup A (plate strip, logo, tilted word wall, CRAVE lit,
+  copy line, "Rip your free pack" with foil pack, "every pack wins").
+- Food band (earlier take): real pretzel + rivet photos breaking out of plate frames.
+- Quest map = mockup B section (Mix/Twist/Bake/Win, "you are here") via renderTrail.
+- Binder = mockup C (Your set, N of 4, tilted gold cards, empty slots reopen the
+  quest, Golden Ticket card with ticket art, shimmer once on win).
+- Offer/claim/stores restyled (12px radius gold cards); rip stage buttons unchanged.
 
-## Next
-- Steps 3 to 9, one commit each. Step 10 validation with a mock server outside the
-  repo (scratchpad), screenshots 375 px and 1280 px.
+## Not done on purpose (user: don't touch the ripping)
+- Plan step 9 ticket art on the stage's .st-ticket face, and C6 foil photo on the
+  no-WebGL fallback packs: both are inside the carousel/rip experience.
 
-## Handoffs
-- (none yet)
+## Validation (mock server in scratchpad runs the real api/_packs.js)
+- Full loop at 375: first, IG, email link, app, trade, ticket shimmer, staff redeem,
+  stop at 3, keep, skip + resume. 1280: hero, popup, binder, map. /ops/qr srcdoc ok.
+- npm test 187/187; guardrails 106/0; eval-report pass; id check 83 ids ok.
+- Not verified: reduced motion (pane cannot emulate it), no-WebGL fallback, real phones.
+
+## Review (reviewer subagent, 2026-11-06): not ready -> fixed
+- F1 global button hover leaked into #stage buttons: stage override made more specific.
+- F2 "Complete the set" shown at 4 of 4: now "Set complete. Keep or trade?", and the
+  slot only shows while the ticket pack is on offer (no unearnable ticket).
+- F3 step popup restyled without a request: reverted to the live look (only .ww-card new).
+- F5 ticket code on art: flat gold-light pill. F6 shimmer: once per ticket per device,
+  never on a used ticket. F7 recorded in decisions.md.
+- Accepted: F4 reduced-motion block also makes the carousel's 0.2s scale instant;
+  F8 logos sit on a 0.16-alpha glow (clear space kept). Code scanning not checked.
+
+## Open question for the user
+- Binder script words are the mockup's (Classic, Salted, Cinnamon) plus Philly for
+  App. Every pack wins the same free pretzel, so flavour names may set wrong
+  expectations at the counter. Kept as the mockup; flagged in the PR.
+
+## Retries
+- npm test 71/73: context/environment issue (no node_modules). npm ci --ignore-scripts.
+- one-liner exit 1: tool misuse (zsh `echo ===`). Ran eval-report on its own.

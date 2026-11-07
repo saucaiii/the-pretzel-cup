@@ -355,7 +355,7 @@
   // last frame; with reduced motion only the poster shows.
   // One element per ticket code, reused across renders so the single
   // play is not cut short by a re-render.
-  function ticketVideo(code) {
+  function ticketVideo(code, done) {
     if (S.ticketVid && S.ticketVid.code === code) return S.ticketVid.node;
     var vid = el('video');
     vid.muted = true; vid.playsInline = true; vid.preload = 'none';
@@ -364,7 +364,9 @@
     vid.width = 640; vid.height = 360;
     vid.setAttribute('aria-hidden', 'true');
     S.ticketVid = { code: code, node: vid };
-    if (!reduced()) {
+    // Once per ticket on this device; never on a used ticket.
+    if (!reduced() && !done && uiGet().shimmer !== code) {
+      uiSet({ shimmer: code });
       vid.src = ART + 'ticket-shimmer.mp4';
       var p = vid.play();
       if (p && p.catch) p.catch(function () {});
@@ -377,7 +379,7 @@
       var done = !!v.redeemed_at || v.expired;
       box.className = 'bd-ticket won' + (done ? ' done' : '');
       var art = el('div', 'bt-art');
-      art.appendChild(ticketVideo(v.code));
+      art.appendChild(ticketVideo(v.code, done));
       var face = el('div', 'bt-face');
       face.appendChild(el('p', 'bt-name', v.title || 'Golden Ticket'));
       face.appendChild(el('p', 'vc-code', v.code));
@@ -393,7 +395,7 @@
     box.appendChild(ticketPicture());
     var lock = el('div', 'bt-lock');
     lock.appendChild(el('p', 'bt-name', 'Golden Ticket'));
-    lock.appendChild(el('p', 'bt-hint', 'Complete the set to reveal'));
+    lock.appendChild(el('p', 'bt-hint', st.next_source === 'bonus' ? 'Set complete. Keep or trade?' : 'Complete the set to reveal'));
     box.appendChild(lock);
     return box;
   }
@@ -418,7 +420,9 @@
     if (count && !st.traded) box.appendChild(el('p', 'bd-note', 'Show a code at the counter.'));
     // Golden Ticket slot: shown while it can still be earned or once won.
     // Hidden after "Keep my 4" or stopping at 3 (no near-miss).
-    var ticketOpen = st.bonus && st.bonus.on && !stopped && !kept(st) && nodes.bonus && nodes.bonus.state !== 'off';
+    // At 4 of 4 it shows only while the ticket pack is really on offer.
+    var ticketOpen = st.bonus && st.bonus.on && !stopped && !kept(st) && nodes.bonus && nodes.bonus.state !== 'off' &&
+      (count < 4 || st.next_source === 'bonus');
     if (by.bonus) box.appendChild(ticketCard(st, by.bonus));
     else if (ticketOpen) box.appendChild(ticketCard(st, null));
     $('bd-stop').hidden = !(st.can_stop && !st.ended && st.next_quest === 'app');

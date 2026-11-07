@@ -425,7 +425,7 @@
   a.btn:hover, button.btn:not([disabled]):hover { transform: translateY(-2px); box-shadow: var(--glow); }
   /* The rip stage keeps its live look: square buttons, no lift. */
   .stage .btn { border-radius: 2px; transition: none; }
-  .stage .btn:hover { transform: none; box-shadow: none; }
+  .stage button.btn:not([disabled]):hover, .stage a.btn:hover { transform: none; box-shadow: none; }
   .btn-line { background: transparent; color: var(--gold-light); }
 
   footer {
