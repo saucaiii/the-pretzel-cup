@@ -91,22 +91,30 @@ Function count stays 12 (still `?resource=packs`).
   Beats: regular timing table unchanged; bonus adds about 1.5 s to the
   rain and stamp (ends near 7.5 s).
 - **Mystery reward, revealed at the counter (user decision 2026-11-06:
-  "Find out in store").** The voucher never names the prize. Default
-  public text: "Golden Bonus unlocked. Show this at the counter to find
-  out what you won."
+  "Find out in store").** The voucher never names the prize.
+- **Golden Ticket voucher (user decision 2026-11-06).** Default public
+  title "Golden Ticket", default line "Visit the Pretzel Factory to
+  claim your prize." Look: a ticket shape (notched ends, perforation
+  line before the code stub) in solid brand golds only: gold-light
+  #F2E7A4 body, gold #D4B662 border and stub, gold-deep #B2872F
+  perforation and type accents, black text on gold. Gold-to-gold
+  shimmer once on reveal (existing rule); no gradients beyond that, no
+  shadows. It sits in the voucher stack like the others, marked
+  "BONUS".
 - **Still deterministic, not a sweepstakes:** the reward is a single
   fixed item set in `/ops/qr`. Everyone who unlocks the bonus in an
   offer gets the same thing. No random draw, no prize pool, no odds.
   "Mystery" only means the name is hidden until the counter.
-- Settings in `/ops/qr`: on/off; public text (max 120 chars, defaults
-  to the wording above); **"What staff give"** (internal only, max 60
+- Settings in `/ops/qr`: on/off; public title (max 40 chars, default
+  "Golden Ticket"); public line (max 120 chars, default "Visit the
+  Pretzel Factory to claim your prize."); **"What staff give"** (internal only, max 60
   chars, e.g. "Free dip with any pretzel"). Off by default; cannot be
   turned on while "What staff give" is empty.
 - "What staff give" never reaches the public page, the public offer GET
   or the player state API. It is shown only on the staff side: in
   `/ops/qr` (operator session) and on the redeem sheet after a correct
   staff PIN.
-- Both texts are copied onto the voucher when it opens, so staff hand
+- All three texts are copied onto the voucher when it opens, so staff hand
   over what was set at the time even if the setting changes later.
 
 **5. Gentle escalation (collect-the-set, not slot machine)**
@@ -128,8 +136,9 @@ Function count stays 12 (still `?resource=packs`).
 
 ## API and data changes
 - `p11_pretzel_packs_bonus.sql` (new): `pack_vouchers.source` check adds
-  `'bonus'`; new nullable columns `prize_public text` (length <= 120)
-  and `prize_staff text` (length <= 60). Existing rows untouched;
+  `'bonus'`; new nullable columns `prize_title text` (length <= 40),
+  `prize_public text` (length <= 120) and `prize_staff text`
+  (length <= 60). Existing rows untouched;
   reversible (`down` noted in the file). RLS stays deny-all.
 - `api/_packs.js`:
   - Opening order: first, instagram, email, bonus, app.
@@ -137,19 +146,20 @@ Function count stays 12 (still `?resource=packs`).
     and the offer's bonus is on with text. It does not count toward the
     4 pretzels (`MAX_PACKS` stays 4); the unique
     (player_id, offer_key, source) still caps it at 1.
-  - Opening a bonus voucher snapshots `prize_public` and `prize_staff`.
+  - Opening a bonus voucher snapshots `prize_title`, `prize_public` and
+    `prize_staff`.
   - State gains `trail` (ordered nodes with state locked / ready /
-    done / off), `next_quest`, `bonus` (`{on, text}`, public text
-    only), `collected`. `publicVoucher` never includes `prize_staff`.
+    done / off), `next_quest`, `bonus` (`{on, title, text}`, public
+    texts only), `collected`. `publicVoucher` never includes `prize_staff`.
   - Redeem: after a correct PIN, the response includes `prize_staff`
     for bonus codes so the sheet shows "Give: ...". Wrong PIN or a
     lookup without PIN never returns it. Stats add bonus opened /
     redeemed.
-- `api/_qr.js`: offer gains `bonus_on` (boolean), `bonus_text` (public,
-  defaults to the wording above) and `bonus_staff` (internal, 1 to 60
+- `api/_qr.js`: offer gains `bonus_on` (boolean), `bonus_title` and
+  `bonus_text` (public, default to the Golden Ticket wording above) and `bonus_staff` (internal, 1 to 60
   chars, required when on). The public offer GET strips `bonus_staff`;
   only the operator GET returns it.
-- `/ops/qr`: bonus toggle, public text, "What staff give" field (marked
+- `/ops/qr`: bonus toggle, ticket title and line, "What staff give" field (marked
   internal); stats rows.
 - Merge on email verify (existing rule): the bonus slot follows the
   same void-duplicate rule as the other slots.
@@ -159,7 +169,8 @@ Function count stays 12 (still `?resource=packs`).
 2. `_packs.js` + `_qr.js`: order, bonus source, prize snapshot, state
    shape, settings validation, stats.
 3. Tests: order, bonus unlock only with IG + email + setting on, bonus
-   not counted in 4, once per player, both texts snapshotted, cannot
+   not counted in 4, once per player, all three texts snapshotted,
+   Golden Ticket defaults applied when title/line are empty, cannot
    enable with empty staff text, merge voids a duplicate bonus, staff
    text absent from public offer GET / state / open responses (deep
    search of the JSON), present only after a correct redeem PIN.
@@ -198,7 +209,7 @@ Function count stays 12 (still `?resource=packs`).
   column); human applies; rollback statement in the file.
 - **Mystery reward read as a sweepstakes:** one fixed item per offer,
   same for everyone who unlocks it, earned by actions not drawn; copy
-  says "find out what you won", never "chance" or "could win".
+  says "claim your prize", never "chance" or "could win".
 - **Staff text leaking to the public:** kept out of `publicVoucher`,
   the public offer GET and state; tests assert it; shown only after a
   correct PIN.
@@ -214,7 +225,7 @@ Function count stays 12 (still `?resource=packs`).
 ## Rollback / escalation
 - Turn the game or the bonus off in `/ops/qr` (no deploy).
 - Code: `git revert` of the v3 commits returns to v2 + popup.
-- Migration: drop the `prize_public` and `prize_staff` columns and
+- Migration: drop the three `prize_*` columns and
   restore the old check (only
   if no bonus rows exist).
 - Escalate on any need for a new function, `vercel.json`, `api/_lib/`,
