@@ -1,7 +1,7 @@
 # Working memory (short-term). Keep under 60 lines.
 Branch: agent/pretzel-share
 Task: pretzel-share (pretzel 4 = "Share with your group chat")
-Status: review fixes done; draft PR next. Human applies p21, merges, deploys, then applies p22.
+Status: p21 APPLIED to production (agent, user-authorized). Waiting for the user to merge #33; then agent deploys and applies p22.
 Started: 2026-11-07T09:05Z (plan approved by the user with approve-plan.sh, same day)
 
 ## Context
