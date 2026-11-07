@@ -2,9 +2,11 @@
    rule here is scoped to the game, which only shows when the API says
    the game is on. With the game off the page is unchanged.
 
-   Brand: solid palette colours only, square corners, no shadows, no hover
-   animation. Gold-to-gold shimmer only. Logo flat and upright, never
-   tilted, cropped or recoloured. Original pack design. */
+   Brand (2026-11-06 redesign, see .agent/decisions.md): the rip stage
+   keeps the black live look. Everywhere else: green first, gradients and
+   glows, soft shadows, rounded cards, plate texture. Logo flat and
+   upright, never tilted, cropped or recoloured. No odds, no near-misses,
+   no timers. Original pack design. */
 
 body.game-on #offer-section,
 body.game-on #claim-section,
