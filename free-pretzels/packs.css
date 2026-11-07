@@ -10,7 +10,6 @@
 
 body.game-on #offer-section,
 body.game-on #claim-section,
-body.game-on .plate,
 body.game-on .hero { display: none !important; }
 
 .sr-only {
@@ -34,39 +33,88 @@ body.game-on .hero { display: none !important; }
 }
 .g-hint[hidden] { display: none; }
 
-/* ─── welcome popup ───────────────────────────────────────────── */
-/* Semi-transparent grey box over the live carousel. Square corners, no
-   shadow. The headline slams in, then the card rumbles (sideways only). */
+/* ─── welcome popup: the word wall ─────────────────────────────── */
+/* A green plate card over the live carousel: the brand-word wall with
+   CRAVE lit, the logo on a flat pad (clear space kept), the headline
+   slams in, then "Rip your free pack" with the foil pack beside it. */
 .g-pop {
   position: fixed; inset: 0; z-index: 40;
   display: grid; place-items: center; padding: 20px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
 }
 .g-pop[hidden] { display: none; }
 .g-pop-card {
+  position: relative;
   width: min(100%, 380px);
   padding: 26px 22px 24px;
-  background: rgba(109, 110, 113, 0.82); /* brand gray #6D6E71, semi-transparent */
+  background: rgba(109, 110, 113, 0.82); /* step popup: brand gray, translucent */
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  border: 2px solid var(--gold-deep); border-radius: 0;
+  border: 1px solid rgba(242, 231, 164, 0.35); border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
   color: var(--white); text-align: center;
 }
-.g-pop-logo { width: min(62vw, 220px); height: auto; margin: 0 auto; }
+.ww-card {
+  overflow: hidden;
+  padding: 0 0 22px;
+  --ww-ink: rgba(242, 231, 164, 0.26);
+  --ww-dim: rgba(255, 255, 255, 0.12);
+  --ww-line: rgba(242, 231, 164, 0.5);
+  background:
+    radial-gradient(ellipse 80% 34% at 50% 14%, rgba(242, 231, 164, 0.30), transparent 70%),
+    linear-gradient(180deg, rgba(8, 53, 33, 0) 30%, var(--green) 78%),
+    var(--plate-photo) center top / cover no-repeat,
+    var(--green);
+  border: 2px solid var(--gold-deep);
+  box-shadow: var(--shadow-2), 0 0 40px rgba(212, 182, 98, 0.25);
+}
+.ww-card .ww-row { font-size: clamp(26px, 9vw, 40px); }
+.ww-card .ww { padding-top: 10px; }
+.g-pop-lockup {
+  position: relative; z-index: 1;
+  display: inline-block; margin: -18px auto 0;
+  --lw: min(38vw, 150px);
+  padding: calc(var(--lw) * 0.125);
+  background: var(--green); border-radius: 22px;
+  box-shadow: var(--shadow-1), 0 0 0 1px rgba(242, 231, 164, 0.12);
+}
+.g-pop-logo { width: var(--lw); height: auto; margin: 0 auto; }
 .g-pop-tag {
-  margin: 14px 0 0; font-family: var(--display); font-size: 18px; line-height: 1;
+  margin: 14px 0 0; font-family: var(--display); font-size: 15px; line-height: 1;
   letter-spacing: 0.01em; color: var(--white);
 }
 .g-pop-title {
-  margin: 22px 0 0; font-family: var(--display); font-weight: 400;
-  font-size: clamp(34px, 11vw, 52px); line-height: 0.95; letter-spacing: 0.01em;
-  text-transform: uppercase; color: var(--gold); overflow-wrap: anywhere;
+  position: relative; z-index: 1;
+  margin: 16px 18px 0; font-family: var(--display); font-weight: 400;
+  font-size: clamp(32px, 10vw, 46px); line-height: 0.95; letter-spacing: 0.01em;
+  text-transform: uppercase; color: var(--gold-light); overflow-wrap: anywhere;
+  text-shadow: 0 2px 0 var(--green-deep), 0 0 24px rgba(212, 182, 98, 0.45);
 }
 .g-pop-stamp {
-  display: inline-block; margin: 14px 0 0; padding: 6px 14px;
+  display: inline-block; margin: 12px 0 0; padding: 6px 14px; border-radius: 999px;
   background: var(--gold); color: var(--black);
-  font-family: var(--display); font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase;
+  font-family: var(--display); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
 }
 .g-pop-stamp[hidden] { display: none; }
-.g-pop-go { margin-top: 22px; min-width: 220px; font-size: 17px; }
+.g-pop-cta {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin: 18px 18px 0;
+}
+.g-pop-pack {
+  width: 58px; height: auto; flex: none;
+  transform: rotate(-9deg);
+  border-radius: 4px;
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.4);
+  transition: transform 0.25s var(--ease);
+}
+.g-pop-cta:hover .g-pop-pack { transform: rotate(-3deg) translateY(-4px); }
+.g-pop .g-pop-go {
+  min-width: 0; flex: 0 1 auto; min-height: 54px; padding: 0 22px; font-size: 16px; white-space: nowrap; border-radius: 999px;
+  background: linear-gradient(180deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
+  border-color: var(--gold-deep); color: var(--black);
+  box-shadow: 0 4px 0 var(--gold-deep), var(--glow);
+}
+.g-pop .g-pop-go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--gold-deep), var(--glow); }
 .game .g-eyebrow {
   margin: 0 0 6px; font-family: var(--display); font-size: 16px;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-light);
