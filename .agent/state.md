@@ -1,49 +1,26 @@
 # Working memory (short-term). Keep under 60 lines.
-Branch: agent/pretzel-packs
-Task: pretzel-packs
-Status: implemented, reviewed, fixes applied; ready for draft PR
-Started: 2026-11-06T03:15Z
+Branch: agent/pretzel-packs-v3
+Task: pretzel-packs-v3 (green theme, quest loop, golden bonus)
+Status: plan written, WAITING for human scope + approve-plan.sh
+Started: 2026-11-06
+
+## Context
+- Previous task (pretzel-packs v1/v2 + popup) is merged and live (main 893a774).
+  Its notes are in git history of this file.
+- Request relayed by the ops/qr session (local_7f43c8af) with the user's words:
+  no black backgrounds, remove "Want another?", keep people in the loop to 4,
+  "not a gambling site", email + Instagram unlock a special bonus.
 
 ## Progress
-- Created isolated worktree. Scope: api/leads.js api/_packs.js api/_qr.js ops/qr/ free-pretzels/ supabase/migrations/p10_pretzel_packs.sql tests/ .agent/
-- Plan approved by human (approve-plan.sh). Plan file not edited by the agent.
-- Step 1 migration p10_pretzel_packs.sql: done (NOT applied; human step).
-- Step 2 api/_packs.js + leads.js dispatch: done. Function count unchanged (12).
-- Step 3 _qr.js game + instagram_handle, /ops/qr toggle + pack stats: done.
-- Step 4 free-pretzels game UI (packs.js, packs.css, index.html): done.
-- Step 5 magic-link email via _lib/gmail.js sendEmail (file not edited). Real send NOT verified.
-- Step 6 tests/packs.test.mjs: npm test 164/164.
-- Step 7 guardrails.sh 106/106. Visual check on a local mock (real handlers, in-memory store), 375px + desktop: beats, Skip, reduced motion (matchMedia override), game off, API down, email verify, Instagram, 3 of 3, redeem, /ops/qr. Beat marks 0 / 0.9 / 2.0 / 2.5 / 3.3 / 6.0 s (re-checked after fixes).
-- PR #26 is merged into main (merge commit), so the draft PR targets main, not agent/qr-scan-redirect.
+- Branch agent/pretzel-packs-v3 created from origin/main.
+- Plan v3 written to .agent/plan.md. No code edited.
 
-## Review round 1 (reviewer subagent): not ready -> fixed
-- Root cause: reasoning error in identity/merge design (GET verify hijack, 4 codes per email, verify reporting success after clashes); tool misuse of Redis (INCR then EXPIRE); context issue (PostgREST 1000-row cap, insert of all defaults).
-- Fixed: POST verify bound to requesting player, one email per player, void duplicate slots, SET NX EX limits, open limit 60, head-count stats, CAS + per-code PIN cap, own-host email links, start date required with game on, front canvas for burst.
-- Deviation from plan API list (flag in PR): GET verify redirects, POST {action:'verify'} confirms.
+## Next
+- Human: set scope to the plan's Scope line, run scripts/agent/approve-plan.sh.
+- Then build steps 1 to 9 of the plan.
 
-## Environment notes
-- Worktree had no node_modules: ran npm ci (context/environment issue, fixed, 1 try).
-- Empty failures.json retry-test issue from main checkout did not reproduce here.
-- eval-report "Scope match: fail": scope-check.sh wants a **Scope (paths/files):** line; the approved plan uses a "## Scope" list. Not fixable without voiding approval; PR body carries the line.
-- 1 policy block in the audit log: my own shell read of the human-owned control folder (tool misuse). Not retried.
-
-## Not verified
-- Supabase adapter against a real DB. Real Gmail send. Frame rate on a real phone. OS-level prefers-reduced-motion (JS path verified). Code scanning alerts (GitHub MCP down).
-
-## v2 (plan v2 approved via approve-plan.sh)
-- Retry 1 (local mock restart): curl URL with unquoted `?` hit zsh globbing. Root cause: tool misuse. Change: quote URLs, start the server with run_in_background.
-- Built: app source + cap 4 (be2424c), three.js vendored (8eef382, sha512 matches registry), 3D packs + carousel (307e205), ops App Store field (7a07893). npm test 166/166, guardrails 106/106.
-- Visual (local mock, 375px + desktop): 3D gold foil carousel, drag snaps, 3D stage spin/tear/rip, beats 0/0.9/2.0/2.5/3.3/6.0 s, App Store tap opens the real link and unlocks, no-3D fallback (three.js refused) works.
-- User-directed design changes after approval: plain gold foil + logo only, tear at top 20%, hint "Swipe to rip the pack!" (decisions.md).
-- Values from the user for /ops/qr (human publishes): App Store https://apps.apple.com/us/app/philly-pretzel-factory/id1185574639 ; Instagram phillypretzelfactory_fs.
-- Official badge files not supplied: text buttons until free-pretzels/packs/app-store-badge.svg and instagram-glyph.svg exist.
-
-## Go-live (after PR #27 merged; user explicitly authorized the agent in chat to run these, waiving "prepare only")
-- Migration p10_pretzel_packs applied via Supabase MCP; 3 tables, RLS on.
-- PACKS_STAFF_PIN generated locally, set (sensitive, prod+preview) via vercel CLI; value only in ~/Desktop/PPF-staff-PIN.txt (0600), never printed.
-- Edge Config store pretzel-cup-offer (ecfg_bjjjvawtdnkrwswuq0qiovim08ud) created with offer (2026-11-05..12, game on) + scan_target; read token created; EDGE_CONFIG (sensitive) and EDGE_CONFIG_ID set prod+preview.
-- Production deploy: refused by the session permission check. Human runs `npm run deploy`.
-- Still human: EDGE_CONFIG_WRITE_TOKEN (Vercel account token) so /ops/qr can edit the offer.
-
-## Handoffs
-- implementer (this session) -> reviewer subagent: branch diff vs agent/qr-scan-redirect. Result: not ready, 8 findings + 2 deviations; all fixed in 2d62104, 44beb15.
+## Carried constraints
+- Deploy only from this worktree (gitignored brand fonts live here).
+- Never commit font files or the brand guide PDF (public repo).
+- p10 migration is applied: never edit it; new changes go in p11.
+- EDGE_CONFIG_WRITE_TOKEN still unset, so /ops/qr cannot save offers yet.
