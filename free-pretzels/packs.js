@@ -414,7 +414,7 @@
     box.appendChild(ticketPicture());
     var lock = el('div', 'bt-lock');
     lock.appendChild(el('p', 'bt-name', 'Golden Ticket'));
-    lock.appendChild(el('p', 'bt-hint', st.next_source === 'bonus' ? 'Set complete. Keep or trade?' : 'Complete the set to reveal'));
+    lock.appendChild(el('p', 'bt-hint', st.next_source === 'bonus' ? 'Set complete. Keep or spin?' : 'Complete the set to reveal'));
     box.appendChild(lock);
     return box;
   }
@@ -524,7 +524,7 @@
     var resume = $('q-resume');
     resume.hidden = !(waiting && waiting !== 'end' && !panel);
     if (waiting === 'quest' && QUEST[st.next_quest]) resume.textContent = QUEST[st.next_quest].resume;
-    if (waiting === 'deal') resume.textContent = 'Keep or trade?';
+    if (waiting === 'deal') resume.textContent = 'Keep or spin?';
     if (panel && $('g-pop').hidden && $('stage').hidden) openStep(panel);
     else if (!panel && !pop.hidden) closeStep();
   }
@@ -1227,10 +1227,9 @@
     // Keep or trade. Trading shows the Golden Ticket pack to open; the
     // server records the trade when it opens. Keeping ends the game here.
     $('deal-trade').addEventListener('click', function () {
-      S.trade = true;
-      if (S.state) render(S.state);
-      var c = slots()[S.center];
-      if (c) c.focus({ preventScroll: true });
+      if (!S.state) return;
+      closeStep();
+      Slot.open();
     });
     $('deal-keep').addEventListener('click', function () {
       if (!S.state) return;
@@ -1271,6 +1270,157 @@
     });
 
   }
+
+  // ─── Golden Ticket spins ──────────────────────────────────────────
+  // Four reels. Spin n locks reel n on a pretzel (no losing spins, no
+  // near-misses). Spin 4 asks the server to open the ticket; the reel
+  // lands only when that succeeds, then the win panel shows the ticket.
+  var Slot = (function () {
+    var SYMS = [ASSETS + 'pretzel.webp', ART + 'pretzel-dog-cut.webp', ART + 'cinnamon-rivet-cup-cut.webp',
+      ASSETS + 'rivet-pair.webp', ASSETS + 'rivet-salted-long.webp'];
+    var LEN = 11; // symbols per strip; the last one is the pretzel
+    var spun = 0, busy = false, voucher = null, built = false;
+    function reels() { return Array.prototype.slice.call($('reels').querySelectorAll('.reel')); }
+    function build() {
+      if (built) return;
+      built = true;
+      reels().forEach(function (r, ri) {
+        var strip = r.querySelector('.reel-strip');
+        for (var k = 0; k < LEN; k++) {
+          var img = el('img');
+          img.src = k === LEN - 1 ? SYMS[0] : SYMS[1 + ((k + ri) % (SYMS.length - 1))];
+          img.alt = ''; img.decoding = 'async'; img.draggable = false;
+          strip.appendChild(img);
+        }
+      });
+      $('slot-spin').addEventListener('click', spin);
+      $('slot-later').addEventListener('click', later);
+      $('slot-done').addEventListener('click', done);
+      $('slot-redeem').addEventListener('click', function () { if (voucher) openRedeem(voucher.code, $('slot-redeem')); });
+      $('slot').addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { e.preventDefault(); if (!$('slot-win').hidden) done(); else if (!busy) later(); }
+        if (e.key === 'Tab') trapTab(e, $('slot'));
+      });
+    }
+    function reset() {
+      spun = 0; busy = false; voucher = null;
+      reels().forEach(function (r) {
+        r.classList.remove('locked', 'spinning');
+        var st = r.querySelector('.reel-strip');
+        st.getAnimations && st.getAnimations().forEach(function (a) { a.cancel(); });
+        st.style.transform = 'translateY(0)';
+      });
+      $('slot').classList.remove('won');
+      $('slot-play').hidden = false;
+      $('slot-win').hidden = true;
+      $('slot-status').textContent = '';
+      count();
+    }
+    function count() {
+      $('slot-count').textContent = spun < 4 ? 'Spin ' + (spun + 1) + ' of 4' : 'All 4 locked';
+      $('slot-spin').textContent = spun === 3 ? 'Spin for the Golden Ticket' : 'Spin';
+      $('slot-later').hidden = spun >= 3 && busy;
+    }
+    // Land reel i on its last symbol (the pretzel).
+    function land(i, ms) {
+      var r = reels()[i], st = r.querySelector('.reel-strip');
+      var h = r.clientHeight, end = 'translateY(' + (-(LEN - 1) * h) + 'px)';
+      r.classList.add('spinning');
+      return new Promise(function (res) {
+        var finish = function () { st.style.transform = end; r.classList.remove('spinning'); r.classList.add('locked'); res(); };
+        if (reduced() || !st.animate) return finish();
+        var a = st.animate([{ transform: 'translateY(0)' }, { transform: end }], { duration: ms, easing: 'cubic-bezier(.12,.75,.2,1.04)' });
+        a.onfinish = finish;
+        setTimeout(finish, ms + 300); // never stall
+      });
+    }
+    function spin() {
+      if (busy || spun >= 4) return;
+      busy = true;
+      $('slot-spin').disabled = true;
+      $('slot-status').textContent = '';
+      var i = spun;
+      if (i < 3) {
+        land(i, 1100 + 150 * i).then(function () {
+          spun++; busy = false;
+          $('slot-spin').disabled = false;
+          $('slot-live').textContent = 'Reel ' + spun + ' locked on a pretzel. ' + (4 - spun) + ' to go.';
+          count();
+          $('slot-spin').focus({ preventScroll: true });
+        });
+        return;
+      }
+      // Spin 4: the server opens the Golden Ticket (this is the trade).
+      count();
+      var t0 = performance.now();
+      api('POST', { action: 'open' }).then(function (r) {
+        var v = r.ok && r.data && r.data.voucher;
+        if (!v || v.source !== 'bonus') {
+          busy = false;
+          $('slot-spin').disabled = false;
+          count();
+          if (r.data && r.data.state && r.data.state.game) S.state = r.data.state;
+          $('slot-status').textContent = (r.data && r.data.error) || 'We could not finish the spin. Your pretzels are safe. Try again.';
+          return;
+        }
+        S.state = r.data.state;
+        voucher = v;
+        var wait = Math.max(0, 300 - (performance.now() - t0));
+        setTimeout(function () { land(3, 1600).then(win); }, wait);
+      }, function () {
+        busy = false;
+        $('slot-spin').disabled = false;
+        count();
+        $('slot-status').textContent = 'No connection. Your pretzels are safe. Try again.';
+      });
+    }
+    function win() {
+      spun = 4; busy = false;
+      $('slot').classList.add('won');
+      $('slot-live').textContent = 'All 4 locked. You won the Golden Ticket. Your code is ' + spell(voucher.code) + '.';
+      setTimeout(function () {
+        $('slot-play').hidden = true;
+        $('slot-win').hidden = false;
+        var box = $('slot-ticket');
+        box.textContent = '';
+        var art = el('div', 'bt-art');
+        art.appendChild(ticketVideo(voucher.code, false));
+        var face = el('div', 'bt-face');
+        face.appendChild(el('p', 'bt-name', voucher.title || 'Golden Ticket'));
+        face.appendChild(el('p', 'vc-code', voucher.code));
+        art.appendChild(face);
+        box.appendChild(art);
+        $('slot-text').textContent = voucher.text || 'Show this at the counter.';
+        $('slot-meta').textContent = 'Good through ' + fmtDay(voucher.expires_at) + '. Show this at the counter.';
+        $('slot-done').focus({ preventScroll: true });
+      }, reduced() ? 0 : 900);
+    }
+    function later() {
+      close();
+      S.dealLater = true;
+      if (S.state) render(S.state);
+      $('q-resume').focus();
+    }
+    function done() {
+      close();
+      if (S.state) { uiSet({ endSeen: endKey(S.state) }); render(S.state); }
+      var b = $('binder');
+      if (b && !b.hidden) b.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+    }
+    function close() {
+      $('slot').hidden = true;
+      if ($('stage').hidden && $('redeem').hidden && $('g-step').hidden) document.documentElement.classList.remove('stage-open');
+    }
+    function open() {
+      build();
+      reset();
+      $('slot').hidden = false;
+      document.documentElement.classList.add('stage-open');
+      $('slot-spin').disabled = false;
+      $('slot-spin').focus({ preventScroll: true });
+    }
+    return { open: open };
+  })();
 
   // ─── welcome popup ────────────────────────────────────────────────
   // Logo and tagline, the offer headline slams in, the card rumbles.
