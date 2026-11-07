@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Free Pretzels | Philly Pretzel Factory Lynbrook + Franklin Square</title>
+<title>Free Pretzels at Philly Pretzel Factory 🥨</title>
 <meta name="description" content="Free pretzels at Philly Pretzel Factory in Lynbrook and Franklin Square." />
 <!-- Share card (1200x630): art/og-free-pretzels.jpg -->
 <meta property="og:type" content="website" />
@@ -397,6 +397,12 @@
   .stage .btn { border-radius: 2px; transition: none; }
   .stage button.btn:not([disabled]):hover, .stage a.btn:hover { transform: none; box-shadow: none; }
   .btn-line { background: transparent; color: var(--gold-light); }
+  /* Page share: same message as the group chat quest (packs.js). */
+  .page-share { margin: 22px 0 0; }
+  .page-share .btn { gap: 10px; }
+  .page-share .btn svg { width: 18px; height: 18px; flex: none; }
+  .page-share-status { margin: 8px 0 0; min-height: 1.4em; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+  footer .page-share { margin: 0 0 22px; }
 
   footer {
     background: linear-gradient(var(--black), var(--black)) 0 36px / 100% 100% no-repeat, var(--diamond) 0 0 / 48px 24px, var(--black);
@@ -437,6 +443,10 @@
     <h1 id="o-headline">Free<br />Pretzels.</h1>
     <p class="stamp" id="o-stamp" hidden></p>
     <p class="sub">Lynbrook. Franklin Square. Fresh out of the oven.</p>
+    <div class="page-share">
+      <button class="btn btn-line js-page-share" type="button" aria-describedby="page-share-status-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Share with friends</button>
+      <p class="page-share-status" id="page-share-status-top" role="status"></p>
+    </div>
   </div>
   <div class="hero-food" aria-hidden="true">
     <div class="frame" style="--tilt:6deg"><picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img class="pop" src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="" loading="lazy" decoding="async" /></picture></div>
@@ -682,6 +692,10 @@
 
 <footer>
   <div class="wrap">
+    <div class="page-share">
+      <button class="btn btn-line js-page-share" type="button" aria-describedby="page-share-status-foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>Share with friends</button>
+      <p class="page-share-status" id="page-share-status-foot" role="status"></p>
+    </div>
     <div id="fine-static" class="placeholder">
       <span class="tag">Placeholder: fine print</span>
       <p>[TERMS, e.g. "Limit one per guest. Expires MM/DD/YYYY. Lynbrook and Franklin Square only."]</p>
