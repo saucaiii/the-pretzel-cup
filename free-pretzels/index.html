@@ -482,7 +482,7 @@
         <div class="vouchers" id="vouchers"></div>
         <!-- Reopens the step popup after "Skip for now". -->
         <button class="btn btn-solid q-resume" id="q-resume" type="button" hidden></button>
-        <button class="bd-stop" id="bd-stop" type="button" hidden>I don't need another app</button>
+        <button class="bd-stop" id="bd-stop" type="button" hidden>No thanks, I hate delicious and free pretzels.</button>
       </div>
     </div>
 
@@ -522,12 +522,16 @@
             </form>
           </div>
 
-          <div class="q-body" id="q-app" hidden>
-            <p>Get the Philly Pretzel Factory app, then come back here for your next pack.</p>
+          <div class="q-body" id="q-share" hidden>
+            <p>Send the game to your group chat, then come back here for your last pack.</p>
             <p class="q-gold" id="q-gold" hidden>Finish all 4 to unlock the Golden Ticket deal.</p>
             <div class="q-actions">
-              <button class="btn btn-solid" id="app-btn" type="button"><img class="badge" id="app-badge" alt="" hidden /><span>Download on the App Store</span></button>
-              <button class="btn btn-line" id="stop-btn" type="button" hidden>I don't need another app</button>
+              <button class="btn btn-solid" id="share-btn" type="button">Share with your group chat</button>
+              <!-- No Web Share (desktop, older browsers): a text message with the
+                   same words, or copy the link. packs.js sets the href. -->
+              <a class="btn btn-solid" id="share-sms" href="sms:" hidden>Text your group chat</a>
+              <button class="btn btn-line" id="share-copy" type="button" hidden>Copy link</button>
+              <button class="btn btn-line" id="stop-btn" type="button" hidden>No thanks, I hate delicious and free pretzels.</button>
             </div>
             <div class="q-confirm" id="stop-confirm" hidden>
               <p>End your game? You keep your 3 pretzels.</p>
@@ -536,7 +540,7 @@
                 <button class="btn btn-line" id="stop-no" type="button">Keep playing</button>
               </div>
             </div>
-            <p class="b-status" id="app-status" role="status"></p>
+            <p class="b-status" id="share-status" role="status"></p>
           </div>
 
           <button class="q-skip" id="q-skip" type="button">Skip for now</button>

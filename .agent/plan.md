@@ -1,46 +1,72 @@
-# Plan: pretzel-redesign (make /free-pretzels as fun as the game, outside the rip)
-(Drafted by the planner subagent in session local_a6387455; save as .agent/plan.md. Base is origin/main 18e87d6, PR #29/#30 merged, so no stacking.)
+# Plan: pretzel 4 = "Share with your group chat" (task pretzel-share)
 
-Risk: **medium**. Operational medium (public page under `free-pretzels/`, every step revertible). Security low (no auth, secrets, api/, hooks, MCP, agent tools). Compliance medium-high (outward-facing franchise branding, AI-generated art, new third-party font). No path in the CLAUDE.md high table is touched. Deploying is **critical** and not part of this plan.
+Risk: **High** (`supabase/migrations/` is in HIGH_RISK_RE; server game rules change).
+Applying the migrations to production is **Critical**: prepared only, a human applies them
+(or confirms directly in the agent's session first).
+No fairness flag: no new automated decisions about people beyond the existing honor-system unlock.
 
 ## Goal
-Redesign every surface of /free-pretzels except the pack carousel and rip sequence: word-wall landing hero, factory-line quest map (Mix, Twist, Bake, Win) with a "you are here" marker, collector's binder for won vouchers ("3 of 4", empty slots show their quest, Golden Ticket as the shiny missing slot), real food photos breaking out of frames, and the new Higgsfield art (foil wrapper, diamond-plate spotlight, Golden Ticket image + shimmer MP4). The full game loop and every packs.js hook keep working.
+Pretzel 4 on /free-pretzels changes from "Download the app" to "Share with your group chat".
+The button opens the phone's share sheet (`navigator.share`) with
+"I just won free pretzels from Philly Pretzel Factory 🥨 Rip a pack and win yours:" plus the page link.
+No Web Share (desktop): an `sms:` link with the same body prefilled, plus a "Copy link" button.
+Pack 4 unlocks on the honor system after the share. Completing the share opens the Golden Ticket
+(keep-or-spin) exactly as the app step does today.
 
-## Scope
-**Scope:** free-pretzels/index.html, free-pretzels/packs.css, free-pretzels/packs.js, free-pretzels/pack3d.js, free-pretzels/art/, .agent/
-- packs.js: rendering only (`renderTrail`, `renderVouchers`, ticket video). No API, state or flow changes.
-- pack3d.js: only if the user later says yes to C1/C6.
-- Out of scope: api/, api/_lib/, vercel.json, supabase/migrations/, scripts/, tests/, ops/, and every guardrail folder (hooks, policy, control).
+## User decisions (2026-11-07, directly in session pretzel-share)
+- Rename the source to `share` everywhere, DB included (not keep `app`).
+- "Completing the share opens the door to play for the Golden Ticket": the share step is always on
+  (no App Store link); the Golden Ticket needs `bonus_on` + the Instagram handle only.
+- Stop button text: "No thanks, I hate delicious and free pretzels." Same behaviour (ends at 3).
+- Message wording: "Won mine, your turn" (above).
 
-## Decisions so far (defaults until the user says otherwise)
-- C1 Stage background: KEEP BLACK (decision 48). Green plate on quest map, binder, rest of page.
-- C2 Word wall is both `.hero` (game off) and the `#g-pop` welcome card (game on); logo unaltered, clear space 12.5%, "Made to Crave®".
-- C3 Golden Ticket = 5th gold "Ticket" node after Win, only when `bonus.on`.
-- C4 No near-miss: after "Keep my 4" or stop at 3, hide the ticket slot; show "Set complete" / "Your set".
-- C5 Photos: the user's real photos are already in the repo: `free-pretzels/packs/pretzel.webp` and `rivet-*.webp` (user sent them in chat). Use those; never AI food imagery.
-- C6 3D pack: KEEP procedural foil. foil-pack.webp used on hero CTA pack, no-WebGL fallback packs, binder card backs.
+## Scope (set by the human in the task's control folder)
+free-pretzels/  api/_packs.js  api/_qr.js  ops/qr/  tests/  supabase/migrations/  .agent/
+No new serverless function. `api/_lib/`, `vercel.json` untouched.
 
-## Steps (app works after each; one commit each)
-1. Memory: state.md for this branch; append decisions (loosened brand rules; diamond plate anywhere, supersedes "top only" of decision 17; fonts Archivo Black, Montserrat, Caveat + Rock Salt (Apache 2.0) for "Salted"; C-item outcomes).
-2. Assets into `free-pretzels/art/` from the notes folder `redesign-assets/`. Shimmer does not loop cleanly (first vs last frame PSNR 23.8 dB): play once, hold last frame.
-3. Tokens and fonts: Rock Salt added to the Google Fonts link; `--glow --shadow-1/2 --radius --ease`; global reduced-motion block.
-4. Word wall hero + welcome popup. CTA "Rip your free pack" (`#g-pop-go` text). Keep `#o-headline #o-accent #o-stamp #g-pop-title #g-pop-stamp` as real text; `body[data-layout]` still works.
-5. Food photos breaking out of frames (tilted, overlapping) in hero and a food band.
-6. Sections restyle (offer, claim, locations, footer): rounded cards, soft shadows, plate accents, gradients on decorative layers only; keep offer-script ids; text AA on flat colour.
-7. Factory line (`renderTrail`): Mix, Twist, Bake, Win (+ Ticket), "you are here" marker, aria-labels keep both meanings, keep "Every pack wins."
-8. Binder (`renderVouchers`): "N of 4" header, won cards keep code + "Staff: redeem", empty slots show quest and reopen via the existing `#q-resume` path, ticket slot per C4, decisions 46/47 respected.
-9. Golden Ticket art on ticket vcard and `.st-ticket` face, text in HTML (image is tilted about -6deg); shimmer MP4 `muted playsinline preload=none` + poster, reduced motion = poster only. Rip beats unchanged.
-10. Validate: `npm test`, id check, local mock loop at 375 px and 1280 px, reduced motion, no-WebGL, `tests/guardrails.sh`, `scripts/agent/eval-report.sh`, reviewer subagent, draft PR.
+## Steps
+1. Migration `p21_pretzel_share.sql` (expand, safe with the live code): `pack_players` add
+   `share_at timestamptz`; `pack_vouchers_source_check` allows
+   ('first','email','instagram','app','share','bonus'). Commented rollback.
+2. Migration `p22_pretzel_share_backfill.sql` (contract, run only AFTER the new code is deployed):
+   vouchers 'app' -> 'share', `share_at = coalesce(share_at, app_at)`, check drops 'app'.
+   `app_at` column kept for rollback (drop in a later cleanup). Commented rollback.
+   Why two: renaming 'app' rows while the old code is live would let a mid-game player open a 2nd pretzel 4.
+3. `api/_packs.js`: PRETZELS `[first, instagram, email, share]`; one helper normalizes legacy
+   'app' vouchers / `app_at` to share until p22 runs; `avail.share` always true;
+   `bonusOn` = bonus_on && instagram_handle; `canStop` drops the App Store link check;
+   honor action `share` (same quest-order check, same per-IP limit); `action:'app'` kept as an alias
+   for one release so open tabs keep working; state drops `app_store_url`, has `bonuses.share`;
+   stats `opened.share` / `share_taps` (count legacy 'app' too until p22).
+4. `api/_qr.js` + `ops/qr/index.html`: remove the App Store link field, its hint text and the
+   "Golden Ticket needs the App Store link" warning (old stored value accepted, ignored);
+   stats rows "4. Share packs", "Share taps"; stopped-at-3 label uses the new button text.
+5. `free-pretzels/packs.js` + `index.html`: `#q-share` block with the share button;
+   Web Share -> unlock on success (cancel does nothing); fallback `sms:` link + "Copy link", each
+   unlocks on tap; QUEST/SLOT copy "Share with your group chat"; App Store badge code removed;
+   stop button text changed in the step and the binder.
+6. `tests/packs.test.mjs`: app -> share; new cases: share on without an App Store link; Golden Ticket
+   on without it; legacy 'app' voucher / `app_at` counts as pretzel 4; `action:'app'` alias;
+   stop works without the link.
+7. Validate: `npm test`, `tests/guardrails.sh`, `scripts/agent/eval-report.sh`, mock-server loop at
+   375 px (share button, fallback, unlock, keep-or-spin, stop text), reviewer subagent.
+8. Record state/decisions, push `agent/pretzel-share`, draft PR with the deploy order:
+   apply p21 -> merge -> `npm run deploy` -> apply p22.
 
 ## Success criteria
-- `npm test` all pass (tests don't cover the page HTML). Diff only inside Scope. Id check: every id read by packs.js and the inline offer script exists once in index.html. No gambling words in UI copy (odds, chance, luck, risk, hurry, countdown). `free-pretzels/art/` 2 MB or less; first-load extra (excl. lazy MP4) 700 KB or less.
-- Local mock, 375 px + desktop: full loop (first pack, IG, email link, app, trade with ticket art + shimmer, keep, stop at 3, skip + resume, staff redeem); binder 1 of 4 to 4 of 4; marker moves Mix to Win; word wall shows CRAVE lit with unaltered logo and ®; reduced motion only fades; /ops/qr srcdoc preview still renders.
+- Quantitative: npm test green; guardrails pass; only scope files change; no new file in api/ root.
+- Qualitative: at 375 px step 4 reads "Share with your group chat"; tapping it opens the share sheet
+  (or the sms/copy fallback); after it pack 4 opens and keep-or-spin appears with no App Store link set.
+  Players mid-game on the old app step lose nothing.
 
 ## Risks + mitigations
-- Broken hooks: keep all ids and `.pick/.pk*`, `#stage .st-*`; id check + full loop after Steps 4, 7, 8.
-- Brand departure without corporate sign-off: decision recorded, PR flags it; logo and ® unaltered.
-- Weight: budgets above, lazy video, srcset, decoding=async.
-- Contrast: text on flat colour only. Hobby cap: no new endpoints.
+- Rename while live: expand/contract migrations + legacy read fallback (steps 1-3).
+- Web Share: iOS resolves when sent and rejects on cancel; some browsers resolve on open. Honor
+  system either way, like Instagram.
+- `sms:` body syntax differs (iOS `&body=`, Android `?body=`): use `sms:?&body=`, which both accept.
+- Abuse: same honor-system risk as today; the per-IP rate limit covers `share`.
 
 ## Rollback / escalation
-`git revert <sha>` per step. Escalate on any need for non-rendering logic in packs.js, any need to touch api/, scripts/ or vercel.json, or a check failing after 2 changed retries.
+Revert the PR and redeploy the previous commit. Before p22: nothing to undo (p21 is additive).
+After p22: run its commented rollback (share -> app) before redeploying old code.
+Escalate on a failing migration check, any scope need outside the list, or 2 failed retries.

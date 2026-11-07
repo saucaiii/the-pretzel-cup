@@ -8,12 +8,15 @@
 //                                         (mail scanners never POST)
 //   GET  ?resource=packs&view=stats       operator
 //   POST ?resource=packs {action, ...}    public, JSON + same-origin only
-//        actions: open, email, verify, instagram, app, stop, redeem
+//        actions: open, email, verify, instagram, share, stop, redeem
+//        ('app' is accepted as an alias of 'share' for one release; tabs
+//        opened before the share release still need a reload to render)
 //
 // Rules:
 //   - Every pack wins one free pretzel. No tiers, no chance.
 //   - Quest order: first pack, +1 after an Instagram tap, +1 after a
-//     verified email, +1 after an App Store tap (taps are honor system).
+//     verified email, +1 after a share with their group chat (taps are
+//     honor system: a follow or a send cannot be checked).
 //     Max 4 pretzels. The DB's unique (player_id, offer_key, source)
 //     enforces the cap and makes a double tap mint one voucher, not two.
 //   - Golden Ticket ('bonus'): after all 4, when /ops/qr turns it on, the
@@ -24,7 +27,11 @@
 //     surprise (user decision 2026-11-07). What staff give (bonus_staff,
 //     default "Any one product in store") is shown only after the PIN.
 //   - At 3 (first, Instagram, email) a player may end the game with
-//     "I don't need another app": keeps 3 pretzels, no Golden Ticket.
+//     "No thanks, I hate delicious and free pretzels.": keeps 3 pretzels,
+//     no Golden Ticket.
+//   - Pretzel 4 was 'app' (App Store tap) before 2026-11-07. Until p22
+//     renames old rows, 'app' vouchers and app_at read as 'share' (see
+//     withLegacy).
 //   - pack_games records each player's score and how the game ended.
 //   - Player identity: signed httpOnly cookie `ppf_player` (HMAC with
 //     APP_JWT_SECRET). A verified email follows the person across
@@ -44,7 +51,9 @@ const COOKIE = 'ppf_player';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 180;
 // 4 free pretzels, in quest order, then the Golden Ticket ('bonus').
 const MAX_PACKS = 4;
-const PRETZELS = ['first', 'instagram', 'email', 'app'];
+const PRETZELS = ['first', 'instagram', 'email', 'share'];
+// Pre-p22 rows: pretzel 4 stored as 'app'. Writes always use 'share'.
+const LEGACY_SHARE = 'app';
 const SOURCES = [...PRETZELS, 'bonus'];
 // Golden Ticket defaults (public). What staff hand over is set in
 // /ops/qr as bonus_staff and never leaves the staff side.
@@ -67,7 +76,7 @@ const LIMITS = {
   verify: [20, 600],
   pin_code: [5, 600],
   instagram: [10, 600],
-  app: [10, 600],
+  share: [10, 600],
   stop: [10, 600],
   redeem: [12, 600],
 };
@@ -127,7 +136,7 @@ function unlockedSources(player) {
   const out = ['first'];
   if (player && player.instagram_at) out.push('instagram');
   if (player && player.email_verified_at) out.push('email');
-  if (player && player.app_at) out.push('app');
+  if (player && player.share_at) out.push('share');
   return out;
 }
 
@@ -136,11 +145,11 @@ function pretzelCount(vouchers) {
 }
 
 // Golden Ticket is on only when all 4 pretzels can be earned: the
-// Instagram handle and the App Store link are both set. The staff item
+// Instagram handle is set (the share step is always on). The staff item
 // may be left unset (user decision 2026-11-07): staff then see the
 // current setting at redeem time, or "Prize not set yet".
 function bonusOn(offer) {
-  return !!(offer && offer.bonus_on === true && offer.app_store_url && offer.instagram_handle);
+  return !!(offer && offer.bonus_on === true && offer.instagram_handle);
 }
 
 function bonusTexts(offer) {
@@ -160,14 +169,14 @@ function nextSource(player, vouchers, opts = {}) {
   return unlockedSources(player).find((s) => !used.has(s)) || null;
 }
 
-// "I don't need another app": only at exactly first + instagram + email,
-// before the app pack is unlocked or opened, and only once.
+// "No thanks, I hate delicious and free pretzels.": only at exactly
+// first + instagram + email, before the share pack is unlocked or
+// opened, and only once.
 function canStop(offer, player, vouchers, game) {
   if (game && game.ended) return false;
-  if (!(offer && offer.app_store_url)) return false;
-  if (player && player.app_at) return false;
+  if (player && player.share_at) return false;
   const used = new Set((vouchers || []).map((v) => v.source));
-  return used.has('first') && used.has('instagram') && used.has('email') && !used.has('app');
+  return used.has('first') && used.has('instagram') && used.has('email') && !used.has('share');
 }
 
 // j***@example.com: enough for staff to recognise, no more.
@@ -227,6 +236,30 @@ function voucherExpiry(offer, now) {
   return new Date(now.getTime() + NO_END_TTL_MS);
 }
 
+// Pre-p22 rows: pretzel 4 was stored as 'app' / app_at. Read them as
+// 'share' / share_at so the game, redeem and stats see one name. Safe to
+// keep after p22 (no 'app' rows left).
+function legacyVoucher(v) {
+  return v && v.source === LEGACY_SHARE ? { ...v, source: 'share' } : v;
+}
+function legacyPlayer(p) {
+  return p && !p.share_at && p.app_at ? { ...p, share_at: p.app_at } : p;
+}
+function withLegacy(store) {
+  return {
+    ...store,
+    getPlayer: async (id) => legacyPlayer(await store.getPlayer(id)),
+    findPlayerByEmail: async (email) => legacyPlayer(await store.findPlayerByEmail(email)),
+    async updatePlayer(id, patch) {
+      const r = await store.updatePlayer(id, patch);
+      return r && r.player ? { ...r, player: legacyPlayer(r.player) } : r;
+    },
+    listVouchers: async (pid, key) => (await store.listVouchers(pid, key)).map(legacyVoucher),
+    findVoucher: async (code) => legacyVoucher(await store.findVoucher(code)),
+    burnVoucher: async (...a) => legacyVoucher(await store.burnVoucher(...a)),
+  };
+}
+
 // Public view of a voucher. Never includes prize_staff.
 function publicVoucher(v, now) {
   const out = {
@@ -255,7 +288,7 @@ function bonusState(source, player, vouchers, available) {
 function trailOf(offer, player, vouchers, ended) {
   const used = new Set((vouchers || []).map((v) => v.source));
   const unlocked = new Set(unlockedSources(player));
-  const avail = { first: true, instagram: !!offer.instagram_handle, email: true, app: !!offer.app_store_url };
+  const avail = { first: true, instagram: !!offer.instagram_handle, email: true, share: true };
   const stopped = ended === 'stopped_at_3';
   const nodes = PRETZELS.map((key) => {
     let state;
@@ -277,7 +310,6 @@ function trailOf(offer, player, vouchers, ended) {
 function playerState({ offer, status, player, vouchers, game, gameOk = true, now }) {
   if (!gameLive(offer, status)) return { game: false, status };
   const ig = offer.instagram_handle || '';
-  const app = offer.app_store_url || '';
   const ended = (game && game.ended) || null;
   const score = pretzelCount(vouchers);
   const allowed = Math.min(MAX_PACKS, unlockedSources(player).length);
@@ -312,12 +344,11 @@ function playerState({ offer, status, player, vouchers, game, gameOk = true, now
     completed_all: !!(game && game.completed_all),
     trail,
     instagram: ig || null,
-    app_store_url: app || null,
     email_verified: !!(player && player.email_verified_at),
     bonuses: {
       email: bonusState('email', player, vouchers, true),
       instagram: bonusState('instagram', player, vouchers, !!ig),
-      app: bonusState('app', player, vouchers, !!app),
+      share: bonusState('share', player, vouchers, true),
     },
     bonus: { on: bonusOn(offer), title: bt.title, text: bt.text, state: trail[trail.length - 1].state },
     traded,
@@ -444,7 +475,7 @@ function supabaseStore(sb) {
     async burnPretzels(playerId, key, store, nowIso) {
       const rows = await one(sb.from('pack_vouchers')
         .update({ redeemed_at: nowIso, redeemed_store: store })
-        .eq('player_id', playerId).eq('offer_key', key).in('source', PRETZELS)
+        .eq('player_id', playerId).eq('offer_key', key).in('source', [...PRETZELS, LEGACY_SHARE])
         .is('redeemed_at', null).gt('expires_at', nowIso).select('id'));
       return (rows || []).length;
     },
@@ -459,9 +490,19 @@ function supabaseStore(sb) {
     // Move vouchers to the email's player. A slot the target already
     // used is a duplicate: if unredeemed it is voided (expired now), so
     // one email never holds two live codes for the same slot.
+    // Pre-p22, 'app' and 'share' are the same slot (pretzel 4): a row the
+    // unique index would not catch is voided the same way.
     async moveVouchers(fromId, toId, nowIso) {
-      const rows = await one(sb.from('pack_vouchers').select('id,redeemed_at').eq('player_id', fromId));
+      const rows = await one(sb.from('pack_vouchers').select('id,redeemed_at,source,offer_key').eq('player_id', fromId));
       for (const r of rows || []) {
+        if (legacyVoucher(r).source === 'share') {
+          const held = await one(sb.from('pack_vouchers').select('id').eq('player_id', toId)
+            .eq('offer_key', r.offer_key).in('source', ['share', LEGACY_SHARE]).limit(1));
+          if (held && held.length) {
+            if (!r.redeemed_at) await one(sb.from('pack_vouchers').update({ expires_at: nowIso }).eq('id', r.id).is('redeemed_at', null));
+            continue;
+          }
+        }
         const { error } = await sb.from('pack_vouchers').update({ player_id: toId }).eq('id', r.id);
         if (isUnique(error)) {
           if (!r.redeemed_at) await one(sb.from('pack_vouchers').update({ expires_at: nowIso }).eq('id', r.id).is('redeemed_at', null));
@@ -506,12 +547,12 @@ function supabaseStore(sb) {
       const p = () => sb.from('pack_players').select('id', { count: 'exact', head: true });
       const g = () => sb.from('pack_games').select('player_id', { count: 'exact', head: true }).eq('offer_key', key);
       let gamesFailed = false;
-      const [first, email, instagram, app, bonus, redeemed, bonus_redeemed, emails_verified, instagram_taps, app_taps,
+      const [first, email, instagram, share, bonus, redeemed, bonus_redeemed, emails_verified, instagram_taps, share_taps,
         completed, stopped, u1, u2, u3, u4] = await Promise.all([
-        n(v().eq('source', 'first')), n(v().eq('source', 'email')), n(v().eq('source', 'instagram')), n(v().eq('source', 'app')),
+        n(v().eq('source', 'first')), n(v().eq('source', 'email')), n(v().eq('source', 'instagram')), n(v().in('source', ['share', LEGACY_SHARE])),
         n(v().eq('source', 'bonus')).catch(() => 0),
         n(v().not('redeemed_at', 'is', null)), n(v().eq('source', 'bonus').not('redeemed_at', 'is', null)).catch(() => 0),
-        n(p().not('email_verified_at', 'is', null)), n(p().not('instagram_at', 'is', null)), n(p().not('app_at', 'is', null)),
+        n(p().not('email_verified_at', 'is', null)), n(p().not('instagram_at', 'is', null)), n(p().or('share_at.not.is.null,app_at.not.is.null')),
         // Game counts fail soft (0) so the voucher numbers still show.
         ...[g().eq('ended', 'completed'), g().eq('ended', 'stopped_at_3'),
           g().is('ended', null).eq('score', 1), g().is('ended', null).eq('score', 2),
@@ -520,8 +561,8 @@ function supabaseStore(sb) {
       ]);
       if (gamesFailed) {
         return {
-          opened: { first, instagram, email, app, bonus, total: first + email + instagram + app },
-          redeemed, bonus_redeemed, emails_verified, instagram_taps, app_taps, games: null, completed_list: [],
+          opened: { first, instagram, email, share, bonus, total: first + email + instagram + share },
+          redeemed, bonus_redeemed, emails_verified, instagram_taps, share_taps, games: null, completed_list: [],
         };
       }
       const games = await one(sb.from('pack_games').select('player_id,ended_at,completed_all')
@@ -536,8 +577,8 @@ function supabaseStore(sb) {
         ]);
       }
       return {
-        opened: { first, instagram, email, app, bonus, total: first + email + instagram + app },
-        redeemed, bonus_redeemed, emails_verified, instagram_taps, app_taps,
+        opened: { first, instagram, email, share, bonus, total: first + email + instagram + share },
+        redeemed, bonus_redeemed, emails_verified, instagram_taps, share_taps,
         games: { completed, stopped_at_3: stopped, unfinished: { 1: u1, 2: u2, 3: u3, 4: u4 } },
         completed_list: completedList(games, tickets, players),
       };
@@ -546,11 +587,12 @@ function supabaseStore(sb) {
 }
 
 // Same shape as supabaseStore().stats, from plain rows (tests, local mock).
-function summarize(rows, emails_verified, instagram_taps, app_taps = 0, games = [], players = []) {
-  const opened = { first: 0, instagram: 0, email: 0, app: 0, bonus: 0, total: 0 };
+function summarize(rows, emails_verified, instagram_taps, share_taps = 0, games = [], players = []) {
+  const opened = { first: 0, instagram: 0, email: 0, share: 0, bonus: 0, total: 0 };
   let redeemed = 0;
   let bonus_redeemed = 0;
-  for (const r of rows) {
+  for (const raw of rows) {
+    const r = legacyVoucher(raw);
     if (opened[r.source] != null) opened[r.source]++;
     if (PRETZELS.includes(r.source)) opened.total++;
     if (r.redeemed_at) redeemed++;
@@ -564,7 +606,7 @@ function summarize(rows, emails_verified, instagram_taps, app_taps = 0, games = 
   }
   const tickets = rows.filter((r) => r.source === 'bonus');
   return {
-    opened, redeemed, bonus_redeemed, emails_verified, instagram_taps, app_taps,
+    opened, redeemed, bonus_redeemed, emails_verified, instagram_taps, share_taps,
     games: g, completed_list: completedList(games, tickets, players),
   };
 }
@@ -669,7 +711,7 @@ function redirect(res, location) {
 async function loadContext(req, deps) {
   const secret = deps.env.APP_JWT_SECRET;
   const { offer, status } = await deps.readOffer();
-  const store = deps.store();
+  const store = withLegacy(deps.store());
   const id = verifyPlayerCookie(parseCookies(req.headers.cookie)[COOKIE], secret);
   const player = id ? await store.getPlayer(id) : null;
   const key = offer ? offerKey(offer) : null;
@@ -849,7 +891,7 @@ async function handleVerify(req, res, deps, ctx, body) {
       }
       const patch = {};
       if (!owner.instagram_at && ctx.player.instagram_at) patch.instagram_at = ctx.player.instagram_at;
-      if (!owner.app_at && ctx.player.app_at) patch.app_at = ctx.player.app_at;
+      if (!owner.share_at && ctx.player.share_at) patch.share_at = ctx.player.share_at;
       if (link.marketing_opt_in && !owner.marketing_opt_in) patch.marketing_opt_in = true;
       if (Object.keys(patch).length) await store.updatePlayer(owner.id, patch);
     }
@@ -861,11 +903,11 @@ async function handleVerify(req, res, deps, ctx, body) {
   return res.status(200).json({ ok: true, result: 'verified', state: await stateOf(ctx, deps) });
 }
 
-// Honor-system bonuses: the follow or download cannot be checked, so a
-// tap unlocks the pack once per player. kind: 'instagram' | 'app'.
+// Honor-system bonuses: the follow or send cannot be checked, so a
+// tap unlocks the pack once per player. kind: 'instagram' | 'share'.
 const HONOR = {
   instagram: { field: 'instagram_at', enabled: (o) => !!o.instagram_handle, off: 'The Instagram bonus is not on right now.' },
-  app: { field: 'app_at', enabled: (o) => !!o.app_store_url, off: 'The app bonus is not on right now.' },
+  share: { field: 'share_at', enabled: () => true, off: 'The share bonus is not on right now.' },
 };
 async function handleHonor(req, res, deps, ctx, kind) {
   const h = HONOR[kind];
@@ -874,13 +916,13 @@ async function handleHonor(req, res, deps, ctx, kind) {
   if (await overLimit(deps, kind, clientIpHash(req, deps.env))) return res.status(429).json({ error: MSG.busy });
   const game = await readGame(ctx);
   if (game && game.ended === 'stopped_at_3') return res.status(409).json({ error: MSG.ended, state: await stateOf(ctx, deps) });
-  // Quest order: the app step comes after the free pack, Instagram (when
+  // Quest order: the share step comes after the free pack, Instagram (when
   // it is on) and email.
-  if (kind === 'app' && ctx.player) {
+  if (kind === 'share' && ctx.player) {
     const used = new Set((await ctx.store.listVouchers(ctx.player.id, ctx.key)).map((v) => v.source));
     const ready = used.has('first') && used.has('email') && (used.has('instagram') || !ctx.offer.instagram_handle);
     if (!ready) return res.status(409).json({ error: 'Finish the earlier steps first.', state: await stateOf(ctx, deps) });
-  } else if (kind === 'app') {
+  } else if (kind === 'share') {
     return res.status(409).json({ error: 'Open your first pack first.' });
   }
   const player = await ensurePlayer(ctx, res);
@@ -891,7 +933,8 @@ async function handleHonor(req, res, deps, ctx, kind) {
   return res.status(200).json({ ok: true, state: await stateOf(ctx, deps) });
 }
 
-// POST {action:'stop'}: "I don't need another app". Ends the game at 3.
+// POST {action:'stop'}: "No thanks, I hate delicious and free pretzels.".
+// Ends the game at 3.
 // The player keeps their 3 pretzels and gets no Golden Ticket.
 async function handleStop(req, res, deps, ctx) {
   if (!ctx.live) return res.status(409).json({ error: MSG.off });
@@ -919,7 +962,7 @@ async function handleRedeem(req, res, deps, body) {
     return res.status(503).json({ error: 'Redemption is not set up yet. Staff: write the code down and honour it.' });
   }
   if (await overLimit(deps, 'redeem', clientIpHash(req, deps.env))) return res.status(429).json({ error: MSG.busy });
-  const db = deps.store();
+  const db = withLegacy(deps.store());
   const now = deps.now();
   const v = await db.findVoucher(code);
   if (!v) return res.status(404).json({ error: 'Code not found. Check the letters and numbers.' });
@@ -1017,7 +1060,8 @@ async function handle(req, res, deps = defaultDeps()) {
     if (body.action === 'open') return await handleOpen(req, res, deps, ctx);
     if (body.action === 'email') return await handleEmail(req, res, deps, ctx, body);
     if (body.action === 'verify') return await handleVerify(req, res, deps, ctx, body);
-    if (body.action === 'instagram' || body.action === 'app') return await handleHonor(req, res, deps, ctx, body.action);
+    if (body.action === 'instagram' || body.action === 'share') return await handleHonor(req, res, deps, ctx, body.action);
+    if (body.action === LEGACY_SHARE) return await handleHonor(req, res, deps, ctx, 'share');
     if (body.action === 'stop') return await handleStop(req, res, deps, ctx);
     return res.status(400).json({ error: 'unknown action' });
   } catch (e) {
@@ -1057,7 +1101,9 @@ module.exports = {
   COOKIE,
   MAX_PACKS,
   PRETZELS,
+  LEGACY_SHARE,
   SOURCES,
+  withLegacy,
   BONUS_TITLE,
   BONUS_TEXT,
   BONUS_STAFF,
