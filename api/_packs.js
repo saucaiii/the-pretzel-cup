@@ -16,9 +16,13 @@
 //     verified email, +1 after an App Store tap (taps are honor system).
 //     Max 4 pretzels. The DB's unique (player_id, offer_key, source)
 //     enforces the cap and makes a double tap mint one voucher, not two.
-//   - Golden Ticket ('bonus'): after all 4, when /ops/qr turns it on.
-//     One fixed item per offer, the same for everyone (not a draw).
-//     What staff give (bonus_staff) is shown only after the staff PIN.
+//   - Golden Ticket ('bonus'): after all 4, when /ops/qr turns it on, the
+//     player chooses: keep the 4 pretzels, or trade all 4 for the Golden
+//     Ticket. Trading always wins the ticket (one fixed item per offer,
+//     not a draw). Their pretzel codes then show as traded, and at the
+//     counter the ticket also hands back their unused pretzels as a
+//     surprise (user decision 2026-11-07). What staff give (bonus_staff,
+//     default "Any one product in store") is shown only after the PIN.
 //   - At 3 (first, Instagram, email) a player may end the game with
 //     "I don't need another app": keeps 3 pretzels, no Golden Ticket.
 //   - pack_games records each player's score and how the game ended.
@@ -46,6 +50,7 @@ const SOURCES = [...PRETZELS, 'bonus'];
 // /ops/qr as bonus_staff and never leaves the staff side.
 const BONUS_TITLE = 'Golden Ticket';
 const BONUS_TEXT = 'Visit the Pretzel Factory to claim your prize.';
+const BONUS_STAFF = 'Any one product in store';
 // No 0/O, 1/I/L: easy to read out loud and type at the counter.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CODE_LEN = 8;
@@ -286,6 +291,9 @@ function playerState({ offer, status, player, vouchers, game, gameOk = true, now
     quest = q ? q.key : null;
   }
   const bt = bonusTexts(offer);
+  // Traded: the Golden Ticket was opened, so the 4 pretzel codes went
+  // into it (they come back at the counter, unannounced).
+  const traded = (vouchers || []).some((v) => v.source === 'bonus');
   return {
     game: true,
     status,
@@ -312,7 +320,12 @@ function playerState({ offer, status, player, vouchers, game, gameOk = true, now
       app: bonusState('app', player, vouchers, !!app),
     },
     bonus: { on: bonusOn(offer), title: bt.title, text: bt.text, state: trail[trail.length - 1].state },
-    vouchers: vouchers.map((v) => publicVoucher(v, now)),
+    traded,
+    vouchers: vouchers.map((v) => {
+      const pv = publicVoucher(v, now);
+      if (traded && PRETZELS.includes(v.source)) pv.traded = true;
+      return pv;
+    }),
   };
 }
 
@@ -425,6 +438,15 @@ function supabaseStore(sb) {
         .update({ redeemed_at: nowIso, redeemed_store: store })
         .eq('code', code).is('redeemed_at', null).gt('expires_at', nowIso).select('*'));
       return (rows && rows[0]) || null;
+    },
+    // Golden Ticket redeem: use up this player's unused pretzel codes for
+    // the offer. Returns how many pretzels to hand over.
+    async burnPretzels(playerId, key, store, nowIso) {
+      const rows = await one(sb.from('pack_vouchers')
+        .update({ redeemed_at: nowIso, redeemed_store: store })
+        .eq('player_id', playerId).eq('offer_key', key).in('source', PRETZELS)
+        .is('redeemed_at', null).gt('expires_at', nowIso).select('id'));
+      return (rows || []).length;
     },
     insertMagicLink: (row) => one(sb.from('pack_magic_links').insert(row)),
     // Single use, unexpired, and only for the player who asked for it.
@@ -730,7 +752,7 @@ async function handleOpen(req, res, deps, ctx) {
     if (source === 'bonus') {
       // One fixed item per offer: the texts are copied onto the ticket.
       const t = bonusTexts(ctx.offer);
-      Object.assign(row, { prize_title: t.title, prize_public: t.text, prize_staff: ctx.offer.bonus_staff ? String(ctx.offer.bonus_staff) : null });
+      Object.assign(row, { prize_title: t.title, prize_public: t.text, prize_staff: String(ctx.offer.bonus_staff || BONUS_STAFF) });
     }
     const r = await ctx.store.insertVoucher(row);
     if (r.ok) {
@@ -912,6 +934,14 @@ async function handleRedeem(req, res, deps, body) {
     await db.bumpPinFailures(code, v.pin_failures || 0, n);
     return res.status(403).json({ error: 'Wrong PIN.', tries_left: Math.max(0, PIN_TRIES - n) });
   }
+  // A pretzel code that went into a Golden Ticket is redeemed through
+  // the ticket (which hands the pretzels back), not on its own.
+  if (PRETZELS.includes(v.source)) {
+    const mine = await db.listVouchers(v.player_id, v.offer_key);
+    if (mine.some((x) => x.source === 'bonus')) {
+      return res.status(409).json({ error: 'This code was traded for a Golden Ticket. Redeem the Golden Ticket instead.' });
+    }
+  }
   const burned = await db.burnVoucher(code, store, now.toISOString());
   if (!burned) return res.status(409).json({ error: 'This code was already used.' });
   // Staff side only (correct PIN): what to hand over, and the badge.
@@ -925,6 +955,7 @@ async function handleRedeem(req, res, deps, body) {
   // A ticket opened before the prize was set falls back to the current
   // setting, so staff are not stuck with "not set" once it is filled in.
   let give = null;
+  let pretzels = 0;
   if (burned.source === 'bonus') {
     give = burned.prize_staff || null;
     if (!give) {
@@ -935,8 +966,17 @@ async function handleRedeem(req, res, deps, body) {
         console.error('[packs] redeem offer read failed:', e.message || e);
       }
     }
+    give = give || BONUS_STAFF;
+    // The surprise: the pretzels they traded come back with the ticket.
+    // Their unused, unexpired pretzel codes are used up here.
+    try {
+      pretzels = await db.burnPretzels(burned.player_id, burned.offer_key, store, now.toISOString());
+    } catch (e) {
+      console.error('[packs] redeem pretzel burn failed:', e.message || e);
+      pretzels = null;
+    }
   }
-  const staff = { give, completed_all };
+  const staff = { give, pretzels, completed_all };
   return res.status(200).json({ ok: true, voucher: publicVoucher(burned, now), staff });
 }
 
@@ -1020,6 +1060,7 @@ module.exports = {
   SOURCES,
   BONUS_TITLE,
   BONUS_TEXT,
+  BONUS_STAFF,
   CODE_ALPHABET,
   PIN_TRIES,
   STORES,

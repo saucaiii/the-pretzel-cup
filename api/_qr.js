@@ -172,9 +172,6 @@ function lintCopy(offer) {
   if (offer.stamp && /crave/i.test(offer.stamp)) {
     out.push({ field: 'stamp', rule: 'tagline', message: 'Stamp sits by the lockup. Keep crave lines in the body copy.' });
   }
-  if (offer.bonus_on && !offer.bonus_staff) {
-    out.push({ field: 'bonus_staff', rule: 'golden-staff', message: 'What staff give is empty. Staff will see "Prize not set yet. Ask a manager."' });
-  }
   if (offer.bonus_on && !offer.instagram_handle) {
     out.push({ field: 'bonus_on', rule: 'golden', message: 'Golden Ticket needs all 4 pretzels. Add the Instagram handle or nobody can earn it.' });
   }

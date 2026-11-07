@@ -86,6 +86,15 @@ function memStore() {
       v.redeemed_at = nowIso; v.redeemed_store = store;
       return { ...v };
     },
+    async burnPretzels(pid, key, store, nowIso) {
+      let n = 0;
+      for (const v of vouchers) {
+        if (v.player_id === pid && v.offer_key === key && packs.PRETZELS.includes(v.source) && !v.redeemed_at && v.expires_at > nowIso) {
+          v.redeemed_at = nowIso; v.redeemed_store = store; n++;
+        }
+      }
+      return n;
+    },
     async insertMagicLink(row) { links.set(row.token_hash, { used_at: null, ...row }); },
     async consumeMagicLink(hash, nowIso, playerId) {
       const l = links.get(hash);
@@ -910,10 +919,10 @@ test('Golden Ticket with no staff item: opens, redeem says give is not set', asy
   const { c } = await playTo4(d);
   const t = await openPack(d, c);
   assert.equal(t.body.voucher.source, 'bonus');
-  assert.equal(d.s.vouchers.find((v) => v.source === 'bonus').prize_staff, null);
+  assert.equal(d.s.vouchers.find((v) => v.source === 'bonus').prize_staff, packs.BONUS_STAFF);
   const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'lynbrook' }));
   assert.equal(ok.statusCode, 200);
-  assert.deepEqual(ok.body.staff, { give: null, completed_all: true });
+  assert.deepEqual(ok.body.staff, { give: 'Any one product in store', pretzels: 4, completed_all: true });
 });
 
 test('redeem: staff see what to give and the completed badge only after the PIN', async () => {
@@ -936,7 +945,7 @@ test('redeem: staff see what to give and the completed badge only after the PIN'
   await call(d2, post({ action: 'stop' }, { cookie: c2 }));
   const pc = d2.s.vouchers[0].code;
   const r2 = await call(d2, post({ action: 'redeem', code: pc, pin: '4821', store: 'lynbrook' }));
-  assert.deepEqual(r2.body.staff, { give: null, completed_all: false });
+  assert.deepEqual(r2.body.staff, { give: null, pretzels: 0, completed_all: false });
 });
 
 test('stats: end states, steps, Golden Ticket and Completed all 4 list (masked)', async () => {
@@ -994,11 +1003,46 @@ test('game record unreadable: no stop button, no Golden Ticket, pretzels still o
   assert.equal(after.statusCode, 409, 'no Golden Ticket without the game record');
 });
 
+test('trade: Golden Ticket hides the 4 codes, and its redeem hands the unused pretzels back', async () => {
+  const d = goldDeps();
+  const { c } = await playTo4(d);
+  // Redeem pretzel 1 in store before trading.
+  const p1 = d.s.vouchers.find((v) => v.source === 'first').code;
+  assert.equal((await call(d, post({ action: 'redeem', code: p1, pin: '4821', store: 'lynbrook' }))).statusCode, 200);
+  const t = await openPack(d, c);
+  assert.equal(t.body.state.traded, true);
+  const pretzelViews = t.body.state.vouchers.filter((v) => v.source !== 'bonus');
+  assert.ok(pretzelViews.every((v) => v.traded === true), 'pretzel codes show as traded');
+  // A traded pretzel code cannot be redeemed on its own.
+  const p2 = d.s.vouchers.find((v) => v.source === 'instagram').code;
+  const solo = await call(d, post({ action: 'redeem', code: p2, pin: '4821', store: 'lynbrook' }));
+  assert.equal(solo.statusCode, 409);
+  assert.match(solo.body.error, /Golden Ticket/);
+  // The ticket: what staff give, plus the 3 unused pretzels, all used up.
+  const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'franklin_square' }));
+  assert.equal(ok.statusCode, 200);
+  assert.deepEqual(ok.body.staff, { give: STAFF_ITEM, pretzels: 3, completed_all: true });
+  assert.ok(d.s.vouchers.every((v) => v.redeemed_at), 'every code is used');
+  // The public side never mentions the surprise.
+  assert.ok(!/pretzels back|also give/i.test(JSON.stringify(t.body)));
+});
+
+test('keep: without a trade the 4 pretzel codes redeem as usual', async () => {
+  const d = goldDeps();
+  const { c } = await playTo4(d);
+  const s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.traded, false);
+  assert.equal(s.next_source, 'bonus', 'the deal is still open');
+  for (const v of d.s.vouchers) {
+    assert.equal((await call(d, post({ action: 'redeem', code: v.code, pin: '4821', store: 'lynbrook' }))).statusCode, 200);
+  }
+});
+
 test('redeem: a ticket opened before the prize was set shows the current setting', async () => {
-  const d = deps({ readOffer: async () => ({ offer: { ...GOLD, bonus_staff: '' }, status: 'live' }) });
+  const d = goldDeps();
   const { c } = await playTo4(d);
   const t = await openPack(d, c);
-  d.readOffer = async () => ({ offer: GOLD, status: 'live' });
+  d.s.vouchers.find((v) => v.source === 'bonus').prize_staff = null; // opened before p11 columns, say
   const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'lynbrook' }));
   assert.equal(ok.body.staff.give, STAFF_ITEM);
 });
@@ -1018,7 +1062,7 @@ test('validateOffer: Golden Ticket defaults, needs a staff item, staff text stri
   // What staff give may stay empty (user decision): allowed, but flagged.
   const noStaff = qr.validateOffer({ ...base, bonus_on: true, app_store_url: OFFER.app_store_url });
   assert.ok(noStaff.offer && noStaff.offer.bonus_on);
-  assert.ok(qr.lintCopy(noStaff.offer).some((l) => l.rule === 'golden-staff'));
+  assert.ok(!qr.lintCopy(noStaff.offer).some((l) => l.field === 'bonus_staff'), 'empty means any one product');
   assert.ok(qr.validateOffer({ ...base, bonus_staff: 'x'.repeat(61) }).errors);
   assert.ok(qr.validateOffer({ ...base, bonus_title: 'x'.repeat(41) }).errors);
   const on = qr.validateOffer({ ...base, bonus_on: true, bonus_staff: STAFF_ITEM, app_store_url: OFFER.app_store_url }).offer;

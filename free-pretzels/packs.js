@@ -76,6 +76,11 @@
   // A skip applies to one quest at one point in the game.
   function skipKey(st) { return (st.headline || '') + '|' + st.next_quest + '|' + st.used; }
   function skipped(st) { return !!st.next_quest && uiGet().skip === skipKey(st); }
+  // Keep-or-trade after all 4. "Keep" is remembered on this device.
+  function kept(st) { return uiGet().kept === (st.headline || '') + '|kept'; }
+  function goldenWaiting(st) { return !!(st && st.next_source === 'bonus'); }
+  function dealOpen(st) { return goldenWaiting(st) && !S.trade && !kept(st); }
+  function packShown(st) { return !!(st && st.can_open) && !(goldenWaiting(st) && !S.trade); }
 
   // ─── API ──────────────────────────────────────────────────────────
   function api(method, body, query, timeoutMs) {
@@ -218,7 +223,7 @@
   }
 
   function renderPicker(st, preview) {
-    var canOpen = preview || (st && st.can_open);
+    var canOpen = preview || packShown(st);
     buildCarousel(preview);
     var used = (st && st.used) || 0;
     var golden = !!(st && st.next_source === 'bonus');
@@ -246,7 +251,8 @@
     });
     var title, sub;
     if (!st || used === 0) { title = 'Pick a pack'; sub = 'Pull a pretzel and WIN a pretzel!'; }
-    else if (golden) { title = 'Golden Ticket pack'; sub = 'You collected all 4. Tap it to open.'; }
+    else if (dealOpen(st)) { title = 'Golden Ticket deal'; sub = 'One last choice.'; }
+    else if (golden && canOpen) { title = 'Golden Ticket pack'; sub = 'You traded all 4. Tap it to open.'; }
     else if (canOpen) { title = 'Pretzel ' + (used + 1) + ' of 4'; sub = 'Your next pack is here. Tap it to open.'; }
     else if (st.ended === 'stopped_at_3') { title = 'Thanks for playing'; sub = 'Show a code at the counter.'; }
     else if (st.ended === 'completed') { title = 'Set complete'; sub = 'Show a code at the counter.'; }
@@ -327,7 +333,7 @@
   function renderVouchers(st) {
     var box = $('vouchers');
     box.textContent = '';
-    var list = (st.vouchers || []).slice().reverse();
+    var list = (st.vouchers || []).filter(function (v) { return !v.traded; }).reverse();
     var openIdx = list.findIndex ? list.findIndex(function (v) { return !v.redeemed_at && !v.expired; }) : 0;
     list.forEach(function (v, i) {
       var done = !!v.redeemed_at || v.expired;
@@ -379,13 +385,13 @@
       var t = TRAIL[node.key];
       var li = el('li', node.key + ' ' + node.state + (node.key === st.next_quest ? ' current' : ''));
       li.appendChild(el('span', 'tn-dot', t.n));
-      var lbl = node.state === 'done' ? (node.key === 'bonus' ? 'Ticket' : 'Got it') : t.label;
+      var lbl = node.state === 'done' ? (node.key === 'bonus' ? 'Ticket' : (st.traded ? 'Traded' : 'Got it')) : t.label;
       li.appendChild(el('span', 'tn-lbl', lbl));
       var words = { done: 'collected', ready: 'ready to open', locked: 'not yet', off: 'off' };
       li.setAttribute('aria-label', (node.key === 'bonus' ? 'Golden Ticket' : 'Pretzel ' + t.n) + ': ' + words[node.state]);
       row.appendChild(li);
     });
-    $('trail-count').textContent = st.used + ' of 4 collected';
+    $('trail-count').textContent = st.traded ? 'All 4 traded for the Golden Ticket' : st.used + ' of 4 collected';
   }
 
   // One quest card, or nothing. Never a list.
@@ -420,10 +426,10 @@
       end.hidden = false;
       $('g-end-title').textContent = 'Thanks for playing.';
       $('g-end-body').textContent = 'You keep your 3 pretzels. Show a code at the counter.';
-    } else if (st.ended === 'completed' && !st.can_open) {
+    } else if (st.ended === 'completed' && !packShown(st) && !dealOpen(st)) {
       end.hidden = false;
-      $('g-end-title').textContent = hasTicket ? 'Set complete. 4 of 4 and a Golden Ticket.' : 'Set complete. 4 of 4.';
-      $('g-end-body').textContent = 'Thanks for playing. Show a code at the counter.';
+      $('g-end-title').textContent = hasTicket ? 'You won the Golden Ticket.' : 'Set complete. 4 of 4.';
+      $('g-end-body').textContent = hasTicket ? 'Show it at the counter to find out what you won.' : 'Thanks for playing. Show a code at the counter.';
     } else {
       end.hidden = true;
     }
@@ -431,10 +437,21 @@
     $('game-title').hidden = $('game-sub').hidden = !end.hidden;
   }
 
+  function renderDeal(st) {
+    var open = dealOpen(st);
+    var d = $('deal');
+    if (open && d.hidden && !reduced() && d.animate) {
+      d.hidden = false;
+      d.animate([{ opacity: 0, transform: 'translateY(28px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 420, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    }
+    d.hidden = !open;
+  }
+
   function render(st) {
     S.state = st;
     renderTrail(st);
     renderPicker(st);
+    renderDeal(st);
     renderQuest(st);
     renderEnd(st);
     renderVouchers(st);
@@ -914,6 +931,7 @@
     $('rd-badge').hidden = true;
     $('rd-give').hidden = true;
     $('rd-give').textContent = '';
+    $('rd-extra').hidden = true;
     sh.hidden = false;
     document.documentElement.classList.add('stage-open');
     $('rd-pin').focus();
@@ -959,7 +977,11 @@
         $('rd-ok-text').textContent = 'Redeemed at ' + (r.data.voucher.redeemed_store || 'the store') + '.' + (isTicket ? '' : ' Enjoy your pretzel.');
         $('rd-badge').hidden = !staff.completed_all;
         $('rd-give').hidden = !isTicket;
-        $('rd-give').textContent = isTicket ? (staff.give ? 'Give: ' + staff.give : 'Prize not set yet. Ask a manager.') : '';
+        $('rd-give').textContent = isTicket ? 'Give: ' + (staff.give || 'Any one product in store') : '';
+        var extra = $('rd-extra');
+        extra.hidden = !isTicket || staff.pretzels === 0;
+        if (isTicket && staff.pretzels > 0) extra.textContent = 'Surprise: also give ' + staff.pretzels + ' free pretzel' + (staff.pretzels === 1 ? '' : 's') + ' with it.';
+        else if (isTicket && staff.pretzels == null) extra.textContent = 'Surprise: also give their unused free pretzels (count not available).';
         $('rd-close').focus();
         refresh();
       }, function () {
@@ -1028,6 +1050,24 @@
       if (S.state) render(S.state);
       $('q-title').setAttribute('tabindex', '-1');
       $('q-title').focus();
+    });
+
+    // Keep or trade. Trading shows the Golden Ticket pack to open; the
+    // server records the trade when it opens. Keeping ends the game here.
+    $('deal-trade').addEventListener('click', function () {
+      S.trade = true;
+      S.lastNext = null; // the Golden Ticket pack drops in
+      if (S.state) render(S.state);
+      var c = slots()[S.center];
+      if (c) c.focus({ preventScroll: true });
+    });
+    $('deal-keep').addEventListener('click', function () {
+      if (!S.state) return;
+      uiSet({ kept: (S.state.headline || '') + '|kept' });
+      render(S.state);
+      var t = $('g-end-title');
+      t.setAttribute('tabindex', '-1');
+      t.focus();
     });
 
     // "I don't need another app": one plain confirm, then the game ends
@@ -1171,7 +1211,7 @@
           showPopup({ headline: e.data.offer.headline, stamp: e.data.offer.stamp }, true);
           $('game-sub').textContent = 'Preview. Packs open on the live page.';
           $('vouchers').textContent = '';
-          ['trail', 'quest', 'q-resume', 'g-end', 'set'].forEach(function (id) { $(id).hidden = true; });
+          ['trail', 'quest', 'deal', 'q-resume', 'g-end', 'set'].forEach(function (id) { $(id).hidden = true; });
         }
       });
       // Ask the panel to resend now that this listener exists (the inline

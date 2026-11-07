@@ -354,7 +354,7 @@
 
         <div class="q-body" id="q-app" hidden>
           <p>Get the Philly Pretzel Factory app, then come back here. Your next pack drops in.</p>
-          <p class="q-gold" id="q-gold" hidden>Finish all 4 to unlock the Golden Ticket.</p>
+          <p class="q-gold" id="q-gold" hidden>Finish all 4 to unlock the Golden Ticket deal.</p>
           <div class="q-actions">
             <button class="btn btn-solid" id="app-btn" type="button"><img class="badge" id="app-badge" alt="" hidden /><span>Download on the App Store</span></button>
             <button class="btn btn-line" id="stop-btn" type="button" hidden>I don't need another app</button>
@@ -372,6 +372,19 @@
         <button class="q-skip" id="q-skip" type="button">Skip for now</button>
       </div>
       <button class="btn btn-line q-resume" id="q-resume" type="button" hidden></button>
+
+      <!-- After all 4: keep the pretzels or trade them for the Golden
+           Ticket. Trading always wins it; the counter hands the pretzels
+           back as a surprise (never stated here). -->
+      <div class="quest deal" id="deal" hidden>
+        <p class="q-step">All 4 collected</p>
+        <h3 class="q-title">Keep or trade?</h3>
+        <p>Keep your 4 free pretzels, or trade all 4 for the Golden Ticket. What it holds is revealed at the counter.</p>
+        <div class="q-actions">
+          <button class="btn btn-solid" id="deal-trade" type="button">Trade for the Golden Ticket</button>
+          <button class="btn btn-line" id="deal-keep" type="button">Keep my 4 pretzels</button>
+        </div>
+      </div>
 
       <!-- End of the game: stopped at 3, or set complete. -->
       <div class="g-end" id="g-end" hidden>
@@ -507,6 +520,7 @@
       <p class="rd-ok" id="rd-ok-text"></p>
       <p class="rd-badge" id="rd-badge" hidden>Completed all 4</p>
       <p class="rd-give" id="rd-give" hidden></p>
+      <p class="rd-extra" id="rd-extra" hidden></p>
       <div class="actions" style="margin-top:14px"><button class="btn btn-solid" id="rd-close" type="button">Done</button></div>
     </div>
   </div>

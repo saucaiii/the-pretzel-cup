@@ -35,6 +35,13 @@ Started: 2026-11-06
 - Not fixed (noted in PR): stop racing a parallel app open can leave score 4 + stopped.
 - Migration: user confirmed directly here ("Yes, apply p11"). Deploy: ask the user here.
 
+## Keep-or-trade deal (user, directly, 2026-11-07; deviation from plan v3, plan.md not edited)
+- After all 4: keep 4 pretzels or trade all 4 for the Golden Ticket (always wins).
+  Ticket = any one product (default bonus_staff); redeem also burns and hands back the
+  unused pretzels (staff-only "Surprise" line). Traded pretzel codes hidden and refused
+  on their own. Visual: deal card, trade > ticket > end, keep > end (survives reload),
+  staff sheet with surprise line. npm test 187/187.
+
 ## Retries
 - 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).
   Root cause: tool misuse. Change: read the file with the Read tool instead.
