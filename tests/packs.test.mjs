@@ -792,8 +792,8 @@ test('Golden Ticket off: no 5th pack, trail node off', async () => {
   assert.equal(s.bonus.on, false);
   assert.equal(s.trail.at(-1).state, 'off');
   assert.equal((await openPack(d, c)).statusCode, 409);
-  // On without a staff item, or without an App Store link: still off.
-  assert.equal(packs.bonusOn({ ...GOLD, bonus_staff: '' }), false);
+  // On without an App Store link: still off. A missing staff item is allowed.
+  assert.equal(packs.bonusOn({ ...GOLD, bonus_staff: '' }), true);
   assert.equal(packs.bonusOn({ ...GOLD, app_store_url: '' }), false);
   assert.equal(packs.bonusOn(GOLD), true);
 });
@@ -903,6 +903,17 @@ test('merge on email verify: a duplicate Golden Ticket is voided', async () => {
   assert.equal(live.length, 5);
 });
 
+test('Golden Ticket with no staff item: opens, redeem says give is not set', async () => {
+  const d = deps({ readOffer: async () => ({ offer: { ...GOLD, bonus_staff: '' }, status: 'live' }) });
+  const { c } = await playTo4(d);
+  const t = await openPack(d, c);
+  assert.equal(t.body.voucher.source, 'bonus');
+  assert.equal(d.s.vouchers.find((v) => v.source === 'bonus').prize_staff, null);
+  const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'lynbrook' }));
+  assert.equal(ok.statusCode, 200);
+  assert.deepEqual(ok.body.staff, { give: null, completed_all: true });
+});
+
 test('redeem: staff see what to give and the completed badge only after the PIN', async () => {
   const d = goldDeps();
   const { c } = await playTo4(d);
@@ -965,7 +976,10 @@ test('validateOffer: Golden Ticket defaults, needs a staff item, staff text stri
   assert.equal(off.bonus_on, false);
   assert.equal(off.bonus_title, 'Golden Ticket');
   assert.equal(off.bonus_text, 'Visit the Pretzel Factory to claim your prize.');
-  assert.ok(qr.validateOffer({ ...base, bonus_on: true }).errors, 'cannot turn on without what staff give');
+  // What staff give may stay empty (user decision): allowed, but flagged.
+  const noStaff = qr.validateOffer({ ...base, bonus_on: true, app_store_url: OFFER.app_store_url });
+  assert.ok(noStaff.offer && noStaff.offer.bonus_on);
+  assert.ok(qr.lintCopy(noStaff.offer).some((l) => l.rule === 'golden-staff'));
   assert.ok(qr.validateOffer({ ...base, bonus_staff: 'x'.repeat(61) }).errors);
   assert.ok(qr.validateOffer({ ...base, bonus_title: 'x'.repeat(41) }).errors);
   const on = qr.validateOffer({ ...base, bonus_on: true, bonus_staff: STAFF_ITEM, app_store_url: OFFER.app_store_url }).offer;

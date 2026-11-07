@@ -15,8 +15,12 @@ Started: 2026-11-06
 - Step 1 p11 migration written (a279064). NOT applied (human step).
 - Step 2+3 _packs.js / _qr.js + tests (ff5db4e): quest order, bonus source,
   pack_games record, stop action, staff text only after PIN, stats. npm test 180/180.
-- Steps 4 to 6 in progress: green theme, trail, quest cards, stop, end screen,
+- Steps 4 to 7 done (a4a7f90, ops commit): green theme, trail, quest cards, stop, end screen,
   Golden Ticket finish + ticket voucher (packs.css, packs.js, index.html, pack3d.js).
+
+## Deviation from approved plan (user-directed, plan.md not edited)
+- "What staff give" optional: empty -> redeem sheet "Prize not set yet. Ask a manager.",
+  /ops/qr warns instead of blocking. Golden Ticket needs only bonus_on + App Store link.
 
 ## Retries
 - 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).

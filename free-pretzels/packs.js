@@ -957,7 +957,7 @@
         $('rd-ok-text').textContent = 'Redeemed at ' + (r.data.voucher.redeemed_store || 'the store') + '.' + (isTicket ? '' : ' Enjoy your pretzel.');
         $('rd-badge').hidden = !staff.completed_all;
         $('rd-give').hidden = !isTicket;
-        $('rd-give').textContent = isTicket ? 'Give: ' + (staff.give || 'ask a manager') : '';
+        $('rd-give').textContent = isTicket ? (staff.give ? 'Give: ' + staff.give : 'Prize not set yet. Ask a manager.') : '';
         $('rd-close').focus();
         refresh();
       }, function () {

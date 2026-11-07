@@ -130,10 +130,11 @@ function pretzelCount(vouchers) {
   return (vouchers || []).filter((v) => PRETZELS.includes(v.source)).length;
 }
 
-// Golden Ticket is on only with a staff item set and an App Store link
-// (it needs all 4 pretzels, and the 4th is the app).
+// Golden Ticket is on only with an App Store link (it needs all 4
+// pretzels, and the 4th is the app). The staff item may be left unset
+// (user decision 2026-11-07): staff then see "Prize not set yet".
 function bonusOn(offer) {
-  return !!(offer && offer.bonus_on === true && offer.bonus_staff && offer.app_store_url);
+  return !!(offer && offer.bonus_on === true && offer.app_store_url);
 }
 
 function bonusTexts(offer) {
@@ -711,7 +712,7 @@ async function handleOpen(req, res, deps, ctx) {
     if (source === 'bonus') {
       // One fixed item per offer: the texts are copied onto the ticket.
       const t = bonusTexts(ctx.offer);
-      Object.assign(row, { prize_title: t.title, prize_public: t.text, prize_staff: String(ctx.offer.bonus_staff) });
+      Object.assign(row, { prize_title: t.title, prize_public: t.text, prize_staff: ctx.offer.bonus_staff ? String(ctx.offer.bonus_staff) : null });
     }
     const r = await ctx.store.insertVoucher(row);
     if (r.ok) {

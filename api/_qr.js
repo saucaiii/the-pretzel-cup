@@ -125,7 +125,6 @@ function validateOffer(input) {
   if (offer.instagram_handle && !IG_HANDLE_RE.test(offer.instagram_handle)) {
     errors.push('instagram_handle must be 1 to 30 letters, numbers, dots or underscores');
   }
-  if (offer.bonus_on && !offer.bonus_staff) errors.push('say what staff give before turning the Golden Ticket on');
   for (const k of ['headline', 'details', 'fine_print', 'stamp', 'accent', 'bonus_title', 'bonus_text', 'bonus_staff']) {
     if (offer[k].length > LIMITS[k]) errors.push(`${k} is longer than ${LIMITS[k]} characters`);
   }
@@ -172,6 +171,9 @@ function lintCopy(offer) {
   }
   if (offer.stamp && /crave/i.test(offer.stamp)) {
     out.push({ field: 'stamp', rule: 'tagline', message: 'Stamp sits by the lockup. Keep crave lines in the body copy.' });
+  }
+  if (offer.bonus_on && !offer.bonus_staff) {
+    out.push({ field: 'bonus_staff', rule: 'golden-staff', message: 'What staff give is empty. Staff will see "Prize not set yet. Ask a manager."' });
   }
   if (offer.bonus_on && !offer.app_store_url) {
     out.push({ field: 'bonus_on', rule: 'golden', message: 'Golden Ticket needs all 4 pretzels. Add the App Store link or nobody can earn it.' });
