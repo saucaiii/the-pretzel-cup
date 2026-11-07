@@ -1,7 +1,7 @@
 # Working memory (short-term). Keep under 60 lines.
 Branch: agent/pretzel-redesign
 Task: pretzel-redesign (make /free-pretzels as fun as the game, outside the rip)
-Status: review fixed, opening draft PR
+Status: draft PR open (saucaiii/the-pretzel-cup#31); final review pass, fixes pushed. Human merges + deploys.
 Started: 2026-11-06
 
 ## Context
@@ -14,15 +14,8 @@ Started: 2026-11-06
 - Brand guide PDF is internal: never commit or quote it.
 
 ## Progress (commits on this branch)
-- Memory + plan; art copied (ticket re-cropped so no corner clips).
-- Tokens, Rock Salt, reduced-motion block.
-- Hero + welcome popup = mockup A (plate strip, logo, tilted word wall, CRAVE lit,
-  copy line, "Rip your free pack" with foil pack, "every pack wins").
-- Food band (earlier take): real pretzel + rivet photos breaking out of plate frames.
-- Quest map (mockup B) REMOVED 2026-11-07 at the user's request.
-- Binder = mockup C (Your set, N of 4, tilted gold cards, empty slots reopen the
-  quest, Golden Ticket card with ticket art, shimmer once on win).
-- Offer/claim/stores restyled (12px radius gold cards); rip stage buttons unchanged.
+- Hero word wall (mockup A); welcome popup on plate; binder (mockup C); food band;
+  offer/claim/stores restyled. Quest map (mockup B) removed at the user's request.
 
 ## Not done on purpose (rip beats untouched)
 - Plan step 9 ticket art on the stage's .st-ticket face, and C6 foil photo on the
@@ -55,6 +48,8 @@ Started: 2026-11-06
   flavour words; food band side photos = pretzel dog + cinnamon rivets cup.
 
 ## Retries
+- screenshots push: tool misuse, I typed a bogus `git push -f-never` (git rejected it,
+  nothing forced); pushed the image commit to agent/pretzel-redesign-screens instead.
 - npm test 71/73: context/environment issue (no node_modules). npm ci --ignore-scripts.
 - one-liner exit 1: tool misuse (zsh `echo ===`). Ran eval-report on its own.
 - image-branch push exit 128: tool misuse (git mktree input lost its tab inside a shell

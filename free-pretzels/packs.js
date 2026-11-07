@@ -835,7 +835,7 @@
       pk.appendChild(el('span', 'st-tear'));
       var hit = el('button', 'st-hit');
       hit.type = 'button';
-      hit.setAttribute('aria-label', 'Tear open the pack');
+      hit.setAttribute('aria-label', 'Tear open the pack. Swipe across the top, or press Enter.');
       pk.appendChild(hit);
       wrap.appendChild(pk);
       nodes.center.appendChild(wrap);
@@ -871,7 +871,7 @@
     }
 
     function nudge() {
-      if (torn || (phase !== 'spin' && phase !== 'charge')) return;
+      if (torn || phase !== 'charge') return;
       nodes.hint.textContent = 'Swipe across the top to rip it!';
       anim(nodes.hint, [{ opacity: 0.4 }, { opacity: 1 }], { duration: 160 });
       if (gl) gl.breathe(400);
@@ -1393,6 +1393,8 @@
       });
     }
     // The win: banner slam, card shake, gold burst, rivet rain, rays.
+    var partyTimers = [];
+    function later2(fn, ms) { partyTimers.push(setTimeout(fn, ms)); }
     function celebrate() {
       if (reduced()) return;
       var slot = $('slot');
@@ -1402,8 +1404,8 @@
       FX.level(10);
       var g = $('reels').getBoundingClientRect();
       FX.burst(g.left + g.width / 2, g.top + g.height / 2);
-      setTimeout(function () { FX.burst(g.left + g.width * 0.2, g.top + g.height * 0.5); }, 260);
-      setTimeout(function () { FX.burst(g.left + g.width * 0.8, g.top + g.height * 0.5); }, 480);
+      later2(function () { FX.burst(g.left + g.width * 0.2, g.top + g.height * 0.5); }, 260);
+      later2(function () { FX.burst(g.left + g.width * 0.8, g.top + g.height * 0.5); }, 480);
       FX.rain(true);
       FX.sparkle(g);
       var ban = $('slot-banner');
@@ -1413,9 +1415,10 @@
       var card = $('slot-card');
       if (card.animate) card.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-8px,3px)' }, { transform: 'translate(7px,-3px)' },
         { transform: 'translate(-5px,2px)' }, { transform: 'translate(3px,-1px)' }, { transform: 'translate(0,0)' }], { duration: 420, delay: 330 });
-      setTimeout(function () { FX.sparkle(null); FX.rain(false); }, 3200);
+      later2(function () { FX.sparkle(null); FX.rain(false); }, 3200);
     }
     function calm() {
+      partyTimers.forEach(clearTimeout); partyTimers = [];
       FX.stop();
       $('slot').classList.remove('party');
       var ban = $('slot-banner');
@@ -1479,7 +1482,7 @@
       spun = 4; busy = false;
       $('slot').classList.add('won');
       $('slot-live').textContent = '4 pretzels in a row. You won the Golden Ticket. Your code is ' + spell(voucher.code) + '.';
-      setTimeout(function () {
+      later2(function () {
         $('slot-play').hidden = true;
         $('slot-win').hidden = false;
         $('slot-banner').getAnimations && $('slot-banner').getAnimations().forEach(function (an) { an.cancel(); });
