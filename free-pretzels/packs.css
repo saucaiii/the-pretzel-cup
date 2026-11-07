@@ -718,14 +718,17 @@ html.stage-open, html.stage-open body { overflow: hidden; }
   animation: gp-stamp 2.4s ease-in-out infinite;
 }
 @keyframes gp-stamp { 50% { transform: rotate(-3deg) scale(1.06); } }
-.g-pop-packwrap { position: relative; width: 104px; margin: 16px auto 0; animation: gp-bob 2.2s ease-in-out infinite; }
+.g-pop-packwrap { position: relative; width: 112px; margin: 16px auto 0; animation: gp-bob 2.2s ease-in-out infinite; }
 .g-pop-packwrap::before {
   content: ''; position: absolute; inset: -18% -40%; border-radius: 50%; z-index: -1;
   background: radial-gradient(circle, rgba(242, 231, 164, 0.75), rgba(212, 182, 98, 0.25) 45%, transparent 70%);
   animation: gp-glow 2.2s ease-in-out infinite;
 }
-.g-pop .g-pop-pack { width: 100%; height: auto; transform: rotate(-8deg); border-radius: 6px; box-shadow: 0 14px 22px rgba(0, 0, 0, 0.45); }
-@keyframes gp-bob { 50% { transform: translateY(-8px) rotate(4deg); } }
+.g-pop .g-pop-pack { width: 100%; height: auto; transform: none; border-radius: 6px; box-shadow: 0 14px 22px rgba(0, 0, 0, 0.45); }
+/* Logo on the pack like the 3D packs: 62% wide, centred at 52%, upright
+   and unaltered (the pack bobs straight, never tilts). */
+.g-pop-packlogo { position: absolute; left: 19%; width: 62%; top: 52%; transform: translateY(-50%); height: auto; }
+@keyframes gp-bob { 50% { transform: translateY(-8px); } }
 @keyframes gp-glow { 50% { opacity: 0.55; transform: scale(0.9); } }
 .g-pop .g-pop-go {
   display: flex; width: 100%; margin: 20px 0 0; min-height: 56px; font-size: 18px;
