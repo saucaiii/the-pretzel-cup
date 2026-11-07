@@ -1,6 +1,6 @@
 // Tests for api/_packs.js (pretzel pack game). Run: npm test
 // Uses an in-memory store that enforces the same unique constraints as
-// supabase/migrations/p10_pretzel_packs.sql. The Supabase adapter itself
+// supabase/migrations/p10_pretzel_packs.sql and p11_pretzel_packs_bonus.sql. The Supabase adapter itself
 // is not exercised here (no database in CI).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,15 +22,41 @@ const OFFER = {
   app_store_url: 'https://apps.apple.com/us/app/example/id000000000',
   starts_at: '2026-11-01', ends_at: '2026-11-30', layout: 'green',
 };
+// Golden Ticket on. STAFF_ITEM must never appear in a public response.
+const STAFF_ITEM = 'Staff only: hand over one example dip';
+const GOLD = { ...OFFER, bonus_on: true, bonus_staff: STAFF_ITEM };
 
 // ─── fakes ───────────────────────────────────────────────────────────
 function memStore() {
   const players = new Map();
   const vouchers = [];
   const links = new Map();
+  const games = new Map(); // key: player_id|offer_key
+  const gk = (pid, key) => pid + '|' + key;
   const dupe = () => ({ conflict: true });
   return {
-    players, vouchers, links,
+    players, vouchers, links, games,
+    async getGame(pid, key) { const g = games.get(gk(pid, key)); return g ? { ...g } : null; },
+    async touchGame(pid, key, score, nowIso) {
+      const g = games.get(gk(pid, key)) || { player_id: pid, offer_key: key, ended: null, completed_all: false, ended_at: null, started_at: nowIso };
+      Object.assign(g, { score, last_at: nowIso });
+      games.set(gk(pid, key), g);
+      return { ...g };
+    },
+    async endGame(pid, key, ended, nowIso) {
+      const g = games.get(gk(pid, key));
+      if (!g || g.ended) return null;
+      Object.assign(g, { ended, ended_at: nowIso, completed_all: ended === 'completed', last_at: nowIso });
+      return { ...g };
+    },
+    async mergeGames(from, to) {
+      for (const g of [...games.values()].filter((x) => x.player_id === from)) {
+        const t = games.get(gk(to, g.offer_key));
+        games.delete(gk(from, g.offer_key));
+        if (!t) games.set(gk(to, g.offer_key), { ...g, player_id: to });
+        else Object.assign(t, packs.mergeGame(t, g));
+      }
+    },
     async getPlayer(id) { return players.get(id) || null; },
     async createPlayer() {
       const p = { id: randomUUID(), email: null, email_verified_at: null, marketing_opt_in: false, instagram_at: null, app_at: null };
@@ -60,6 +86,15 @@ function memStore() {
       v.redeemed_at = nowIso; v.redeemed_store = store;
       return { ...v };
     },
+    async burnPretzels(pid, key, store, nowIso) {
+      let n = 0;
+      for (const v of vouchers) {
+        if (v.player_id === pid && v.offer_key === key && packs.PRETZELS.includes(v.source) && !v.redeemed_at && v.expires_at > nowIso) {
+          v.redeemed_at = nowIso; v.redeemed_store = store; n++;
+        }
+      }
+      return n;
+    },
     async insertMagicLink(row) { links.set(row.token_hash, { used_at: null, ...row }); },
     async consumeMagicLink(hash, nowIso, playerId) {
       const l = links.get(hash);
@@ -77,7 +112,8 @@ function memStore() {
     async stats(key) {
       const rows = vouchers.filter((v) => v.offer_key === key);
       const all = [...players.values()];
-      return packs.summarize(rows, all.filter((p) => p.email_verified_at).length, all.filter((p) => p.instagram_at).length, all.filter((p) => p.app_at).length);
+      const g = [...games.values()].filter((x) => x.offer_key === key);
+      return packs.summarize(rows, all.filter((p) => p.email_verified_at).length, all.filter((p) => p.instagram_at).length, all.filter((p) => p.app_at).length, g, all);
     },
   };
 }
@@ -172,18 +208,18 @@ test('normalizeEmail', () => {
   }
 });
 
-test('allowance: first, email, instagram, app, max 4', () => {
+test('allowance: first, instagram, email, app, max 4', () => {
   const p = { email_verified_at: null, instagram_at: null };
   assert.deepEqual(packs.unlockedSources(p), ['first']);
   assert.equal(packs.nextSource(p, []), 'first');
   assert.equal(packs.nextSource(p, [{ source: 'first' }]), null);
   const full = { email_verified_at: 'x', instagram_at: 'y' };
-  assert.equal(packs.nextSource(full, [{ source: 'first' }]), 'email');
-  assert.equal(packs.nextSource(full, [{ source: 'first' }, { source: 'email' }]), 'instagram');
+  assert.equal(packs.nextSource(full, [{ source: 'first' }]), 'instagram');
+  assert.equal(packs.nextSource(full, [{ source: 'first' }, { source: 'instagram' }]), 'email');
   assert.equal(packs.nextSource(full, [{ source: 'first' }, { source: 'email' }, { source: 'instagram' }]), null);
-  assert.equal(packs.nextSource({ instagram_at: 'y' }, [{ source: 'first' }]), 'instagram');
+  assert.equal(packs.nextSource({ email_verified_at: 'x' }, [{ source: 'first' }]), 'email');
   const all = { email_verified_at: 'x', instagram_at: 'y', app_at: 'z' };
-  assert.deepEqual(packs.unlockedSources(all), ['first', 'email', 'instagram', 'app']);
+  assert.deepEqual(packs.unlockedSources(all), ['first', 'instagram', 'email', 'app']);
   assert.equal(packs.nextSource(all, [{ source: 'first' }, { source: 'email' }, { source: 'instagram' }]), 'app');
   assert.equal(packs.nextSource(all, packs.SOURCES.map((source) => ({ source }))), null);
   assert.equal(packs.nextSource({ app_at: 'z' }, [{ source: 'first' }]), 'app');
@@ -359,12 +395,13 @@ test('full run: first + email + instagram + app = 4, then a 5th is impossible', 
 
 test('app tap counts once and is off without an App Store URL', async () => {
   const d = deps();
-  const c = cookieOf(await openPack(d));
+  const c = await playTo3(d);
   await call(d, post({ action: 'app' }, { cookie: c }));
-  const first = [...d.s.players.values()][0].app_at;
+  const me = () => [...d.s.players.values()].find((p) => p.app_at);
+  const first = me().app_at;
   assert.ok(first);
   await call(d, post({ action: 'app' }, { cookie: c }));
-  assert.equal([...d.s.players.values()][0].app_at, first);
+  assert.equal(me().app_at, first);
   assert.equal((await openPack(d, c)).body.voucher.source, 'app');
   assert.equal((await openPack(d, c)).statusCode, 409);
   const off = deps({ readOffer: async () => ({ offer: { ...OFFER, app_store_url: '' }, status: 'live' }) });
@@ -506,7 +543,7 @@ test('verify on a new device merges into the email player; limit follows the per
   // Phone B: fresh cookie, first pack (the accepted cookie-clearing gap).
   let b = cookieOf(await openPack(d));
   await call(d, post({ action: 'instagram' }, { cookie: b }));
-  await call(d, post({ action: 'app' }, { cookie: b }));
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: b }))).statusCode, 409, 'app step waits for email');
   // Phone B verifies the same email -> becomes the same person.
   b = (await verifyEmail(d, b)).cookie;
   const idA = packs.verifyPlayerCookie(a.split('=')[1], SECRET);
@@ -516,8 +553,9 @@ test('verify on a new device merges into the email player; limit follows the per
   const s = (await call(d, get('view=state', b))).body;
   assert.equal(s.bonuses.email, 'used');
   assert.equal(s.bonuses.instagram, 'unlocked');
-  assert.equal(s.bonuses.app, 'unlocked', 'app tap carried over on merge');
+  assert.equal(s.bonuses.app, 'locked');
   assert.equal((await openPack(d, b)).body.voucher.source, 'instagram');
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: b }))).statusCode, 200);
   assert.equal((await openPack(d, b)).body.voucher.source, 'app');
   assert.equal((await openPack(d, b)).statusCode, 409, 'no 5th pack on the merged player');
   const owned = d.s.vouchers.filter((v) => v.player_id === idA);
@@ -677,7 +715,7 @@ test('stats: operator only, counts per offer', async () => {
   const r = await call(d, get('view=stats'));
   assert.equal(r.statusCode, 200);
   assert.equal(r.body.offer_key, 'o:2026-11-01');
-  assert.deepEqual(r.body.opened, { first: 2, email: 0, instagram: 0, app: 0, total: 2 });
+  assert.deepEqual(r.body.opened, { first: 2, instagram: 0, email: 0, app: 0, bonus: 0, total: 2 });
   assert.equal(r.body.app_taps, 0);
   assert.equal(r.body.redeemed, 1);
   assert.equal(r.body.emails_verified, 1);
@@ -685,6 +723,363 @@ test('stats: operator only, counts per offer', async () => {
   assert.equal((await call(anon, get('view=stats'))).statusCode, 401);
   const baker = deps({ readSession: async () => ({ role: 'baker' }) });
   assert.equal((await call(baker, get('view=stats'))).statusCode, 403);
+});
+
+// ─── v3: quest order, Golden Ticket, stop at 3, game record ─────────
+// Play first > Instagram > email > (app). Returns the cookie.
+async function playTo3(d) {
+  let c = cookieOf(await openPack(d));
+  await call(d, post({ action: 'instagram' }, { cookie: c }));
+  assert.equal((await openPack(d, c)).body.voucher.source, 'instagram');
+  c = (await verifyEmail(d, c)).cookie;
+  assert.equal((await openPack(d, c)).body.voucher.source, 'email');
+  return c;
+}
+async function playTo4(d) {
+  const c = await playTo3(d);
+  await call(d, post({ action: 'app' }, { cookie: c }));
+  const r = await openPack(d, c);
+  assert.equal(r.body.voucher.source, 'app');
+  return { c, r };
+}
+const goldDeps = (over = {}) => deps({ readOffer: async () => ({ offer: GOLD, status: 'live' }), ...over });
+// Deep search: no value anywhere in a JSON body contains the staff text.
+const leaks = (body) => JSON.stringify(body || {}).includes(STAFF_ITEM);
+
+test('trail and next quest follow first > instagram > email > app', async () => {
+  const d = goldDeps();
+  let s = (await call(d, get('view=state'))).body;
+  assert.deepEqual(s.trail.map((n) => n.key), ['first', 'instagram', 'email', 'app', 'bonus']);
+  assert.deepEqual(s.trail.map((n) => n.state), ['ready', 'locked', 'locked', 'locked', 'locked']);
+  assert.equal(s.next_source, 'first');
+  assert.equal(s.next_quest, null, 'no quest while a pack is waiting');
+  const c = cookieOf(await openPack(d));
+  s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.next_quest, 'instagram');
+  assert.equal(s.collected, 1);
+  await call(d, post({ action: 'instagram' }, { cookie: c }));
+  await openPack(d, c);
+  s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.next_quest, 'email');
+  assert.equal(s.can_stop, false, 'no stop before 3');
+});
+
+test('Golden Ticket: only after all 4, once, texts copied, staff text never public', async () => {
+  const d = goldDeps();
+  const c = await playTo3(d);
+  let s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.bonus.state, 'locked', 'Instagram + email is not enough');
+  assert.equal(s.can_open, false);
+  const { r } = await playTo4Cont(d, c);
+  assert.equal(r.body.state.next_source, 'bonus');
+  assert.equal(r.body.state.ended, 'completed');
+  assert.equal(r.body.state.completed_all, true);
+  const t = await openPack(d, c);
+  assert.equal(t.statusCode, 200);
+  assert.equal(t.body.voucher.source, 'bonus');
+  assert.equal(t.body.voucher.title, 'Golden Ticket');
+  assert.equal(t.body.voucher.text, 'Visit the Pretzel Factory to claim your prize.');
+  assert.equal(t.body.state.used, 4, 'Golden Ticket does not count toward the 4 pretzels');
+  assert.equal((await openPack(d, c)).statusCode, 409, 'one Golden Ticket per player');
+  const row = d.s.vouchers.find((v) => v.source === 'bonus');
+  assert.equal(row.prize_staff, STAFF_ITEM);
+  assert.equal(row.prize_title, 'Golden Ticket');
+  // Snapshot: changing the setting later does not change the ticket.
+  d.readOffer = async () => ({ offer: { ...GOLD, bonus_staff: 'Something else' }, status: 'live' });
+  assert.equal(d.s.vouchers.find((v) => v.source === 'bonus').prize_staff, STAFF_ITEM);
+  for (const body of [t.body, s, (await call(d, get('view=state', c))).body]) assert.ok(!leaks(body), 'staff text leaked');
+});
+async function playTo4Cont(d, c) {
+  await call(d, post({ action: 'app' }, { cookie: c }));
+  const r = await openPack(d, c);
+  assert.equal(r.body.voucher.source, 'app');
+  return { r };
+}
+
+test('Golden Ticket off: no 5th pack, trail node off', async () => {
+  const d = deps();
+  const { c } = await playTo4(d);
+  const s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.bonus.on, false);
+  assert.equal(s.trail.at(-1).state, 'off');
+  assert.equal((await openPack(d, c)).statusCode, 409);
+  // On without an App Store link: still off. A missing staff item is allowed.
+  assert.equal(packs.bonusOn({ ...GOLD, bonus_staff: '' }), true);
+  assert.equal(packs.bonusOn({ ...GOLD, app_store_url: '' }), false);
+  assert.equal(packs.bonusOn(GOLD), true);
+});
+
+test('stop at 3: keeps 3 pretzels, no Golden Ticket, final', async () => {
+  const d = goldDeps();
+  const c = await playTo3(d);
+  let s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.can_stop, true);
+  const r = await call(d, post({ action: 'stop' }, { cookie: c }));
+  assert.equal(r.statusCode, 200);
+  s = r.body.state;
+  assert.equal(s.ended, 'stopped_at_3');
+  assert.equal(s.score, 3);
+  assert.equal(s.can_stop, false);
+  assert.equal(s.can_open, false);
+  assert.equal(s.next_quest, null);
+  assert.equal(s.trail.find((n) => n.key === 'app').state, 'off');
+  assert.equal(s.trail.at(-1).state, 'off');
+  assert.equal(s.vouchers.length, 3, 'keeps the 3 codes');
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: c }))).statusCode, 409, 'app tap refused after stop');
+  const o = await openPack(d, c);
+  assert.equal(o.statusCode, 409);
+  assert.match(o.body.error, /ended/);
+  assert.equal((await call(d, post({ action: 'stop' }, { cookie: c }))).statusCode, 409, 'stop only once');
+  const g = [...d.s.games.values()][0];
+  assert.equal(g.ended, 'stopped_at_3');
+  assert.equal(g.score, 3);
+  assert.equal(g.completed_all, false);
+  assert.ok(g.ended_at);
+});
+
+test('stop refused before 3, after the app tap, without a player or app link', async () => {
+  const d = goldDeps();
+  assert.equal((await call(d, post({ action: 'stop' }))).statusCode, 409, 'no player');
+  const c = cookieOf(await openPack(d));
+  assert.equal((await call(d, post({ action: 'stop' }, { cookie: c }))).statusCode, 409, 'at 1');
+  const d2 = goldDeps();
+  const c2 = await playTo3(d2);
+  await call(d2, post({ action: 'app' }, { cookie: c2 }));
+  assert.equal((await call(d2, post({ action: 'stop' }, { cookie: c2 }))).statusCode, 409, 'after app tap');
+  const d3 = deps({ readOffer: async () => ({ offer: { ...GOLD, app_store_url: '' }, status: 'live' }) });
+  const c3 = await playTo3(d3);
+  assert.equal((await call(d3, get('view=state', c3))).body.can_stop, false);
+  assert.equal((await call(d3, post({ action: 'stop' }, { cookie: c3 }))).statusCode, 409, 'no app link');
+  assert.ok(packs.LIMITS.stop);
+});
+
+test('game record: score follows pulls, completed on the 4th, left players keep last score', async () => {
+  const d = goldDeps();
+  const c = cookieOf(await openPack(d));
+  let g = [...d.s.games.values()][0];
+  assert.equal(g.score, 1);
+  assert.equal(g.ended, null);
+  await call(d, post({ action: 'instagram' }, { cookie: c }));
+  await openPack(d, c);
+  assert.equal([...d.s.games.values()][0].score, 2);
+  const d2 = goldDeps();
+  await playTo4(d2);
+  g = [...d2.s.games.values()][0];
+  assert.equal(g.ended, 'completed');
+  assert.equal(g.completed_all, true);
+  assert.equal(g.score, 4);
+});
+
+test('game record: backfilled on state read for players from before p11', async () => {
+  const d = goldDeps();
+  const c = cookieOf(await openPack(d));
+  d.s.games.clear();
+  await call(d, get('view=state', c));
+  assert.equal([...d.s.games.values()][0].score, 1);
+});
+
+test('game record failures never block a pretzel', async () => {
+  const d = goldDeps();
+  const boom = async () => { throw new Error('relation "pack_games" does not exist'); };
+  Object.assign(d.s, { getGame: boom, touchGame: boom, endGame: boom });
+  const r = await openPack(d);
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.body.voucher.source, 'first');
+});
+
+test('merge on email verify: higher score and end state follow the person', () => {
+  const a = { score: 4, ended: 'completed', ended_at: 't2', completed_all: true, started_at: 't0', last_at: 't2' };
+  const b = { score: 1, ended: null, ended_at: null, completed_all: false, started_at: 't1', last_at: 't3' };
+  const m = packs.mergeGame(b, a);
+  assert.equal(m.score, 4);
+  assert.equal(m.ended, 'completed');
+  assert.equal(m.completed_all, true);
+  assert.equal(m.started_at, 't0');
+  assert.equal(m.last_at, 't3');
+  const s = packs.mergeGame({ ...b, ended: 'stopped_at_3', ended_at: 't4', score: 3 }, a);
+  assert.equal(s.ended, 'completed', 'completed beats stopped');
+});
+
+test('merge on email verify: a duplicate Golden Ticket is voided', async () => {
+  const d = goldDeps();
+  // Phone A completes all 4 and opens the Golden Ticket.
+  const { c } = await playTo4(d);
+  assert.equal((await openPack(d, c)).body.voucher.source, 'bonus');
+  // Phone B with a fresh cookie verifies the same email: B's first pack is
+  // a duplicate slot and is voided; one Golden Ticket stays live.
+  const b = cookieOf(await openPack(d));
+  await verifyEmail(d, b);
+  const live = d.s.vouchers.filter((v) => !v.redeemed_at && v.expires_at > NOW.toISOString());
+  assert.equal(live.filter((v) => v.source === 'bonus').length, 1);
+  assert.equal(live.length, 5);
+});
+
+test('Golden Ticket with no staff item: opens, redeem says give is not set', async () => {
+  const d = deps({ readOffer: async () => ({ offer: { ...GOLD, bonus_staff: '' }, status: 'live' }) });
+  const { c } = await playTo4(d);
+  const t = await openPack(d, c);
+  assert.equal(t.body.voucher.source, 'bonus');
+  assert.equal(d.s.vouchers.find((v) => v.source === 'bonus').prize_staff, packs.BONUS_STAFF);
+  const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'lynbrook' }));
+  assert.equal(ok.statusCode, 200);
+  assert.deepEqual(ok.body.staff, { give: 'Any one product in store', pretzels: 4, completed_all: true });
+});
+
+test('redeem: staff see what to give and the completed badge only after the PIN', async () => {
+  const d = goldDeps();
+  const { c } = await playTo4(d);
+  const t = await openPack(d, c);
+  const code = t.body.voucher.code;
+  const bad = await call(d, post({ action: 'redeem', code, pin: '0000', store: 'lynbrook' }));
+  assert.ok(!leaks(bad.body));
+  const ok = await call(d, post({ action: 'redeem', code, pin: '4821', store: 'lynbrook' }));
+  assert.equal(ok.statusCode, 200);
+  assert.equal(ok.body.staff.give, STAFF_ITEM);
+  assert.equal(ok.body.staff.completed_all, true);
+  assert.equal(ok.body.voucher.title, 'Golden Ticket');
+  const again = await call(d, post({ action: 'redeem', code, pin: '4821', store: 'lynbrook' }));
+  assert.ok(!leaks(again.body), 'already-used response never carries the staff text');
+  // A regular pretzel from a player who stopped: no item, no badge.
+  const d2 = goldDeps();
+  const c2 = await playTo3(d2);
+  await call(d2, post({ action: 'stop' }, { cookie: c2 }));
+  const pc = d2.s.vouchers[0].code;
+  const r2 = await call(d2, post({ action: 'redeem', code: pc, pin: '4821', store: 'lynbrook' }));
+  assert.deepEqual(r2.body.staff, { give: null, pretzels: 0, completed_all: false });
+});
+
+test('stats: end states, steps, Golden Ticket and Completed all 4 list (masked)', async () => {
+  const d = goldDeps();
+  const { c } = await playTo4(d); // player@example.com completes
+  await openPack(d, c);
+  const c2 = await playTo3Email(d, 'second@example.com');
+  await call(d, post({ action: 'stop' }, { cookie: c2 }));
+  await openPack(d); // a third player pulls once and leaves
+  const r = await call(d, get('view=stats'));
+  assert.equal(r.statusCode, 200);
+  assert.deepEqual(r.body.games, { completed: 1, stopped_at_3: 1, unfinished: { 1: 1, 2: 0, 3: 0, 4: 0 } });
+  assert.equal(r.body.opened.bonus, 1);
+  assert.equal(r.body.opened.app, 1);
+  assert.equal(r.body.opened.total, 3 + 4 + 1);
+  assert.equal(r.body.completed_list.length, 1);
+  assert.equal(r.body.completed_list[0].email, 'p***@example.com');
+  assert.match(r.body.completed_list[0].ticket, /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+  assert.ok(!JSON.stringify(r.body).includes('player@example.com'), 'no full emails in stats');
+});
+async function playTo3Email(d, email) {
+  let c = cookieOf(await openPack(d));
+  await call(d, post({ action: 'instagram' }, { cookie: c }));
+  await openPack(d, c);
+  c = (await verifyEmail(d, c, email)).cookie;
+  await openPack(d, c);
+  return c;
+}
+
+test('app step refused before the free pack, Instagram and email', async () => {
+  const d = goldDeps();
+  assert.equal((await call(d, post({ action: 'app' }))).statusCode, 409, 'no player');
+  const c = cookieOf(await openPack(d));
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: c }))).statusCode, 409, 'at 1');
+  assert.ok(![...d.s.players.values()].some((p) => p.app_at));
+});
+
+test('Golden Ticket needs the Instagram handle too (all 4 must be earnable)', () => {
+  assert.equal(packs.bonusOn({ ...GOLD, instagram_handle: '' }), false);
+  const lint = qr.lintCopy(qr.validateOffer({ headline: 'x', bonus_on: true, app_store_url: OFFER.app_store_url }).offer);
+  assert.ok(lint.some((l) => l.rule === 'golden' && /Instagram/.test(l.message)));
+});
+
+test('game record unreadable: no stop button, no Golden Ticket, pretzels still open', async () => {
+  const d = goldDeps();
+  const c = await playTo3(d);
+  const boom = async () => { throw new Error('relation "pack_games" does not exist'); };
+  Object.assign(d.s, { getGame: boom, touchGame: boom, endGame: boom });
+  const s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.can_stop, false);
+  assert.equal((await call(d, post({ action: 'stop' }, { cookie: c }))).statusCode, 503);
+  await call(d, post({ action: 'app' }, { cookie: c }));
+  assert.equal((await openPack(d, c)).body.voucher.source, 'app');
+  const after = await openPack(d, c);
+  assert.equal(after.statusCode, 409, 'no Golden Ticket without the game record');
+});
+
+test('trade: Golden Ticket hides the 4 codes, and its redeem hands the unused pretzels back', async () => {
+  const d = goldDeps();
+  const { c } = await playTo4(d);
+  // Redeem pretzel 1 in store before trading.
+  const p1 = d.s.vouchers.find((v) => v.source === 'first').code;
+  assert.equal((await call(d, post({ action: 'redeem', code: p1, pin: '4821', store: 'lynbrook' }))).statusCode, 200);
+  const t = await openPack(d, c);
+  assert.equal(t.body.state.traded, true);
+  const pretzelViews = t.body.state.vouchers.filter((v) => v.source !== 'bonus');
+  assert.ok(pretzelViews.every((v) => v.traded === true), 'pretzel codes show as traded');
+  // A traded pretzel code cannot be redeemed on its own.
+  const p2 = d.s.vouchers.find((v) => v.source === 'instagram').code;
+  const solo = await call(d, post({ action: 'redeem', code: p2, pin: '4821', store: 'lynbrook' }));
+  assert.equal(solo.statusCode, 409);
+  assert.match(solo.body.error, /Golden Ticket/);
+  // The ticket: what staff give, plus the 3 unused pretzels, all used up.
+  const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'franklin_square' }));
+  assert.equal(ok.statusCode, 200);
+  assert.deepEqual(ok.body.staff, { give: STAFF_ITEM, pretzels: 3, completed_all: true });
+  assert.ok(d.s.vouchers.every((v) => v.redeemed_at), 'every code is used');
+  // The public side never mentions the surprise.
+  assert.ok(!/pretzels back|also give/i.test(JSON.stringify(t.body)));
+});
+
+test('keep: without a trade the 4 pretzel codes redeem as usual', async () => {
+  const d = goldDeps();
+  const { c } = await playTo4(d);
+  const s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.traded, false);
+  assert.equal(s.next_source, 'bonus', 'the deal is still open');
+  for (const v of d.s.vouchers) {
+    assert.equal((await call(d, post({ action: 'redeem', code: v.code, pin: '4821', store: 'lynbrook' }))).statusCode, 200);
+  }
+});
+
+test('redeem: a ticket opened before the prize was set shows the current setting', async () => {
+  const d = goldDeps();
+  const { c } = await playTo4(d);
+  const t = await openPack(d, c);
+  d.s.vouchers.find((v) => v.source === 'bonus').prize_staff = null; // opened before p11 columns, say
+  const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'lynbrook' }));
+  assert.equal(ok.body.staff.give, STAFF_ITEM);
+});
+
+test('maskEmail', () => {
+  assert.equal(packs.maskEmail('jordan@example.com'), 'j***@example.com');
+  assert.equal(packs.maskEmail(null), null);
+  assert.equal(packs.maskEmail('nope'), null);
+});
+
+test('validateOffer: Golden Ticket defaults, needs a staff item, staff text stripped publicly', async () => {
+  const base = { headline: 'x' };
+  const off = qr.validateOffer(base).offer;
+  assert.equal(off.bonus_on, false);
+  assert.equal(off.bonus_title, 'Golden Ticket');
+  assert.equal(off.bonus_text, 'Visit the Pretzel Factory to claim your prize.');
+  // What staff give may stay empty (user decision): allowed, but flagged.
+  const noStaff = qr.validateOffer({ ...base, bonus_on: true, app_store_url: OFFER.app_store_url });
+  assert.ok(noStaff.offer && noStaff.offer.bonus_on);
+  assert.ok(!qr.lintCopy(noStaff.offer).some((l) => l.field === 'bonus_staff'), 'empty means any one product');
+  assert.ok(qr.validateOffer({ ...base, bonus_staff: 'x'.repeat(61) }).errors);
+  assert.ok(qr.validateOffer({ ...base, bonus_title: 'x'.repeat(41) }).errors);
+  const on = qr.validateOffer({ ...base, bonus_on: true, bonus_staff: STAFF_ITEM, app_store_url: OFFER.app_store_url }).offer;
+  assert.equal(on.bonus_on, true);
+  assert.ok(!('bonus_staff' in qr.publicOffer(on)));
+  assert.equal(qr.publicOffer(on).bonus_title, 'Golden Ticket');
+  const lint = qr.lintCopy({ ...on, app_store_url: '', bonus_text: 'You could win big' });
+  assert.ok(lint.some((l) => l.rule === 'golden'));
+  assert.ok(lint.some((l) => l.rule === 'chance'));
+  // Public offer GET strips it end to end.
+  const res = mockRes();
+  await qr.handle({ method: 'GET', url: '/api/leads?resource=offer', headers: {} }, res, 'offer', {
+    edgeGet: async () => ({ ...GOLD }), now: () => NOW, env: {},
+  });
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.offer);
+  assert.ok(!leaks(res.body));
 });
 
 // ─── dispatcher ─────────────────────────────────────────────────────

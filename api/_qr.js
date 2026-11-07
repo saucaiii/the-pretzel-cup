@@ -33,7 +33,12 @@ const TAGLINE_COLORS = ['white', 'black'];
 // Tagline colour each layout must use (white on dark, black on light).
 const LAYOUT_TAGLINE = { green: 'white', black: 'white', 'gold-light': 'black' };
 
-const LIMITS = { headline: 80, details: 600, step: 140, steps: 5, fine_print: 800, stamp: 40, accent: 24, instagram_handle: 30 };
+const LIMITS = {
+  headline: 80, details: 600, step: 140, steps: 5, fine_print: 800, stamp: 40, accent: 24, instagram_handle: 30,
+  bonus_title: 40, bonus_text: 120, bonus_staff: 60,
+};
+// Golden Ticket public defaults (same as api/_packs.js).
+const BONUS_DEFAULTS = { title: 'Golden Ticket', text: 'Visit the Pretzel Factory to claim your prize.' };
 // Instagram usernames: letters, numbers, dot, underscore, up to 30.
 const IG_HANDLE_RE = /^[A-Za-z0-9._]{1,30}$/;
 // App Store links only (the 4th bonus pack).
@@ -104,6 +109,12 @@ function validateOffer(input) {
     game: o.game === true,
     instagram_handle: str(o.instagram_handle, LIMITS.instagram_handle + 1).replace(/^@/, ''),
     app_store_url: str(o.app_store_url, APP_STORE_MAX),
+    // Golden Ticket after all 4 pretzels. One fixed item per offer.
+    // bonus_staff is internal: stripped from the public offer GET.
+    bonus_on: o.bonus_on === true,
+    bonus_title: str(o.bonus_title, LIMITS.bonus_title) || BONUS_DEFAULTS.title,
+    bonus_text: str(o.bonus_text, LIMITS.bonus_text) || BONUS_DEFAULTS.text,
+    bonus_staff: str(o.bonus_staff, LIMITS.bonus_staff),
   };
   if (!offer.headline) errors.push('headline is required');
   if (offer.app_store_url && (offer.app_store_url.length > APP_STORE_MAX || !APP_STORE_RE.test(offer.app_store_url))) {
@@ -114,7 +125,7 @@ function validateOffer(input) {
   if (offer.instagram_handle && !IG_HANDLE_RE.test(offer.instagram_handle)) {
     errors.push('instagram_handle must be 1 to 30 letters, numbers, dots or underscores');
   }
-  for (const k of ['headline', 'details', 'fine_print', 'stamp', 'accent']) {
+  for (const k of ['headline', 'details', 'fine_print', 'stamp', 'accent', 'bonus_title', 'bonus_text', 'bonus_staff']) {
     if (offer[k].length > LIMITS[k]) errors.push(`${k} is longer than ${LIMITS[k]} characters`);
   }
   if (offer.steps.length > LIMITS.steps) errors.push(`at most ${LIMITS.steps} steps`);
@@ -139,6 +150,7 @@ function lintCopy(offer) {
   const fields = {
     headline: offer.headline, details: offer.details, fine_print: offer.fine_print,
     stamp: offer.stamp, accent: offer.accent,
+    bonus_title: offer.bonus_title, bonus_text: offer.bonus_text,
   };
   (Array.isArray(offer.steps) ? offer.steps : []).forEach((s, i) => { fields[`step ${i + 1}`] = s; });
   for (const [field, raw] of Object.entries(fields)) {
@@ -159,6 +171,17 @@ function lintCopy(offer) {
   }
   if (offer.stamp && /crave/i.test(offer.stamp)) {
     out.push({ field: 'stamp', rule: 'tagline', message: 'Stamp sits by the lockup. Keep crave lines in the body copy.' });
+  }
+  if (offer.bonus_on && !offer.instagram_handle) {
+    out.push({ field: 'bonus_on', rule: 'golden', message: 'Golden Ticket needs all 4 pretzels. Add the Instagram handle or nobody can earn it.' });
+  }
+  if (offer.bonus_on && !offer.app_store_url) {
+    out.push({ field: 'bonus_on', rule: 'golden', message: 'Golden Ticket needs all 4 pretzels. Add the App Store link or nobody can earn it.' });
+  }
+  for (const field of ['bonus_title', 'bonus_text']) {
+    if (typeof offer[field] === 'string' && /\b(chance|odds|could win|random|lucky)\b/i.test(offer[field])) {
+      out.push({ field, rule: 'chance', message: 'Every player who finishes gets the same prize. Avoid chance words.' });
+    }
   }
   if (offer.layout && !LAYOUTS.includes(offer.layout)) {
     out.push({ field: 'layout', rule: 'palette', message: 'Layout must be solid green, black or gold-light.' });
@@ -307,6 +330,13 @@ function originOk(req) {
   }
 }
 
+// The public offer never carries what staff give for the Golden Ticket.
+function publicOffer(offer) {
+  if (!offer) return offer;
+  const { bonus_staff, ...rest } = offer; // eslint-disable-line no-unused-vars
+  return rest;
+}
+
 // Validated live offer + status. Shared with api/_packs.js. Never throws.
 async function readLiveOffer(deps) {
   let offer = null;
@@ -332,7 +362,7 @@ async function handleOffer(req, res, deps) {
   // newly published offer is never held stale in a visitor's browser.
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
   res.setHeader('Vercel-CDN-Cache-Control', 'max-age=30, stale-while-revalidate=120');
-  return res.status(200).json({ offer, status });
+  return res.status(200).json({ offer: publicOffer(offer), status });
 }
 
 async function handleQr(req, res, deps) {
@@ -442,6 +472,8 @@ module.exports = {
   defaultDeps,
   IG_HANDLE_RE,
   APP_STORE_RE,
+  BONUS_DEFAULTS,
+  publicOffer,
   parseTarget,
   isOwnSite,
   sanitizePlacement,

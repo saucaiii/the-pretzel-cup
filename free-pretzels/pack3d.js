@@ -12,6 +12,11 @@
 // artwork; it never rotates in-plane (the pack only turns on its vertical
 // axis, at most 25 degrees in the carousel) and it is hidden while the
 // pack spins in.
+//
+// Finishes (plan v3): the 4 pretzel packs are satin gold; the Golden
+// Ticket pack is polished mirror gold with a green "Golden Ticket" band.
+// The studio the foil reflects is deep green with gold-light softboxes,
+// so reflections stay on the site's green brand.
 
 import * as THREE from './vendor/three-0.160.0.module.min.js';
 
@@ -25,7 +30,14 @@ const LOGO_W = 0.62;         // fraction of W; centred; clear space >= 12.5% of 
 const LOGO_ASPECT = 1725 / 1864;
 const MAX_YAW = 25 * Math.PI / 180;
 
-const C = { green: '#0D5237', gold: '#D4B662', deep: '#B2872F', light: '#F2E7A4', black: '#000000' };
+const C = { green: '#0D5237', deep_green: '#083521', gold: '#D4B662', deep: '#B2872F', light: '#F2E7A4', black: '#000000' };
+const BAND_Y = -0.5;         // Golden Ticket band centre (between logo and crimp)
+const BAND_H = W / 8;
+// Roughness multipliers on the foil's roughness map (about 0.22).
+const FINISH = {
+  satin: { roughness: 1.5, clearcoat: 0.35 },
+  golden: { roughness: 0.45, clearcoat: 1 },
+};
 
 export function webglOK() {
   try {
@@ -69,6 +81,26 @@ function halfGeometry(y0, y1, back) {
   }
   g.computeVertexNormals();
   return g;
+}
+
+function bandGeometry() {
+  const g = new THREE.PlaneGeometry(W * 0.98, BAND_H, 24, 4);
+  g.translate(0, BAND_Y, 0);
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setZ(i, surfaceZ(pos.getX(i), pos.getY(i)) + 0.004);
+  g.computeVertexNormals();
+  return g;
+}
+
+function bandCanvas() {
+  const c = canvas(1024, 128);
+  const x = c.getContext('2d');
+  x.fillStyle = C.green; x.fillRect(0, 0, 1024, 128);
+  x.fillStyle = C.light;
+  x.font = '400 72px "FatFrank", "Archivo Black", "Arial Black", sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText('GOLDEN TICKET', 512, 68, 960);
+  return c;
 }
 
 function logoGeometry() {
@@ -180,10 +212,10 @@ function tex(c, srgb) {
   return t;
 }
 
-// ─── environment: black studio with gold-light softboxes ────────────
+// ─── environment: deep green studio with gold-light softboxes ───────
 function studio(renderer) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x030303);
+  scene.background = new THREE.Color(C.deep_green);
   const box = (w, h, x, y, z, color, k) => {
     const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(k), side: THREE.DoubleSide });
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
@@ -222,7 +254,9 @@ function timeout(p, ms) {
 // Shared geometry, textures and materials; builds packs and scenes.
 export async function createKit({ assets }) {
   if (!webglOK()) throw new Error('no webgl');
-  if (document.fonts && document.fonts.load) await timeout(document.fonts.load('400 100px "Archivo Black"'), 1500);
+  if (document.fonts && document.fonts.load) {
+    await timeout(Promise.all([document.fonts.load('400 100px "FatFrank"'), document.fonts.load('400 100px "Archivo Black"')]), 1500);
+  }
   const logoImg = await loadImage([assets + 'ppf-logo-1864.webp', assets + 'ppf-logo-600.png']);
   const res = Math.min(1024, Math.max(512, Math.round(Math.min(window.innerWidth, 600) * Math.min(window.devicePixelRatio || 1, 2))));
   const f = drawFace(res, true);
@@ -230,12 +264,13 @@ export async function createKit({ assets }) {
   const geo = {
     topF: halfGeometry(Y_TEAR, H / 2, false), topB: halfGeometry(Y_TEAR, H / 2, true),
     botF: halfGeometry(-H / 2, Y_TEAR, false), botB: halfGeometry(-H / 2, Y_TEAR, true),
-    logo: logoGeometry(), tear: new THREE.PlaneGeometry(W * 1.04, 0.016),
+    logo: logoGeometry(), tear: new THREE.PlaneGeometry(W * 1.04, 0.016), band: bandGeometry(),
   };
   const maps = {
     front: { map: tex(f.art, true), normalMap: tex(f.normal), roughnessMap: tex(f.orm), metalnessMap: tex(f.orm) },
     back: { map: tex(b.art, true), normalMap: tex(b.normal), roughnessMap: tex(b.orm), metalnessMap: tex(b.orm) },
     logo: tex(logoImg, true),
+    band: tex(bandCanvas(), true),
   };
 
   function foil(face) {
@@ -257,11 +292,18 @@ export async function createKit({ assets }) {
     const logo = new THREE.Mesh(geo.logo, mats.logo);
     logo.renderOrder = 2;
     bot.add(logo);
+    mats.band = new THREE.MeshBasicMaterial({ map: maps.band, transparent: true, toneMapped: false });
+    const band = new THREE.Mesh(geo.band, mats.band);
+    band.renderOrder = 2;
+    band.visible = false;
+    bot.add(band);
     const tear = new THREE.Mesh(geo.tear, mats.tear);
     tear.position.set(0, Y_TEAR, surfaceZ(0, Y_TEAR) + 0.006);
     tear.renderOrder = 3;
     group.add(top, bot, tear);
-    return { group, top, bot, logo, tear, mats };
+    const pack = { group, top, bot, logo, band, tear, mats };
+    setFinish(pack, 'satin');
+    return pack;
   }
 
   function makeRenderer(cv) {
@@ -364,6 +406,15 @@ class Base {
   }
 }
 
+// Satin gold (pretzel packs) or polished mirror gold with the green band
+// (Golden Ticket pack).
+function setFinish(p, finish) {
+  const f = FINISH[finish] || FINISH.satin;
+  [p.mats.front, p.mats.back].forEach((m) => { m.roughness = f.roughness; m.clearcoat = f.clearcoat; });
+  p.band.visible = finish === 'golden';
+  p.finish = finish;
+}
+
 function easeOut(k) { return 1 - Math.pow(1 - k, 3); }
 function easeIn(k) { return k * k * k; }
 function easeInOut(k) { return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; }
@@ -385,6 +436,8 @@ class Carousel extends Base {
       return p;
     });
     this.chosen = -1;
+    this.single = -1;
+    this.dropK = 1;
     this.sway = 0;
     this.pointer = { x: 0 };
     this.inView = true;
@@ -433,7 +486,8 @@ class Carousel extends Base {
       const g = p.group;
       if (this.chosen >= 0) return; // choose() animates
       const ad = Math.min(Math.abs(d), 1.6);
-      g.position.set((cx - mid) * this.wpp, ((box.top + box.height / 2) - (r.top + r.height / 2)) * this.wpp, -ad * 0.35);
+      const drop = this.single === i ? (1 - this.dropK) * 2.6 : 0;
+      g.position.set((cx - mid) * this.wpp, ((box.top + box.height / 2) - (r.top + r.height / 2)) * this.wpp + drop, -ad * 0.35);
       g.scale.setScalar(base * (1 - 0.12 * Math.min(ad, 1)));
       const yaw = clamp(-d * 0.6, -MAX_YAW, MAX_YAW) + (ad < 0.5 ? this.sway + this.pointer.x * 0.12 : 0);
       g.rotation.set(0, clamp(yaw, -MAX_YAW, MAX_YAW), 0); // yaw only: the logo never tilts in-plane
@@ -453,7 +507,21 @@ class Carousel extends Base {
     });
     return Promise.all(jobs);
   }
-  reset() { this.chosen = -1; this.packs.forEach((p) => { p.lastD = null; }); this.paused = false; this.poke(); }
+  reset() { this.chosen = -1; this.dropK = 1; this.packs.forEach((p) => { p.lastD = null; }); this.paused = false; this.poke(); }
+  // One pack only (after the first pull). i < 0 shows all five.
+  setSingle(i, golden) {
+    this.single = i;
+    this.packs.forEach((p, n) => {
+      p.group.visible = i < 0 || n === i;
+      setFinish(p, golden && n === i ? 'golden' : 'satin');
+    });
+    this.poke();
+  }
+  // The next pack drops into the centre with a little bounce.
+  drop(ms) {
+    this.dropK = 0;
+    return this.tween(ms, (k) => { this.dropK = k; this.lastActive = performance.now(); }, easeBack);
+  }
   dispose() {
     this.stop();
     this.track.removeEventListener('scroll', this.onScroll);
@@ -488,11 +556,12 @@ class StagePack extends Base {
       ((box.top + box.height / 2) - (a.top + a.height / 2)) * this.wpp, 0);
     this.home = g.position.clone();
   }
-  reset() {
+  reset(finish) {
     this.stop();
     this.size();
     this.place();
     const p = this.p;
+    setFinish(p, finish || 'satin');
     p.top.position.set(0, 0, 0); p.top.rotation.set(0, 0, 0);
     p.bot.position.set(0, 0, 0);
     p.group.rotation.set(0, Math.PI / 2, 0);

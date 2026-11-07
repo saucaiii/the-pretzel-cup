@@ -2,14 +2,17 @@
    rule here is scoped to the game, which only shows when the API says
    the game is on. With the game off the page is unchanged.
 
-   Brand: solid palette colours only, square corners, no shadows, no
-   hover animation. Gold-to-gold shimmer only. Logo flat and upright,
-   never tilted, cropped or recoloured. Original pack design. */
+   Brand: the site's green (#0D5237 / deep #083521) for every surface,
+   gold for highlights and calls to action, black only as text on gold.
+   Solid palette colours only, square corners, no shadows, no hover
+   animation. Gold-to-gold shimmer only. Logo flat and upright, never
+   tilted, cropped or recoloured. Original pack design. */
 
 body.game-on #offer-section,
 body.game-on #claim-section,
 body.game-on .plate,
 body.game-on .hero { display: none !important; }
+body.game-on footer { background: var(--green-deep); }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
@@ -17,7 +20,7 @@ body.game-on .hero { display: none !important; }
 }
 
 /* ─── page section ─────────────────────────────────────────────── */
-.game { background: var(--black); color: var(--white); text-align: center; padding: 36px 0 40px; }
+.game { background: var(--green); color: var(--white); text-align: center; padding: 36px 0 40px; }
 /* Game screen: the first screen is all game (title, packs, hint). */
 #game:not([hidden]) {
   position: relative;
@@ -109,12 +112,51 @@ body.game-on .hero { display: none !important; }
   top: calc(var(--w) * 0.21); /* centre at 52% of pack height, like the 3D pack */
   height: auto;
 }
+/* Golden Ticket pack (CSS fallback): lighter, polished gold with a
+   green band. */
+.pk.golden .pk-top, .pk.golden .pk-bot { background: var(--gold-light); }
+.pk-band {
+  position: absolute; left: 0; right: 0; bottom: 14%; height: 9%;
+  display: grid; place-items: center;
+  background: var(--green); color: var(--gold-light);
+  font-family: var(--display); font-size: calc(var(--w) * 0.075); letter-spacing: 0.06em; text-transform: uppercase;
+}
 /* Perforation hint on the picker packs. */
 .pk-perf {
   position: absolute; left: 0; right: 0; top: 20%; height: 2px; margin-top: -1px;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='2'><rect width='5' height='2' fill='%23D4B662'/></svg>");
   background-size: 8px 2px;
 }
+
+/* ─── pretzel trail ───────────────────────────────────────────── */
+/* 4 pretzels, then the Golden Ticket. Done = gold, ready = outlined,
+   locked = deep green with the action it needs. */
+.trail { margin: 0 0 18px; }
+.trail[hidden] { display: none; }
+.trail-row {
+  list-style: none; margin: 0 auto; padding: 0;
+  display: flex; justify-content: center; gap: 6px; align-items: flex-start;
+}
+.trail-row li { flex: 0 0 58px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.trail-row li.bonus { flex-basis: 76px; }
+.tn-dot {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--green-deep); color: var(--gold-light);
+  border: 2px solid var(--gold-deep);
+  font-family: var(--display); font-size: 18px; line-height: 1;
+}
+.tn-lbl {
+  font-family: var(--display); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.trail-row .done .tn-dot { background: var(--gold); color: var(--black); border-color: var(--gold); }
+.trail-row .ready .tn-dot, .trail-row .current .tn-dot { border: 3px solid var(--gold-light); }
+.trail-row .bonus .tn-dot { width: 64px; border-radius: 0; font-size: 12px; letter-spacing: 0.04em; }
+.trail-row .bonus.done .tn-dot, .trail-row .bonus.ready .tn-dot { background: var(--gold-light); color: var(--black); border-color: var(--gold); }
+.trail-row .off { display: none; }
+.trail-count { margin: 10px 0 0; font-family: var(--display); font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gold); }
+.trail-note { margin: 2px 0 0; font-size: 14px; font-weight: 700; color: var(--gold-light); }
 
 /* ─── carousel (pick a pack) ──────────────────────────────────── */
 /* Native scroll-snap row: real swiping, momentum and buttons. With 3D on,
@@ -150,32 +192,84 @@ body.game-on .hero { display: none !important; }
 .btn.has-badge { padding: 0; border: 0; background: transparent; min-height: 40px; }
 .btn.has-badge span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .picker.leaving .pick { pointer-events: none; }
+/* After the first pull: one pack at a time, dropped into the centre. */
+.carousel.single .picker { overflow: hidden; }
+.carousel.single .pick:not(.is-center) { visibility: hidden; }
+.carousel .car-halo {
+  position: absolute; left: 50%; top: 50%; width: calc(var(--slot) * 0.9); height: calc(var(--slot) * 0.9);
+  margin: calc(var(--slot) * -0.45) 0 0 calc(var(--slot) * -0.45);
+  border-radius: 50%; background: var(--gold-light); opacity: 0; pointer-events: none; z-index: 0;
+}
 
-/* ─── vouchers on the page ────────────────────────────────────── */
-.vouchers { display: grid; gap: 14px; margin: 22px 0 0; text-align: left; }
+/* ─── the set (vouchers on the page) ──────────────────────────── */
+.set { margin: 26px 0 0; text-align: left; }
+.set[hidden] { display: none; }
+.set-head { margin: 0 0 10px; font-family: var(--display); font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gold); text-align: center; }
+.vouchers { display: grid; gap: 10px; margin: 0; text-align: left; }
 .vouchers:empty { display: none; }
 .vcard {
   background: var(--gold-light); color: var(--black);
-  border: 2px solid var(--gold-deep); border-radius: 0; padding: 16px 18px;
+  border: 2px solid var(--gold-deep); border-radius: 0;
 }
 .vcard p { margin: 0; }
-.vc-label { font-family: var(--display); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
-.vc-code { margin: 6px 0 4px !important; font-family: var(--display); font-size: clamp(26px, 9vw, 34px); line-height: 1; letter-spacing: 0.08em; white-space: nowrap; }
+.vc-head {
+  appearance: none; width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; margin: 0; background: transparent; border: 0; border-radius: 0; color: inherit;
+  text-align: left; cursor: pointer; font: inherit;
+}
+.vc-head:focus-visible { outline: 3px solid var(--green); outline-offset: -3px; }
+.vc-label { font-family: var(--display); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
+.vc-code { font-family: var(--display); font-size: clamp(20px, 6vw, 24px); line-height: 1; letter-spacing: 0.06em; white-space: nowrap; }
+.vc-body { padding: 0 16px 14px; }
+.vc-body[hidden] { display: none; }
+.vc-big { margin: 2px 0 4px !important; font-family: var(--display); font-size: clamp(26px, 9vw, 34px); line-height: 1; letter-spacing: 0.08em; white-space: nowrap; }
+.vcard.open .vc-head .vc-code { display: none; }
 .vc-meta { font-weight: 700; font-size: 15px; }
 .vcard .btn { margin-top: 12px; }
 .vcard.done { background: var(--white); border-color: var(--gray); }
-.vcard.done .vc-code { color: var(--gray); text-decoration: line-through; }
-.btn-dark { background: var(--black); color: var(--gold-light); border-color: var(--black); }
+.vcard.done .vc-code, .vcard.done .vc-big { color: var(--gray); text-decoration: line-through; }
+.btn-green { background: var(--green); color: var(--gold-light); border-color: var(--green); }
 
-/* ─── bonus packs ─────────────────────────────────────────────── */
-.bonus { margin: 28px 0 0; text-align: left; border-top: 2px solid var(--gold-deep); padding-top: 22px; }
-.bonus h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: 0.01em; text-transform: uppercase; color: var(--gold); }
-.bonus .b-count { margin: 2px 0 16px; font-weight: 700; color: var(--gold-light); }
-.b-item { padding: 16px 0; border-top: 1px solid var(--gold-deep); }
-.b-item h4 { margin: 0 0 8px; font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--white); }
-.b-item.used h4, .b-item.used p { color: var(--gray); }
-.b-item p { margin: 0 0 10px; font-size: 15px; }
-.b-done { font-weight: 700; color: var(--gold-light); }
+/* Golden Ticket: a ticket in solid brand golds. Notched ends and a
+   perforated stub hold the code. No gradients, no shadows. */
+.vcard.ticket { position: relative; background: var(--gold-light); border: 3px solid var(--gold); }
+/* Notches sit on the perforation, one on each side. */
+.vcard.ticket .vc-stub { position: relative; }
+.vcard.ticket .vc-stub::before, .vcard.ticket .vc-stub::after {
+  content: ''; position: absolute; top: -13px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--green); border: 3px solid var(--gold);
+}
+.vcard.ticket .vc-stub::before { left: -13px; clip-path: inset(0 0 0 50%); }
+.vcard.ticket .vc-stub::after { right: -13px; clip-path: inset(0 50% 0 0); }
+.vcard.ticket:not(.open) .vc-head { padding-bottom: 12px; }
+.vcard.ticket .vc-label { color: var(--gold-deep); font-size: 15px; }
+.vcard.ticket .vc-text { margin: 4px 0 0 !important; font-weight: 700; }
+.vcard.ticket .vc-stub {
+  margin: 12px -16px 0 !important; padding: 12px 16px 0;
+  border-top: 3px dashed var(--gold-deep);
+}
+
+/* ─── quest card (one at a time) ──────────────────────────────── */
+.quest {
+  margin: 22px 0 0; padding: 18px 18px 14px; text-align: left;
+  background: var(--green-deep); border: 2px solid var(--gold); border-radius: 0;
+}
+.quest[hidden], .q-body[hidden], .q-confirm[hidden] { display: none; }
+.q-step { margin: 0; font-family: var(--display); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-light); }
+.q-title { margin: 4px 0 10px; font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: 0.01em; text-transform: uppercase; color: var(--gold); }
+.q-body p { margin: 0 0 12px; font-size: 15px; }
+.q-gold { font-weight: 700; color: var(--gold-light); }
+.q-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.q-confirm { margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--gold-deep); }
+.q-confirm p { font-weight: 700; }
+.q-skip {
+  appearance: none; display: block; margin: 12px 0 0; padding: 8px 0; min-height: 44px;
+  background: transparent; border: 0; border-radius: 0; color: var(--gold-light);
+  font-family: var(--body); font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer;
+}
+.q-skip[hidden], .q-resume[hidden] { display: none; }
+.q-skip:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+.q-resume { margin: 18px auto 0; }
 .field-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .g-input {
   flex: 1 1 200px; min-height: 48px; padding: 0 12px;
@@ -191,12 +285,17 @@ body.game-on .hero { display: none !important; }
 .game .btn[disabled], .sheet .btn[disabled] { opacity: 0.5; cursor: default; }
 .b-status { margin: 10px 0 0 !important; font-weight: 700; color: var(--gold-light); min-height: 1.2em; }
 .b-status:empty { display: none; }
-.all-used { margin: 16px 0 0; font-family: var(--display); font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--gold); }
+
+/* ─── end of the game ─────────────────────────────────────────── */
+.g-end { margin: 18px 0 0; }
+.g-end[hidden] { display: none; }
+.g-end-title { margin: 0; font-family: var(--display); font-weight: 400; font-size: 28px; letter-spacing: 0.01em; text-transform: uppercase; color: var(--gold); }
+.g-end-body { margin: 6px 0 0; font-weight: 700; color: var(--gold-light); }
 
 /* ─── stage (the opening sequence) ────────────────────────────── */
 .stage {
   position: fixed; inset: 0; z-index: 50;
-  background: var(--black); color: var(--white);
+  background: var(--green-deep); color: var(--white);
   overflow: hidden;
   --pw: min(62vw, 300px, 40vh);           /* pack width */
   --ph: calc(var(--pw) * 1.55);           /* pack height */
@@ -317,10 +416,28 @@ body.game-on .hero { display: none !important; }
 .stage.settled .st-center, .stage.settled .st-skip { display: none; }
 .stage.settled .st-rays { opacity: 0.12; }
 .stage.error .st-voucher .sv-code { font-size: 22px; letter-spacing: 0.02em; }
+.st-stamp.small { font-size: 17px; }
+
+/* Golden Ticket sequence: a portrait ticket pops out instead of the
+   pretzel (the prize is revealed at the counter). Solid golds only. */
+.st-ticket { display: none; }
+.stage.golden .st-prize picture, .stage.golden .st-shine { display: none; }
+.stage.golden .st-ticket {
+  position: absolute; inset: 6% 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--gold-light); color: var(--black); border: 4px solid var(--gold);
+  font-family: var(--display); text-transform: uppercase; line-height: 0.95; overflow: hidden;
+}
+.stt-top, .stt-mid { font-size: calc(var(--zw) * 0.21); letter-spacing: 0.01em; }
+.stt-top { color: var(--gold-deep); }
+.stt-perf { width: 100%; margin: 14% 0 10%; border-top: 4px dashed var(--gold-deep); }
+.stt-stub { font-size: calc(var(--zw) * 0.17); letter-spacing: 0.08em; color: var(--green); }
+.stage.golden .st-what { color: var(--gold-light); }
+.stage.golden .st-voucher { border-color: var(--gold-deep); }
+.stage.golden .sv-label { color: var(--gold-deep); }
 
 /* ─── staff redeem sheet ──────────────────────────────────────── */
 .sheet {
-  position: fixed; inset: 0; z-index: 60; background: var(--black);
+  position: fixed; inset: 0; z-index: 60; background: var(--green-deep);
   display: grid; place-items: center; padding: 20px; overflow-y: auto;
 }
 .sheet[hidden] { display: none; }
@@ -348,5 +465,9 @@ body.game-on .hero { display: none !important; }
 .sheet .btn-line { color: var(--green); border-color: var(--green); }
 .rd-msg { min-height: 1.4em; font-weight: 700; margin: 12px 0 0 !important; }
 .rd-ok { font-family: var(--display); font-size: 22px; text-transform: uppercase; color: var(--green); }
+.rd-badge { display: inline-block; margin: 10px 0 0 !important; padding: 4px 10px; background: var(--green); color: var(--gold-light); font-family: var(--display); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; }
+.rd-give { margin: 10px 0 0 !important; font-size: 20px; font-weight: 700; }
+.rd-extra { margin: 8px 0 0 !important; padding: 8px 10px; border: 2px solid var(--green); font-weight: 700; }
+.rd-badge[hidden], .rd-give[hidden], .rd-extra[hidden] { display: none; }
 
 html.stage-open, html.stage-open body { overflow: hidden; }

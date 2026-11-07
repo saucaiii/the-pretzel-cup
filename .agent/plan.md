@@ -1,174 +1,292 @@
-# Plan: pretzel-packs v2 (3D foil packs, swipe carousel, 4th pack)
+# Plan: pretzel-packs v3 (green theme, quest loop, Golden Ticket)
 
-Draft, 2026-11-05. Not approved. Replaces the v1 plan (approved, built,
-draft PR #27 on branch `agent/pretzel-packs`). v1 is in git history at
-commit 269c89b. This plan changes v1's design, so it needs a new
-`scripts/agent/approve-plan.sh` before any code changes.
+Draft, 2026-11-06. Not approved. Branch `agent/pretzel-packs-v3` from
+main 893a774 (v1, v2 and the popup are live). v2 plan is in git history.
+Needs a new `scripts/agent/approve-plan.sh` and a new scope (below)
+before any code changes.
 
 ## Risk
-**CRITICAL (personal data, prizes), with HIGH parts.** Take the highest.
-- CRITICAL: the prize cap goes from 3 to 4 per person; the migration
-  changes (still unapplied, so `p10_pretzel_packs.sql` is edited in place).
-  Human applies the migration, sets env, deploys.
-- HIGH: new third-party code (three.js, MIT, vendored); third-party
-  trademarks on the page (Instagram glyph, Apple App Store badge).
-- MEDIUM: `api/_packs.js` new `app` source; `api/_qr.js` `app_store_url`.
-- LOW: pack rendering, carousel, motion.
-- Automated decisions about people: none. Every pack wins the same pretzel.
+**CRITICAL (prizes, personal data, a new migration), with HIGH parts.**
+- CRITICAL: a new prize (Golden Ticket) with its own voucher; a new
+  migration on live pack tables plus a new per-player game record.
+  Human applies the migration (or authorizes it in chat), sets what
+  staff give, deploys.
+- HIGH: `supabase/migrations/` is a high-risk path in this repo.
+- MEDIUM: `api/_packs.js` (new `bonus` source, quest order, stop action,
+  game record), `api/_qr.js` (bonus settings), `/ops/qr` fields and stats.
+- LOW: colours, layout, motion.
+- Automated decisions about people: none. Outcomes are deterministic:
+  every pack wins; everyone who completes all 4 gets the same Golden
+  Ticket. No odds, no randomness in prizes.
+- Personal data: no new personal fields. The game record stores only a
+  score, an end state and timestamps against the existing player id.
 
 ## Goal
-Make the pack feel real and fun on a phone: an industrial, diamond plate,
-gold foil booster pack rendered in 3D with real light, in a carousel of
-5 packs the player swipes through, then opens. Bonus packs: email (+1),
-Instagram (+1), App Store download (+1). Max 4 per person per offer.
+Keep people in one game loop through 4 free pretzels on the site's
+green brand, without the stacked "Want another?" forms. Loop: quest >
+pack drops in > rip > win > next quest. Completing all 4 earns a Golden
+Ticket. A player can end at 3 with "I don't need another app", and we
+record how every game ended.
 
-## Decisions (user, 2026-11-05)
-1. Rendering: 3D with three.js and **our own pack model built in code**
-   (no Sketchfab model, so no credit line).
-2. Brand exception: **lit metallic shading on the 3D pack only**, in brand
-   golds, green and black. Page, buttons and voucher stay solid colour.
-   Gold-to-gold shimmer rule still applies everywhere else.
-3. 4th pack: **App Store download, honor tap** (like Instagram). Cap 4.
-4. Carousel: **5 packs**, all identical in outcome (every pack wins).
-5. Pack order: 1 first (free), 2 email, 3 Instagram, 4 App Store.
+## User direction (2026-11-06, relayed from the ops/qr session)
+- No black backgrounds; follow the site design and brand guidelines.
+- Remove the "Want another?" section.
+- Keep people in the loop until the 4 free pretzels are done.
+- "We are not a gambling site."
+- Golden bonus prize: "Find out in store" (mystery reward, revealed at
+  the counter). Shown as a "Golden Ticket".
+- "Maybe the golden is if they do all 4. if they do 3 (initial free,
+  insta, email) give them an 'i dont need another app' button so we
+  can clock who stops at 3 and who pushes all 4." Choosing it ends the
+  game and records a score of 3. "Acknowledge in our ledger who
+  completes all 4."
+- **Confirmed by the user, 2026-11-06:** a player who stops at 3 keeps
+  their 3 pretzels and gets no Golden Ticket ("yes, a player who stops
+  at 3 keeps their 3 pretzels and gets no bonus").
+
+## Assumptions (not stated by the user; confirm in review)
+- Stopping is final for that offer (the app quest goes away). This is
+  the part of the stop-at-3 rule the user has not confirmed.
+- "Ledger" = the new per-player game record plus a "Completed all 4"
+  list in `/ops/qr` and a badge on the staff redeem sheet. Not the
+  Pretzel Cup leaderboard.
+- The Golden Ticket needs the App Store link to be set. If the game is
+  on without it, the trail ends at 3, no ticket or stop button shows,
+  and `/ops/qr` warns that the Golden Ticket cannot be earned.
+- "Left without finishing" is not a separate event (people just close
+  the tab): it is any game record with no end, reported at its last
+  score.
 
 ## Scope
-**Scope (paths/files):** api/leads.js api/_packs.js api/_qr.js ops/qr/ free-pretzels/ supabase/migrations/p10_pretzel_packs.sql tests/ .agent/
+**Scope (paths/files):** api/_packs.js api/_qr.js ops/qr/ free-pretzels/ supabase/migrations/p11_pretzel_packs_bonus.sql tests/ .agent/
 
-Same as v1 (no widening). three.js is vendored under
-`free-pretzels/vendor/` (inside scope). Not touched: `api/_lib/`,
-`vercel.json`, `middleware.js`, `scripts/`, `.github/`, `package.json`
-(three.js is not an npm dependency of the app).
+Change from v2: drops `api/leads.js` (dispatch unchanged) and
+`p10_pretzel_packs.sql` (applied, never edited again); adds the new
+`p11_pretzel_packs_bonus.sql`. Not touched: `api/_lib/`, `vercel.json`,
+`middleware.js`, `scripts/`, `.github/`, `package.json`, `brand.css`.
+Function count stays 12 (still `?resource=packs`).
 
 ## Design
-**Pack model (built in code, `free-pretzels/pack3d.js`):**
-- A crimped foil pouch: a subdivided plane bent into a slightly pillowed
-  shape (thicker in the middle, thin at the edges), with crimped seal
-  strips at top and bottom (zigzag ridges in the geometry).
-- Materials (three.js `MeshPhysicalMaterial`): gold foil (metalness 1,
-  low roughness, brand golds #D4B662 / #B2872F / #F2E7A4), diamond plate
-  on the upper face (normal and roughness maps drawn on a canvas at run
-  time from the existing 48x24 diamond tile, so no texture files), green
-  #0D5237 lower panel. The environment map is a small canvas-made studio
-  (black with gold-light softboxes), so reflections stay on-brand.
-- Front art as canvas textures: "FREE PRETZEL" in Archivo Black on a black
-  band above the tear line; our logo flat on the lower panel (never
-  tilted, cropped or recoloured on the texture; see the logo rule below).
-- Tear line: a gold strip across the middle; it brightens in beat 2.
-- Rip (beat 3): two meshes (top and bottom halves). Top flies up and away,
-  bottom drops straight down, no rotation.
 
-**Logo rule with 3D:** the logo is printed on the pack, and the pack turns
-in 3D. To keep "never tilted": the carousel turns packs only around the
-vertical axis by at most 25 degrees while swiping (the logo stays upright,
-never rotated in-plane), and every pack faces flat front when centred and
-during beats 2 to 6. In beat 1 (spin-in) the logo stays hidden until the
-pack faces front, as in v1. If the human considers any 3D turn a "tilt",
-fall back to: logo hidden on all non-centred packs.
+**1. Green theme (brand.css tokens, no new colours)**
+- Game section, full-screen stage, staff redeem sheet: `--bg` green
+  #0D5237; panels and the trail on `--bg-2` green-deep #083521.
+- Gold (#D4B662 / #F2E7A4) for CTAs, highlights, trail nodes, codes.
+  Black only as text on gold. White text on green.
+- `.btn-dark` replaced by the gold solid button on green.
+- 3D studio environment: deep green with gold-light softboxes (was
+  black), so foil reflections read on-brand. Checked side by side.
+- Popup stays as approved (semi-transparent grey card, solid contents).
+- Brand rules kept: solid colours, gold-to-gold shimmer only, no
+  shadows, no emojis, no em dashes in copy.
 
-**Carousel (step 0, replaces "pick 1 of 3"):**
-- 5 packs in a row, centred one large, neighbours smaller and dimmer.
-  Swipe (pointer drag with momentum and snap), arrow buttons, and arrow
-  keys. Light glints across the foil as packs move (tilt follows the drag;
-  optional device tilt via `DeviceOrientationEvent` only after a tap,
-  iOS asks permission, off by default).
-- "Open this pack" button under the centred pack (plus tap on the pack).
-  The chosen pack flies to centre, the others drop away, stage goes black,
-  then the six beats run with v1's timing table (unchanged).
+**2. Pretzel trail (persistent, top of the game)**
+- 4 pretzel slots, then a gold Golden Ticket node at the end:
+  `[1 free] [2 Instagram] [3 email] [4 app] [GOLDEN TICKET]`.
+- Slot 1 fills after the first pull, so they start at "1 of 4".
+- Locked slots show the action they need ("Follow", "Email",
+  "Download"); filled slots show a gold pretzel; the current quest's
+  slot is outlined. Label: "3 of 4 collected".
+- Line under the trail: "Every pack wins." (honest, not chance).
+- Golden Ticket node hidden when the bonus is off or no App Store link
+  is set (trail shows only what can be earned).
 
-**Win (beats 3 to 6):** unchanged from v1 (real pretzel pops out, rays,
-YOU WON / FREE PRETZEL, burst, shimmer, stamp, rivets rain, voucher).
-The 3D canvas renders the pack; the existing 2D canvases keep rivets
-(behind) and shards (front).
+**3. One quest at a time (replaces "Want another?")**
+- After a win settles, the voucher stacks into the set and the next
+  quest card slides in where the voucher settled, with one CTA:
+  - Quest 2 Instagram: "Follow @handle" (opens Instagram, unlocks on
+    return, as today).
+  - Quest 3 Email: the existing email form (magic link, POST verify).
+    Card copy says to check their inbox; the link resumes here.
+  - Quest 4 App: "Download the app" (honour tap, as today), plus a
+    secondary button "I don't need another app" (see 4).
+  - After 4 of 4: "Your Golden Ticket pack is ready." No action needed.
+- When a quest is done, the next pack drops into the centre of the
+  carousel with a glow; tap to rip. The 5-pack carousel stays for the
+  first pick only; later packs drop in one at a time.
+- "Skip for now" under the Instagram and email cards: closes the card,
+  keeps every voucher, the trail stays so they can resume. The game is
+  not ended. No re-prompt on the same visit.
+- Set view: collected vouchers as a stack ("3 of 4 collected"), tap to
+  expand any code for the counter.
 
-**Bonus list (page):**
-- Pack 2: "Sign up with email (+1)" (unchanged flow, magic link, POST
-  confirm).
-- Pack 3: "Follow on Instagram (+1)" with the official Instagram glyph.
-- Pack 4: "Download the app (+1)" with Apple's official "Download on the
-  App Store" badge, linking to the `app_store_url` set in `/ops/qr`
-  (validated `https://apps.apple.com/...`). Hidden until set. Unlocks on
-  return (honor system, once per player).
-- Trademark use: official artwork only, unaltered, at or above each
-  owner's minimum size and clear space, on a plain background (white
-  badge variant on black where needed). The human supplies the official
-  files from Apple Marketing Tools and Instagram's brand resources; the
-  agent does not redraw them. Until supplied, text buttons are used.
+**4. Ending the game**
+- **Stop at 3:** "I don't need another app" shows only on the app card,
+  when first, Instagram and email are done and the app pack is not.
+  One plain confirm ("End your game? You keep your 3 pretzels.") then
+  the end screen. No loss framing, no "are you sure you want to miss
+  out".
+- **End screen** (stop at 3 or after the Golden Ticket): the vouchers
+  they won, a short closing message ("Thanks for playing. Show a code
+  at the counter."; after 4: "Set complete. 4 of 4 and a Golden
+  Ticket."), and no more quests.
+- **Complete 4:** the 4th pretzel is opened, the Golden Ticket pack
+  drops in, they rip it, the game ends as completed.
+- Server records every end (section API).
 
-**Performance and fallbacks:**
-- three.js (r160 module build, about 170 KB gzipped) and `pack3d.js` load
-  only when the API says the game is on, after first paint.
-- Pixel ratio capped at 2; one render loop that stops when nothing moves;
-  carousel renders 5 instances of one geometry.
-- No WebGL, load failure, or `prefers-reduced-motion`: use v1's CSS packs
-  (already built) in the same carousel layout, no 3D.
-- Target: 60 fps on a mid-range phone, under 1.5 s from tap to beat 1.
+**5. Golden Ticket pack**
+- Unlocks only after all 4 pretzels (first, Instagram, email, app).
+- Own sequence: polished mirror-gold finish (pretzel packs become satin
+  gold so the ticket pack clearly differs), gold-deep crimps, a
+  "GOLDEN TICKET" foil band, longer rivet rain, a stamp, its own
+  voucher. Beats: regular timing table unchanged; this one adds about
+  1.5 s to the rain and stamp (ends near 7.5 s).
+- **Mystery reward, revealed at the counter.** The voucher never names
+  the prize.
+- **Golden Ticket voucher.** Default title "Golden Ticket", default
+  line "Visit the Pretzel Factory to claim your prize." Look: a ticket
+  shape (notched ends, perforation before the code stub) in solid brand
+  golds: gold-light #F2E7A4 body, gold #D4B662 border and stub,
+  gold-deep #B2872F perforation and accents, black text on gold. One
+  gold-to-gold shimmer on reveal; no other gradients, no shadows.
+- **Deterministic, not a sweepstakes:** one fixed item per offer, set
+  in `/ops/qr`. Everyone who completes all 4 in an offer gets the same
+  thing. No random draw, no prize pool, no odds. "Mystery" only means
+  the name is hidden until the counter.
+- Settings in `/ops/qr`: on/off; title (max 40, default "Golden
+  Ticket"); line (max 120, default above); **"What staff give"**
+  (internal only, max 60, e.g. "Free dip with any pretzel"). Off by
+  default; cannot be turned on while "What staff give" is empty.
+- "What staff give" never reaches the public page, the public offer GET
+  or the player API. Shown only in `/ops/qr` (operator session) and on
+  the redeem sheet after a correct staff PIN.
+- All three texts are copied onto the voucher when it opens.
+
+**6. Gentle escalation (collect-the-set, not slot machine)**
+- Each win a little bigger: more rivets and a slightly longer shimmer
+  per pack number; the Golden Ticket is the biggest.
+- Kept: anticipation (tear, rip), a progress meter, a bonus round,
+  celebration, set completion.
+- Not used: near-misses, fake odds, countdown timers, loss framing,
+  autoplay of the next pack, streaks.
+
+**7. Persistence**
+- Truth stays on the server (cookie player + vouchers + game record).
+- localStorage (`ppf_packs_ui`, try/catch, no personal data): skipped
+  flag per offer and the last settled count, so a reload resumes at the
+  right quest card without replaying a win.
+- Email magic link lands on `/free-pretzels#pack_verify=...`, verifies,
+  then shows the next quest (the email pretzel pack).
 
 ## API and data changes
-- `api/_packs.js`: `SOURCES` adds `app`; `MAX_PACKS` 4; new action
-  `{action:'app'}` (like `instagram`: live game, `app_store_url` set,
-  rate-limited, once per player sets `pack_players.app_at`); state gains
-  `bonuses.app` and `app_store_url`. Opening order: first, email,
-  instagram, app.
-- `api/_qr.js`: offer gains `app_store_url` (empty or
-  `^https://apps\.apple\.com/` up to 300 chars).
-- `p10_pretzel_packs.sql` (unapplied, edited in place): `pack_players.app_at
-  timestamptz`; `pack_vouchers.source` check adds `'app'`. If it was
-  applied before this lands, the human gets a separate `ALTER` instead.
-- `/ops/qr`: App Store URL field; stats rows for app packs and app taps.
+- `p11_pretzel_packs_bonus.sql` (new, additive):
+  - `pack_vouchers.source` check adds `'bonus'`; nullable columns
+    `prize_title` (<= 40), `prize_public` (<= 120), `prize_staff`
+    (<= 60).
+  - New table `pack_games`: `player_id` (fk pack_players), `offer_key`,
+    `score` int 0 to 4, `ended` text null or in
+    (`'completed'`, `'stopped_at_3'`), `completed_all` boolean default
+    false, `started_at`, `last_at`, `ended_at`; unique
+    (player_id, offer_key); RLS on, deny-all. No email, IP or device
+    data.
+  - `down` statements noted in the file.
+- `api/_packs.js`:
+  - Opening order: first, instagram, email, app, then bonus.
+  - `bonus` unlocks only when first, instagram, email and app vouchers
+    exist for this offer and the bonus is on. Does not count toward the
+    4 pretzels (`MAX_PACKS` stays 4); unique (player_id, offer_key,
+    source) caps it at 1.
+  - Every open upserts `pack_games` (score = pretzel vouchers, last_at).
+    Opening the 4th sets `completed_all` true and `ended='completed'`
+    with `ended_at`. The Golden Ticket opens even after `ended`
+    is completed.
+  - New `{action:'stop'}`: allowed only at score 3 with first,
+    instagram and email used, app not used, game not ended. Sets
+    `ended='stopped_at_3'`, `ended_at`. Rate-limited. After it, open
+    and the app honour tap refuse with a clear message.
+  - State gains `trail`, `next_quest`, `ended`, `score`, `can_stop`,
+    `bonus` (`{on, title, text}`, public only). `publicVoucher` never
+    includes `prize_staff`.
+  - Redeem: after a correct PIN, the response includes `prize_staff`
+    for Golden Ticket codes and `completed_all` for the player, so the
+    sheet shows "Give: ..." and a "Completed all 4" badge.
+  - Operator stats: players by end (completed 4 / stopped at 3 / not
+    finished, by last score 1 to 4), counts per step (pulled 1,
+    Instagram, email, app, Golden Ticket opened, redeemed), and a
+    "Completed all 4" list: Golden Ticket code, completed date, redeemed
+    or not, email masked (`j***@example.com`). Head counts as today.
+  - Merge on email verify: `pack_games` rows follow the existing merge
+    rule (keep the higher score; an end state is kept).
+- `api/_qr.js`: offer gains `bonus_on`, `bonus_title`, `bonus_text`
+  (Golden Ticket defaults) and `bonus_staff` (1 to 60 chars, required
+  when on). The public offer GET strips `bonus_staff`. Warn (not block)
+  when the bonus is on and no App Store link is set.
+- `/ops/qr`: Golden Ticket toggle, title, line, "What staff give"
+  (marked internal); end-state and per-step stats; Completed all 4 list.
 
 ## Steps
-1. Migration + `_packs.js` + `_qr.js`: `app` source, cap 4, `app_store_url`.
-2. Tests: cap 4, app tap once, app hidden when URL unset, order of sources,
-   URL validation, merge carries `app_at`.
-3. Vendor three.js r160 (`three.module.min.js` + LICENSE) under
-   `free-pretzels/vendor/`, fetched from the npm registry tarball, checksum
-   recorded in the PR.
-4. `free-pretzels/pack3d.js`: pack geometry, materials, canvas textures,
-   environment, carousel, rip halves, render loop, fallback detection.
-5. `free-pretzels/packs.js` + `packs.css` + `index.html`: carousel step 0,
-   hook the 3D pack into beats 1 to 3, bonus list with 3 bonuses and
-   brand-safe slots for the official badges, fallback to CSS packs.
-6. `/ops/qr`: App Store URL field + stats.
-7. Validate: `npm test`, `tests/guardrails.sh`, `eval-report.sh`, reviewer
-   subagent, visual check at 375 px and desktop on the local mock (beats
-   timing table, swipe, reduced motion, no-WebGL fallback, game off, API
-   down), frame-time sample on the mock.
-8. Record in `.agent/`, commit, push to `agent/pretzel-packs`, update draft
-   PR #27.
+1. Migration `p11_pretzel_packs_bonus.sql` (not applied by the agent).
+2. `_packs.js` + `_qr.js`: order, bonus source, texts, game record,
+   stop action, state shape, settings validation, stats, redeem badge.
+3. Tests: order; bonus needs all 4 and the setting; not counted in 4;
+   once per player; texts snapshotted; defaults; cannot enable without
+   staff text; stop only at exactly 3 (not 2, not after app, not
+   twice); stop blocks app and further opens; score and end states
+   recorded; completed_all set on 4th; merge keeps higher score;
+   staff text and completed list absent from every public response;
+   staff text only after a correct PIN.
+4. Green theme: `packs.css`, `index.html` inline styles, pack3d studio.
+5. Trail + quest cards + stop button + end screen + skip + set stack;
+   remove the "Want another?" block.
+6. Golden Ticket pack finish, sequence and ticket voucher.
+7. `/ops/qr` settings, stats and Completed all 4 list.
+8. Validate: `npm test`, `tests/guardrails.sh`, `eval-report.sh`,
+   reviewer subagent, visual check on the local mock at 375 px and
+   desktop (full loop 1 > 4 > Golden Ticket, stop at 3, bonus off, app
+   link unset, skip and resume, reload mid-loop, email link resume,
+   reduced motion, no WebGL, game off, ops stats).
+9. Record in `.agent/`, commit, push, draft PR (screenshots, honour
+   system note for Instagram and app, migration as a human step,
+   assumptions listed).
 
 ## Success criteria
-- Quantitative: all tests pass; only scoped files change; function count
-  unchanged (12); no new npm dependencies; three.js only via the vendored
-  file; page weight added only when the game is on.
-- Qualitative: on a phone the pack reads as an industrial gold foil pack
-  with diamond plate (side by side with v1, clearly more real); swiping the
-  carousel feels smooth and snaps; beats still land at 0 / 0.9 / 2.0 /
-  2.5 / 3.3 / 6.0 s (within about 0.2 s); a 5th pretzel is impossible for
-  the same email; with no WebGL or reduced motion the v1 CSS packs work;
-  with the game off the page is the plain offer page.
+- Quantitative: all tests pass; only scoped files change; 12 functions;
+  no new dependencies; no `var(--black)` backgrounds left in the game,
+  stage or sheet (grep); at most 4 pretzels + 1 Golden Ticket per
+  player per offer; every player with a voucher has one game record.
+- Qualitative: on a phone the game reads as the green Pretzel Cup site;
+  after each win exactly one next step is shown; at 3 of 4 the player
+  can finish or end with one tap; `/ops/qr` shows stopped at 3 vs
+  completed 4 and who completed all 4; no copy implies chance,
+  scarcity or loss; the ticket never names the prize; staff text never
+  appears in a public response.
 
 ## Risks + mitigations
-- **Phone performance / battery:** loop stops when idle; low-fps detection
-  drops shadows and pixel ratio; fallback to CSS packs.
-- **Third-party trademarks:** official files only, supplied by the human;
-  usage guidelines followed; text buttons until then.
-- **Brand drift from 3D shading:** exception limited to the pack; human
-  reviews screenshots in the PR before turning the game on.
-- **Honor-system bonuses (Instagram, app):** once per player, capped.
-- **New third-party code:** three.js MIT, vendored and pinned, licence
-  file shipped, noted in the PR.
+- **Gambling perception:** deterministic outcomes, "Every pack wins",
+  no odds, timers or near-misses; the ticket is earned, not drawn;
+  copy says "claim your prize", never "chance" or "could win".
+- **Stop button as pressure:** neutral wording, one plain confirm, keeps
+  every code; no "you'll miss out".
+- **Honour-system steps (Instagram, app):** cannot be verified; once per
+  player, capped; stated in the PR. This also means "completed all 4"
+  counts taps, not real follows or installs.
+- **Staff text leaking:** kept out of `publicVoucher`, the public offer
+  GET and state; tests assert it.
+- **Personal data:** game record holds no new personal fields; the
+  operator list masks emails.
+- **Migration on live tables:** additive only; human applies; rollback
+  in the file.
+- **Green reflections dull the foil:** compare screenshots; fall back
+  to the black studio for the pack only if gold looks muddy.
+- **Order change mid-campaign:** existing codes kept; next quest
+  computed from what is missing; game records backfilled lazily on the
+  next state read for players who already have vouchers.
 
 ## Rollback / escalation
-- Turn the game off in `/ops/qr` (no deploy).
-- Code: `git revert` of the v2 commits returns to v1 (still working).
-- Escalate on any need for a new function, `vercel.json`, `api/_lib/`, or
-  an npm dependency.
+- Turn the game or the Golden Ticket off in `/ops/qr` (no deploy).
+- Code: `git revert` of the v3 commits returns to v2 + popup.
+- Migration: drop `pack_games` and the three `prize_*` columns, restore
+  the old source check (only if no bonus rows exist).
+- Escalate on any need for a new function, `vercel.json`, `api/_lib/`,
+  `brand.css`, or an npm dependency.
 
 ## Human steps (CRITICAL, prepare only)
-- Run `scripts/agent/approve-plan.sh` for this plan.
-- Supply the official Instagram glyph and App Store badge files (SVG)
-  into `free-pretzels/packs/` or tell the agent where they are.
-- Give the App Store URL and the Instagram handle (set in `/ops/qr`).
-- Plus all v1 human steps in PR #27 (migration, `PACKS_STAFF_PIN`, Gmail,
-  Supabase smoke test, preview on a phone, deploy).
+- Set the task scope to the Scope line above, then run
+  `scripts/agent/approve-plan.sh`.
+- Confirm the remaining assumptions above.
+- Decide what staff give for the Golden Ticket, enter it in `/ops/qr`
+  and turn it on (needs `EDGE_CONFIG_WRITE_TOKEN`, still unset), or
+  tell the agent. Brief counter staff that it is a fixed item.
+- Apply `p11_pretzel_packs_bonus.sql` (or authorize the agent in chat).
+- Review the draft PR screenshots on a phone, merge, deploy from the
+  worktree (`npm run deploy`).

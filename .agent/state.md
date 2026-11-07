@@ -1,49 +1,65 @@
 # Working memory (short-term). Keep under 60 lines.
-Branch: agent/pretzel-packs
-Task: pretzel-packs
-Status: implemented, reviewed, fixes applied; ready for draft PR
-Started: 2026-11-06T03:15Z
+Branch: agent/pretzel-packs-v3
+Task: pretzel-packs-v3 (green theme, quest loop, Golden Ticket, stop at 3)
+Status: building (plan approved)
+Started: 2026-11-06
+
+## Context
+- Previous task (pretzel-packs v1/v2 + popup) is merged and live (main 893a774).
+  Its notes are in git history of this file.
+- Requests relayed by the ops/qr session (local_7f43c8af) with the user's words.
+- Plan v3 approved by the human 2026-11-07T00:15Z (approval hash = sha256 of
+  .agent/plan.md at 460a2ec, checked by the agent). scope.txt matches the plan.
 
 ## Progress
-- Created isolated worktree. Scope: api/leads.js api/_packs.js api/_qr.js ops/qr/ free-pretzels/ supabase/migrations/p10_pretzel_packs.sql tests/ .agent/
-- Plan approved by human (approve-plan.sh). Plan file not edited by the agent.
-- Step 1 migration p10_pretzel_packs.sql: done (NOT applied; human step).
-- Step 2 api/_packs.js + leads.js dispatch: done. Function count unchanged (12).
-- Step 3 _qr.js game + instagram_handle, /ops/qr toggle + pack stats: done.
-- Step 4 free-pretzels game UI (packs.js, packs.css, index.html): done.
-- Step 5 magic-link email via _lib/gmail.js sendEmail (file not edited). Real send NOT verified.
-- Step 6 tests/packs.test.mjs: npm test 164/164.
-- Step 7 guardrails.sh 106/106. Visual check on a local mock (real handlers, in-memory store), 375px + desktop: beats, Skip, reduced motion (matchMedia override), game off, API down, email verify, Instagram, 3 of 3, redeem, /ops/qr. Beat marks 0 / 0.9 / 2.0 / 2.5 / 3.3 / 6.0 s (re-checked after fixes).
-- PR #26 is merged into main (merge commit), so the draft PR targets main, not agent/qr-scan-redirect.
+- Step 1 p11 migration written (a279064). APPLIED 2026-11-07 to Supabase
+  the-pretzel-cup (ivwjhfndltkngefjozrj, the only project; p10 already there) after
+  the user said "Yes, apply p11" in this session. Verified: source check has 'bonus',
+  prize_* columns added, pack_games exists with RLS on, existing 26 vouchers untouched.
+- Step 2+3 _packs.js / _qr.js + tests (ff5db4e): quest order, bonus source,
+  pack_games record, stop action, staff text only after PIN, stats. npm test 180/180.
+- Steps 4 to 7 done (a4a7f90, ops commit): green theme, trail, quest cards, stop, end screen,
+  Golden Ticket finish + ticket voucher (packs.css, packs.js, index.html, pack3d.js).
 
-## Review round 1 (reviewer subagent): not ready -> fixed
-- Root cause: reasoning error in identity/merge design (GET verify hijack, 4 codes per email, verify reporting success after clashes); tool misuse of Redis (INCR then EXPIRE); context issue (PostgREST 1000-row cap, insert of all defaults).
-- Fixed: POST verify bound to requesting player, one email per player, void duplicate slots, SET NX EX limits, open limit 60, head-count stats, CAS + per-code PIN cap, own-host email links, start date required with game on, front canvas for burst.
-- Deviation from plan API list (flag in PR): GET verify redirects, POST {action:'verify'} confirms.
+## Deviation from approved plan (user-directed, plan.md not edited)
+- "What staff give" optional: empty -> redeem sheet "Prize not set yet. Ask a manager.",
+  /ops/qr warns instead of blocking. Golden Ticket needs only bonus_on + App Store link.
 
-## Environment notes
-- Worktree had no node_modules: ran npm ci (context/environment issue, fixed, 1 try).
-- Empty failures.json retry-test issue from main checkout did not reproduce here.
-- eval-report "Scope match: fail": scope-check.sh wants a **Scope (paths/files):** line; the approved plan uses a "## Scope" list. Not fixable without voiding approval; PR body carries the line.
-- 1 policy block in the audit log: my own shell read of the human-owned control folder (tool misuse). Not retried.
+## Review round (reviewer subagent @ 48476b9): not ready -> fixed
+- Root causes: reasoning error (fail-soft not applied to stop/stats; ticket missing the
+  Instagram precondition; no server-side quest order); governance (relayed approval).
+- Fixed: gameOk gate on stop + ticket, handleStop 503 when record unreadable, stats game
+  counts fail soft, bonusOn needs instagram_handle (+ lint), app tap needs first+IG+email,
+  redeem falls back to current staff item, no drop-in replay on load, stop error focus,
+  studio background exactly #083521. npm test 185/185.
+- Not fixed (noted in PR): stop racing a parallel app open can leave score 4 + stopped.
+- Migration: user confirmed directly here ("Yes, apply p11"). Deploy: ask the user here.
 
-## Not verified
-- Supabase adapter against a real DB. Real Gmail send. Frame rate on a real phone. OS-level prefers-reduced-motion (JS path verified). Code scanning alerts (GitHub MCP down).
+## Keep-or-trade deal (user, directly, 2026-11-07; deviation from plan v3, plan.md not edited)
+- After all 4: keep 4 pretzels or trade all 4 for the Golden Ticket (always wins).
+  Ticket = any one product (default bonus_staff); redeem also burns and hands back the
+  unused pretzels (staff-only "Surprise" line). Traded pretzel codes hidden and refused
+  on their own. Visual: deal card, trade > ticket > end, keep > end (survives reload),
+  staff sheet with surprise line. npm test 187/187.
 
-## v2 (plan v2 approved via approve-plan.sh)
-- Retry 1 (local mock restart): curl URL with unquoted `?` hit zsh globbing. Root cause: tool misuse. Change: quote URLs, start the server with run_in_background.
-- Built: app source + cap 4 (be2424c), three.js vendored (8eef382, sha512 matches registry), 3D packs + carousel (307e205), ops App Store field (7a07893). npm test 166/166, guardrails 106/106.
-- Visual (local mock, 375px + desktop): 3D gold foil carousel, drag snaps, 3D stage spin/tear/rip, beats 0/0.9/2.0/2.5/3.3/6.0 s, App Store tap opens the real link and unlocks, no-3D fallback (three.js refused) works.
-- User-directed design changes after approval: plain gold foil + logo only, tear at top 20%, hint "Swipe to rip the pack!" (decisions.md).
-- Values from the user for /ops/qr (human publishes): App Store https://apps.apple.com/us/app/philly-pretzel-factory/id1185574639 ; Instagram phillypretzelfactory_fs.
-- Official badge files not supplied: text buttons until free-pretzels/packs/app-store-badge.svg and instagram-glyph.svg exist.
+## Retries
+- 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).
+  Root cause: tool misuse. Change: read the file with the Read tool instead.
 
-## Go-live (after PR #27 merged; user explicitly authorized the agent in chat to run these, waiving "prepare only")
-- Migration p10_pretzel_packs applied via Supabase MCP; 3 tables, RLS on.
-- PACKS_STAFF_PIN generated locally, set (sensitive, prod+preview) via vercel CLI; value only in ~/Desktop/PPF-staff-PIN.txt (0600), never printed.
-- Edge Config store pretzel-cup-offer (ecfg_bjjjvawtdnkrwswuq0qiovim08ud) created with offer (2026-11-05..12, game on) + scan_target; read token created; EDGE_CONFIG (sensitive) and EDGE_CONFIG_ID set prod+preview.
-- Production deploy: refused by the session permission check. Human runs `npm run deploy`.
-- Still human: EDGE_CONFIG_WRITE_TOKEN (Vercel account token) so /ops/qr can edit the offer.
+## Visual checks (local mock, real handlers, 375 px + desktop)
+- Full loop 1 > IG > email link > app > Golden Ticket, stop at 3, skip + resume after
+  reload, redeem sheet (badge + Give), reduced motion, game off, public offer has no
+  staff text. Beats 0/0.9/2.0/2.5/3.3/6.0 s; Golden Ticket settles at ~7.7 s.
+- Browser pane was hidden (rAF stalls): final states checked by DOM and stepped frames.
+  Not checked on a real phone. No-WebGL path not re-run in v3.
 
-## Handoffs
-- implementer (this session) -> reviewer subagent: branch diff vs agent/qr-scan-redirect. Result: not ready, 8 findings + 2 deviations; all fixed in 2d62104, 44beb15.
+## Next
+- Push, draft PR, user merges, deploy (ask the user), check live at phone size.
+
+## Carried constraints
+- Deploy only from this worktree (gitignored brand fonts live here).
+- Never commit font files or the brand guide PDF (public repo).
+- p10 migration is applied: never edit it; new changes go in p11.
+- EDGE_CONFIG_WRITE_TOKEN still unset, so /ops/qr cannot save offers yet.
+- Deploying v3 before p11 is applied: pretzels still open (game record fails
+  soft), but the Golden Ticket and stop button would error. Apply p11 first.

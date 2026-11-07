@@ -268,7 +268,28 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
               <label for="o-app">App Store link for the bonus pack (optional)</label>
               <input id="o-app" maxlength="300" placeholder="https://apps.apple.com/..." autocomplete="off" spellcheck="false" inputmode="url">
             </div>
-            <p class="hint">Game on: visitors swipe through 5 packs, open one, and every pack wins one free pretzel. Bonus packs: email sign-up (+1), Instagram follow (+1) and app download (+1); the Instagram and app buttons stay hidden until their field is set. Max 4 per person. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
+            <p class="hint">Game on: visitors pick 1 of 5 packs and every pack wins one free pretzel. Then one step at a time: Instagram follow (+1), email (+1), app download (+1). Max 4 per person; at 3 they can end with "I don't need another app". Instagram and app are honour system and stay hidden until their field is set. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
+
+            <div class="field">
+              <span class="lbl">Golden Ticket after all 4</span>
+              <div class="choices" id="bonus-group">
+                <button type="button" class="choice" data-bonus="off" aria-pressed="true">Off</button>
+                <button type="button" class="choice" data-bonus="on" aria-pressed="false">On</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="o-btitle">Ticket title (customers see this)</label>
+              <input id="o-btitle" maxlength="40" placeholder="Golden Ticket" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="o-btext">Ticket line (customers see this)</label>
+              <input id="o-btext" maxlength="120" placeholder="Visit the Pretzel Factory to claim your prize." autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="o-bstaff">What staff give (internal, never shown to customers)</label>
+              <input id="o-bstaff" maxlength="60" placeholder="Any one product in store" autocomplete="off">
+            </div>
+            <p class="hint">After all 4, players choose: keep their 4 free pretzels, or trade all 4 for the Golden Ticket. Everyone who trades wins it (one fixed item, not a draw). The ticket does not name the prize. At the counter, after the store PIN, staff see what to give plus a surprise: hand back their unused pretzels too (the page never says so). Empty "What staff give" means any one product in store; empty title or line uses the default shown. Needs the Instagram handle and the App Store link.</p>
 
             <span class="lbl">Brand voice check</span>
             <ul class="lint" id="lint"></ul>
@@ -351,6 +372,8 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
         <h2><span class="num">6</span>Pack game</h2>
         <p class="hint" id="pk-hint">For the current offer. Emails verified and Instagram taps are all time.</p>
         <div class="table-wrap"><table id="pack-stats"><thead><tr><th>Packs</th><th class="n">Count</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrap"><table id="pack-ends"><thead><tr><th>How games ended</th><th class="n">Players</th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrap"><table id="pack-done"><thead><tr><th>Completed all 4</th><th>Golden Ticket</th><th>Redeemed</th></tr></thead><tbody></tbody></table></div>
       </div>
 
       <!-- 7. History -->
@@ -371,7 +394,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 var $ = function (s) { return document.querySelector(s); };
 var API = '/api/leads';
 var LAYOUT_TAGLINE = { green: 'white', black: 'white', 'gold-light': 'black' };
-var state = { config: null, layout: 'green', game: false };
+var state = { config: null, layout: 'green', game: false, bonus: false };
 
 // ─── boot / auth ──────────────────────────────────────────────────
 async function boot() {
@@ -509,6 +532,10 @@ function readOffer() {
     game: state.game,
     instagram_handle: $('#o-ig').value.trim().replace(/^@/, ''),
     app_store_url: $('#o-app').value.trim(),
+    bonus_on: state.bonus,
+    bonus_title: $('#o-btitle').value.trim(),
+    bonus_text: $('#o-btext').value.trim(),
+    bonus_staff: $('#o-bstaff').value.trim(),
   };
 }
 function fillOffer(o) {
@@ -525,6 +552,11 @@ function fillOffer(o) {
   setGame(o.game === true);
   $('#o-ig').value = o.instagram_handle || '';
   $('#o-app').value = o.app_store_url || '';
+  setBonus(o.bonus_on === true);
+  // Defaults show as placeholders; an untouched default is saved as empty.
+  $('#o-btitle').value = o.bonus_title && o.bonus_title !== 'Golden Ticket' ? o.bonus_title : '';
+  $('#o-btext').value = o.bonus_text && o.bonus_text !== 'Visit the Pretzel Factory to claim your prize.' ? o.bonus_text : '';
+  $('#o-bstaff').value = o.bonus_staff || '';
   onOfferChange();
 }
 function setLayout(l) {
@@ -532,6 +564,10 @@ function setLayout(l) {
   state.layout = l;
   document.querySelectorAll('#layout-group .choice').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.layout === l)); });
   $('#tagline-note').textContent = 'Tagline will be ' + LAYOUT_TAGLINE[l] + ' (locked).';
+}
+function setBonus(on) {
+  state.bonus = !!on;
+  document.querySelectorAll('#bonus-group .choice').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.bonus === 'on') === state.bonus)); });
 }
 function setGame(on) {
   state.game = !!on;
@@ -568,6 +604,12 @@ function lint(o) {
   if (/crave/i.test(o.stamp || '')) out.push(['stamp', 'Stamp sits by the lockup. Keep crave lines in the details.']);
   if (o.accent && /\s/.test(o.accent)) out.push(['accent', 'One word only.']);
   if (o.starts_at && o.ends_at && o.ends_at < o.starts_at) out.push(['schedule', 'End date is before start date.']);
+  if (o.bonus_on && !o.instagram_handle) out.push(['golden ticket', 'Needs all 4 pretzels. Add the Instagram handle or nobody can earn it.']);
+  if (o.bonus_on && !o.app_store_url) out.push(['golden ticket', 'Needs all 4 pretzels. Add the App Store link or nobody can earn it.']);
+  ['bonus_title', 'bonus_text'].forEach(function (f) {
+    if (/\b(chance|odds|could win|random|lucky)\b/i.test(o[f] || '')) out.push(['golden ticket', 'Everyone who finishes gets the same prize. Avoid chance words.']);
+    if (/[\u2014\u2013]/.test(o[f] || '')) out.push(['golden ticket', 'Em or en dash. Use a period or comma.']);
+  });
   return out;
 }
 function renderLint(items) {
@@ -604,7 +646,8 @@ function sendPreview() {
   if (!previewReady || !f.contentWindow) return;
   var o = readOffer();
   var st = previewStatus(o);
-  var shown = o.headline ? o : Object.assign({}, o, { headline: 'Your headline here' });
+  var shown = Object.assign({}, o, o.headline ? {} : { headline: 'Your headline here' });
+  delete shown.bonus_staff; // internal: never sent into the page preview
   f.contentWindow.postMessage({ type: 'offer-preview', offer: shown, status: st === 'scheduled' ? 'live' : st }, location.origin);
   $('#preview-state').textContent = 'Preview: ' + st + (st === 'scheduled' ? ' (shown as live)' : '');
 }
@@ -644,6 +687,10 @@ function initOffer() {
     b.onclick = function () { setGame(b.dataset.game === 'on'); onOfferChange(); };
   });
   setGame(false);
+  document.querySelectorAll('#bonus-group .choice').forEach(function (b) {
+    b.onclick = function () { setBonus(b.dataset.bonus === 'on'); onOfferChange(); };
+  });
+  setBonus(false);
   window.addEventListener('message', function (e) {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'offer-preview-ready') return;
     previewReady = true;
@@ -836,12 +883,34 @@ async function loadPackStats() {
     var s = await r.json();
     if (!r.ok) throw new Error(s && s.error);
     $('#pk-hint').textContent = 'Game is ' + (s.game ? 'on' : 'off') + '. Counts for this offer (round ' + s.offer_key + '). Emails verified and Instagram taps are all time.';
-    [['First packs opened', s.opened.first], ['Email bonus packs', s.opened.email], ['Instagram bonus packs', s.opened.instagram], ['App bonus packs', s.opened.app || 0],
+    [['1. First packs opened', s.opened.first], ['2. Instagram packs', s.opened.instagram], ['3. Email packs', s.opened.email], ['4. App packs', s.opened.app || 0],
+     ['Traded 4 for the Golden Ticket', s.opened.bonus || 0], ['Golden Tickets redeemed', s.bonus_redeemed || 0],
      ['Codes redeemed', s.redeemed], ['Emails verified', s.emails_verified], ['Instagram taps', s.instagram_taps], ['App Store taps', s.app_taps || 0]]
       .forEach(function (row) { tbody.appendChild(statRow(row)); });
-    tbody.appendChild(statRow(['All packs opened', s.opened.total], true));
+    tbody.appendChild(statRow(['All pretzel packs opened', s.opened.total], true));
+    var ends = $('#pack-ends tbody');
+    ends.textContent = '';
+    var g = s.games || { completed: 0, stopped_at_3: 0, unfinished: {} };
+    var u = g.unfinished || {};
+    [['Completed all 4', g.completed], ['Of those, kept the 4 pretzels', Math.max(0, g.completed - (s.opened.bonus || 0))],
+     ['Of those, traded for the Golden Ticket', s.opened.bonus || 0], ['Stopped at 3 ("I don\'t need another app")', g.stopped_at_3],
+     ['Not finished, at 1', u[1] || 0], ['Not finished, at 2', u[2] || 0], ['Not finished, at 3', u[3] || 0]]
+      .forEach(function (row, i) { ends.appendChild(statRow(row, i < 2)); });
+    var done = $('#pack-done tbody');
+    done.textContent = '';
+    var list = s.completed_list || [];
+    if (!list.length) done.appendChild(statRow(['Nobody yet.', '', '']));
+    list.forEach(function (x) {
+      var tr = document.createElement('tr');
+      [fmtWhen(x.completed_at) + (x.email ? ', ' + x.email : ''), x.ticket || 'not opened yet', x.ticket_redeemed ? 'Yes' : 'No'].forEach(function (c) {
+        var td = document.createElement('td');
+        td.textContent = c;
+        tr.appendChild(td);
+      });
+      done.appendChild(tr);
+    });
   } catch (e) {
-    tbody.appendChild(statRow(['Pack stats need the p10_pretzel_packs tables in Supabase.', '']));
+    tbody.appendChild(statRow(['Pack stats need the p10 and p11 pack tables in Supabase.', '']));
   }
 }
 
