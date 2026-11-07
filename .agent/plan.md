@@ -87,15 +87,27 @@ Function count stays 12 (still `?resource=packs`).
 **4. Golden bonus pack**
 - Own sequence: polished mirror-gold finish (v1 to v4 packs become a
   satin gold so the bonus clearly differs), gold-deep crimps, a "BONUS"
-  foil band, longer rivet rain, a "BONUS" stamp, its own voucher card
-  showing the prize text. Beats: regular timing table unchanged; bonus
-  adds about 1.5 s to the rain and stamp (ends near 7.5 s).
-- Prize is a setting in `/ops/qr`: on/off + prize text (max 60
-  chars, e.g. "Free dip with any pretzel" as the input placeholder).
-  Off by default. It cannot be turned on with empty text, so a
-  placeholder can never reach a customer or the counter.
-- The prize text is copied onto the voucher when opened, so staff see
-  what was promised even if the setting changes later.
+  foil band, longer rivet rain, a "BONUS" stamp, its own voucher card.
+  Beats: regular timing table unchanged; bonus adds about 1.5 s to the
+  rain and stamp (ends near 7.5 s).
+- **Mystery reward, revealed at the counter (user decision 2026-11-06:
+  "Find out in store").** The voucher never names the prize. Default
+  public text: "Golden Bonus unlocked. Show this at the counter to find
+  out what you won."
+- **Still deterministic, not a sweepstakes:** the reward is a single
+  fixed item set in `/ops/qr`. Everyone who unlocks the bonus in an
+  offer gets the same thing. No random draw, no prize pool, no odds.
+  "Mystery" only means the name is hidden until the counter.
+- Settings in `/ops/qr`: on/off; public text (max 120 chars, defaults
+  to the wording above); **"What staff give"** (internal only, max 60
+  chars, e.g. "Free dip with any pretzel"). Off by default; cannot be
+  turned on while "What staff give" is empty.
+- "What staff give" never reaches the public page, the public offer GET
+  or the player state API. It is shown only on the staff side: in
+  `/ops/qr` (operator session) and on the redeem sheet after a correct
+  staff PIN.
+- Both texts are copied onto the voucher when it opens, so staff hand
+  over what was set at the time even if the setting changes later.
 
 **5. Gentle escalation (collect-the-set, not slot machine)**
 - Each win a little bigger: more rivets and a slightly longer shimmer
@@ -116,22 +128,29 @@ Function count stays 12 (still `?resource=packs`).
 
 ## API and data changes
 - `p11_pretzel_packs_bonus.sql` (new): `pack_vouchers.source` check adds
-  `'bonus'`; new nullable column `prize text` (check length <= 60).
-  Existing rows untouched; reversible (`down` noted in the file).
+  `'bonus'`; new nullable columns `prize_public text` (length <= 120)
+  and `prize_staff text` (length <= 60). Existing rows untouched;
+  reversible (`down` noted in the file). RLS stays deny-all.
 - `api/_packs.js`:
   - Opening order: first, instagram, email, bonus, app.
   - `bonus` unlocks when `email_verified_at` and `instagram_at` are set
     and the offer's bonus is on with text. It does not count toward the
     4 pretzels (`MAX_PACKS` stays 4); the unique
     (player_id, offer_key, source) still caps it at 1.
-  - Opening a bonus voucher snapshots `prize`.
+  - Opening a bonus voucher snapshots `prize_public` and `prize_staff`.
   - State gains `trail` (ordered nodes with state locked / ready /
-    done / off), `next_quest`, `bonus` (`{on, prize}`), `collected`.
-  - Redeem shows the prize text for bonus codes. Stats add bonus
-    opened / redeemed.
-- `api/_qr.js`: offer gains `bonus_on` (boolean) and `bonus_prize`
-  (trimmed, 1 to 60 chars, required when on).
-- `/ops/qr`: bonus toggle + prize field in the offer form; stats rows.
+    done / off), `next_quest`, `bonus` (`{on, text}`, public text
+    only), `collected`. `publicVoucher` never includes `prize_staff`.
+  - Redeem: after a correct PIN, the response includes `prize_staff`
+    for bonus codes so the sheet shows "Give: ...". Wrong PIN or a
+    lookup without PIN never returns it. Stats add bonus opened /
+    redeemed.
+- `api/_qr.js`: offer gains `bonus_on` (boolean), `bonus_text` (public,
+  defaults to the wording above) and `bonus_staff` (internal, 1 to 60
+  chars, required when on). The public offer GET strips `bonus_staff`;
+  only the operator GET returns it.
+- `/ops/qr`: bonus toggle, public text, "What staff give" field (marked
+  internal); stats rows.
 - Merge on email verify (existing rule): the bonus slot follows the
   same void-duplicate rule as the other slots.
 
@@ -140,8 +159,10 @@ Function count stays 12 (still `?resource=packs`).
 2. `_packs.js` + `_qr.js`: order, bonus source, prize snapshot, state
    shape, settings validation, stats.
 3. Tests: order, bonus unlock only with IG + email + setting on, bonus
-   not counted in 4, once per player, prize snapshot, cannot enable
-   with empty text, merge voids a duplicate bonus, redeem shows prize.
+   not counted in 4, once per player, both texts snapshotted, cannot
+   enable with empty staff text, merge voids a duplicate bonus, staff
+   text absent from public offer GET / state / open responses (deep
+   search of the JSON), present only after a correct redeem PIN.
 4. Green theme: `packs.css`, `index.html` inline styles, pack3d studio.
 5. Trail + quest cards + skip + set stack (`index.html`, `packs.js`,
    `packs.css`); remove the "Want another?" block.
@@ -164,7 +185,9 @@ Function count stays 12 (still `?resource=packs`).
   after each win exactly one next step is shown; a player can go
   1 > IG > email > bonus > app without scrolling to find the next
   action; skipping keeps every code; no copy implies chance, scarcity
-  or loss; the bonus never shows placeholder text to a customer.
+  or loss; the bonus voucher never names the prize, and the staff
+  text never appears in any public response; every player who unlocks
+  the bonus in an offer gets the same item.
 
 ## Risks + mitigations
 - **Gambling perception:** deterministic outcomes, "Every pack wins",
@@ -173,8 +196,14 @@ Function count stays 12 (still `?resource=packs`).
   per player, capped; stated in the PR.
 - **Migration on a live table:** additive only (wider check, nullable
   column); human applies; rollback statement in the file.
-- **Bonus prize promise:** off until a human sets real text; text
-  snapshotted on the voucher.
+- **Mystery reward read as a sweepstakes:** one fixed item per offer,
+  same for everyone who unlocks it, earned by actions not drawn; copy
+  says "find out what you won", never "chance" or "could win".
+- **Staff text leaking to the public:** kept out of `publicVoucher`,
+  the public offer GET and state; tests assert it; shown only after a
+  correct PIN.
+- **Bonus prize promise:** off until a human sets the staff item; both
+  texts snapshotted on the voucher.
 - **Green reflections dull the foil:** compare screenshots; fall back
   to the black studio for the pack only if gold looks muddy (no black
   page surfaces either way).
@@ -193,8 +222,9 @@ Function count stays 12 (still `?resource=packs`).
 ## Human steps (CRITICAL, prepare only)
 - Set the task scope to the Scope line above, then run
   `scripts/agent/approve-plan.sh`.
-- Pick the bonus prize text and turn it on in `/ops/qr` (needs
-  `EDGE_CONFIG_WRITE_TOKEN`, still unset) or tell the agent the text.
+- Decide what staff give for the golden bonus, enter it in `/ops/qr`
+  and turn the bonus on (needs `EDGE_CONFIG_WRITE_TOKEN`, still unset),
+  or tell the agent. Brief counter staff that the bonus is a fixed item.
 - Apply `p11_pretzel_packs_bonus.sql` (or authorize the agent in chat).
 - Review the draft PR screenshots on a phone, merge, deploy from the
   worktree (`npm run deploy`).

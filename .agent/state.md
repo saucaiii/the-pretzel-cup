@@ -14,6 +14,7 @@ Started: 2026-11-06
 ## Progress
 - Branch agent/pretzel-packs-v3 created from origin/main.
 - Plan v3 written to .agent/plan.md. No code edited.
+- Plan updated: golden bonus is a mystery reward revealed at the counter; internal "what staff give" field; deterministic (user decision via ops/qr session).
 
 ## Next
 - Human: set scope to the plan's Scope line, run scripts/agent/approve-plan.sh.
