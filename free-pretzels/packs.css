@@ -52,7 +52,7 @@ body.game-on .hero { display: none !important; }
   color: var(--white); text-align: center;
 }
 /* Mockup A screen: plate strip, logo, tagline, the word wall, the copy
-   line, the CTA (foil pack beside it), "every pack wins". */
+   line, the CTA (foil pack beside it). */
 .ww-card {
   container-type: inline-size;
   overflow: hidden; padding: 0 0 18px; text-align: left;
@@ -96,7 +96,6 @@ body.game-on .hero { display: none !important; }
   font-size: 16px; white-space: nowrap; box-shadow: var(--glow);
 }
 .g-pop .g-pop-go:active { transform: translateY(2px); }
-.g-pop-wins { margin: 12px 0 0; text-align: center; font-family: var(--marker); font-size: 19px; color: var(--gold-light); }
 .game .g-eyebrow {
   margin: 0 0 6px; font-family: var(--display); font-size: 16px;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-light);
@@ -185,7 +184,6 @@ body.game-on .hero { display: none !important; }
 .trail-row .bonus.done .tn-dot, .trail-row .bonus.ready .tn-dot { background: var(--gold-light); color: var(--black); border-color: var(--gold); }
 .trail-row .off { display: none; }
 .trail-count { margin: 10px 0 0; font-family: var(--display); font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gold); }
-.trail-note { margin: 2px 0 0; font-size: 14px; font-weight: 700; color: var(--gold-light); }
 
 /* ─── carousel (pick a pack) ──────────────────────────────────── */
 /* Native scroll-snap row: real swiping, momentum and buttons. With 3D on,
@@ -531,8 +529,9 @@ html.stage-open, html.stage-open body { overflow: hidden; }
 /* User-directed: green plate cards like the binder, one gold call to
    action, a progress strip that nudges toward the Golden Ticket. The rip
    beats (spin, tear, payoff) are unchanged; only the card they settle on. */
+#g-step-card { position: relative; }
 #g-step-card, #stage .st-voucher {
-  position: relative; overflow: hidden;
+  overflow: hidden;
   background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(242, 231, 164, 0.14), transparent 70%), var(--green);
   -webkit-backdrop-filter: none; backdrop-filter: none;
   border: 2px solid var(--gold-deep); border-radius: 26px;
@@ -560,7 +559,6 @@ html.stage-open, html.stage-open body { overflow: hidden; }
 #g-step .trail-row .bonus.ready .tn-dot, #g-step .trail-row .bonus.done .tn-dot { opacity: 1; box-shadow: var(--glow); }
 #g-step .tn-lbl { color: var(--gold-light); }
 #g-step .trail-count { font-family: var(--marker); font-size: 17px; letter-spacing: 0; text-transform: none; color: var(--gold-light); }
-#g-step .trail-note { color: var(--white); opacity: 0.85; }
 
 #g-step .q-step { font-family: var(--marker); font-size: 16px; letter-spacing: 0; text-transform: none; color: var(--gold-light); }
 #g-step .q-title { color: var(--white); }

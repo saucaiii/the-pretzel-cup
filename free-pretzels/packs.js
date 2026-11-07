@@ -77,6 +77,15 @@
   function skipped(st) { return !!st.next_quest && uiGet().skip === skipKey(st); }
   // Keep-or-trade after all 4. "Keep" is remembered on this device.
   function kept(st) { return uiGet().kept === (st.headline || '') + '|kept'; }
+  // The Golden Ticket is still ahead: on, not given up, and at 4 of 4
+  // only while the ticket pack is really on offer (the server holds it
+  // back when the game record cannot be read). Shared by every surface.
+  function ticketAhead(st) {
+    if (!st || !st.bonus || !st.bonus.on || st.ended === 'stopped_at_3' || kept(st) || st.traded) return false;
+    var node = (st.trail || []).filter(function (t) { return t.key === 'bonus'; })[0];
+    if (!node || node.state === 'off') return false;
+    return (st.used || 0) < 4 || st.next_source === 'bonus';
+  }
   function goldenWaiting(st) { return !!(st && st.next_source === 'bonus'); }
   function dealOpen(st) { return goldenWaiting(st) && !S.trade && !kept(st); }
   function packShown(st) { return !!(st && st.can_open) && !(goldenWaiting(st) && !S.trade); }
@@ -140,7 +149,7 @@
     for (var i = 0; i < PACKS; i++) {
       var b = el('button', 'pick');
       b.type = 'button';
-      b.setAttribute('aria-label', 'Pack ' + (i + 1) + ' of ' + PACKS + '. Every pack wins a free pretzel.');
+      b.setAttribute('aria-label', 'Pack ' + (i + 1) + ' of ' + PACKS + '. Tap the middle pack to open it.');
       var pk = buildPack();
       pk.appendChild(el('span', 'pk-perf'));
       b.appendChild(pk);
@@ -239,7 +248,7 @@
     if (canOpen) {
       title = used === 0 ? 'Pick a pack' : (golden ? 'Pick your Golden Ticket pack' : 'Pick your bonus pack');
       sub = 'Pull a pretzel and WIN a pretzel!';
-      if (golden) sub = 'Every pack holds the Golden Ticket.';
+      if (golden) sub = 'Pull your Golden Ticket!';
     } else {
       var codes = (st && st.vouchers || []).filter(function (v) { return !v.traded; }).length;
       title = st && st.traded ? 'Your Golden Ticket' : (codes > 1 ? 'Your free pretzels' : 'Your free pretzel');
@@ -321,8 +330,9 @@
     head.appendChild(el('span', 'bd-tick', '\u2713'));
     head.appendChild(document.createTextNode(' ' + t.name));
     card.appendChild(head);
-    card.appendChild(el('p', 'bd-state', v.traded ? 'Collected' : (done ? 'Used' : 'Collected')));
-    card.setAttribute('aria-label', t.name + ' pretzel: collected');
+    var stateWord = v.traded ? 'Won' : (v.redeemed_at ? 'Used' : (v.expired ? 'Expired' : 'Won'));
+    card.appendChild(el('p', 'bd-state', stateWord));
+    card.setAttribute('aria-label', t.name + ' pretzel: ' + stateWord.toLowerCase());
     card.setAttribute('role', 'group');
     if (v.traded) {
       card.appendChild(el('p', 'vc-meta', 'Traded for the Golden Ticket.'));
@@ -430,8 +440,7 @@
     // Golden Ticket slot: shown while it can still be earned or once won.
     // Hidden after "Keep my 4" or stopping at 3 (no near-miss).
     // At 4 of 4 it shows only while the ticket pack is really on offer.
-    var ticketOpen = st.bonus && st.bonus.on && !stopped && !kept(st) && nodes.bonus && nodes.bonus.state !== 'off' &&
-      (count < 4 || st.next_source === 'bonus');
+    var ticketOpen = ticketAhead(st);
     if (by.bonus) box.appendChild(ticketCard(st, by.bonus));
     else if (ticketOpen) box.appendChild(ticketCard(st, null));
     $('bd-stop').hidden = !(st.can_stop && !st.ended && st.next_quest === 'app');
@@ -450,9 +459,8 @@
       li.setAttribute('aria-label', (node.key === 'bonus' ? 'Golden Ticket' : 'Pretzel ' + t.n) + ': ' + words[node.state]);
       row.appendChild(li);
     });
-    var ticketOn = (st.trail || []).some(function (t) { return t.key === 'bonus' && t.state !== 'off'; });
     $('trail-count').textContent = st.traded ? 'All 4 traded for the Golden Ticket'
-      : st.used + ' of 4 collected' + (ticketOn && st.used < 4 ? '. ' + (4 - st.used) + ' more to the Golden Ticket' : '');
+      : st.used + ' of 4 free pretzels won' + (ticketAhead(st) && st.used < 4 ? '. ' + (4 - st.used) + ' more to the Golden Ticket' : '');
   }
 
   // ─── step popup: one step at a time, between pulls ──────────────
@@ -1016,7 +1024,7 @@
     function fillNext(v, st) {
       var g = v.source === 'bonus';
       var label = 'Done';
-      var n = st && { instagram: 2, email: 3, app: 4 }[st.next_quest];
+      var n = st && st.next_quest ? (st.used || 0) + 1 : 0;
       if (!g && st) {
         if (st.can_open && st.next_source !== 'bonus') label = 'Rip your next pack';
         else if (n && !st.ended) label = 'Win pretzel ' + n;
@@ -1027,7 +1035,7 @@
       box.hidden = g || !st;
       if (box.hidden) return;
       var used = st.used || 0;
-      var ticket = (st.trail || []).some(function (t) { return t.key === 'bonus' && t.state !== 'off'; });
+      var ticket = ticketAhead(st);
       var pips = $('sv-pips');
       pips.textContent = '';
       for (var i = 0; i < 4; i++) pips.appendChild(el('li', i < used ? 'on' : ''));
@@ -1035,7 +1043,7 @@
       var nudge;
       if (st.ended === 'stopped_at_3') nudge = 'You kept 3 pretzels.';
       else if (ticket) nudge = used < 4 ? (4 - used) + ' more to the Golden Ticket' : 'Set complete. The Golden Ticket is next.';
-      else nudge = used + ' of 4 pretzels';
+      else nudge = used + ' of 4 free pretzels won';
       $('sv-nudge').textContent = nudge;
     }
 
