@@ -1327,27 +1327,65 @@
       $('slot-spin').textContent = spun === 3 ? 'Spin for the Golden Ticket' : 'Spin';
       $('slot-later').hidden = busy || spun >= 4;
     }
-    // Cascade: every symbol drops out, then the new board falls in,
-    // column by column.
-    function cascade(board) {
+    // The roll: every column scrolls through blurred symbols, then the
+    // columns stop left to right and drop onto the new board. Spin 4
+    // rolls a little longer.
+    function roll(board, slow) {
       var cs = cells();
-      if (reduced() || !cs[0].animate) { show(board); return Promise.resolve(); }
+      if (reduced()) { show(board); return Promise.resolve(); }
+      var base = slow ? 1500 : 1150, step = slow ? 330 : 230;
       return new Promise(function (res) {
-        var out = cs.map(function (c, k) {
-          return c.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(130%)', opacity: 0 }],
-            { duration: 220, delay: (k % 4) * 60, easing: 'ease-in', fill: 'forwards' });
-        });
-        setTimeout(function () {
-          show(board);
+        var rolling = [0, 1, 2, 3];
+        cs.forEach(function (c) { c.classList.add('rolling'); });
+        var tick = setInterval(function () {
           cs.forEach(function (c, k) {
-            c.getAnimations().forEach(function (a) { a.cancel(); });
-            c.animate([{ transform: 'translateY(-160%)', opacity: 0 }, { transform: 'translateY(6%)', opacity: 1, offset: 0.8 }, { transform: 'translateY(0)', opacity: 1 }],
-              { duration: 420, delay: (k % 4) * 110 + (2 - ((k / 4) | 0)) * 50, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'backwards' });
+            if (rolling.indexOf(k % 4) < 0) return;
+            c.querySelector('img').src = SYMS[(Math.random() * SYMS.length) | 0];
           });
-          setTimeout(res, 420 + 3 * 110 + 100 + 120);
-        }, 220 + 3 * 60 + 20);
-        void out;
+        }, 75);
+        [0, 1, 2, 3].forEach(function (col) {
+          setTimeout(function () {
+            rolling.splice(rolling.indexOf(col), 1);
+            cs.forEach(function (c, k) {
+              if (k % 4 !== col) return;
+              c.classList.remove('rolling');
+              c.querySelector('img').src = SYMS[board[(k / 4) | 0][col]];
+              if (c.animate) c.animate([{ transform: 'translateY(-38%)' }, { transform: 'translateY(5%)', offset: 0.7 }, { transform: 'translateY(0)' }],
+                { duration: 300, easing: 'cubic-bezier(.3,.7,.3,1)' });
+            });
+            if (!rolling.length) { clearInterval(tick); setTimeout(res, 340); }
+          }, base + col * step);
+        });
       });
+    }
+    // The win: banner slam, card shake, gold burst, rivet rain, rays.
+    function celebrate() {
+      if (reduced()) return;
+      var slot = $('slot');
+      slot.classList.add('party');
+      FX.attach($('slot-fx-back'), $('slot-fx-front'));
+      FX.load();
+      FX.level(10);
+      var g = $('reels').getBoundingClientRect();
+      FX.burst(g.left + g.width / 2, g.top + g.height / 2);
+      setTimeout(function () { FX.burst(g.left + g.width * 0.2, g.top + g.height * 0.5); }, 260);
+      setTimeout(function () { FX.burst(g.left + g.width * 0.8, g.top + g.height * 0.5); }, 480);
+      FX.rain(true);
+      FX.sparkle(g);
+      var ban = $('slot-banner');
+      if (ban.animate) ban.animate([{ opacity: 0, transform: 'translate(-50%, -50%) scale(3) rotate(-14deg)' },
+        { opacity: 1, transform: 'translate(-50%, -50%) scale(0.92) rotate(-8deg)', offset: 0.7 },
+        { opacity: 1, transform: 'translate(-50%, -50%) scale(1) rotate(-8deg)' }], { duration: 380, easing: 'ease-in', fill: 'forwards' });
+      var card = $('slot-card');
+      if (card.animate) card.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-8px,3px)' }, { transform: 'translate(7px,-3px)' },
+        { transform: 'translate(-5px,2px)' }, { transform: 'translate(3px,-1px)' }, { transform: 'translate(0,0)' }], { duration: 420, delay: 330 });
+      setTimeout(function () { FX.sparkle(null); FX.rain(false); }, 3200);
+    }
+    function calm() {
+      FX.stop();
+      $('slot').classList.remove('party');
+      var ban = $('slot-banner');
+      ban.getAnimations && ban.getAnimations().forEach(function (an) { an.cancel(); });
     }
     function spin() {
       if (busy || spun >= 4) return;
@@ -1357,7 +1395,7 @@
       $('slot-later').hidden = true;
       var i = spun;
       if (i < 3) {
-        cascade(BOARDS[i + 1]).then(function () {
+        roll(BOARDS[i + 1], false).then(function () {
           spun++; busy = false;
           $('slot-spin').disabled = false;
           $('slot-status').textContent = MISS[i];
@@ -1389,8 +1427,10 @@
         }
         S.state = st;
         voucher = v;
-        cascade(BOARDS[4]).then(function () {
+        roll(BOARDS[4], true).then(function () {
           cells().slice(4, 8).forEach(function (c) { c.classList.add('hit'); });
+          $('slot-count').textContent = '4 pretzels in a row!';
+          celebrate();
           win();
         });
       }, function () {
@@ -1408,6 +1448,7 @@
       setTimeout(function () {
         $('slot-play').hidden = true;
         $('slot-win').hidden = false;
+        $('slot-banner').getAnimations && $('slot-banner').getAnimations().forEach(function (an) { an.cancel(); });
         var box = $('slot-ticket');
         box.textContent = '';
         var art = el('div', 'bt-art');
@@ -1428,7 +1469,7 @@
         $('slot-text').textContent = voucher.text || 'Show this at the counter.';
         $('slot-meta').textContent = 'Good through ' + fmtDay(voucher.expires_at) + '. Show this at the counter.';
         $('slot-done').focus({ preventScroll: true });
-      }, reduced() ? 0 : 1300);
+      }, reduced() ? 0 : 2400);
     }
     function later() {
       if (spun >= 4) return done();
@@ -1447,6 +1488,7 @@
       t.focus({ preventScroll: true });
     }
     function close() {
+      calm();
       $('slot').hidden = true;
       if ($('stage').hidden && $('redeem').hidden && $('g-step').hidden) document.documentElement.classList.remove('stage-open');
     }

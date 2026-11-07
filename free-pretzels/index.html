@@ -552,7 +552,10 @@
          claimed. The 4 pretzels are traded only when spin 4 opens the
          ticket (server "open"); leaving earlier keeps them. -->
     <div class="slot" id="slot" hidden role="dialog" aria-modal="true" aria-labelledby="slot-title">
+      <div class="st-rays slot-rays" id="slot-rays" aria-hidden="true"><svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid slice"><g fill="#F2E7A4"><polygon points="0,0 141.2,-14.8 141.2,14.8"/><polygon points="0,0 129.7,57.8 114.9,83.5"/><polygon points="0,0 83.5,114.9 57.8,129.7"/><polygon points="0,0 14.8,141.2 -14.8,141.2"/><polygon points="0,0 -57.8,129.7 -83.5,114.9"/><polygon points="0,0 -114.9,83.5 -129.7,57.8"/><polygon points="0,0 -141.2,14.8 -141.2,-14.8"/><polygon points="0,0 -129.7,-57.8 -114.9,-83.5"/><polygon points="0,0 -83.5,-114.9 -57.8,-129.7"/><polygon points="0,0 -14.8,-141.2 14.8,-141.2"/><polygon points="0,0 57.8,-129.7 83.5,-114.9"/><polygon points="0,0 114.9,-83.5 129.7,-57.8"/></g></svg></div>
+      <canvas class="slot-fx" id="slot-fx-back" aria-hidden="true"></canvas>
       <div class="slot-card" id="slot-card">
+        <p class="slot-banner" id="slot-banner" aria-hidden="true">Golden<br />Ticket!</p>
         <div class="slot-play" id="slot-play">
           <p class="q-step">Golden Ticket spins</p>
           <h3 class="q-title" id="slot-title">Line up 4 pretzels</h3>
@@ -574,6 +577,7 @@
           <button class="sv-staff" id="slot-redeem" type="button">Staff: redeem</button>
         </div>
       </div>
+      <canvas class="slot-fx front" id="slot-fx-front" aria-hidden="true"></canvas>
     </div>
 
     <!-- Welcome popup over the carousel. Logo, tagline, the offer
