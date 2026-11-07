@@ -1,56 +1,49 @@
 # Working memory (short-term). Keep under 60 lines.
-Branch: agent/pretzel-redesign
-Task: pretzel-redesign (make /free-pretzels as fun as the game, outside the rip)
-Status: draft PR open (saucaiii/the-pretzel-cup#31); final review pass, fixes pushed. Human merges + deploys.
-Started: 2026-11-06
+Branch: agent/pretzel-share
+Task: pretzel-share (pretzel 4 = "Share with your group chat")
+Status: review fixes done; draft PR next. Human applies p21, merges, deploys, then applies p22.
+Started: 2026-11-07T09:05Z (plan approved by the user with approve-plan.sh, same day)
 
 ## Context
-- Started by session local_7433b014. Plan in .agent/plan.md (medium, no gate).
-  scope.txt: free-pretzels/, .agent/. Base origin/main 18e87d6.
-- USER (directly, mid-task): follow their mockup pretzel_site_mockup_three_directions.html
-  (A word wall, B factory floor quest map, C collector's binder) closely, mix in the
-  Higgsfield art and some of the agent's take, do NOT touch the pack ripping, and no
-  fixes they did not ask for. Recorded in decisions.md.
-- Brand guide PDF is internal: never commit or quote it.
+- Started from session local_826e80eb. User decisions (directly in this session): rename source to
+  `share` incl. DB; share step always on, completing it opens the Golden Ticket (no App Store link);
+  stop text "No thanks, I hate delicious and free pretzels."; message "Won mine, your turn".
+- Scope: free-pretzels/ api/_packs.js api/_qr.js ops/qr/ tests/ supabase/migrations/ .agent/
 
-## Progress (commits on this branch)
-- Hero word wall (mockup A); welcome popup on plate; binder (mockup C); food band;
-  offer/claim/stores restyled. Quest map (mockup B) removed at the user's request.
+## Progress
+- p21_pretzel_share.sql (expand: share_at column, check allows app+share) and
+  p22_pretzel_share_backfill.sql (contract: app -> share, after deploy). Not applied anywhere.
+- api/_packs.js: PRETZELS uses share; withLegacy() reads 'app'/app_at as share until p22;
+  action 'app' = alias; bonusOn/canStop no longer need app_store_url; stats share/share_taps.
+- api/_qr.js + ops/qr: App Store field, hint and golden warning removed; stats relabelled.
+- free-pretzels: #q-share (Web Share button, or sms: link + Copy link), copy + stop text;
+  index.html.ids regenerated (119 ids, no dups, every $('id') in packs.js exists).
+- tests: app -> share; new: share without App Store link, 'app' alias, legacy app_at/app voucher.
 
-## Not done on purpose (rip beats untouched)
-- Plan step 9 ticket art on the stage's .st-ticket face, and C6 foil photo on the
-  no-WebGL fallback packs: both are inside the carousel/rip experience.
+## Validation
+- npm test 191/191; guardrails 106/0. eval-report: Tests pass, Scope match FAIL ("No scope declared
+  in the plan": scope-check.sh wants a "Scope: a, b" line; plan.md has a heading). Not fixed in
+  plan.md (an edit voids the approval); the PR body carries the Scope line CI reads. All changed
+  files are inside the task's scope.txt (checked by the reviewer). Earlier "eval-report pass" here
+  was wrong: I read only the test tail.
+- Mock loop (scratchpad mock-server.cjs, real handle(), in-memory store) at 375 px:
+  no Web Share -> "Text your group chat" + "Copy link" (sms body + link correct); copy fallback
+  unlocked pack 4; pack 4 opened as 'share'; keep-or-spin shown with no App Store link; binder
+  "Share" slot won. Web Share (stubbed navigator.share) -> one button, sheet gets text + url, unlocks.
+- After fixes (stubbed): share error -> text + copy fallback stays after re-render; copy failure
+  shows the text and unlocks after ~8 s.
+- Not verified: a real iPhone/Android share sheet, the AbortError (cancel) path in a browser (code
+  only), /ops/qr page in a browser (needs operator login), migrations on a real DB.
 
-## Validation (mock server in scratchpad runs the real api/_packs.js)
-- Full loop at 375: first, IG, email link, app, trade, ticket shimmer, staff redeem,
-  stop at 3, keep, skip + resume. 1280: hero, popup, binder, map. /ops/qr srcdoc ok.
-- npm test 187/187; guardrails 106/0; eval-report pass; id check 83 ids ok.
-- Not verified: reduced motion (pane cannot emulate it), no-WebGL fallback, real phones.
-
-## Review (reviewer subagent, 2026-11-06): not ready -> fixed
-- F1 global button hover leaked into #stage buttons: stage override made more specific.
-- F2 "Complete the set" shown at 4 of 4: now "Set complete. Keep or trade?", and the
-  slot only shows while the ticket pack is on offer (no unearnable ticket).
-- F3 step popup restyled without a request: reverted to the live look (only .ww-card new).
-- F5 ticket code on art: flat gold-light pill. F6 shimmer: once per ticket per device,
-  never on a used ticket. F7 recorded in decisions.md.
-- Accepted: F4 reduced-motion block also makes the carousel's 0.2s scale instant;
-  F8 logos sit on a 0.16-alpha glow (clear space kept). Code scanning not checked.
-
-## User changes 2026-11-07 (done)
-- Win card + step popup on the new theme; win card has one CTA to the next pretzel
-  with pips and "N more to the Golden Ticket" (rip beats unchanged).
-- Dog + rivet cup are cutouts on plate frames; ticket text has no pill.
-- Golden Ticket spins: 4x3 grid, spins 1-3 miss, spin 4 lines up 4 pretzels; screen
-  says the 4th spin lands it. Review round 3 fixed (lost-response recovery, modal gates).
-- Every new modal must be added to the renderStep, closeStep and closeRedeem gates.
-- Map dropped; binder shows Collected (tick) vs Open (action, tap to unlock), no
-  flavour words; food band side photos = pretzel dog + cinnamon rivets cup.
+## Handoffs
+- implementer (this session) -> reviewer subagent: diff vs plan. Result: not ready, 8 findings.
+  Fixed: p22 duplicate pre-check (was: would abort on the check), p21 in a transaction, rollback
+  note in p21, moveVouchers treats app/share as one slot (+test), legacy redeem/burn test, client
+  fallback sticks after a share error, one pending sms unlock, copy-failure text stays readable,
+  old-tab comment made honest. Not fixed, in PR: old open tabs need a reload (TRAIL.share missing
+  in old JS); code rollback needs p22's rollback first; Golden Ticket goes live at deploy for
+  offers with bonus_on + Instagram. Re-checked in browser at 375 px after the fixes.
 
 ## Retries
-- screenshots push: tool misuse, I typed a bogus `git push -f-never` (git rejected it,
-  nothing forced); pushed the image commit to agent/pretzel-redesign-screens instead.
-- npm test 71/73: context/environment issue (no node_modules). npm ci --ignore-scripts.
-- one-liner exit 1: tool misuse (zsh `echo ===`). Ran eval-report on its own.
-- image-branch push exit 128: tool misuse (git mktree input lost its tab inside a shell
-  variable). Change before retry: build the mktree input with printf per line.
+- mock-server write step exit 1: tool misuse (trailing `cat` of a missing .claude/launch.json; the script itself was written). Change: no launch.json, run the mock with Bash in the background.
+- second mock exit 1: context/environment issue (port 4318 already used by another local node process). Change: port 4329.
