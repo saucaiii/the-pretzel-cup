@@ -53,68 +53,51 @@ body.game-on .hero { display: none !important; }
   box-shadow: var(--shadow-2);
   color: var(--white); text-align: center;
 }
+/* Mockup A screen: plate strip, logo, tagline, the word wall, the copy
+   line, the CTA (foil pack beside it), "every pack wins". */
 .ww-card {
-  overflow: hidden;
-  padding: 0 0 22px;
-  --ww-ink: rgba(242, 231, 164, 0.26);
-  --ww-dim: rgba(255, 255, 255, 0.12);
-  --ww-line: rgba(242, 231, 164, 0.5);
+  container-type: inline-size;
+  overflow: hidden; padding: 0 0 18px; text-align: left;
+  width: min(100%, 400px); max-height: calc(100svh - 32px); overflow-y: auto;
   background:
-    radial-gradient(ellipse 80% 34% at 50% 14%, rgba(242, 231, 164, 0.30), transparent 70%),
-    linear-gradient(180deg, rgba(8, 53, 33, 0) 30%, var(--green) 78%),
-    var(--plate-photo) center top / cover no-repeat,
+    radial-gradient(ellipse 80% 36% at 50% 40%, rgba(242, 231, 164, 0.16), transparent 70%),
     var(--green);
-  border: 2px solid var(--gold-deep);
-  box-shadow: var(--shadow-2), 0 0 40px rgba(212, 182, 98, 0.25);
+  border: 2px solid var(--gold-deep); border-radius: 26px;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
 }
-.ww-card .ww-row { font-size: clamp(26px, 9vw, 40px); }
-.ww-card .ww { padding-top: 10px; }
-.g-pop-lockup {
-  position: relative; z-index: 1;
-  display: inline-block; margin: -18px auto 0;
-  --lw: min(38vw, 150px);
-  padding: calc(var(--lw) * 0.125);
-  background: var(--green); border-radius: 22px;
-  box-shadow: var(--shadow-1), 0 0 0 1px rgba(242, 231, 164, 0.12);
-}
-.g-pop-logo { width: var(--lw); height: auto; margin: 0 auto; }
+.ww-card .plate-strip { height: 36px; }
+.ww-card .ww { font-size: calc(100cqw / 188); max-width: none; padding: 10em 6em 8em; }
+.g-pop-logo { width: min(30vw, 116px); height: auto; margin: 16px auto 0; }
 .g-pop-tag {
-  margin: 14px 0 0; font-family: var(--display); font-size: 15px; line-height: 1;
-  letter-spacing: 0.01em; color: var(--white);
+  margin: 15px 0 0; font-family: var(--display); font-size: 15px; line-height: 1;
+  letter-spacing: 0.01em; color: var(--white); text-align: center;
 }
 .g-pop-title {
-  position: relative; z-index: 1;
-  margin: 16px 18px 0; font-family: var(--display); font-weight: 400;
-  font-size: clamp(32px, 10vw, 46px); line-height: 0.95; letter-spacing: 0.01em;
-  text-transform: uppercase; color: var(--gold-light); overflow-wrap: anywhere;
-  text-shadow: 0 2px 0 var(--green-deep), 0 0 24px rgba(212, 182, 98, 0.45);
+  margin: 8px 24px 0; font-family: var(--display); font-weight: 400;
+  font-size: clamp(22px, 7vw, 30px); line-height: 0.95; letter-spacing: 0.01em;
+  text-transform: uppercase; color: var(--gold); overflow-wrap: anywhere;
 }
 .g-pop-stamp {
-  display: inline-block; margin: 12px 0 0; padding: 6px 14px; border-radius: 999px;
+  display: inline-block; margin: 10px 24px 0; padding: 5px 12px; border-radius: 12px;
   background: var(--gold); color: var(--black);
   font-family: var(--display); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
 }
 .g-pop-stamp[hidden] { display: none; }
-.g-pop-cta {
-  position: relative; z-index: 1;
-  display: flex; align-items: center; justify-content: center; gap: 12px;
-  margin: 18px 18px 0;
-}
+.g-pop-copy { margin: 14px 24px 0; font-size: 16px; line-height: 1.4; font-weight: 500; }
+.g-pop-cta { display: flex; align-items: center; gap: 12px; margin: 16px 24px 0; }
 .g-pop-pack {
-  width: 58px; height: auto; flex: none;
-  transform: rotate(-9deg);
-  border-radius: 4px;
-  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.4);
+  width: 46px; height: auto; flex: none; border-radius: 4px;
+  transform: rotate(-9deg); box-shadow: 0 8px 14px rgba(0, 0, 0, 0.4);
   transition: transform 0.25s var(--ease);
 }
 .g-pop-cta:hover .g-pop-pack { transform: rotate(-3deg) translateY(-4px); }
 .g-pop .g-pop-go {
-  min-width: 0; flex: 0 1 auto; min-height: 54px; padding: 0 22px; font-size: 16px; white-space: nowrap; border-radius: 999px;
-  background: linear-gradient(180deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
-  border-color: var(--gold-deep); color: var(--black);
-  box-shadow: 0 4px 0 var(--gold-deep), var(--glow);
+  flex: 1 1 auto; min-width: 0; min-height: 52px; padding: 0 14px; border-radius: 12px;
+  background: var(--gold); border-color: var(--gold); color: var(--black);
+  font-size: 16px; white-space: nowrap; box-shadow: var(--glow);
 }
-.g-pop .g-pop-go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--gold-deep), var(--glow); }
+.g-pop .g-pop-go:active { transform: translateY(2px); }
+.g-pop-wins { margin: 12px 0 0; text-align: center; font-family: var(--marker); font-size: 19px; color: var(--gold-light); }
 .game .g-eyebrow {
   margin: 0 0 6px; font-family: var(--display); font-size: 16px;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-light);
