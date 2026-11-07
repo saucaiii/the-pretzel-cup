@@ -872,8 +872,22 @@
         if (moved > Math.min(90, hit.clientWidth * 0.35) && Math.abs(e.clientY - sy) < hit.clientHeight * 0.4) { sx = null; tear(); }
       });
       hit.addEventListener('pointerup', function () { sx = null; });
-      // Tap, Enter and Space all arrive as a click.
-      hit.addEventListener('click', tear);
+      // Only a swipe rips it. A tap or click just nudges toward the swipe;
+      // Enter and Space (a click with detail 0) still open it, so the pack
+      // works without a pointer.
+      hit.addEventListener('click', function (e) {
+        if (e.detail === 0) return tear();
+        nudge();
+      });
+    }
+
+    function nudge() {
+      if (torn || (phase !== 'spin' && phase !== 'charge')) return;
+      nodes.hint.textContent = 'Swipe across the top to rip it!';
+      anim(nodes.hint, [{ opacity: 0.4 }, { opacity: 1 }], { duration: 160 });
+      if (gl) gl.breathe(400);
+      anim(nodes.pack, [{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' },
+        { transform: 'translateX(-3px)' }, { transform: 'translateX(0)' }], { duration: 320, fill: 'none' });
     }
 
     function reset() {
