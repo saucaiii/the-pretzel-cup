@@ -42,6 +42,13 @@ Started: 2026-11-06
   on their own. Visual: deal card, trade > ticket > end, keep > end (survives reload),
   staff sheet with surprise line. npm test 187/187.
 
+## Live look restored (user, directly, 2026-11-07)
+- Black game/stage/sheet, original foil (roughness 1, black studio), 5-pack carousel every
+  pull (all golden for the ticket pull). Steps/deal/end are popups (grey card) over the
+  carousel; trail inside the popup; live voucher cards (+ ticket variant). Checked on the
+  mock at 375 px: IG, email link, app, deal trade + keep, stop at 3, skip + resume, end
+  popup shows once.
+
 ## Retries
 - 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).
   Root cause: tool misuse. Change: read the file with the Read tool instead.

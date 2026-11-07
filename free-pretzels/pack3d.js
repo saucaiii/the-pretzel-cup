@@ -13,10 +13,10 @@
 // axis, at most 25 degrees in the carousel) and it is hidden while the
 // pack spins in.
 //
-// Finishes (plan v3): the 4 pretzel packs are satin gold; the Golden
-// Ticket pack is polished mirror gold with a green "Golden Ticket" band.
-// The studio the foil reflects is deep green with gold-light softboxes,
-// so reflections stay on the site's green brand.
+// Finishes: the 4 pretzel packs keep the original foil exactly (user:
+// "it was perfect before"); the Golden Ticket pack is polished mirror
+// gold with a green "Golden Ticket" band. The studio the foil reflects
+// is never seen on screen; it only shapes the reflections.
 
 import * as THREE from './vendor/three-0.160.0.module.min.js';
 
@@ -30,12 +30,12 @@ const LOGO_W = 0.62;         // fraction of W; centred; clear space >= 12.5% of 
 const LOGO_ASPECT = 1725 / 1864;
 const MAX_YAW = 25 * Math.PI / 180;
 
-const C = { green: '#0D5237', deep_green: '#083521', gold: '#D4B662', deep: '#B2872F', light: '#F2E7A4', black: '#000000' };
+const C = { green: '#0D5237', gold: '#D4B662', deep: '#B2872F', light: '#F2E7A4', black: '#000000' };
 const BAND_Y = -0.5;         // Golden Ticket band centre (between logo and crimp)
 const BAND_H = W / 8;
 // Roughness multipliers on the foil's roughness map (about 0.22).
 const FINISH = {
-  satin: { roughness: 1.5, clearcoat: 0.35 },
+  satin: { roughness: 1, clearcoat: 0.35 },   // the original foil
   golden: { roughness: 0.45, clearcoat: 1 },
 };
 
@@ -212,10 +212,10 @@ function tex(c, srgb) {
   return t;
 }
 
-// ─── environment: deep green studio with gold-light softboxes ───────
+// ─── environment: black studio with gold-light softboxes ────────────
 function studio(renderer) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(C.deep_green);
+  scene.background = new THREE.Color(0x030303);
   const box = (w, h, x, y, z, color, k) => {
     const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(k), side: THREE.DoubleSide });
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
@@ -437,7 +437,6 @@ class Carousel extends Base {
     });
     this.chosen = -1;
     this.single = -1;
-    this.dropK = 1;
     this.sway = 0;
     this.pointer = { x: 0 };
     this.inView = true;
@@ -486,8 +485,7 @@ class Carousel extends Base {
       const g = p.group;
       if (this.chosen >= 0) return; // choose() animates
       const ad = Math.min(Math.abs(d), 1.6);
-      const drop = this.single === i ? (1 - this.dropK) * 2.6 : 0;
-      g.position.set((cx - mid) * this.wpp, ((box.top + box.height / 2) - (r.top + r.height / 2)) * this.wpp + drop, -ad * 0.35);
+      g.position.set((cx - mid) * this.wpp, ((box.top + box.height / 2) - (r.top + r.height / 2)) * this.wpp, -ad * 0.35);
       g.scale.setScalar(base * (1 - 0.12 * Math.min(ad, 1)));
       const yaw = clamp(-d * 0.6, -MAX_YAW, MAX_YAW) + (ad < 0.5 ? this.sway + this.pointer.x * 0.12 : 0);
       g.rotation.set(0, clamp(yaw, -MAX_YAW, MAX_YAW), 0); // yaw only: the logo never tilts in-plane
@@ -507,21 +505,18 @@ class Carousel extends Base {
     });
     return Promise.all(jobs);
   }
-  reset() { this.chosen = -1; this.dropK = 1; this.packs.forEach((p) => { p.lastD = null; }); this.paused = false; this.poke(); }
-  // One pack only (after the first pull). i < 0 shows all five.
+  reset() { this.chosen = -1; this.packs.forEach((p) => { p.lastD = null; }); this.paused = false; this.poke(); }
+  // i < 0 shows all five (the only mode used now); golden gives the
+  // shown packs the Golden Ticket finish.
   setSingle(i, golden) {
     this.single = i;
     this.packs.forEach((p, n) => {
       p.group.visible = i < 0 || n === i;
-      setFinish(p, golden && n === i ? 'golden' : 'satin');
+      setFinish(p, golden && (i < 0 || n === i) ? 'golden' : 'satin');
     });
     this.poke();
   }
-  // The next pack drops into the centre with a little bounce.
-  drop(ms) {
-    this.dropK = 0;
-    return this.tween(ms, (k) => { this.dropK = k; this.lastActive = performance.now(); }, easeBack);
-  }
+
   dispose() {
     this.stop();
     this.track.removeEventListener('scroll', this.onScroll);
