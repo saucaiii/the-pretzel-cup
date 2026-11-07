@@ -41,7 +41,9 @@ const LIMITS = {
 const BONUS_DEFAULTS = { title: 'Golden Ticket', text: 'Visit the Pretzel Factory to claim your prize.' };
 // Instagram usernames: letters, numbers, dot, underscore, up to 30.
 const IG_HANDLE_RE = /^[A-Za-z0-9._]{1,30}$/;
-// App Store links only (the 4th bonus pack).
+// App Store links only. Legacy: pretzel 4 is now the group chat share
+// (2026-11-07), so /ops/qr no longer sends this; an old stored value is
+// still validated and otherwise ignored.
 const APP_STORE_RE = /^https:\/\/apps\.apple\.com\/[A-Za-z0-9\/._~%?=&+-]*$/;
 const APP_STORE_MAX = 300;
 const HEADLINE_LINT_LEN = 48;
@@ -174,9 +176,6 @@ function lintCopy(offer) {
   }
   if (offer.bonus_on && !offer.instagram_handle) {
     out.push({ field: 'bonus_on', rule: 'golden', message: 'Golden Ticket needs all 4 pretzels. Add the Instagram handle or nobody can earn it.' });
-  }
-  if (offer.bonus_on && !offer.app_store_url) {
-    out.push({ field: 'bonus_on', rule: 'golden', message: 'Golden Ticket needs all 4 pretzels. Add the App Store link or nobody can earn it.' });
   }
   for (const field of ['bonus_title', 'bonus_text']) {
     if (typeof offer[field] === 'string' && /\b(chance|odds|could win|random|lucky)\b/i.test(offer[field])) {

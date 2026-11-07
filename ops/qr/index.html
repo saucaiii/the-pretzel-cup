@@ -264,11 +264,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
               <label for="o-ig">Instagram handle for the bonus pack (optional)</label>
               <input id="o-ig" maxlength="31" placeholder="handle, without @" autocomplete="off" spellcheck="false">
             </div>
-            <div class="field">
-              <label for="o-app">App Store link for the bonus pack (optional)</label>
-              <input id="o-app" maxlength="300" placeholder="https://apps.apple.com/..." autocomplete="off" spellcheck="false" inputmode="url">
-            </div>
-            <p class="hint">Game on: visitors pick 1 of 5 packs and every pack wins one free pretzel. Then one step at a time: Instagram follow (+1), email (+1), app download (+1). Max 4 per person; at 3 they can end with "I don't need another app". Instagram and app are honour system and stay hidden until their field is set. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
+            <p class="hint">Game on: visitors pick 1 of 5 packs and every pack wins one free pretzel. Then one step at a time: Instagram follow (+1), email (+1), share with their group chat (+1). Max 4 per person; at 3 they can end with "No thanks, I hate delicious and free pretzels." Instagram and share are honour system; Instagram stays hidden until its handle is set, share is always on. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
 
             <div class="field">
               <span class="lbl">Golden Ticket after all 4</span>
@@ -289,7 +285,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
               <label for="o-bstaff">What staff give (internal, never shown to customers)</label>
               <input id="o-bstaff" maxlength="60" placeholder="Any one product in store" autocomplete="off">
             </div>
-            <p class="hint">After all 4, players choose: keep their 4 free pretzels, or trade all 4 for the Golden Ticket. Everyone who trades wins it (one fixed item, not a draw). The ticket does not name the prize. At the counter, after the store PIN, staff see what to give plus a surprise: hand back their unused pretzels too (the page never says so). Empty "What staff give" means any one product in store; empty title or line uses the default shown. Needs the Instagram handle and the App Store link.</p>
+            <p class="hint">After all 4, players choose: keep their 4 free pretzels, or trade all 4 for the Golden Ticket. Everyone who trades wins it (one fixed item, not a draw). The ticket does not name the prize. At the counter, after the store PIN, staff see what to give plus a surprise: hand back their unused pretzels too (the page never says so). Empty "What staff give" means any one product in store; empty title or line uses the default shown. Needs the Instagram handle.</p>
 
             <span class="lbl">Brand voice check</span>
             <ul class="lint" id="lint"></ul>
@@ -531,7 +527,6 @@ function readOffer() {
     ends_at: $('#o-end').value,
     game: state.game,
     instagram_handle: $('#o-ig').value.trim().replace(/^@/, ''),
-    app_store_url: $('#o-app').value.trim(),
     bonus_on: state.bonus,
     bonus_title: $('#o-btitle').value.trim(),
     bonus_text: $('#o-btext').value.trim(),
@@ -551,7 +546,6 @@ function fillOffer(o) {
   setLayout(o.layout || 'green');
   setGame(o.game === true);
   $('#o-ig').value = o.instagram_handle || '';
-  $('#o-app').value = o.app_store_url || '';
   setBonus(o.bonus_on === true);
   // Defaults show as placeholders; an untouched default is saved as empty.
   $('#o-btitle').value = o.bonus_title && o.bonus_title !== 'Golden Ticket' ? o.bonus_title : '';
@@ -605,7 +599,6 @@ function lint(o) {
   if (o.accent && /\s/.test(o.accent)) out.push(['accent', 'One word only.']);
   if (o.starts_at && o.ends_at && o.ends_at < o.starts_at) out.push(['schedule', 'End date is before start date.']);
   if (o.bonus_on && !o.instagram_handle) out.push(['golden ticket', 'Needs all 4 pretzels. Add the Instagram handle or nobody can earn it.']);
-  if (o.bonus_on && !o.app_store_url) out.push(['golden ticket', 'Needs all 4 pretzels. Add the App Store link or nobody can earn it.']);
   ['bonus_title', 'bonus_text'].forEach(function (f) {
     if (/\b(chance|odds|could win|random|lucky)\b/i.test(o[f] || '')) out.push(['golden ticket', 'Everyone who finishes gets the same prize. Avoid chance words.']);
     if (/[\u2014\u2013]/.test(o[f] || '')) out.push(['golden ticket', 'Em or en dash. Use a period or comma.']);
@@ -883,9 +876,9 @@ async function loadPackStats() {
     var s = await r.json();
     if (!r.ok) throw new Error(s && s.error);
     $('#pk-hint').textContent = 'Game is ' + (s.game ? 'on' : 'off') + '. Counts for this offer (round ' + s.offer_key + '). Emails verified and Instagram taps are all time.';
-    [['1. First packs opened', s.opened.first], ['2. Instagram packs', s.opened.instagram], ['3. Email packs', s.opened.email], ['4. App packs', s.opened.app || 0],
+    [['1. First packs opened', s.opened.first], ['2. Instagram packs', s.opened.instagram], ['3. Email packs', s.opened.email], ['4. Share packs', (s.opened.share != null ? s.opened.share : s.opened.app) || 0],
      ['Traded 4 for the Golden Ticket', s.opened.bonus || 0], ['Golden Tickets redeemed', s.bonus_redeemed || 0],
-     ['Codes redeemed', s.redeemed], ['Emails verified', s.emails_verified], ['Instagram taps', s.instagram_taps], ['App Store taps', s.app_taps || 0]]
+     ['Codes redeemed', s.redeemed], ['Emails verified', s.emails_verified], ['Instagram taps', s.instagram_taps], ['Share taps', (s.share_taps != null ? s.share_taps : s.app_taps) || 0]]
       .forEach(function (row) { tbody.appendChild(statRow(row)); });
     tbody.appendChild(statRow(['All pretzel packs opened', s.opened.total], true));
     var ends = $('#pack-ends tbody');
@@ -893,7 +886,7 @@ async function loadPackStats() {
     var g = s.games || { completed: 0, stopped_at_3: 0, unfinished: {} };
     var u = g.unfinished || {};
     [['Completed all 4', g.completed], ['Of those, kept the 4 pretzels', Math.max(0, g.completed - (s.opened.bonus || 0))],
-     ['Of those, traded for the Golden Ticket', s.opened.bonus || 0], ['Stopped at 3 ("I don\'t need another app")', g.stopped_at_3],
+     ['Of those, traded for the Golden Ticket', s.opened.bonus || 0], ['Stopped at 3 ("No thanks, I hate delicious and free pretzels.")', g.stopped_at_3],
      ['Not finished, at 1', u[1] || 0], ['Not finished, at 2', u[2] || 0], ['Not finished, at 3', u[3] || 0]]
       .forEach(function (row, i) { ends.appendChild(statRow(row, i < 2)); });
     var done = $('#pack-done tbody');

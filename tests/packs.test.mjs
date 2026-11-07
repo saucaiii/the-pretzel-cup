@@ -19,7 +19,6 @@ const HOST = 'the-pretzel-cup.vercel.app';
 const NOW = new Date('2026-11-05T15:00:00Z');
 const OFFER = {
   headline: 'Free Pretzel', game: true, instagram_handle: 'example_pretzels',
-  app_store_url: 'https://apps.apple.com/us/app/example/id000000000',
   starts_at: '2026-11-01', ends_at: '2026-11-30', layout: 'green',
 };
 // Golden Ticket on. STAFF_ITEM must never appear in a public response.
@@ -59,7 +58,7 @@ function memStore() {
     },
     async getPlayer(id) { return players.get(id) || null; },
     async createPlayer() {
-      const p = { id: randomUUID(), email: null, email_verified_at: null, marketing_opt_in: false, instagram_at: null, app_at: null };
+      const p = { id: randomUUID(), email: null, email_verified_at: null, marketing_opt_in: false, instagram_at: null, share_at: null, app_at: null };
       players.set(p.id, p);
       return { ...p };
     },
@@ -89,7 +88,7 @@ function memStore() {
     async burnPretzels(pid, key, store, nowIso) {
       let n = 0;
       for (const v of vouchers) {
-        if (v.player_id === pid && v.offer_key === key && packs.PRETZELS.includes(v.source) && !v.redeemed_at && v.expires_at > nowIso) {
+        if (v.player_id === pid && v.offer_key === key && [...packs.PRETZELS, packs.LEGACY_SHARE].includes(v.source) && !v.redeemed_at && v.expires_at > nowIso) {
           v.redeemed_at = nowIso; v.redeemed_store = store; n++;
         }
       }
@@ -103,8 +102,10 @@ function memStore() {
       return { ...l };
     },
     async moveVouchers(from, to, nowIso) {
+      // Same rule as supabaseStore: 'app' and 'share' are one slot.
+      const slot = (s) => (s === packs.LEGACY_SHARE ? 'share' : s);
       for (const v of vouchers.filter((x) => x.player_id === from)) {
-        const clash = vouchers.some((x) => x.player_id === to && x.offer_key === v.offer_key && x.source === v.source);
+        const clash = vouchers.some((x) => x.player_id === to && x.offer_key === v.offer_key && slot(x.source) === slot(v.source));
         if (!clash) v.player_id = to;
         else if (!v.redeemed_at) v.expires_at = nowIso;
       }
@@ -113,7 +114,7 @@ function memStore() {
       const rows = vouchers.filter((v) => v.offer_key === key);
       const all = [...players.values()];
       const g = [...games.values()].filter((x) => x.offer_key === key);
-      return packs.summarize(rows, all.filter((p) => p.email_verified_at).length, all.filter((p) => p.instagram_at).length, all.filter((p) => p.app_at).length, g, all);
+      return packs.summarize(rows, all.filter((p) => p.email_verified_at).length, all.filter((p) => p.instagram_at).length, all.filter((p) => p.share_at || p.app_at).length, g, all);
     },
   };
 }
@@ -208,7 +209,7 @@ test('normalizeEmail', () => {
   }
 });
 
-test('allowance: first, instagram, email, app, max 4', () => {
+test('allowance: first, instagram, email, share, max 4', () => {
   const p = { email_verified_at: null, instagram_at: null };
   assert.deepEqual(packs.unlockedSources(p), ['first']);
   assert.equal(packs.nextSource(p, []), 'first');
@@ -218,11 +219,11 @@ test('allowance: first, instagram, email, app, max 4', () => {
   assert.equal(packs.nextSource(full, [{ source: 'first' }, { source: 'instagram' }]), 'email');
   assert.equal(packs.nextSource(full, [{ source: 'first' }, { source: 'email' }, { source: 'instagram' }]), null);
   assert.equal(packs.nextSource({ email_verified_at: 'x' }, [{ source: 'first' }]), 'email');
-  const all = { email_verified_at: 'x', instagram_at: 'y', app_at: 'z' };
-  assert.deepEqual(packs.unlockedSources(all), ['first', 'instagram', 'email', 'app']);
-  assert.equal(packs.nextSource(all, [{ source: 'first' }, { source: 'email' }, { source: 'instagram' }]), 'app');
+  const all = { email_verified_at: 'x', instagram_at: 'y', share_at: 'z' };
+  assert.deepEqual(packs.unlockedSources(all), ['first', 'instagram', 'email', 'share']);
+  assert.equal(packs.nextSource(all, [{ source: 'first' }, { source: 'email' }, { source: 'instagram' }]), 'share');
   assert.equal(packs.nextSource(all, packs.SOURCES.map((source) => ({ source }))), null);
-  assert.equal(packs.nextSource({ app_at: 'z' }, [{ source: 'first' }]), 'app');
+  assert.equal(packs.nextSource({ share_at: 'z' }, [{ source: 'first' }]), 'share');
   assert.equal(packs.MAX_PACKS, 4);
 });
 
@@ -289,8 +290,8 @@ test('state: new visitor can open one pack, game on', async () => {
   assert.equal(r.body.can_open, true);
   assert.equal(r.body.bonuses.email, 'locked');
   assert.equal(r.body.bonuses.instagram, 'locked');
-  assert.equal(r.body.bonuses.app, 'locked');
-  assert.equal(r.body.app_store_url, OFFER.app_store_url);
+  assert.equal(r.body.bonuses.share, 'locked', 'share is on with no App Store link');
+  assert.equal(r.body.app_store_url, undefined);
   assert.equal(r.body.max, 4);
   assert.equal(r.body.headline, OFFER.headline);
   assert.equal(r.body.stamp, '');
@@ -370,7 +371,7 @@ test('open: forged cookie is ignored (new player)', async () => {
   assert.equal(d.s.players.size, 2);
 });
 
-test('full run: first + email + instagram + app = 4, then a 5th is impossible', async () => {
+test('full run: first + email + instagram + share = 4, then a 5th is impossible', async () => {
   const d = deps();
   let c = cookieOf(await openPack(d));
   const v = await verifyEmail(d, c);
@@ -382,32 +383,107 @@ test('full run: first + email + instagram + app = 4, then a 5th is impossible', 
   const ig = await call(d, post({ action: 'instagram' }, { cookie: c }));
   assert.equal(ig.body.state.bonuses.instagram, 'unlocked');
   assert.equal((await openPack(d, c)).body.voucher.source, 'instagram');
-  const app = await call(d, post({ action: 'app' }, { cookie: c }));
-  assert.equal(app.body.state.bonuses.app, 'unlocked');
-  assert.equal((await openPack(d, c)).body.voucher.source, 'app');
+  const share = await call(d, post({ action: 'share' }, { cookie: c }));
+  assert.equal(share.body.state.bonuses.share, 'unlocked');
+  assert.equal((await openPack(d, c)).body.voucher.source, 'share');
   const fifth = await openPack(d, c);
   assert.equal(fifth.statusCode, 409);
   assert.equal(fifth.body.state.used, 4);
   assert.equal(fifth.body.state.bonuses.email, 'used');
   assert.equal(fifth.body.state.bonuses.instagram, 'used');
-  assert.equal(fifth.body.state.bonuses.app, 'used');
+  assert.equal(fifth.body.state.bonuses.share, 'used');
 });
 
-test('app tap counts once and is off without an App Store URL', async () => {
+test('share tap counts once, needs no App Store link, waits for the first pack', async () => {
+  const d = deps();
+  assert.equal((await call(d, post({ action: 'share' }))).statusCode, 409, 'no player yet');
+  assert.equal(d.s.players.size, 0);
+  const c = await playTo3(d);
+  await call(d, post({ action: 'share' }, { cookie: c }));
+  const me = () => [...d.s.players.values()].find((p) => p.share_at);
+  const first = me().share_at;
+  assert.ok(first);
+  assert.equal(me().app_at, null, 'new taps write share_at only');
+  await call(d, post({ action: 'share' }, { cookie: c }));
+  assert.equal(me().share_at, first);
+  assert.equal((await openPack(d, c)).body.voucher.source, 'share');
+  assert.equal((await openPack(d, c)).statusCode, 409);
+  assert.ok(packs.LIMITS.share);
+});
+
+test('legacy: an old app voucher merging into a player with share is voided, not doubled', async () => {
+  const d = deps();
+  // Owner: full 4 incl. a new 'share' voucher, verified email.
+  const { c: owner } = await playTo4(d);
+  const ownerId = packs.verifyPlayerCookie(owner.split('=')[1], SECRET);
+  // Another device: first pack plus a pre-release 'app' voucher (old builds let the tap skip the order).
+  const b = cookieOf(await openPack(d));
+  const bId = packs.verifyPlayerCookie(b.split('=')[1], SECRET);
+  d.s.players.get(bId).app_at = NOW.toISOString();
+  d.s.vouchers.push({ id: randomUUID(), code: 'WXYZ2345', player_id: bId, offer_key: 'o:2026-11-01', source: 'app',
+    created_at: NOW.toISOString(), expires_at: '2026-12-01T04:59:59.999Z', redeemed_at: null, redeemed_store: null, pin_failures: 0 });
+  await verifyEmail(d, b);
+  const s = (await call(d, get('view=state', owner))).body;
+  assert.equal(s.used, 4, 'still 4 pretzels, not 5');
+  const legacy = d.s.vouchers.find((v) => v.code === 'WXYZ2345');
+  assert.equal(legacy.player_id, bId, 'the duplicate stays behind');
+  assert.ok(legacy.expires_at <= NOW.toISOString(), 'and is voided');
+  assert.equal(d.s.vouchers.filter((v) => v.player_id === ownerId).length, 4);
+});
+
+test('legacy: redeem treats a traded app code like share, and burns it with the ticket', async () => {
+  const d = goldDeps();
+  const c = await playTo3(d);
+  const p = [...d.s.players.values()][0];
+  p.app_at = NOW.toISOString();
+  d.s.vouchers.push({ id: randomUUID(), code: 'ABCD2345', player_id: p.id, offer_key: 'o:2026-11-01', source: 'app',
+    created_at: NOW.toISOString(), expires_at: '2026-12-01T04:59:59.999Z', redeemed_at: null, redeemed_store: null, pin_failures: 0 });
+  const t = await openPack(d, c);
+  assert.equal(t.body.voucher.source, 'bonus');
+  const old = await call(d, post({ action: 'redeem', code: 'ABCD-2345', pin: '4821', store: 'lynbrook' }));
+  assert.equal(old.statusCode, 409, 'traded legacy code goes through the ticket');
+  const ticket = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'lynbrook' }));
+  assert.equal(ticket.statusCode, 200);
+  assert.ok(d.s.vouchers.find((v) => v.code === 'ABCD2345').redeemed_at, 'legacy code burned with the ticket');
+});
+
+test('legacy: action app is an alias of share for open tabs', async () => {
   const d = deps();
   const c = await playTo3(d);
-  await call(d, post({ action: 'app' }, { cookie: c }));
-  const me = () => [...d.s.players.values()].find((p) => p.app_at);
-  const first = me().app_at;
-  assert.ok(first);
-  await call(d, post({ action: 'app' }, { cookie: c }));
-  assert.equal(me().app_at, first);
-  assert.equal((await openPack(d, c)).body.voucher.source, 'app');
-  assert.equal((await openPack(d, c)).statusCode, 409);
-  const off = deps({ readOffer: async () => ({ offer: { ...OFFER, app_store_url: '' }, status: 'live' }) });
-  assert.equal((await call(off, get('view=state'))).body.bonuses.app, 'off');
-  assert.equal((await call(off, post({ action: 'app' }))).statusCode, 409);
-  assert.equal(off.s.players.size, 0);
+  const r = await call(d, post({ action: 'app' }, { cookie: c }));
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.body.state.bonuses.share, 'unlocked');
+  assert.equal((await openPack(d, c)).body.voucher.source, 'share');
+});
+
+test('legacy: app_at and an app voucher (before p22) count as pretzel 4', async () => {
+  // Tapped the App Store before the share release, pack not opened yet.
+  const d = goldDeps();
+  const c = await playTo3(d);
+  const p = [...d.s.players.values()][0];
+  p.app_at = NOW.toISOString();
+  let s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.bonuses.share, 'unlocked');
+  assert.equal(s.can_stop, false, 'no stop after the old app tap');
+  assert.equal((await openPack(d, c)).body.voucher.source, 'share');
+  // Opened the old app pack: no second pretzel 4, ticket comes next.
+  const d2 = goldDeps();
+  const c2 = await playTo3(d2);
+  const p2 = [...d2.s.players.values()][0];
+  p2.app_at = NOW.toISOString();
+  d2.s.vouchers.push({ id: randomUUID(), code: 'ABCD2345', player_id: p2.id, offer_key: 'o:2026-11-01', source: 'app',
+    created_at: NOW.toISOString(), expires_at: '2026-12-01T04:59:59.999Z', redeemed_at: null, redeemed_store: null, pin_failures: 0 });
+  s = (await call(d2, get('view=state', c2))).body;
+  assert.equal(s.used, 4);
+  assert.equal(s.bonuses.share, 'used');
+  assert.equal(s.vouchers.find((v) => v.code === 'ABCD-2345').source, 'share');
+  assert.equal(s.next_source, 'bonus');
+  assert.equal((await call(d2, post({ action: 'share' }, { cookie: c2 }))).statusCode, 200, 'tap is harmless');
+  assert.equal((await openPack(d2, c2)).body.voucher.source, 'bonus', 'no second pretzel 4');
+  const st = (await call(d2, get('view=stats'))).body;
+  assert.equal(st.opened.share, 1);
+  assert.equal(st.opened.total, 4);
+  assert.equal(st.share_taps, 1);
 });
 
 test('validateOffer: app_store_url must be an App Store link', () => {
@@ -543,7 +619,7 @@ test('verify on a new device merges into the email player; limit follows the per
   // Phone B: fresh cookie, first pack (the accepted cookie-clearing gap).
   let b = cookieOf(await openPack(d));
   await call(d, post({ action: 'instagram' }, { cookie: b }));
-  assert.equal((await call(d, post({ action: 'app' }, { cookie: b }))).statusCode, 409, 'app step waits for email');
+  assert.equal((await call(d, post({ action: 'share' }, { cookie: b }))).statusCode, 409, 'share step waits for email');
   // Phone B verifies the same email -> becomes the same person.
   b = (await verifyEmail(d, b)).cookie;
   const idA = packs.verifyPlayerCookie(a.split('=')[1], SECRET);
@@ -553,10 +629,10 @@ test('verify on a new device merges into the email player; limit follows the per
   const s = (await call(d, get('view=state', b))).body;
   assert.equal(s.bonuses.email, 'used');
   assert.equal(s.bonuses.instagram, 'unlocked');
-  assert.equal(s.bonuses.app, 'locked');
+  assert.equal(s.bonuses.share, 'locked');
   assert.equal((await openPack(d, b)).body.voucher.source, 'instagram');
-  assert.equal((await call(d, post({ action: 'app' }, { cookie: b }))).statusCode, 200);
-  assert.equal((await openPack(d, b)).body.voucher.source, 'app');
+  assert.equal((await call(d, post({ action: 'share' }, { cookie: b }))).statusCode, 200);
+  assert.equal((await openPack(d, b)).body.voucher.source, 'share');
   assert.equal((await openPack(d, b)).statusCode, 409, 'no 5th pack on the merged player');
   const owned = d.s.vouchers.filter((v) => v.player_id === idA);
   assert.equal(owned.length, 4);
@@ -715,8 +791,8 @@ test('stats: operator only, counts per offer', async () => {
   const r = await call(d, get('view=stats'));
   assert.equal(r.statusCode, 200);
   assert.equal(r.body.offer_key, 'o:2026-11-01');
-  assert.deepEqual(r.body.opened, { first: 2, instagram: 0, email: 0, app: 0, bonus: 0, total: 2 });
-  assert.equal(r.body.app_taps, 0);
+  assert.deepEqual(r.body.opened, { first: 2, instagram: 0, email: 0, share: 0, bonus: 0, total: 2 });
+  assert.equal(r.body.share_taps, 0);
   assert.equal(r.body.redeemed, 1);
   assert.equal(r.body.emails_verified, 1);
   const anon = deps({ readSession: async () => null });
@@ -726,7 +802,7 @@ test('stats: operator only, counts per offer', async () => {
 });
 
 // ─── v3: quest order, Golden Ticket, stop at 3, game record ─────────
-// Play first > Instagram > email > (app). Returns the cookie.
+// Play first > Instagram > email > (share). Returns the cookie.
 async function playTo3(d) {
   let c = cookieOf(await openPack(d));
   await call(d, post({ action: 'instagram' }, { cookie: c }));
@@ -737,19 +813,19 @@ async function playTo3(d) {
 }
 async function playTo4(d) {
   const c = await playTo3(d);
-  await call(d, post({ action: 'app' }, { cookie: c }));
+  await call(d, post({ action: 'share' }, { cookie: c }));
   const r = await openPack(d, c);
-  assert.equal(r.body.voucher.source, 'app');
+  assert.equal(r.body.voucher.source, 'share');
   return { c, r };
 }
 const goldDeps = (over = {}) => deps({ readOffer: async () => ({ offer: GOLD, status: 'live' }), ...over });
 // Deep search: no value anywhere in a JSON body contains the staff text.
 const leaks = (body) => JSON.stringify(body || {}).includes(STAFF_ITEM);
 
-test('trail and next quest follow first > instagram > email > app', async () => {
+test('trail and next quest follow first > instagram > email > share', async () => {
   const d = goldDeps();
   let s = (await call(d, get('view=state'))).body;
-  assert.deepEqual(s.trail.map((n) => n.key), ['first', 'instagram', 'email', 'app', 'bonus']);
+  assert.deepEqual(s.trail.map((n) => n.key), ['first', 'instagram', 'email', 'share', 'bonus']);
   assert.deepEqual(s.trail.map((n) => n.state), ['ready', 'locked', 'locked', 'locked', 'locked']);
   assert.equal(s.next_source, 'first');
   assert.equal(s.next_quest, null, 'no quest while a pack is waiting');
@@ -790,9 +866,9 @@ test('Golden Ticket: only after all 4, once, texts copied, staff text never publ
   for (const body of [t.body, s, (await call(d, get('view=state', c))).body]) assert.ok(!leaks(body), 'staff text leaked');
 });
 async function playTo4Cont(d, c) {
-  await call(d, post({ action: 'app' }, { cookie: c }));
+  await call(d, post({ action: 'share' }, { cookie: c }));
   const r = await openPack(d, c);
-  assert.equal(r.body.voucher.source, 'app');
+  assert.equal(r.body.voucher.source, 'share');
   return { r };
 }
 
@@ -803,9 +879,11 @@ test('Golden Ticket off: no 5th pack, trail node off', async () => {
   assert.equal(s.bonus.on, false);
   assert.equal(s.trail.at(-1).state, 'off');
   assert.equal((await openPack(d, c)).statusCode, 409);
-  // On without an App Store link: still off. A missing staff item is allowed.
+  // The share step is always on, so no App Store link is needed; the
+  // Instagram handle still is. A missing staff item is allowed.
   assert.equal(packs.bonusOn({ ...GOLD, bonus_staff: '' }), true);
-  assert.equal(packs.bonusOn({ ...GOLD, app_store_url: '' }), false);
+  assert.equal(packs.bonusOn({ ...GOLD, app_store_url: '' }), true);
+  assert.equal(packs.bonusOn({ ...GOLD, instagram_handle: '' }), false);
   assert.equal(packs.bonusOn(GOLD), true);
 });
 
@@ -822,10 +900,10 @@ test('stop at 3: keeps 3 pretzels, no Golden Ticket, final', async () => {
   assert.equal(s.can_stop, false);
   assert.equal(s.can_open, false);
   assert.equal(s.next_quest, null);
-  assert.equal(s.trail.find((n) => n.key === 'app').state, 'off');
+  assert.equal(s.trail.find((n) => n.key === 'share').state, 'off');
   assert.equal(s.trail.at(-1).state, 'off');
   assert.equal(s.vouchers.length, 3, 'keeps the 3 codes');
-  assert.equal((await call(d, post({ action: 'app' }, { cookie: c }))).statusCode, 409, 'app tap refused after stop');
+  assert.equal((await call(d, post({ action: 'share' }, { cookie: c }))).statusCode, 409, 'share tap refused after stop');
   const o = await openPack(d, c);
   assert.equal(o.statusCode, 409);
   assert.match(o.body.error, /ended/);
@@ -837,19 +915,19 @@ test('stop at 3: keeps 3 pretzels, no Golden Ticket, final', async () => {
   assert.ok(g.ended_at);
 });
 
-test('stop refused before 3, after the app tap, without a player or app link', async () => {
+test('stop refused before 3, after the share tap, without a player; works without an App Store link', async () => {
   const d = goldDeps();
   assert.equal((await call(d, post({ action: 'stop' }))).statusCode, 409, 'no player');
   const c = cookieOf(await openPack(d));
   assert.equal((await call(d, post({ action: 'stop' }, { cookie: c }))).statusCode, 409, 'at 1');
   const d2 = goldDeps();
   const c2 = await playTo3(d2);
-  await call(d2, post({ action: 'app' }, { cookie: c2 }));
-  assert.equal((await call(d2, post({ action: 'stop' }, { cookie: c2 }))).statusCode, 409, 'after app tap');
+  await call(d2, post({ action: 'share' }, { cookie: c2 }));
+  assert.equal((await call(d2, post({ action: 'stop' }, { cookie: c2 }))).statusCode, 409, 'after share tap');
   const d3 = deps({ readOffer: async () => ({ offer: { ...GOLD, app_store_url: '' }, status: 'live' }) });
   const c3 = await playTo3(d3);
-  assert.equal((await call(d3, get('view=state', c3))).body.can_stop, false);
-  assert.equal((await call(d3, post({ action: 'stop' }, { cookie: c3 }))).statusCode, 409, 'no app link');
+  assert.equal((await call(d3, get('view=state', c3))).body.can_stop, true);
+  assert.equal((await call(d3, post({ action: 'stop' }, { cookie: c3 }))).statusCode, 200, 'no App Store link needed');
   assert.ok(packs.LIMITS.stop);
 });
 
@@ -959,7 +1037,7 @@ test('stats: end states, steps, Golden Ticket and Completed all 4 list (masked)'
   assert.equal(r.statusCode, 200);
   assert.deepEqual(r.body.games, { completed: 1, stopped_at_3: 1, unfinished: { 1: 1, 2: 0, 3: 0, 4: 0 } });
   assert.equal(r.body.opened.bonus, 1);
-  assert.equal(r.body.opened.app, 1);
+  assert.equal(r.body.opened.share, 1);
   assert.equal(r.body.opened.total, 3 + 4 + 1);
   assert.equal(r.body.completed_list.length, 1);
   assert.equal(r.body.completed_list[0].email, 'p***@example.com');
@@ -975,18 +1053,22 @@ async function playTo3Email(d, email) {
   return c;
 }
 
-test('app step refused before the free pack, Instagram and email', async () => {
+test('share step refused before the free pack, Instagram and email', async () => {
   const d = goldDeps();
-  assert.equal((await call(d, post({ action: 'app' }))).statusCode, 409, 'no player');
+  assert.equal((await call(d, post({ action: 'share' }))).statusCode, 409, 'no player');
   const c = cookieOf(await openPack(d));
-  assert.equal((await call(d, post({ action: 'app' }, { cookie: c }))).statusCode, 409, 'at 1');
-  assert.ok(![...d.s.players.values()].some((p) => p.app_at));
+  assert.equal((await call(d, post({ action: 'share' }, { cookie: c }))).statusCode, 409, 'at 1');
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: c }))).statusCode, 409, 'legacy alias, at 1');
+  assert.ok(![...d.s.players.values()].some((p) => p.share_at || p.app_at));
 });
 
 test('Golden Ticket needs the Instagram handle too (all 4 must be earnable)', () => {
   assert.equal(packs.bonusOn({ ...GOLD, instagram_handle: '' }), false);
-  const lint = qr.lintCopy(qr.validateOffer({ headline: 'x', bonus_on: true, app_store_url: OFFER.app_store_url }).offer);
+  const lint = qr.lintCopy(qr.validateOffer({ headline: 'x', bonus_on: true }).offer);
   assert.ok(lint.some((l) => l.rule === 'golden' && /Instagram/.test(l.message)));
+  assert.ok(!lint.some((l) => /App Store/.test(l.message)), 'no App Store link needed');
+  const ok = qr.lintCopy(qr.validateOffer({ headline: 'x', bonus_on: true, instagram_handle: 'example_pretzels' }).offer);
+  assert.ok(!ok.some((l) => l.rule === 'golden'), 'Instagram handle alone is enough');
 });
 
 test('game record unreadable: no stop button, no Golden Ticket, pretzels still open', async () => {
@@ -997,8 +1079,8 @@ test('game record unreadable: no stop button, no Golden Ticket, pretzels still o
   const s = (await call(d, get('view=state', c))).body;
   assert.equal(s.can_stop, false);
   assert.equal((await call(d, post({ action: 'stop' }, { cookie: c }))).statusCode, 503);
-  await call(d, post({ action: 'app' }, { cookie: c }));
-  assert.equal((await openPack(d, c)).body.voucher.source, 'app');
+  await call(d, post({ action: 'share' }, { cookie: c }));
+  assert.equal((await openPack(d, c)).body.voucher.source, 'share');
   const after = await openPack(d, c);
   assert.equal(after.statusCode, 409, 'no Golden Ticket without the game record');
 });
@@ -1060,16 +1142,16 @@ test('validateOffer: Golden Ticket defaults, needs a staff item, staff text stri
   assert.equal(off.bonus_title, 'Golden Ticket');
   assert.equal(off.bonus_text, 'Visit the Pretzel Factory to claim your prize.');
   // What staff give may stay empty (user decision): allowed, but flagged.
-  const noStaff = qr.validateOffer({ ...base, bonus_on: true, app_store_url: OFFER.app_store_url });
+  const noStaff = qr.validateOffer({ ...base, bonus_on: true });
   assert.ok(noStaff.offer && noStaff.offer.bonus_on);
   assert.ok(!qr.lintCopy(noStaff.offer).some((l) => l.field === 'bonus_staff'), 'empty means any one product');
   assert.ok(qr.validateOffer({ ...base, bonus_staff: 'x'.repeat(61) }).errors);
   assert.ok(qr.validateOffer({ ...base, bonus_title: 'x'.repeat(41) }).errors);
-  const on = qr.validateOffer({ ...base, bonus_on: true, bonus_staff: STAFF_ITEM, app_store_url: OFFER.app_store_url }).offer;
+  const on = qr.validateOffer({ ...base, bonus_on: true, bonus_staff: STAFF_ITEM }).offer;
   assert.equal(on.bonus_on, true);
   assert.ok(!('bonus_staff' in qr.publicOffer(on)));
   assert.equal(qr.publicOffer(on).bonus_title, 'Golden Ticket');
-  const lint = qr.lintCopy({ ...on, app_store_url: '', bonus_text: 'You could win big' });
+  const lint = qr.lintCopy({ ...on, instagram_handle: '', bonus_text: 'You could win big' });
   assert.ok(lint.some((l) => l.rule === 'golden'));
   assert.ok(lint.some((l) => l.rule === 'chance'));
   // Public offer GET strips it end to end.

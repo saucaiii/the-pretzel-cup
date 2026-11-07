@@ -15,9 +15,10 @@
 // Text is always set with textContent (never innerHTML).
 //
 // Game loop (plan v3): quest > pack drops in > rip > win > next quest.
-// Order: free pack, Instagram, email, app, then the Golden Ticket after
-// all 4. One quest card at a time; "Skip for now" keeps every code. At 3
-// a player can end with "I don't need another app". Outcomes are fixed:
+// Order: free pack, Instagram, email, share with the group chat, then
+// the Golden Ticket after all 4. One quest card at a time; "Skip for now"
+// keeps every code. At 3 a player can end with "No thanks, I hate delicious and free pretzels.".
+// Outcomes are fixed:
 // every pack wins, no odds, no timers, no near-misses.
 (function () {
   'use strict';
@@ -31,13 +32,19 @@
   var UI_KEY = 'ppf_packs_ui';
   var TRAIL = {
     first: { n: '1', label: 'Free' }, instagram: { n: '2', label: 'Follow' }, email: { n: '3', label: 'Email' },
-    app: { n: '4', label: 'App' }, bonus: { n: 'Golden', label: 'Ticket' }
+    share: { n: '4', label: 'Share' }, bonus: { n: 'Golden', label: 'Ticket' }
   };
   var QUEST = {
     instagram: { step: 'Pretzel 2 of 4', title: 'Follow us on Instagram', resume: 'Get pretzel 2' },
     email: { step: 'Pretzel 3 of 4', title: 'Add your email', resume: 'Get pretzel 3' },
-    app: { step: 'Pretzel 4 of 4', title: 'Get the app', resume: 'Download the app' }
+    share: { step: 'Pretzel 4 of 4', title: 'Share with your group chat', resume: 'Share with your group chat' }
   };
+  // Pretzel 4: the message the share sheet (or text message) starts with.
+  var SHARE_TEXT = 'I just won free pretzels from Philly Pretzel Factory \uD83E\uDD68 Rip a pack and win yours:';
+  function shareUrl() { return location.origin + '/free-pretzels'; }
+  // Once the share sheet fails (not a cancel), stay on text + copy.
+  var shareBroken = false;
+  function canShare() { return !shareBroken && typeof navigator.share === 'function'; }
   var EMAIL_MSG = {
     verified: 'Email verified. Your next pack is ready.',
     expired: 'That link has expired, was already used, or was opened on a different phone. Ask for a new one below.',
@@ -307,7 +314,7 @@
     first: { name: 'Free pack', todo: 'Open your free pack', r: '-2deg' },
     instagram: { name: 'Instagram', todo: 'Follow us on Instagram', r: '2deg' },
     email: { name: 'Email', todo: 'Add your email', r: '1deg' },
-    app: { name: 'App', todo: 'Get the app', r: '-1deg' }
+    share: { name: 'Share', todo: 'Share with your group chat', r: '-1deg' }
   };
   var ART = '/free-pretzels/art/';
   function voucherMeta(v) {
@@ -446,12 +453,12 @@
     (st.vouchers || []).forEach(function (v) { by[v.source] = v; });
     var nodes = {};
     (st.trail || []).forEach(function (n) { nodes[n.key] = n; });
-    var count = ['first', 'instagram', 'email', 'app'].filter(function (k) { return by[k]; }).length;
+    var count = ['first', 'instagram', 'email', 'share'].filter(function (k) { return by[k]; }).length;
     $('binder').hidden = !(count || by.bonus);
     $('bd-count').textContent = count + ' of 4';
     var stopped = st.ended === 'stopped_at_3';
     var grid = el('div', 'bd-grid');
-    ['first', 'instagram', 'email', 'app'].forEach(function (k) {
+    ['first', 'instagram', 'email', 'share'].forEach(function (k) {
       if (by[k]) grid.appendChild(slotCard(k, by[k]));
       else if (!stopped && nodes[k] && nodes[k].state !== 'off') grid.appendChild(emptySlot(k, nodes[k], st));
     });
@@ -463,7 +470,7 @@
     var ticketOpen = ticketAhead(st);
     if (by.bonus) box.appendChild(ticketCard(st, by.bonus));
     else if (ticketOpen) box.appendChild(ticketCard(st, null));
-    $('bd-stop').hidden = !(st.can_stop && !st.ended && st.next_quest === 'app');
+    $('bd-stop').hidden = !(st.can_stop && !st.ended && st.next_quest === 'share');
   }
 
   function renderTrail(st) {
@@ -513,8 +520,15 @@
     $('q-title').textContent = QUEST[q].title;
     $('q-ig').hidden = q !== 'instagram';
     $('q-email').hidden = q !== 'email';
-    $('q-app').hidden = q !== 'app';
-    $('q-skip').hidden = q === 'app';
+    $('q-share').hidden = q !== 'share';
+    $('q-skip').hidden = q === 'share';
+    // Web Share opens the phone's share sheet; without it, a text
+    // message with the same words, or copy the link.
+    var sheet = canShare();
+    $('share-btn').hidden = !sheet;
+    $('share-sms').hidden = sheet;
+    $('share-copy').hidden = sheet;
+    $('share-sms').href = 'sms:?&body=' + encodeURIComponent(SHARE_TEXT + ' ' + shareUrl());
     $('ig-handle').textContent = st.instagram ? '@' + st.instagram : '';
     $('q-gold').hidden = !(st.bonus && st.bonus.on);
     $('stop-btn').hidden = !st.can_stop;
@@ -566,7 +580,7 @@
     }
     if (wasHidden) {
       var first = panel === 'deal' ? $('deal-trade') : panel === 'end' ? $('end-close')
-        : ($('q-ig').hidden ? ($('q-email').hidden ? $('app-btn') : $('email-input')) : $('ig-btn'));
+        : ($('q-ig').hidden ? ($('q-email').hidden ? ($('share-btn').hidden ? $('share-sms') : $('share-btn')) : $('email-input')) : $('ig-btn'));
       if (first) first.focus({ preventScroll: true });
     }
   }
@@ -1199,10 +1213,20 @@
       });
     });
 
-    // Honor system: a follow or a download cannot be checked, so the
-    // bonus unlocks when the player comes back from Instagram or the store.
+    // Honor system: a follow or a send cannot be checked, so the bonus
+    // unlocks when the player comes back from Instagram or their messages.
     function honor(kind, url, statusId) {
       window.open(url, '_blank', 'noopener');
+      unlockOnReturn(kind, statusId);
+    }
+    function unlockNow(kind, statusId) {
+      return api('POST', { action: kind }).then(function (r) {
+        if (r.ok && r.data.state) render(r.data.state);
+        else $(statusId).textContent = (r.data && r.data.error) || 'Could not unlock right now. Try again.';
+        return r.ok;
+      }, function () { $(statusId).textContent = 'No connection. Try again.'; return false; });
+    }
+    function unlockOnReturn(kind, statusId) {
       var sent = false;
       function unlock() {
         if (sent) return;
@@ -1221,9 +1245,54 @@
       var st = S.state;
       if (st && st.instagram) honor('instagram', 'https://www.instagram.com/' + encodeURIComponent(st.instagram) + '/', 'ig-status');
     });
-    $('app-btn').addEventListener('click', function () {
-      var st = S.state;
-      if (st && st.app_store_url && /^https:\/\/apps\.apple\.com\//.test(st.app_store_url)) honor('app', st.app_store_url, 'app-status');
+    // Share sheet: unlocks once it reports the share went through. A
+    // cancel does nothing; any other failure falls back to text or copy.
+    $('share-btn').addEventListener('click', function () {
+      if (!canShare()) return;
+      var btn = $('share-btn');
+      btn.disabled = true;
+      $('share-status').textContent = '';
+      navigator.share({ text: SHARE_TEXT, url: shareUrl() }).then(function () {
+        btn.disabled = false;
+        unlockNow('share', 'share-status');
+      }, function (e) {
+        btn.disabled = false;
+        if (e && e.name === 'AbortError') return;
+        shareBroken = true;
+        btn.hidden = true;
+        $('share-sms').hidden = false;
+        $('share-copy').hidden = false;
+        $('share-sms').focus();
+      });
+    });
+    // Text message: the link opens Messages; unlock on coming back. One
+    // pending unlock at a time, however often it is tapped.
+    var smsPending = false;
+    $('share-sms').addEventListener('click', function () {
+      if (smsPending) return;
+      smsPending = true;
+      unlockOnReturn('share', 'share-status');
+      setTimeout(function () { smsPending = false; }, 9000);
+    });
+    $('share-copy').addEventListener('click', function () {
+      var text = SHARE_TEXT + ' ' + shareUrl();
+      var done = function () {
+        $('share-status').textContent = 'Copied. Paste it in your group chat.';
+        setTimeout(function () { unlockNow('share', 'share-status'); }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, manual);
+      } else manual();
+      // No clipboard: show the text to copy by hand. The pack unlocks
+      // when they come back from their messages (or after 8 s), so the
+      // text stays up long enough to copy.
+      function manual() {
+        $('share-status').textContent = 'Copy this: ' + text;
+        if (smsPending) return;
+        smsPending = true;
+        unlockOnReturn('share', 'share-status');
+        setTimeout(function () { smsPending = false; }, 9000);
+      }
     });
 
     // Skip for now: hide this quest card, keep every code. The trail and
@@ -1235,7 +1304,7 @@
       $('q-resume').focus();
     });
     $('q-resume').addEventListener('click', resumeStep);
-    // Binder "I don't need another app": the app step with its confirm.
+    // Binder "No thanks, I hate delicious and free pretzels.": the share step with its confirm.
     $('bd-stop').addEventListener('click', function () {
       resumeStep();
       if (!$('stop-btn').hidden) $('stop-btn').click();
@@ -1272,7 +1341,7 @@
       $('end-close').focus();
     });
 
-    // "I don't need another app": one plain confirm, then the game ends
+    // "No thanks, I hate delicious and free pretzels.": one plain confirm, then the game ends
     // at 3. They keep their 3 pretzels.
     $('stop-btn').addEventListener('click', function () {
       $('stop-confirm').hidden = false;
@@ -1290,7 +1359,7 @@
         $('stop-confirm').hidden = true;
         if (r.data && r.data.state && r.data.state.game) render(r.data.state);
         if (!r.ok) {
-          $('app-status').textContent = (r.data && r.data.error) || 'Could not end the game right now. Try again.';
+          $('share-status').textContent = (r.data && r.data.error) || 'Could not end the game right now. Try again.';
           if (!$('stop-btn').hidden) $('stop-btn').focus();
           return;
         }
@@ -1298,7 +1367,7 @@
       }, function () {
         btn.disabled = false;
         $('stop-confirm').hidden = true;
-        $('app-status').textContent = 'No connection. Try again.';
+        $('share-status').textContent = 'No connection. Try again.';
         $('stop-btn').focus();
       });
     });
@@ -1675,7 +1744,6 @@
       init3D();
       // Official badge artwork, if the files have been added. Text until then.
       tryBadge('ig-btn', 'ig-badge', ASSETS + 'instagram-glyph.svg');
-      tryBadge('app-btn', 'app-badge', ASSETS + 'app-store-badge.svg');
     }).catch(function () { /* keep the plain offer page */ });
   }
 
