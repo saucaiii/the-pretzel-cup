@@ -1,81 +1,56 @@
 # Working memory (short-term). Keep under 60 lines.
-Branch: agent/pretzel-packs-v3
-Task: pretzel-packs-v3 (green theme, quest loop, Golden Ticket, stop at 3)
-Status: building (plan approved)
+Branch: agent/pretzel-redesign
+Task: pretzel-redesign (make /free-pretzels as fun as the game, outside the rip)
+Status: draft PR open (saucaiii/the-pretzel-cup#31); final review pass, fixes pushed. Human merges + deploys.
 Started: 2026-11-06
 
 ## Context
-- Previous task (pretzel-packs v1/v2 + popup) is merged and live (main 893a774).
-  Its notes are in git history of this file.
-- Requests relayed by the ops/qr session (local_7f43c8af) with the user's words.
-- Plan v3 approved by the human 2026-11-07T00:15Z (approval hash = sha256 of
-  .agent/plan.md at 460a2ec, checked by the agent). scope.txt matches the plan.
+- Started by session local_7433b014. Plan in .agent/plan.md (medium, no gate).
+  scope.txt: free-pretzels/, .agent/. Base origin/main 18e87d6.
+- USER (directly, mid-task): follow their mockup pretzel_site_mockup_three_directions.html
+  (A word wall, B factory floor quest map, C collector's binder) closely, mix in the
+  Higgsfield art and some of the agent's take, do NOT touch the pack ripping, and no
+  fixes they did not ask for. Recorded in decisions.md.
+- Brand guide PDF is internal: never commit or quote it.
 
-## Progress
-- Step 1 p11 migration written (a279064). APPLIED 2026-11-07 to Supabase
-  the-pretzel-cup (ivwjhfndltkngefjozrj, the only project; p10 already there) after
-  the user said "Yes, apply p11" in this session. Verified: source check has 'bonus',
-  prize_* columns added, pack_games exists with RLS on, existing 26 vouchers untouched.
-- Step 2+3 _packs.js / _qr.js + tests (ff5db4e): quest order, bonus source,
-  pack_games record, stop action, staff text only after PIN, stats. npm test 180/180.
-- Steps 4 to 7 done (a4a7f90, ops commit): green theme, trail, quest cards, stop, end screen,
-  Golden Ticket finish + ticket voucher (packs.css, packs.js, index.html, pack3d.js).
+## Progress (commits on this branch)
+- Hero word wall (mockup A); welcome popup on plate; binder (mockup C); food band;
+  offer/claim/stores restyled. Quest map (mockup B) removed at the user's request.
 
-## Deviation from approved plan (user-directed, plan.md not edited)
-- "What staff give" optional: empty -> redeem sheet "Prize not set yet. Ask a manager.",
-  /ops/qr warns instead of blocking. Golden Ticket needs only bonus_on + App Store link.
+## Not done on purpose (rip beats untouched)
+- Plan step 9 ticket art on the stage's .st-ticket face, and C6 foil photo on the
+  no-WebGL fallback packs: both are inside the carousel/rip experience.
 
-## Review round (reviewer subagent @ 48476b9): not ready -> fixed
-- Root causes: reasoning error (fail-soft not applied to stop/stats; ticket missing the
-  Instagram precondition; no server-side quest order); governance (relayed approval).
-- Fixed: gameOk gate on stop + ticket, handleStop 503 when record unreadable, stats game
-  counts fail soft, bonusOn needs instagram_handle (+ lint), app tap needs first+IG+email,
-  redeem falls back to current staff item, no drop-in replay on load, stop error focus,
-  studio background exactly #083521. npm test 185/185.
-- Not fixed (noted in PR): stop racing a parallel app open can leave score 4 + stopped.
-- Migration: user confirmed directly here ("Yes, apply p11"). Deploy: ask the user here.
+## Validation (mock server in scratchpad runs the real api/_packs.js)
+- Full loop at 375: first, IG, email link, app, trade, ticket shimmer, staff redeem,
+  stop at 3, keep, skip + resume. 1280: hero, popup, binder, map. /ops/qr srcdoc ok.
+- npm test 187/187; guardrails 106/0; eval-report pass; id check 83 ids ok.
+- Not verified: reduced motion (pane cannot emulate it), no-WebGL fallback, real phones.
 
-## Keep-or-trade deal (user, directly, 2026-11-07; deviation from plan v3, plan.md not edited)
-- After all 4: keep 4 pretzels or trade all 4 for the Golden Ticket (always wins).
-  Ticket = any one product (default bonus_staff); redeem also burns and hands back the
-  unused pretzels (staff-only "Surprise" line). Traded pretzel codes hidden and refused
-  on their own. Visual: deal card, trade > ticket > end, keep > end (survives reload),
-  staff sheet with surprise line. npm test 187/187.
+## Review (reviewer subagent, 2026-11-06): not ready -> fixed
+- F1 global button hover leaked into #stage buttons: stage override made more specific.
+- F2 "Complete the set" shown at 4 of 4: now "Set complete. Keep or trade?", and the
+  slot only shows while the ticket pack is on offer (no unearnable ticket).
+- F3 step popup restyled without a request: reverted to the live look (only .ww-card new).
+- F5 ticket code on art: flat gold-light pill. F6 shimmer: once per ticket per device,
+  never on a used ticket. F7 recorded in decisions.md.
+- Accepted: F4 reduced-motion block also makes the carousel's 0.2s scale instant;
+  F8 logos sit on a 0.16-alpha glow (clear space kept). Code scanning not checked.
 
-## Live incident 2026-11-07
-- PR #29 was merged at c5ce235 (green version) before c2930a7 (live look) was pushed,
-  then deployed from a checkout WITHOUT the font files (FatFrank/Gotham 404 live).
-- The FatFrank 404 made pack3d's font wait reject -> createKit threw -> flat CSS packs.
-  Root cause: reasoning error (font load not made fail-safe). Fixed: catch + timeout.
-- Follow-up PR from agent/pretzel-packs-popups carries c2930a7 + the font fix.
-
-## Live look restored (user, directly, 2026-11-07)
-- Black game/stage/sheet, original foil (roughness 1, black studio), 5-pack carousel every
-  pull (all golden for the ticket pull). Steps/deal/end are popups (grey card) over the
-  carousel; trail inside the popup; live voucher cards (+ ticket variant). Checked on the
-  mock at 375 px: IG, email link, app, deal trade + keep, stop at 3, skip + resume, end
-  popup shows once.
+## User changes 2026-11-07 (done)
+- Win card + step popup on the new theme; win card has one CTA to the next pretzel
+  with pips and "N more to the Golden Ticket" (rip beats unchanged).
+- Dog + rivet cup are cutouts on plate frames; ticket text has no pill.
+- Golden Ticket spins: 4x3 grid, spins 1-3 miss, spin 4 lines up 4 pretzels; screen
+  says the 4th spin lands it. Review round 3 fixed (lost-response recovery, modal gates).
+- Every new modal must be added to the renderStep, closeStep and closeRedeem gates.
+- Map dropped; binder shows Collected (tick) vs Open (action, tap to unlock), no
+  flavour words; food band side photos = pretzel dog + cinnamon rivets cup.
 
 ## Retries
-- 2: zsh read `$c:free-pretzels/...` as a `:f` history modifier. Root cause: tool misuse.
-  Change: quote as "${c}:path".
-- 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).
-  Root cause: tool misuse. Change: read the file with the Read tool instead.
-
-## Visual checks (local mock, real handlers, 375 px + desktop)
-- Full loop 1 > IG > email link > app > Golden Ticket, stop at 3, skip + resume after
-  reload, redeem sheet (badge + Give), reduced motion, game off, public offer has no
-  staff text. Beats 0/0.9/2.0/2.5/3.3/6.0 s; Golden Ticket settles at ~7.7 s.
-- Browser pane was hidden (rAF stalls): final states checked by DOM and stepped frames.
-  Not checked on a real phone. No-WebGL path not re-run in v3.
-
-## Next
-- Push, draft PR, user merges, deploy (ask the user), check live at phone size.
-
-## Carried constraints
-- Deploy only from this worktree (gitignored brand fonts live here).
-- Never commit font files or the brand guide PDF (public repo).
-- p10 migration is applied: never edit it; new changes go in p11.
-- EDGE_CONFIG_WRITE_TOKEN still unset, so /ops/qr cannot save offers yet.
-- Deploying v3 before p11 is applied: pretzels still open (game record fails
-  soft), but the Golden Ticket and stop button would error. Apply p11 first.
+- screenshots push: tool misuse, I typed a bogus `git push -f-never` (git rejected it,
+  nothing forced); pushed the image commit to agent/pretzel-redesign-screens instead.
+- npm test 71/73: context/environment issue (no node_modules). npm ci --ignore-scripts.
+- one-liner exit 1: tool misuse (zsh `echo ===`). Ran eval-report on its own.
+- image-branch push exit 128: tool misuse (git mktree input lost its tab inside a shell
+  variable). Change before retry: build the mktree input with printf per line.

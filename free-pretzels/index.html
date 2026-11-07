@@ -11,9 +11,11 @@
 <!-- Brand type: FatFrank (headlines, letter-spacing >= +0.01em, never
      tightened), Gotham (body), SantElia Script (one optional warm accent
      word). Bullpen is signage-only and never used on the web.
-     Archivo Black, Montserrat and Caveat stay loaded as fallbacks. -->
+     Archivo Black, Montserrat and Caveat stay loaded as fallbacks.
+     Rock Salt (Apache 2.0) is used for the one word "Salted" only.
+     Permanent Marker (Apache 2.0) for the mockup's marker words. -->
 <link rel="preload" href="/free-pretzels/fonts/fat-frank-heavy.otf" as="font" type="font/otf" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@700&family=Montserrat:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@700&family=Montserrat:wght@400;500;700;800&family=Permanent+Marker&family=Rock+Salt&display=swap" />
 <link rel="stylesheet" href="/free-pretzels/packs.css" />
 <style>
   /* Licensed brand fonts, served from /free-pretzels/fonts/ (files kept
@@ -24,14 +26,18 @@
   @font-face { font-family: 'Gotham'; src: url('/free-pretzels/fonts/gotham-book.otf') format('opentype'); font-weight: 400; font-display: swap; }
   @font-face { font-family: 'SantElia Script'; src: url('/free-pretzels/fonts/santelia-script-bold.otf') format('opentype'); font-weight: 100 900; font-display: swap; }
 
-  /* Brand rules (summary of the internal brand guide):
-     - Solid brand colours only. Green dominant; black; golds. No gradients.
-     - Tagline "Made to Crave®" sits centred under the logo, one tagline
-       height below it, in white or black only. One tagline, nothing
-       stacked under it.
-     - Diamond plate: top edge only, flush, 3 rows, white at 75% on green.
-     - Logo: unaltered, clear space >= height of the "P" in Philly
-       (about 12.5% of the logo width) on every side. */
+  /* Brand rules for this page (see .agent/decisions.md, 2026-11-06):
+     Fixed:
+     - Logo unaltered, clear space >= height of the "P" in Philly
+       (about 12.5% of the logo width) on every side, on a flat colour.
+     - Tagline "Made to Crave®" keeps the ®, centred under the logo.
+     - Green #0D5237 is the main colour. Text sits on flat colour (AA).
+     - No gambling feel: no odds, near-misses or countdowns.
+     Loosened for this page (user-directed redesign):
+     - Gradients and glows (green and gold together), soft shadows,
+       rounded tactile cards, hover/scroll micro-motion, the diamond
+       plate anywhere, off-palette accents for special moments only.
+     - The rip stage (#stage) keeps the black live look. */
   :root {
     --green: #0D5237;
     --gold: #D4B662;
@@ -40,11 +46,25 @@
     --black: #000000;
     --white: #FFFFFF;
     --gray: #6D6E71;
+    --green-deep: #083521;
+    --green-lift: #146B47;
+
+    /* Depth and motion (loosened rules). */
+    --radius: 18px;
+    --radius-sm: 12px;
+    --shadow-1: 0 2px 6px rgba(0, 0, 0, 0.18), 0 10px 24px rgba(0, 0, 0, 0.18);
+    --shadow-2: 0 8px 16px rgba(0, 0, 0, 0.28), 0 26px 52px rgba(0, 0, 0, 0.32);
+    --glow: 0 0 18px rgba(242, 231, 164, 0.55), 0 0 44px rgba(212, 182, 98, 0.38);
+    --ease: cubic-bezier(.2, .8, .3, 1);
+    --ease-pop: cubic-bezier(.3, 1.4, .5, 1);
+    --plate-photo: url('/free-pretzels/art/plate-750.webp');
 
     /* Brand font first (web kit name, then installed name), then stand-in. */
     --display: 'FatFrank', 'Archivo Black', 'Arial Black', Impact, sans-serif;
     --body: 'Gotham', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
     --script: 'SantElia Script', 'Caveat', 'Brush Script MT', cursive;
+    --salt: 'Rock Salt', 'Caveat', cursive;
+    --marker: 'Permanent Marker', 'Caveat', cursive;
 
     --logo-w: min(64vw, 280px);
     --logo-clear: calc(var(--logo-w) * 0.125);
@@ -75,6 +95,16 @@
     --accent-ink: var(--green);
   }
 
+  @media (min-width: 760px) { :root { --plate-photo: url('/free-pretzels/art/plate-1280.webp'); } }
+  /* Reduced motion: CSS motion off everywhere (packs.js handles its own
+     scripted motion and keeps only fades). */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+    }
+  }
+
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
@@ -92,26 +122,25 @@
 
   .wrap { width: 100%; max-width: 560px; margin: 0 auto; padding: 0 20px; }
 
-  /* Diamond plate: very top, flush, exactly 3 rows. One 48x24 tile is
-     one row of two diamonds, so 3 rows = 72px. Tile size and spacing
-     are left exactly as drawn. */
-  .plate {
-    height: 72px;
-    background-color: var(--green);
-    background-image: var(--diamond);
-    background-size: 48px 24px;
-    background-position: 0 0;
-    background-repeat: repeat;
+  /* ─── word-wall hero (mockup A) ──────────────────────────────── */
+  /* Plate strip on top, logo + tagline, then a tilted wall of brand
+     words in mixed type with CRAVE lit in gold, then the offer copy.
+     Sizes are the mockup's phone pixels: 1em = one mockup px. */
+  .plate-strip {
+    height: 48px;
+    background: var(--diamond) 0 0 / 48px 24px, var(--hero-bg);
   }
-
   .hero {
-    background: var(--hero-bg);
+    --logo-w: min(40vw, 180px);
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 40% at 50% 34%, rgba(242, 231, 164, 0.16), transparent 70%),
+      var(--hero-bg);
     color: var(--hero-ink);
     text-align: center;
     padding: 0 0 40px;
   }
-  /* Lockup: logo + tagline. Clear space on every side of the logo. */
-  .lockup { padding: var(--logo-clear) 0; }
+  .lockup { padding: var(--logo-clear) 0 0; }
   .logo { width: var(--logo-w); margin: 0 auto; }
   .tagline {
     margin: var(--tagline-size) 0 0; /* gap = one tagline height */
@@ -120,6 +149,32 @@
     line-height: 1;
     letter-spacing: 0.01em;
     color: var(--tagline-ink);
+  }
+  .ww {
+    /* 1em = one px of the mockup's 188px-wide phone screen. */
+    font-size: min(calc(100vw / 188), calc(560px / 188));
+    width: 100%; max-width: 560px; margin: 0 auto;
+    padding: 10em 8em 6em 4em;
+    text-align: left; line-height: 1;
+    transform: rotate(-4deg);
+    pointer-events: none; user-select: none;
+  }
+  .ww p { margin: 0; white-space: nowrap; }
+  .ww span { display: inline-block; margin-right: 0.18em; }
+  .ww .hd { font-family: var(--display); letter-spacing: 0.01em; line-height: 0.95; }
+  .ww .sc { font-family: var(--script); font-weight: 700; }
+  .ww .mk { font-family: var(--marker); }
+  /* CRAVE, lit (earlier take): gold with a warm glow. Decorative; the
+     real tagline with ® is under the logo. */
+  .ww .ww-crave {
+    color: var(--gold);
+    text-shadow: 0 0 12px rgba(242, 231, 164, 0.55), 0 0 30px rgba(212, 182, 98, 0.45);
+  }
+  .hero-copy { margin-top: 30px; }
+  .hero-food { display: none; }
+  @media (min-width: 900px) {
+    .hero-food { display: block; position: absolute; right: max(32px, calc(50% - 600px)); top: 330px; }
+    .hero-food .frame { --fw: 220px; }
   }
 
   .accent {
@@ -153,13 +208,75 @@
     text-transform: uppercase;
   }
   .hero .sub {
-    margin: 14px 0 0;
+    margin: 14px auto 0; max-width: 32em;
     font-weight: 700;
     font-size: 18px;
   }
 
+  /* ─── photo frames: real food breaking out of tilted cards ─────── */
+  .frame {
+    --fw: 150px; --tilt: -4deg;
+    position: relative; flex: none; margin: 0;
+    width: var(--fw); aspect-ratio: 4 / 5;
+    transform: rotate(var(--tilt));
+    border-radius: var(--radius);
+    border: 3px solid var(--gold);
+    background:
+      radial-gradient(circle at 50% 28%, rgba(242, 231, 164, 0.38), transparent 62%),
+      var(--plate-photo) center 30% / 260% auto,
+      var(--green-lift);
+    box-shadow: var(--shadow-2);
+    transition: transform 0.35s var(--ease);
+  }
+  .frame:hover { transform: rotate(calc(var(--tilt) * 0.3)) translateY(-6px) scale(1.03); }
+  .frame .pop {
+    position: absolute; left: 50%; bottom: 7%;
+    height: 130%; width: auto; max-width: none;
+    transform: translateX(-50%) rotate(calc(var(--tilt) * -1.4));
+    filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.45));
+    transition: transform 0.35s var(--ease);
+  }
+  .frame:hover .pop { transform: translateX(-50%) rotate(calc(var(--tilt) * -2)) translateY(-8px); }
+  /* Pretzel dog and cinnamon rivets cup: cut out from the site's own
+     product photos, breaking out of the plate frame like the pretzel. */
+  .frame .pop.side { height: 112%; bottom: 10%; }
+  .frame-cap {
+    position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%);
+    padding: 5px 14px; border-radius: 999px; white-space: nowrap;
+    background: var(--gold); color: var(--black); box-shadow: var(--shadow-1);
+    font-family: var(--display); font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+
+  .food {
+    position: relative; overflow: hidden; text-align: center;
+    padding: 44px 0 64px;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 62%, rgba(212, 182, 98, 0.28), transparent 70%),
+      linear-gradient(180deg, var(--green-deep), var(--green));
+  }
+  .food-title {
+    margin: 0; color: var(--gold-light);
+    font-size: clamp(34px, 10vw, 56px); text-shadow: 0 0 22px rgba(212, 182, 98, 0.35);
+  }
+  .food-title .salt { font-family: var(--salt); font-size: 0.62em; text-transform: none; color: var(--gold); letter-spacing: 0; }
+  .food-sub { margin: 6px 0 0; font-weight: 700; }
+  .frames { display: flex; justify-content: center; align-items: flex-end; margin: 64px 0 0; }
+  .frames .big { --fw: min(46vw, 210px); z-index: 2; }
+  .frames .small { --fw: min(30vw, 140px); margin: 0 -18px 18px; z-index: 1; }
+  @supports (animation-timeline: view()) {
+    .frames .frame { animation: frame-in linear both; animation-timeline: view(); animation-range: entry 5% cover 35%; }
+    @keyframes frame-in { from { opacity: 0; translate: 0 48px; } to { opacity: 1; translate: 0 0; } }
+  }
+
   section { padding: 36px 0; }
-  .panel { background: var(--gold-light); color: var(--black); }
+  /* Offer + claim: gold cards on the green page (mockup radius 12). */
+  .panel { background: var(--green); color: var(--black); padding: 14px 0; }
+  .panel .wrap {
+    width: calc(100% - 32px); padding: 22px 20px;
+    background: var(--gold-light); border-radius: 12px; box-shadow: var(--shadow-2);
+  }
+  #offer-section { padding-top: 28px; }
+  #claim-section { padding-bottom: 28px; }
   .eyebrow {
     margin: 0 0 6px;
     font-family: var(--display);
@@ -211,23 +328,27 @@
     gap: 12px;
     align-items: start;
     padding: 12px 0;
-    border-top: 2px solid var(--green);
+    align-items: center;
   }
-  ol.steps li:last-child { border-bottom: 2px solid var(--green); }
+  ol.steps li + li { border-top: 2px solid rgba(13, 82, 55, 0.25); }
   ol.steps li::before {
     content: counter(s);
-    font-family: var(--display);
-    font-size: 30px;
-    line-height: 1;
-    color: var(--green);
+    display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--green); color: var(--gold-light);
+    font-family: var(--display); font-size: 20px; line-height: 1;
   }
   ol.steps li p { margin: 0; }
 
   /* Locations */
-  .locations { background: var(--green); color: var(--white); }
+  .locations {
+    color: var(--white);
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(242, 231, 164, 0.14), transparent 70%), var(--green-deep);
+  }
   .locations h2 { color: var(--gold); }
-  .store { padding: 18px 0; border-top: 2px solid var(--gold-deep); }
-  .store:last-child { border-bottom: 2px solid var(--gold-deep); }
+  .store {
+    padding: 18px; margin: 0 0 14px; border-radius: 12px;
+    background: var(--green); border: 1px solid rgba(212, 182, 98, 0.45); box-shadow: var(--shadow-1);
+  }
   .store h3 {
     margin: 0;
     font-family: var(--display);
@@ -246,7 +367,8 @@
     min-height: 48px;
     padding: 0 18px;
     border: 2px solid var(--gold);
-    border-radius: 2px;
+    border-radius: 12px;
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
     font-family: var(--display); /* FatFrank: bold CTA until Gotham Medium/Bold are added */
     font-weight: 400;
     font-size: 15px;
@@ -255,12 +377,16 @@
     text-decoration: none;
   }
   .btn-solid { background: var(--gold); color: var(--black); }
+  a.btn:hover, button.btn:not([disabled]):hover { transform: translateY(-2px); box-shadow: var(--glow); }
+  /* The rip stage keeps its live look: square buttons, no lift. */
+  .stage .btn { border-radius: 2px; transition: none; }
+  .stage button.btn:not([disabled]):hover, .stage a.btn:hover { transform: none; box-shadow: none; }
   .btn-line { background: transparent; color: var(--gold-light); }
 
   footer {
-    background: var(--black);
+    background: linear-gradient(var(--black), var(--black)) 0 36px / 100% 100% no-repeat, var(--diamond) 0 0 / 48px 24px, var(--black);
     color: var(--white);
-    padding: 28px 0 calc(28px + env(safe-area-inset-bottom));
+    padding: 64px 0 calc(28px + env(safe-area-inset-bottom));
     font-size: 14px;
   }
   footer .fine { margin: 0; white-space: pre-line; }
@@ -274,18 +400,31 @@
 </head>
 <body data-layout="green">
 
-<div class="plate" aria-hidden="true"></div>
-
+<!-- Word-wall hero (game off). Brand words in mixed type on the green
+     plate, CRAVE lit in gold. The wall is decoration only (aria-hidden);
+     the logo, tagline and headline sit on flat colour in front of it. -->
 <header class="hero">
+  <div class="plate-strip" aria-hidden="true"></div>
   <div class="wrap">
     <div class="lockup">
       <img class="logo" src="/free-pretzels/ppf-logo.png" width="640" height="569" alt="Philly Pretzel Factory" />
       <p class="tagline">Made to Crave&reg;</p>
     </div>
+  </div>
+  <div class="ww" aria-hidden="true">
+      <p><span class="hd" style="font-size:26em">HOT</span> <span class="sc" style="font-size:26em">Philly</span> <span class="mk" style="font-size:16em;opacity:.7">fresh</span></p>
+      <p><span class="mk" style="font-size:15em;opacity:.7">twist</span> <span class="hd ww-crave" style="font-size:37em">CRAVE</span></p>
+      <p><span class="sc" style="font-size:28em">Pretzel</span> <span class="hd" style="font-size:22em">BAKED</span></p>
+      <p><span class="hd" style="font-size:18em;opacity:.55">LOVE</span> <span class="mk" style="font-size:15em">billions</span> <span class="hd" style="font-size:18em">PPF</span></p>
+    </div>
+  <div class="wrap hero-copy">
     <p class="accent" id="o-accent" hidden></p>
     <h1 id="o-headline">Free<br />Pretzels.</h1>
     <p class="stamp" id="o-stamp" hidden></p>
     <p class="sub">Lynbrook. Franklin Square. Fresh out of the oven.</p>
+  </div>
+  <div class="hero-food" aria-hidden="true">
+    <div class="frame" style="--tilt:6deg"><picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img class="pop" src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="" loading="lazy" decoding="async" /></picture></div>
   </div>
 </header>
 
@@ -319,9 +458,17 @@
       </div>
       <p class="g-hint" id="g-hint">Swipe to select &amp; tap pack to open</p>
       <p class="g-msg" id="game-msg" role="status"></p>
-      <!-- Reopens the step popup after "Skip for now". -->
-      <button class="btn btn-solid q-resume" id="q-resume" type="button" hidden></button>
-      <div class="vouchers" id="vouchers"></div>
+      <!-- Collector's binder (mockup C): won codes in a 2x2 set, empty
+           slots show their quest, the Golden Ticket below. Filled by
+           renderVouchers in packs.js. -->
+      <div class="binder" id="binder" hidden>
+        <div class="plate-strip" aria-hidden="true"></div>
+        <div class="bd-head"><h3 class="bd-title">Your set</h3><span class="bd-count" id="bd-count"></span></div>
+        <div class="vouchers" id="vouchers"></div>
+        <!-- Reopens the step popup after "Skip for now". -->
+        <button class="btn btn-solid q-resume" id="q-resume" type="button" hidden></button>
+        <button class="bd-stop" id="bd-stop" type="button" hidden>I don't need another app</button>
+      </div>
     </div>
 
     <!-- Step popup over the carousel, between pulls: the progress trail
@@ -334,7 +481,6 @@
         <div class="trail" id="trail">
           <ol class="trail-row" id="trail-row" aria-label="Your pretzels"></ol>
           <p class="trail-count" id="trail-count"></p>
-          <p class="trail-note">Every pack wins.</p>
         </div>
 
         <div class="quest" id="quest" hidden>
@@ -382,11 +528,11 @@
         </div>
 
         <div class="quest deal" id="deal" hidden>
-          <p class="q-step">All 4 collected</p>
-          <h3 class="q-title" id="deal-title">Keep or trade?</h3>
-          <p>Keep your 4 free pretzels, or trade all 4 for the Golden Ticket. What it holds is revealed at the counter.</p>
+          <p class="q-step">The last game</p>
+          <h3 class="q-title" id="deal-title">Keep or spin?</h3>
+          <p>Keep your 4 free pretzels, or trade them for 4 spins. Line up 4 pretzels to win the Golden Ticket. Your 4th spin lands it. What it holds is revealed at the counter.</p>
           <div class="q-actions">
-            <button class="btn btn-solid" id="deal-trade" type="button">Trade for the Golden Ticket</button>
+            <button class="btn btn-solid" id="deal-trade" type="button">Trade 4 pretzels for 4 spins</button>
             <button class="btn btn-line" id="deal-keep" type="button">Keep my 4 pretzels</button>
           </div>
           <button class="q-skip" id="deal-later" type="button">Decide later</button>
@@ -400,18 +546,55 @@
       </div>
     </div>
 
+    <!-- Golden Ticket spins (the last game). A 4x3 cascade grid. Spins 1
+         to 3 miss, spin 4 lines up 4 pretzels and wins. The screen says
+         up front that the 4th spin lands the ticket, so no odds are
+         claimed. The 4 pretzels are traded only when spin 4 opens the
+         ticket (server "open"); leaving earlier keeps them. -->
+    <div class="slot" id="slot" hidden role="dialog" aria-modal="true" aria-labelledby="slot-title">
+      <div class="st-rays slot-rays" id="slot-rays" aria-hidden="true"><svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid slice"><g fill="#F2E7A4"><polygon points="0,0 141.2,-14.8 141.2,14.8"/><polygon points="0,0 129.7,57.8 114.9,83.5"/><polygon points="0,0 83.5,114.9 57.8,129.7"/><polygon points="0,0 14.8,141.2 -14.8,141.2"/><polygon points="0,0 -57.8,129.7 -83.5,114.9"/><polygon points="0,0 -114.9,83.5 -129.7,57.8"/><polygon points="0,0 -141.2,14.8 -141.2,-14.8"/><polygon points="0,0 -129.7,-57.8 -114.9,-83.5"/><polygon points="0,0 -83.5,-114.9 -57.8,-129.7"/><polygon points="0,0 -14.8,-141.2 14.8,-141.2"/><polygon points="0,0 57.8,-129.7 83.5,-114.9"/><polygon points="0,0 114.9,-83.5 129.7,-57.8"/></g></svg></div>
+      <canvas class="slot-fx" id="slot-fx-back" aria-hidden="true"></canvas>
+      <div class="slot-card" id="slot-card">
+        <p class="slot-banner" id="slot-banner" aria-hidden="true">Golden<br />Ticket!</p>
+        <div class="slot-play" id="slot-play">
+          <p class="q-step">Golden Ticket spins</p>
+          <h3 class="q-title" id="slot-title">Line up 4 pretzels</h3>
+          <p class="slot-intro">4 pretzels across the middle wins. Your 4th spin lands the Golden Ticket.</p>
+          <div class="reels" id="reels" aria-hidden="true"></div>
+          <p class="slot-count" id="slot-count">Spin 1 of 4</p>
+          <p class="sr-only" id="slot-live" aria-live="polite"></p>
+          <button class="btn btn-solid" id="slot-spin" type="button">Spin</button>
+          <p class="b-status" id="slot-status" role="status"></p>
+          <button class="q-skip" id="slot-later" type="button">Not now, keep my pretzels for now</button>
+        </div>
+        <div class="slot-win" id="slot-win" hidden>
+          <p class="q-step">4 pretzels in a row</p>
+          <h3 class="q-title" id="slot-win-title">You won the Golden Ticket!</h3>
+          <div class="slot-ticket" id="slot-ticket"></div>
+          <p class="slot-text" id="slot-text"></p>
+          <p class="slot-meta" id="slot-meta"></p>
+          <button class="btn btn-solid" id="slot-done" type="button">Done</button>
+          <button class="sv-staff" id="slot-redeem" type="button">Staff: redeem</button>
+        </div>
+      </div>
+      <canvas class="slot-fx front" id="slot-fx-front" aria-hidden="true"></canvas>
+    </div>
+
     <!-- Welcome popup over the carousel. Logo, tagline, the offer
          headline slams in, then "Pull a pretzel" reveals the packs. -->
     <div class="g-pop" id="g-pop" hidden role="dialog" aria-modal="true" aria-labelledby="g-pop-title">
-      <div class="g-pop-card" id="g-pop-card">
+      <div class="g-pop-card ww-card" id="g-pop-card">
+        <span class="gp-spark s1" aria-hidden="true"></span><span class="gp-spark s2" aria-hidden="true"></span><span class="gp-spark s3" aria-hidden="true"></span>
         <picture>
           <source srcset="/free-pretzels/packs/ppf-logo-1864.webp" type="image/webp" />
           <img class="g-pop-logo" src="/free-pretzels/packs/ppf-logo-600.png" width="600" height="555" alt="Philly Pretzel Factory" />
         </picture>
         <p class="g-pop-tag">Made to Crave&reg;</p>
         <h2 class="g-pop-title" id="g-pop-title">Free Pretzel. On Us.</h2>
+        <p class="g-pop-copy">Pull a pretzel to win a pretzel!</p>
         <p class="g-pop-stamp" id="g-pop-stamp" hidden></p>
-        <button class="btn btn-solid g-pop-go" id="g-pop-go" type="button">Pull a pretzel</button>
+        <div class="g-pop-packwrap" aria-hidden="true"><img class="g-pop-pack" src="/free-pretzels/art/foil-pack.webp" width="400" height="668" alt="" decoding="async" /><picture><source srcset="/free-pretzels/packs/ppf-logo-1864.webp" type="image/webp" /><img class="g-pop-packlogo" src="/free-pretzels/packs/ppf-logo-600.png" width="600" height="555" alt="" decoding="async" /></picture></div>
+        <button class="btn btn-solid g-pop-go" id="g-pop-go" type="button">Rip your free pack</button>
       </div>
     </div>
   </section>
@@ -431,7 +614,29 @@
     </div>
   </section>
 
-  <section class="locations">
+  <!-- Food band: the user's real photos breaking out of tilted frames. -->
+  <section class="food" aria-labelledby="food-title">
+    <div class="wrap">
+      <h2 class="food-title" id="food-title">Hot. <span class="salt">Salted.</span> Fresh.</h2>
+      <p class="food-sub">Fresh out of the oven in Lynbrook and Franklin Square.</p>
+      <div class="frames">
+        <figure class="frame small" style="--tilt:-8deg">
+          <img class="pop side" src="/free-pretzels/art/pretzel-dog-cut.webp" width="268" height="360" alt="A pretzel dog, cut in half" loading="lazy" decoding="async" />
+          <figcaption class="frame-cap">Salted</figcaption>
+        </figure>
+        <figure class="frame big" style="--tilt:-3deg">
+          <picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img class="pop" src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="A soft pretzel, salted" loading="lazy" decoding="async" /></picture>
+          <figcaption class="frame-cap">Hot</figcaption>
+        </figure>
+        <figure class="frame small" style="--tilt:7deg">
+          <img class="pop side" src="/free-pretzels/art/cinnamon-rivet-cup-cut.webp" width="192" height="360" alt="A cup of cinnamon rivets" loading="lazy" decoding="async" />
+          <figcaption class="frame-cap">Fresh</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="locations" id="find-us">
     <div class="wrap">
       <h2>Come Get Yours</h2>
 
@@ -488,9 +693,15 @@
     <p class="sv-code" id="sv-code"></p>
     <p class="sv-exp" id="sv-exp"></p>
     <p class="sv-how" id="sv-how">Show this at the counter.</p>
+    <!-- Progress toward the Golden Ticket, then one button to the next
+         pretzel (filled by packs.js). -->
+    <div class="sv-progress" id="sv-progress" hidden>
+      <ol class="sv-pips" id="sv-pips" aria-hidden="true"></ol>
+      <p class="sv-nudge" id="sv-nudge"></p>
+    </div>
     <div class="sv-actions">
       <button class="btn btn-solid" id="sv-done" type="button">Done</button>
-      <button class="btn btn-dark" id="sv-redeem" type="button">Staff: redeem</button>
+      <button class="sv-staff" id="sv-redeem" type="button">Staff: redeem</button>
     </div>
   </div>
   <p class="sr-only" id="st-live" aria-live="assertive"></p>
