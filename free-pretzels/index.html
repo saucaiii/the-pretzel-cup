@@ -530,7 +530,7 @@
         <div class="quest deal" id="deal" hidden>
           <p class="q-step">The last game</p>
           <h3 class="q-title" id="deal-title">Keep or spin?</h3>
-          <p>Keep your 4 free pretzels, or trade them for 4 spins. Each spin locks a reel on a pretzel. Lock all 4 to win the Golden Ticket. What it holds is revealed at the counter.</p>
+          <p>Keep your 4 free pretzels, or trade them for 4 spins. Line up 4 pretzels to win the Golden Ticket. Your 4th spin lands it. What it holds is revealed at the counter.</p>
           <div class="q-actions">
             <button class="btn btn-solid" id="deal-trade" type="button">Trade 4 pretzels for 4 spins</button>
             <button class="btn btn-line" id="deal-keep" type="button">Keep my 4 pretzels</button>
@@ -546,22 +546,18 @@
       </div>
     </div>
 
-    <!-- Golden Ticket spins (the last game). Honest by design: each spin
-         locks the next reel on a pretzel; spin 4 completes the line and
-         wins the Golden Ticket. No losing spins, no odds. The 4 pretzels
-         are traded only when spin 4 opens the ticket (server "open"). -->
+    <!-- Golden Ticket spins (the last game). A 4x3 cascade grid. Spins 1
+         to 3 miss, spin 4 lines up 4 pretzels and wins. The screen says
+         up front that the 4th spin lands the ticket, so no odds are
+         claimed. The 4 pretzels are traded only when spin 4 opens the
+         ticket (server "open"); leaving earlier keeps them. -->
     <div class="slot" id="slot" hidden role="dialog" aria-modal="true" aria-labelledby="slot-title">
       <div class="slot-card" id="slot-card">
         <div class="slot-play" id="slot-play">
           <p class="q-step">Golden Ticket spins</p>
           <h3 class="q-title" id="slot-title">Line up 4 pretzels</h3>
-          <p class="slot-intro">Each spin locks a reel on a pretzel. Lock all 4 to win the Golden Ticket.</p>
-          <div class="reels" id="reels" aria-hidden="true">
-            <div class="reel"><div class="reel-strip"></div></div>
-            <div class="reel"><div class="reel-strip"></div></div>
-            <div class="reel"><div class="reel-strip"></div></div>
-            <div class="reel"><div class="reel-strip"></div></div>
-          </div>
+          <p class="slot-intro">4 pretzels across the middle wins. Your 4th spin lands the Golden Ticket.</p>
+          <div class="reels" id="reels" aria-hidden="true"></div>
           <p class="slot-count" id="slot-count">Spin 1 of 4</p>
           <p class="sr-only" id="slot-live" aria-live="polite"></p>
           <button class="btn btn-solid" id="slot-spin" type="button">Spin</button>
@@ -569,7 +565,7 @@
           <button class="q-skip" id="slot-later" type="button">Not now, keep my pretzels for now</button>
         </div>
         <div class="slot-win" id="slot-win" hidden>
-          <p class="q-step">All 4 locked</p>
+          <p class="q-step">4 pretzels in a row</p>
           <h3 class="q-title" id="slot-win-title">You won the Golden Ticket!</h3>
           <div class="slot-ticket" id="slot-ticket"></div>
           <p class="slot-text" id="slot-text"></p>

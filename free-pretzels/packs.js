@@ -1272,27 +1272,37 @@
   }
 
   // ─── Golden Ticket spins ──────────────────────────────────────────
-  // Four reels. Spin n locks reel n on a pretzel (no losing spins, no
-  // near-misses). Spin 4 asks the server to open the ticket; the reel
-  // lands only when that succeeds, then the win panel shows the ticket.
+  // A 4x3 grid that cascades on each spin. Spins 1 to 3 miss; spin 4
+  // lines up 4 pretzels across the middle. The outcome is fixed and the
+  // screen says so ("Your 4th spin lands the Golden Ticket"). Spin 4 asks
+  // the server to open the ticket; the grid lands only when that works.
   var Slot = (function () {
     var SYMS = [ASSETS + 'pretzel.webp', ART + 'pretzel-dog-cut.webp', ART + 'cinnamon-rivet-cup-cut.webp',
       ASSETS + 'rivet-pair.webp', ASSETS + 'rivet-salted-long.webp'];
-    var LEN = 11; // symbols per strip; the last one is the pretzel
+    // Rows top, middle, bottom; 4 columns. 0 = pretzel.
+    var BOARDS = [
+      [[1, 3, 2, 4], [3, 1, 4, 2], [4, 2, 1, 3]],
+      [[1, 3, 0, 2], [0, 2, 4, 1], [3, 0, 1, 4]],
+      [[2, 0, 4, 3], [4, 0, 1, 0], [0, 1, 3, 2]],
+      [[3, 1, 0, 4], [0, 3, 2, 0], [1, 4, 0, 2]],
+      [[1, 4, 2, 3], [0, 0, 0, 0], [3, 2, 1, 4]]
+    ];
+    var MISS = ['No match. Spin again!', 'No match yet. Spin again!', 'One more spin to go!'];
     var spun = 0, busy = false, voucher = null, built = false;
-    function reels() { return Array.prototype.slice.call($('reels').querySelectorAll('.reel')); }
+    function cells() { return Array.prototype.slice.call($('reels').querySelectorAll('.cell')); }
+    function show(board) {
+      cells().forEach(function (c, k) { c.querySelector('img').src = SYMS[board[(k / 4) | 0][k % 4]]; });
+    }
     function build() {
       if (built) return;
       built = true;
-      reels().forEach(function (r, ri) {
-        var strip = r.querySelector('.reel-strip');
-        for (var k = 0; k < LEN; k++) {
-          var img = el('img');
-          img.src = k === LEN - 1 ? SYMS[0] : SYMS[1 + ((k + ri) % (SYMS.length - 1))];
-          img.alt = ''; img.decoding = 'async'; img.draggable = false;
-          strip.appendChild(img);
-        }
-      });
+      for (var k = 0; k < 12; k++) {
+        var c = el('div', 'cell');
+        var img = el('img');
+        img.alt = ''; img.decoding = 'async'; img.draggable = false;
+        c.appendChild(img);
+        $('reels').appendChild(c);
+      }
       $('slot-spin').addEventListener('click', spin);
       $('slot-later').addEventListener('click', later);
       $('slot-done').addEventListener('click', done);
@@ -1304,12 +1314,8 @@
     }
     function reset() {
       spun = 0; busy = false; voucher = null;
-      reels().forEach(function (r) {
-        r.classList.remove('locked', 'spinning');
-        var st = r.querySelector('.reel-strip');
-        st.getAnimations && st.getAnimations().forEach(function (a) { a.cancel(); });
-        st.style.transform = 'translateY(0)';
-      });
+      cells().forEach(function (c) { c.classList.remove('hit'); c.getAnimations && c.getAnimations().forEach(function (a) { a.cancel(); }); });
+      show(BOARDS[0]);
       $('slot').classList.remove('won');
       $('slot-play').hidden = false;
       $('slot-win').hidden = true;
@@ -1317,21 +1323,30 @@
       count();
     }
     function count() {
-      $('slot-count').textContent = spun < 4 ? 'Spin ' + (spun + 1) + ' of 4' : 'All 4 locked';
+      $('slot-count').textContent = 'Spin ' + Math.min(spun + 1, 4) + ' of 4';
       $('slot-spin').textContent = spun === 3 ? 'Spin for the Golden Ticket' : 'Spin';
       $('slot-later').hidden = spun >= 3 && busy;
     }
-    // Land reel i on its last symbol (the pretzel).
-    function land(i, ms) {
-      var r = reels()[i], st = r.querySelector('.reel-strip');
-      var h = r.clientHeight, end = 'translateY(' + (-(LEN - 1) * h) + 'px)';
-      r.classList.add('spinning');
+    // Cascade: every symbol drops out, then the new board falls in,
+    // column by column.
+    function cascade(board) {
+      var cs = cells();
+      if (reduced() || !cs[0].animate) { show(board); return Promise.resolve(); }
       return new Promise(function (res) {
-        var finish = function () { st.style.transform = end; r.classList.remove('spinning'); r.classList.add('locked'); res(); };
-        if (reduced() || !st.animate) return finish();
-        var a = st.animate([{ transform: 'translateY(0)' }, { transform: end }], { duration: ms, easing: 'cubic-bezier(.12,.75,.2,1.04)' });
-        a.onfinish = finish;
-        setTimeout(finish, ms + 300); // never stall
+        var out = cs.map(function (c, k) {
+          return c.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(130%)', opacity: 0 }],
+            { duration: 220, delay: (k % 4) * 60, easing: 'ease-in', fill: 'forwards' });
+        });
+        setTimeout(function () {
+          show(board);
+          cs.forEach(function (c, k) {
+            c.getAnimations().forEach(function (a) { a.cancel(); });
+            c.animate([{ transform: 'translateY(-160%)', opacity: 0 }, { transform: 'translateY(6%)', opacity: 1, offset: 0.8 }, { transform: 'translateY(0)', opacity: 1 }],
+              { duration: 420, delay: (k % 4) * 110 + (2 - ((k / 4) | 0)) * 50, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'backwards' });
+          });
+          setTimeout(res, 420 + 3 * 110 + 100 + 120);
+        }, 220 + 3 * 60 + 20);
+        void out;
       });
     }
     function spin() {
@@ -1341,10 +1356,11 @@
       $('slot-status').textContent = '';
       var i = spun;
       if (i < 3) {
-        land(i, 1100 + 150 * i).then(function () {
+        cascade(BOARDS[i + 1]).then(function () {
           spun++; busy = false;
           $('slot-spin').disabled = false;
-          $('slot-live').textContent = 'Reel ' + spun + ' locked on a pretzel. ' + (4 - spun) + ' to go.';
+          $('slot-status').textContent = MISS[i];
+          $('slot-live').textContent = MISS[i] + ' Spin ' + (spun + 1) + ' of 4 next.';
           count();
           $('slot-spin').focus({ preventScroll: true });
         });
@@ -1352,7 +1368,6 @@
       }
       // Spin 4: the server opens the Golden Ticket (this is the trade).
       count();
-      var t0 = performance.now();
       api('POST', { action: 'open' }).then(function (r) {
         var v = r.ok && r.data && r.data.voucher;
         if (!v || v.source !== 'bonus') {
@@ -1365,8 +1380,10 @@
         }
         S.state = r.data.state;
         voucher = v;
-        var wait = Math.max(0, 300 - (performance.now() - t0));
-        setTimeout(function () { land(3, 1600).then(win); }, wait);
+        cascade(BOARDS[4]).then(function () {
+          cells().slice(4, 8).forEach(function (c) { c.classList.add('hit'); });
+          win();
+        });
       }, function () {
         busy = false;
         $('slot-spin').disabled = false;
@@ -1377,7 +1394,7 @@
     function win() {
       spun = 4; busy = false;
       $('slot').classList.add('won');
-      $('slot-live').textContent = 'All 4 locked. You won the Golden Ticket. Your code is ' + spell(voucher.code) + '.';
+      $('slot-live').textContent = '4 pretzels in a row. You won the Golden Ticket. Your code is ' + spell(voucher.code) + '.';
       setTimeout(function () {
         $('slot-play').hidden = true;
         $('slot-win').hidden = false;
@@ -1393,7 +1410,7 @@
         $('slot-text').textContent = voucher.text || 'Show this at the counter.';
         $('slot-meta').textContent = 'Good through ' + fmtDay(voucher.expires_at) + '. Show this at the counter.';
         $('slot-done').focus({ preventScroll: true });
-      }, reduced() ? 0 : 900);
+      }, reduced() ? 0 : 1300);
     }
     function later() {
       close();

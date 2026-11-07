@@ -619,24 +619,22 @@ html.stage-open, html.stage-open body { overflow: hidden; }
 .slot-intro { margin: 0 0 14px; font-size: 15px; }
 /* The machine: gold housing, four reels behind glass. */
 .reels {
-  --rh: min(19vw, 78px);
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-  padding: 10px; border-radius: 16px;
-  background: linear-gradient(180deg, var(--gold-light), var(--gold) 45%, var(--gold-deep));
+  --ch: min(17vw, 74px);
+  display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, var(--ch)); gap: 6px;
+  padding: 10px; border-radius: 16px; overflow: hidden;
+  background:
+    linear-gradient(180deg, transparent calc(33.3% + 2px), rgba(242, 231, 164, 0.25) calc(33.3% + 2px), rgba(242, 231, 164, 0.25) calc(66.6% - 2px), transparent calc(66.6% - 2px)),
+    linear-gradient(180deg, var(--gold-light), var(--gold) 45%, var(--gold-deep));
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.5), var(--shadow-1);
 }
-.reel {
-  position: relative; height: var(--rh); overflow: hidden; border-radius: 10px;
-  background: linear-gradient(180deg, #e9e3cf, #fffdf5 30%, #fffdf5 70%, #e9e3cf);
-  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.35);
-  transition: box-shadow 0.3s var(--ease);
+.cell {
+  position: relative; border-radius: 10px; overflow: hidden;
+  background: linear-gradient(180deg, #ece6d2, #fffdf5 35%, #fffdf5 65%, #ece6d2);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
 }
-.reel-strip { display: flex; flex-direction: column; will-change: transform; }
-.reel-strip img { flex: none; width: 100%; height: var(--rh); padding: 8px; object-fit: contain; }
-.reel.spinning .reel-strip img { filter: blur(1px); }
-.reel.locked { box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25), 0 0 0 3px var(--green), 0 0 16px rgba(242, 231, 164, 0.9); }
-.slot.won .reel { animation: reel-glow 0.5s ease-in-out 3 alternate; }
-@keyframes reel-glow { to { box-shadow: 0 0 0 3px var(--gold-light), 0 0 28px rgba(242, 231, 164, 1); } }
+.cell img { width: 100%; height: 100%; padding: 6px; object-fit: contain; display: block; }
+.cell.hit { box-shadow: 0 0 0 3px var(--green), 0 0 18px rgba(242, 231, 164, 1); animation: cell-win 0.45s ease-in-out 4 alternate; }
+@keyframes cell-win { to { transform: scale(1.08); } }
 .slot-count { margin: 12px 0 10px; font-family: var(--marker); font-size: 20px; color: var(--gold-light); }
 .slot .btn { width: 100%; min-height: 54px; border-radius: 12px; font-size: 16px; cursor: pointer; }
 .slot .btn-solid { background: var(--gold); border-color: var(--gold); color: var(--black); box-shadow: var(--glow); }
