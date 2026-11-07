@@ -1,4 +1,4 @@
-# Plan: pretzel-packs v3 (green theme, quest loop, golden bonus)
+# Plan: pretzel-packs v3 (green theme, quest loop, Golden Ticket)
 
 Draft, 2026-11-06. Not approved. Branch `agent/pretzel-packs-v3` from
 main 893a774 (v1, v2 and the popup are live). v2 plan is in git history.
@@ -7,29 +7,52 @@ before any code changes.
 
 ## Risk
 **CRITICAL (prizes, personal data, a new migration), with HIGH parts.**
-- CRITICAL: a new prize type (golden bonus) with its own voucher; a new
-  migration on the live `pack_vouchers` table. Human applies the
-  migration (or authorizes it in chat), sets what staff give, deploys.
+- CRITICAL: a new prize (Golden Ticket) with its own voucher; a new
+  migration on live pack tables plus a new per-player game record.
+  Human applies the migration (or authorizes it in chat), sets what
+  staff give, deploys.
 - HIGH: `supabase/migrations/` is a high-risk path in this repo.
-- MEDIUM: `api/_packs.js` (new `bonus` source, quest order), `api/_qr.js`
-  (bonus settings), `/ops/qr` fields and stats.
+- MEDIUM: `api/_packs.js` (new `bonus` source, quest order, stop action,
+  game record), `api/_qr.js` (bonus settings), `/ops/qr` fields and stats.
 - LOW: colours, layout, motion.
 - Automated decisions about people: none. Outcomes are deterministic:
-  every pack wins, every player who does Instagram + email gets the same
-  bonus. No odds, no randomness in prizes.
+  every pack wins; everyone who completes all 4 gets the same Golden
+  Ticket. No odds, no randomness in prizes.
+- Personal data: no new personal fields. The game record stores only a
+  score, an end state and timestamps against the existing player id.
 
 ## Goal
-Keep people in one game loop until they collect all 4 free pretzels,
-on the site's green brand, without the stacked "Want another?" forms.
-Loop: quest > pack drops in > rip > win > next quest. Instagram + email
-unlock a golden bonus pack between pretzel 3 and 4.
+Keep people in one game loop through 4 free pretzels on the site's
+green brand, without the stacked "Want another?" forms. Loop: quest >
+pack drops in > rip > win > next quest. Completing all 4 earns a Golden
+Ticket. A player can end at 3 with "I don't need another app", and we
+record how every game ended.
 
 ## User direction (2026-11-06, relayed from the ops/qr session)
 - No black backgrounds; follow the site design and brand guidelines.
 - Remove the "Want another?" section.
 - Keep people in the loop until the 4 free pretzels are done.
 - "We are not a gambling site."
-- Email + Instagram is enough to unlock a special bonus win.
+- Golden bonus prize: "Find out in store" (mystery reward, revealed at
+  the counter). Shown as a "Golden Ticket".
+- "Maybe the golden is if they do all 4. if they do 3 (initial free,
+  insta, email) give them an 'i dont need another app' button so we
+  can clock who stops at 3 and who pushes all 4." Choosing it ends the
+  game and records a score of 3. "Acknowledge in our ledger who
+  completes all 4."
+
+## Assumptions (not stated by the user; confirm in review)
+- A player who stops at 3 keeps their 3 pretzels and gets no Golden
+  Ticket. Stopping is final for that offer (the app quest goes away).
+- "Ledger" = the new per-player game record plus a "Completed all 4"
+  list in `/ops/qr` and a badge on the staff redeem sheet. Not the
+  Pretzel Cup leaderboard.
+- The Golden Ticket needs the App Store link to be set. If the game is
+  on without it, the trail ends at 3, no ticket or stop button shows,
+  and `/ops/qr` warns that the Golden Ticket cannot be earned.
+- "Left without finishing" is not a separate event (people just close
+  the tab): it is any game record with no end, reported at its last
+  score.
 
 ## Scope
 **Scope (paths/files):** api/_packs.js api/_qr.js ops/qr/ free-pretzels/ supabase/migrations/p11_pretzel_packs_bonus.sql tests/ .agent/
@@ -55,15 +78,15 @@ Function count stays 12 (still `?resource=packs`).
   shadows, no emojis, no em dashes in copy.
 
 **2. Pretzel trail (persistent, top of the game)**
-- 4 pretzel slots + a gold BONUS node between slot 3 and 4:
-  `[1 free] [2 Instagram] [3 email] [BONUS] [4 app]`.
+- 4 pretzel slots, then a gold Golden Ticket node at the end:
+  `[1 free] [2 Instagram] [3 email] [4 app] [GOLDEN TICKET]`.
 - Slot 1 fills after the first pull, so they start at "1 of 4".
-- Locked slots show the action they need (icon-free text: "Follow",
-  "Email", "Download"); filled slots show a gold pretzel; the current
-  quest's slot is outlined. Label: "3 of 4 collected".
+- Locked slots show the action they need ("Follow", "Email",
+  "Download"); filled slots show a gold pretzel; the current quest's
+  slot is outlined. Label: "3 of 4 collected".
 - Line under the trail: "Every pack wins." (honest, not chance).
-- BONUS node hidden when the bonus is off; app slot hidden when no
-  App Store link is set (trail shows only what can be earned).
+- Golden Ticket node hidden when the bonus is off or no App Store link
+  is set (trail shows only what can be earned).
 
 **3. One quest at a time (replaces "Want another?")**
 - After a win settles, the voucher stacks into the set and the next
@@ -72,171 +95,195 @@ Function count stays 12 (still `?resource=packs`).
     return, as today).
   - Quest 3 Email: the existing email form (magic link, POST verify).
     Card copy says to check their inbox; the link resumes here.
-  - Golden bonus: no action, unlocked by Instagram + email. "Your
-    golden bonus pack is ready."
-  - Quest 4 App: "Download the app" (honour tap, as today).
+  - Quest 4 App: "Download the app" (honour tap, as today), plus a
+    secondary button "I don't need another app" (see 4).
+  - After 4 of 4: "Your Golden Ticket pack is ready." No action needed.
 - When a quest is done, the next pack drops into the centre of the
   carousel with a glow; tap to rip. The 5-pack carousel stays for the
   first pick only; later packs drop in one at a time.
-- "Skip for now" under each quest card: closes the card, keeps every
-  voucher, and the trail stays so they can resume. No nagging, no
-  re-prompt on the same visit.
+- "Skip for now" under the Instagram and email cards: closes the card,
+  keeps every voucher, the trail stays so they can resume. The game is
+  not ended. No re-prompt on the same visit.
 - Set view: collected vouchers as a stack ("3 of 4 collected"), tap to
-  expand any code for the counter. Full set: "Set complete. 4 of 4."
+  expand any code for the counter.
 
-**4. Golden bonus pack**
-- Own sequence: polished mirror-gold finish (v1 to v4 packs become a
-  satin gold so the bonus clearly differs), gold-deep crimps, a "BONUS"
-  foil band, longer rivet rain, a "BONUS" stamp, its own voucher card.
-  Beats: regular timing table unchanged; bonus adds about 1.5 s to the
-  rain and stamp (ends near 7.5 s).
-- **Mystery reward, revealed at the counter (user decision 2026-11-06:
-  "Find out in store").** The voucher never names the prize.
-- **Golden Ticket voucher (user decision 2026-11-06).** Default public
-  title "Golden Ticket", default line "Visit the Pretzel Factory to
-  claim your prize." Look: a ticket shape (notched ends, perforation
-  line before the code stub) in solid brand golds only: gold-light
-  #F2E7A4 body, gold #D4B662 border and stub, gold-deep #B2872F
-  perforation and type accents, black text on gold. Gold-to-gold
-  shimmer once on reveal (existing rule); no gradients beyond that, no
-  shadows. It sits in the voucher stack like the others, marked
-  "BONUS".
-- **Still deterministic, not a sweepstakes:** the reward is a single
-  fixed item set in `/ops/qr`. Everyone who unlocks the bonus in an
-  offer gets the same thing. No random draw, no prize pool, no odds.
-  "Mystery" only means the name is hidden until the counter.
-- Settings in `/ops/qr`: on/off; public title (max 40 chars, default
-  "Golden Ticket"); public line (max 120 chars, default "Visit the
-  Pretzel Factory to claim your prize."); **"What staff give"** (internal only, max 60
-  chars, e.g. "Free dip with any pretzel"). Off by default; cannot be
-  turned on while "What staff give" is empty.
+**4. Ending the game**
+- **Stop at 3:** "I don't need another app" shows only on the app card,
+  when first, Instagram and email are done and the app pack is not.
+  One plain confirm ("End your game? You keep your 3 pretzels.") then
+  the end screen. No loss framing, no "are you sure you want to miss
+  out".
+- **End screen** (stop at 3 or after the Golden Ticket): the vouchers
+  they won, a short closing message ("Thanks for playing. Show a code
+  at the counter."; after 4: "Set complete. 4 of 4 and a Golden
+  Ticket."), and no more quests.
+- **Complete 4:** the 4th pretzel is opened, the Golden Ticket pack
+  drops in, they rip it, the game ends as completed.
+- Server records every end (section API).
+
+**5. Golden Ticket pack**
+- Unlocks only after all 4 pretzels (first, Instagram, email, app).
+- Own sequence: polished mirror-gold finish (pretzel packs become satin
+  gold so the ticket pack clearly differs), gold-deep crimps, a
+  "GOLDEN TICKET" foil band, longer rivet rain, a stamp, its own
+  voucher. Beats: regular timing table unchanged; this one adds about
+  1.5 s to the rain and stamp (ends near 7.5 s).
+- **Mystery reward, revealed at the counter.** The voucher never names
+  the prize.
+- **Golden Ticket voucher.** Default title "Golden Ticket", default
+  line "Visit the Pretzel Factory to claim your prize." Look: a ticket
+  shape (notched ends, perforation before the code stub) in solid brand
+  golds: gold-light #F2E7A4 body, gold #D4B662 border and stub,
+  gold-deep #B2872F perforation and accents, black text on gold. One
+  gold-to-gold shimmer on reveal; no other gradients, no shadows.
+- **Deterministic, not a sweepstakes:** one fixed item per offer, set
+  in `/ops/qr`. Everyone who completes all 4 in an offer gets the same
+  thing. No random draw, no prize pool, no odds. "Mystery" only means
+  the name is hidden until the counter.
+- Settings in `/ops/qr`: on/off; title (max 40, default "Golden
+  Ticket"); line (max 120, default above); **"What staff give"**
+  (internal only, max 60, e.g. "Free dip with any pretzel"). Off by
+  default; cannot be turned on while "What staff give" is empty.
 - "What staff give" never reaches the public page, the public offer GET
-  or the player state API. It is shown only on the staff side: in
-  `/ops/qr` (operator session) and on the redeem sheet after a correct
-  staff PIN.
-- All three texts are copied onto the voucher when it opens, so staff hand
-  over what was set at the time even if the setting changes later.
+  or the player API. Shown only in `/ops/qr` (operator session) and on
+  the redeem sheet after a correct staff PIN.
+- All three texts are copied onto the voucher when it opens.
 
-**5. Gentle escalation (collect-the-set, not slot machine)**
+**6. Gentle escalation (collect-the-set, not slot machine)**
 - Each win a little bigger: more rivets and a slightly longer shimmer
-  per pack number; the bonus is the biggest; pack 4 adds a set-complete
-  stamp.
-- Kept from bonus-game UX: anticipation (tear, rip), a progress meter,
-  a bonus round, celebration, set completion.
-- Not used: near-misses, fake odds, countdown timers, loss framing
-  ("don't lose your..."), autoplay of the next pack, streaks.
+  per pack number; the Golden Ticket is the biggest.
+- Kept: anticipation (tear, rip), a progress meter, a bonus round,
+  celebration, set completion.
+- Not used: near-misses, fake odds, countdown timers, loss framing,
+  autoplay of the next pack, streaks.
 
-**6. Persistence**
-- Truth stays on the server (cookie player + vouchers), as today.
+**7. Persistence**
+- Truth stays on the server (cookie player + vouchers + game record).
 - localStorage (`ppf_packs_ui`, try/catch, no personal data): skipped
   flag per offer and the last settled count, so a reload resumes at the
   right quest card without replaying a win.
 - Email magic link lands on `/free-pretzels#pack_verify=...`, verifies,
-  then opens straight to the golden bonus pack (or the next quest).
+  then shows the next quest (the email pretzel pack).
 
 ## API and data changes
-- `p11_pretzel_packs_bonus.sql` (new): `pack_vouchers.source` check adds
-  `'bonus'`; new nullable columns `prize_title text` (length <= 40),
-  `prize_public text` (length <= 120) and `prize_staff text`
-  (length <= 60). Existing rows untouched;
-  reversible (`down` noted in the file). RLS stays deny-all.
+- `p11_pretzel_packs_bonus.sql` (new, additive):
+  - `pack_vouchers.source` check adds `'bonus'`; nullable columns
+    `prize_title` (<= 40), `prize_public` (<= 120), `prize_staff`
+    (<= 60).
+  - New table `pack_games`: `player_id` (fk pack_players), `offer_key`,
+    `score` int 0 to 4, `ended` text null or in
+    (`'completed'`, `'stopped_at_3'`), `completed_all` boolean default
+    false, `started_at`, `last_at`, `ended_at`; unique
+    (player_id, offer_key); RLS on, deny-all. No email, IP or device
+    data.
+  - `down` statements noted in the file.
 - `api/_packs.js`:
-  - Opening order: first, instagram, email, bonus, app.
-  - `bonus` unlocks when `email_verified_at` and `instagram_at` are set
-    and the offer's bonus is on with text. It does not count toward the
-    4 pretzels (`MAX_PACKS` stays 4); the unique
-    (player_id, offer_key, source) still caps it at 1.
-  - Opening a bonus voucher snapshots `prize_title`, `prize_public` and
-    `prize_staff`.
-  - State gains `trail` (ordered nodes with state locked / ready /
-    done / off), `next_quest`, `bonus` (`{on, title, text}`, public
-    texts only), `collected`. `publicVoucher` never includes `prize_staff`.
+  - Opening order: first, instagram, email, app, then bonus.
+  - `bonus` unlocks only when first, instagram, email and app vouchers
+    exist for this offer and the bonus is on. Does not count toward the
+    4 pretzels (`MAX_PACKS` stays 4); unique (player_id, offer_key,
+    source) caps it at 1.
+  - Every open upserts `pack_games` (score = pretzel vouchers, last_at).
+    Opening the 4th sets `completed_all` true and `ended='completed'`
+    with `ended_at`. The Golden Ticket opens even after `ended`
+    is completed.
+  - New `{action:'stop'}`: allowed only at score 3 with first,
+    instagram and email used, app not used, game not ended. Sets
+    `ended='stopped_at_3'`, `ended_at`. Rate-limited. After it, open
+    and the app honour tap refuse with a clear message.
+  - State gains `trail`, `next_quest`, `ended`, `score`, `can_stop`,
+    `bonus` (`{on, title, text}`, public only). `publicVoucher` never
+    includes `prize_staff`.
   - Redeem: after a correct PIN, the response includes `prize_staff`
-    for bonus codes so the sheet shows "Give: ...". Wrong PIN or a
-    lookup without PIN never returns it. Stats add bonus opened /
-    redeemed.
-- `api/_qr.js`: offer gains `bonus_on` (boolean), `bonus_title` and
-  `bonus_text` (public, default to the Golden Ticket wording above) and `bonus_staff` (internal, 1 to 60
-  chars, required when on). The public offer GET strips `bonus_staff`;
-  only the operator GET returns it.
-- `/ops/qr`: bonus toggle, ticket title and line, "What staff give" field (marked
-  internal); stats rows.
-- Merge on email verify (existing rule): the bonus slot follows the
-  same void-duplicate rule as the other slots.
+    for Golden Ticket codes and `completed_all` for the player, so the
+    sheet shows "Give: ..." and a "Completed all 4" badge.
+  - Operator stats: players by end (completed 4 / stopped at 3 / not
+    finished, by last score 1 to 4), counts per step (pulled 1,
+    Instagram, email, app, Golden Ticket opened, redeemed), and a
+    "Completed all 4" list: Golden Ticket code, completed date, redeemed
+    or not, email masked (`j***@example.com`). Head counts as today.
+  - Merge on email verify: `pack_games` rows follow the existing merge
+    rule (keep the higher score; an end state is kept).
+- `api/_qr.js`: offer gains `bonus_on`, `bonus_title`, `bonus_text`
+  (Golden Ticket defaults) and `bonus_staff` (1 to 60 chars, required
+  when on). The public offer GET strips `bonus_staff`. Warn (not block)
+  when the bonus is on and no App Store link is set.
+- `/ops/qr`: Golden Ticket toggle, title, line, "What staff give"
+  (marked internal); end-state and per-step stats; Completed all 4 list.
 
 ## Steps
 1. Migration `p11_pretzel_packs_bonus.sql` (not applied by the agent).
-2. `_packs.js` + `_qr.js`: order, bonus source, prize snapshot, state
-   shape, settings validation, stats.
-3. Tests: order, bonus unlock only with IG + email + setting on, bonus
-   not counted in 4, once per player, all three texts snapshotted,
-   Golden Ticket defaults applied when title/line are empty, cannot
-   enable with empty staff text, merge voids a duplicate bonus, staff
-   text absent from public offer GET / state / open responses (deep
-   search of the JSON), present only after a correct redeem PIN.
+2. `_packs.js` + `_qr.js`: order, bonus source, texts, game record,
+   stop action, state shape, settings validation, stats, redeem badge.
+3. Tests: order; bonus needs all 4 and the setting; not counted in 4;
+   once per player; texts snapshotted; defaults; cannot enable without
+   staff text; stop only at exactly 3 (not 2, not after app, not
+   twice); stop blocks app and further opens; score and end states
+   recorded; completed_all set on 4th; merge keeps higher score;
+   staff text and completed list absent from every public response;
+   staff text only after a correct PIN.
 4. Green theme: `packs.css`, `index.html` inline styles, pack3d studio.
-5. Trail + quest cards + skip + set stack (`index.html`, `packs.js`,
-   `packs.css`); remove the "Want another?" block.
-6. Golden pack finish and bonus sequence (`pack3d.js`, `packs.js`).
-7. `/ops/qr` bonus fields and stats.
+5. Trail + quest cards + stop button + end screen + skip + set stack;
+   remove the "Want another?" block.
+6. Golden Ticket pack finish, sequence and ticket voucher.
+7. `/ops/qr` settings, stats and Completed all 4 list.
 8. Validate: `npm test`, `tests/guardrails.sh`, `eval-report.sh`,
    reviewer subagent, visual check on the local mock at 375 px and
-   desktop (full loop 1 > 4 with bonus, bonus off, app link unset,
-   skip and resume, reload mid-loop, email link resume, reduced
-   motion, no WebGL, game off).
-9. Record in `.agent/`, commit, push, draft PR (screenshots, IG and app
-   are honour-system and cannot be verified, migration as a human step).
+   desktop (full loop 1 > 4 > Golden Ticket, stop at 3, bonus off, app
+   link unset, skip and resume, reload mid-loop, email link resume,
+   reduced motion, no WebGL, game off, ops stats).
+9. Record in `.agent/`, commit, push, draft PR (screenshots, honour
+   system note for Instagram and app, migration as a human step,
+   assumptions listed).
 
 ## Success criteria
 - Quantitative: all tests pass; only scoped files change; 12 functions;
   no new dependencies; no `var(--black)` backgrounds left in the game,
-  stage or sheet (grep); at most 4 pretzel vouchers + 1 bonus per
-  player per offer.
+  stage or sheet (grep); at most 4 pretzels + 1 Golden Ticket per
+  player per offer; every player with a voucher has one game record.
 - Qualitative: on a phone the game reads as the green Pretzel Cup site;
-  after each win exactly one next step is shown; a player can go
-  1 > IG > email > bonus > app without scrolling to find the next
-  action; skipping keeps every code; no copy implies chance, scarcity
-  or loss; the bonus voucher never names the prize, and the staff
-  text never appears in any public response; every player who unlocks
-  the bonus in an offer gets the same item.
+  after each win exactly one next step is shown; at 3 of 4 the player
+  can finish or end with one tap; `/ops/qr` shows stopped at 3 vs
+  completed 4 and who completed all 4; no copy implies chance,
+  scarcity or loss; the ticket never names the prize; staff text never
+  appears in a public response.
 
 ## Risks + mitigations
 - **Gambling perception:** deterministic outcomes, "Every pack wins",
-  no odds, timers or near-misses; the bonus is earned, not drawn.
-- **Honour-system bonuses (Instagram, app):** cannot be verified; once
-  per player, capped; stated in the PR.
-- **Migration on a live table:** additive only (wider check, nullable
-  column); human applies; rollback statement in the file.
-- **Mystery reward read as a sweepstakes:** one fixed item per offer,
-  same for everyone who unlocks it, earned by actions not drawn; copy
-  says "claim your prize", never "chance" or "could win".
-- **Staff text leaking to the public:** kept out of `publicVoucher`,
-  the public offer GET and state; tests assert it; shown only after a
-  correct PIN.
-- **Bonus prize promise:** off until a human sets the staff item; both
-  texts snapshotted on the voucher.
+  no odds, timers or near-misses; the ticket is earned, not drawn;
+  copy says "claim your prize", never "chance" or "could win".
+- **Stop button as pressure:** neutral wording, one plain confirm, keeps
+  every code; no "you'll miss out".
+- **Honour-system steps (Instagram, app):** cannot be verified; once per
+  player, capped; stated in the PR. This also means "completed all 4"
+  counts taps, not real follows or installs.
+- **Staff text leaking:** kept out of `publicVoucher`, the public offer
+  GET and state; tests assert it.
+- **Personal data:** game record holds no new personal fields; the
+  operator list masks emails.
+- **Migration on live tables:** additive only; human applies; rollback
+  in the file.
 - **Green reflections dull the foil:** compare screenshots; fall back
-  to the black studio for the pack only if gold looks muddy (no black
-  page surfaces either way).
-- **Order change mid-campaign:** players who already used email before
-  Instagram keep their codes; the next quest is computed from what is
-  missing, not from a fixed index.
+  to the black studio for the pack only if gold looks muddy.
+- **Order change mid-campaign:** existing codes kept; next quest
+  computed from what is missing; game records backfilled lazily on the
+  next state read for players who already have vouchers.
 
 ## Rollback / escalation
-- Turn the game or the bonus off in `/ops/qr` (no deploy).
+- Turn the game or the Golden Ticket off in `/ops/qr` (no deploy).
 - Code: `git revert` of the v3 commits returns to v2 + popup.
-- Migration: drop the three `prize_*` columns and
-  restore the old check (only
-  if no bonus rows exist).
+- Migration: drop `pack_games` and the three `prize_*` columns, restore
+  the old source check (only if no bonus rows exist).
 - Escalate on any need for a new function, `vercel.json`, `api/_lib/`,
   `brand.css`, or an npm dependency.
 
 ## Human steps (CRITICAL, prepare only)
 - Set the task scope to the Scope line above, then run
   `scripts/agent/approve-plan.sh`.
-- Decide what staff give for the golden bonus, enter it in `/ops/qr`
-  and turn the bonus on (needs `EDGE_CONFIG_WRITE_TOKEN`, still unset),
-  or tell the agent. Brief counter staff that the bonus is a fixed item.
+- Confirm the four assumptions above.
+- Decide what staff give for the Golden Ticket, enter it in `/ops/qr`
+  and turn it on (needs `EDGE_CONFIG_WRITE_TOKEN`, still unset), or
+  tell the agent. Brief counter staff that it is a fixed item.
 - Apply `p11_pretzel_packs_bonus.sql` (or authorize the agent in chat).
 - Review the draft PR screenshots on a phone, merge, deploy from the
   worktree (`npm run deploy`).
