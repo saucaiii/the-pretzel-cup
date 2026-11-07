@@ -250,6 +250,70 @@
     font-size: 18px;
   }
 
+  /* ─── photo frames: real food breaking out of tilted cards ─────── */
+  .frame {
+    --fw: 150px; --tilt: -4deg;
+    position: relative; flex: none; margin: 0;
+    width: var(--fw); aspect-ratio: 4 / 5;
+    transform: rotate(var(--tilt));
+    border-radius: var(--radius);
+    border: 3px solid var(--gold);
+    background:
+      radial-gradient(circle at 50% 28%, rgba(242, 231, 164, 0.38), transparent 62%),
+      var(--plate-photo) center 30% / 260% auto,
+      var(--green-lift);
+    box-shadow: var(--shadow-2);
+    transition: transform 0.35s var(--ease);
+  }
+  .frame:hover { transform: rotate(calc(var(--tilt) * 0.3)) translateY(-6px) scale(1.03); }
+  .frame .pop {
+    position: absolute; left: 50%; bottom: 7%;
+    height: 130%; width: auto; max-width: none;
+    transform: translateX(-50%) rotate(calc(var(--tilt) * -1.4));
+    filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.45));
+    transition: transform 0.35s var(--ease);
+  }
+  .frame:hover .pop { transform: translateX(-50%) rotate(calc(var(--tilt) * -2)) translateY(-8px); }
+  .frame .pop.rivet { height: 108%; bottom: 14%; }
+  .frame .pop.rivet.wide { height: auto; width: 116%; bottom: 26%; }
+  .frame-cap {
+    position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%);
+    padding: 5px 14px; border-radius: 999px; white-space: nowrap;
+    background: var(--gold); color: var(--black); box-shadow: var(--shadow-1);
+    font-family: var(--display); font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+
+  .food {
+    position: relative; overflow: hidden; text-align: center;
+    padding: 44px 0 64px;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 62%, rgba(212, 182, 98, 0.28), transparent 70%),
+      linear-gradient(180deg, var(--green-deep), var(--green));
+  }
+  .food-title {
+    margin: 0; color: var(--gold-light);
+    font-size: clamp(34px, 10vw, 56px); text-shadow: 0 0 22px rgba(212, 182, 98, 0.35);
+  }
+  .food-title .salt { font-family: var(--salt); font-size: 0.62em; text-transform: none; color: var(--gold); letter-spacing: 0; }
+  .food-sub { margin: 6px 0 0; font-weight: 700; }
+  .frames { display: flex; justify-content: center; align-items: flex-end; margin: 64px 0 0; }
+  .frames .big { --fw: min(46vw, 210px); z-index: 2; }
+  .frames .small { --fw: min(30vw, 140px); margin: 0 -18px 18px; z-index: 1; }
+  @supports (animation-timeline: view()) {
+    .frames .frame { animation: frame-in linear both; animation-timeline: view(); animation-range: entry 5% cover 35%; }
+    @keyframes frame-in { from { opacity: 0; translate: 0 48px; } to { opacity: 1; translate: 0 0; } }
+  }
+
+  /* Hero photo: desktop only, beside the copy. */
+  .hero-food { display: none; }
+  @media (min-width: 900px) {
+    .hero .wrap.hero-inner { max-width: 980px; display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "lock food" "copy food"; align-items: center; column-gap: 40px; }
+    .hero-inner .lockup { grid-area: lock; justify-self: center; }
+    .hero-inner .hero-copy { grid-area: copy; }
+    .hero-food { display: block; grid-area: food; justify-self: center; padding-top: 120px; }
+    .hero-food .frame { --fw: 260px; }
+  }
+
   section { padding: 36px 0; }
   .panel { background: var(--gold-light); color: var(--black); }
   .eyebrow {
@@ -387,6 +451,9 @@
       <p class="stamp" id="o-stamp" hidden></p>
       <p class="sub">Lynbrook. Franklin Square. Fresh out of the oven.</p>
       <a class="btn btn-solid hero-cta" href="#find-us">Find your store</a>
+    </div>
+    <div class="hero-food" aria-hidden="true">
+      <div class="frame" style="--tilt:6deg"><picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img class="pop" src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="" loading="lazy" decoding="async" /></picture></div>
     </div>
   </div>
 </header>
@@ -541,6 +608,28 @@
         </ol>
       </div>
       <ol class="steps" id="o-steps" hidden></ol>
+    </div>
+  </section>
+
+  <!-- Food band: the user's real photos breaking out of tilted frames. -->
+  <section class="food" aria-labelledby="food-title">
+    <div class="wrap">
+      <h2 class="food-title" id="food-title">Hot. <span class="salt">Salted.</span> Fresh.</h2>
+      <p class="food-sub">Fresh out of the oven in Lynbrook and Franklin Square.</p>
+      <div class="frames">
+        <figure class="frame small" style="--tilt:-8deg">
+          <picture><source srcset="/free-pretzels/packs/rivet-salted-long.webp" type="image/webp" /><img class="pop rivet" src="/free-pretzels/packs/rivet-salted-long.png" width="86" height="170" alt="" loading="lazy" decoding="async" /></picture>
+          <figcaption class="frame-cap">Salted</figcaption>
+        </figure>
+        <figure class="frame big" style="--tilt:-3deg">
+          <picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img class="pop" src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="A soft pretzel, salted" loading="lazy" decoding="async" /></picture>
+          <figcaption class="frame-cap">Hot</figcaption>
+        </figure>
+        <figure class="frame small" style="--tilt:7deg">
+          <picture><source srcset="/free-pretzels/packs/rivet-pair.webp" type="image/webp" /><img class="pop rivet wide" src="/free-pretzels/packs/rivet-pair.png" width="220" height="135" alt="" loading="lazy" decoding="async" /></picture>
+          <figcaption class="frame-cap">Fresh</figcaption>
+        </figure>
+      </div>
     </div>
   </section>
 
