@@ -1,81 +1,28 @@
 # Working memory (short-term). Keep under 60 lines.
-Branch: agent/pretzel-packs-v3
-Task: pretzel-packs-v3 (green theme, quest loop, Golden Ticket, stop at 3)
-Status: building (plan approved)
+Branch: agent/pretzel-redesign
+Task: pretzel-redesign (make /free-pretzels as fun as the game, outside the rip)
+Status: building
 Started: 2026-11-06
 
 ## Context
-- Previous task (pretzel-packs v1/v2 + popup) is merged and live (main 893a774).
-  Its notes are in git history of this file.
-- Requests relayed by the ops/qr session (local_7f43c8af) with the user's words.
-- Plan v3 approved by the human 2026-11-07T00:15Z (approval hash = sha256 of
-  .agent/plan.md at 460a2ec, checked by the agent). scope.txt matches the plan.
+- Started by session local_7433b014 (relays the user's picks). Plan drafted by the
+  planner subagent in session local_a6387455, saved as .agent/plan.md. Risk medium,
+  no approve-plan gate. scope.txt: free-pretzels/, .agent/.
+- Base origin/main 18e87d6 (PR #29, #30 merged). Previous task notes are in git history.
+- Defaults C1 to C6 in plan.md hold until the user says otherwise (stage black,
+  procedural 3D foil).
+- Brand guide PDF is internal: never commit or quote it. No Higgsfield generation
+  without asking the user and naming the cost.
 
 ## Progress
-- Step 1 p11 migration written (a279064). APPLIED 2026-11-07 to Supabase
-  the-pretzel-cup (ivwjhfndltkngefjozrj, the only project; p10 already there) after
-  the user said "Yes, apply p11" in this session. Verified: source check has 'bonus',
-  prize_* columns added, pack_games exists with RLS on, existing 26 vouchers untouched.
-- Step 2+3 _packs.js / _qr.js + tests (ff5db4e): quest order, bonus source,
-  pack_games record, stop action, staff text only after PIN, stats. npm test 180/180.
-- Steps 4 to 7 done (a4a7f90, ops commit): green theme, trail, quest cards, stop, end screen,
-  Golden Ticket finish + ticket voucher (packs.css, packs.js, index.html, pack3d.js).
-
-## Deviation from approved plan (user-directed, plan.md not edited)
-- "What staff give" optional: empty -> redeem sheet "Prize not set yet. Ask a manager.",
-  /ops/qr warns instead of blocking. Golden Ticket needs only bonus_on + App Store link.
-
-## Review round (reviewer subagent @ 48476b9): not ready -> fixed
-- Root causes: reasoning error (fail-soft not applied to stop/stats; ticket missing the
-  Instagram precondition; no server-side quest order); governance (relayed approval).
-- Fixed: gameOk gate on stop + ticket, handleStop 503 when record unreadable, stats game
-  counts fail soft, bonusOn needs instagram_handle (+ lint), app tap needs first+IG+email,
-  redeem falls back to current staff item, no drop-in replay on load, stop error focus,
-  studio background exactly #083521. npm test 185/185.
-- Not fixed (noted in PR): stop racing a parallel app open can leave score 4 + stopped.
-- Migration: user confirmed directly here ("Yes, apply p11"). Deploy: ask the user here.
-
-## Keep-or-trade deal (user, directly, 2026-11-07; deviation from plan v3, plan.md not edited)
-- After all 4: keep 4 pretzels or trade all 4 for the Golden Ticket (always wins).
-  Ticket = any one product (default bonus_staff); redeem also burns and hands back the
-  unused pretzels (staff-only "Surprise" line). Traded pretzel codes hidden and refused
-  on their own. Visual: deal card, trade > ticket > end, keep > end (survives reload),
-  staff sheet with surprise line. npm test 187/187.
-
-## Live incident 2026-11-07
-- PR #29 was merged at c5ce235 (green version) before c2930a7 (live look) was pushed,
-  then deployed from a checkout WITHOUT the font files (FatFrank/Gotham 404 live).
-- The FatFrank 404 made pack3d's font wait reject -> createKit threw -> flat CSS packs.
-  Root cause: reasoning error (font load not made fail-safe). Fixed: catch + timeout.
-- Follow-up PR from agent/pretzel-packs-popups carries c2930a7 + the font fix.
-
-## Live look restored (user, directly, 2026-11-07)
-- Black game/stage/sheet, original foil (roughness 1, black studio), 5-pack carousel every
-  pull (all golden for the ticket pull). Steps/deal/end are popups (grey card) over the
-  carousel; trail inside the popup; live voucher cards (+ ticket variant). Checked on the
-  mock at 375 px: IG, email link, app, deal trade + keep, stop at 3, skip + resume, end
-  popup shows once.
-
-## Retries
-- 2: zsh read `$c:free-pretzels/...` as a `:f` history modifier. Root cause: tool misuse.
-  Change: quote as "${c}:path".
-- 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).
-  Root cause: tool misuse. Change: read the file with the Read tool instead.
-
-## Visual checks (local mock, real handlers, 375 px + desktop)
-- Full loop 1 > IG > email link > app > Golden Ticket, stop at 3, skip + resume after
-  reload, redeem sheet (badge + Give), reduced motion, game off, public offer has no
-  staff text. Beats 0/0.9/2.0/2.5/3.3/6.0 s; Golden Ticket settles at ~7.7 s.
-- Browser pane was hidden (rAF stalls): final states checked by DOM and stepped frames.
-  Not checked on a real phone. No-WebGL path not re-run in v3.
+- Step 1 memory: plan.md, this file, decisions appended.
+- Step 2 assets: copied from the notes folder into free-pretzels/art/.
+  golden-ticket-540/900 re-cropped from the original (old 900 clipped the top-right
+  corner): ffmpeg crop=2688:1314:0:90, scale, cwebp -q 78 -m 6.
 
 ## Next
-- Push, draft PR, user merges, deploy (ask the user), check live at phone size.
+- Steps 3 to 9, one commit each. Step 10 validation with a mock server outside the
+  repo (scratchpad), screenshots 375 px and 1280 px.
 
-## Carried constraints
-- Deploy only from this worktree (gitignored brand fonts live here).
-- Never commit font files or the brand guide PDF (public repo).
-- p10 migration is applied: never edit it; new changes go in p11.
-- EDGE_CONFIG_WRITE_TOKEN still unset, so /ops/qr cannot save offers yet.
-- Deploying v3 before p11 is applied: pretzels still open (game record fails
-  soft), but the Golden Ticket and stop button would error. Apply p11 first.
+## Handoffs
+- (none yet)
