@@ -9,7 +9,7 @@ before any code changes.
 **CRITICAL (prizes, personal data, a new migration), with HIGH parts.**
 - CRITICAL: a new prize type (golden bonus) with its own voucher; a new
   migration on the live `pack_vouchers` table. Human applies the
-  migration (or authorizes it in chat), sets the prize text, deploys.
+  migration (or authorizes it in chat), sets what staff give, deploys.
 - HIGH: `supabase/migrations/` is a high-risk path in this repo.
 - MEDIUM: `api/_packs.js` (new `bonus` source, quest order), `api/_qr.js`
   (bonus settings), `/ops/qr` fields and stats.
@@ -214,7 +214,8 @@ Function count stays 12 (still `?resource=packs`).
 ## Rollback / escalation
 - Turn the game or the bonus off in `/ops/qr` (no deploy).
 - Code: `git revert` of the v3 commits returns to v2 + popup.
-- Migration: drop the `prize` column and restore the old check (only
+- Migration: drop the `prize_public` and `prize_staff` columns and
+  restore the old check (only
   if no bonus rows exist).
 - Escalate on any need for a new function, `vercel.json`, `api/_lib/`,
   `brand.css`, or an npm dependency.
