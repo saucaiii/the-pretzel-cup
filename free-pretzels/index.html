@@ -237,9 +237,9 @@
     transition: transform 0.35s var(--ease);
   }
   .frame:hover .pop { transform: translateX(-50%) rotate(calc(var(--tilt) * -2)) translateY(-8px); }
-  /* Product photos on white: shown as photo cards inside the frame. */
-  .frame.photo { background: var(--white); padding: 8px; }
-  .frame .card-photo { width: 100%; height: 100%; object-fit: cover; border-radius: calc(var(--radius) - 8px); }
+  /* Pretzel dog and cinnamon rivets cup: cut out from the site's own
+     product photos, breaking out of the plate frame like the pretzel. */
+  .frame .pop.side { height: 112%; bottom: 10%; }
   .frame-cap {
     position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%);
     padding: 5px 14px; border-radius: 999px; white-space: nowrap;
@@ -596,16 +596,16 @@
       <h2 class="food-title" id="food-title">Hot. <span class="salt">Salted.</span> Fresh.</h2>
       <p class="food-sub">Fresh out of the oven in Lynbrook and Franklin Square.</p>
       <div class="frames">
-        <figure class="frame small photo" style="--tilt:-8deg">
-          <img class="card-photo" src="/free-pretzels/art/pretzel-dog-360.webp" width="360" height="360" alt="A pretzel dog, cut in half" loading="lazy" decoding="async" />
+        <figure class="frame small" style="--tilt:-8deg">
+          <img class="pop side" src="/free-pretzels/art/pretzel-dog-cut.webp" width="268" height="360" alt="A pretzel dog, cut in half" loading="lazy" decoding="async" />
           <figcaption class="frame-cap">Salted</figcaption>
         </figure>
         <figure class="frame big" style="--tilt:-3deg">
           <picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img class="pop" src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="A soft pretzel, salted" loading="lazy" decoding="async" /></picture>
           <figcaption class="frame-cap">Hot</figcaption>
         </figure>
-        <figure class="frame small photo" style="--tilt:7deg">
-          <img class="card-photo" src="/free-pretzels/art/cinnamon-rivet-cup-360.webp" width="360" height="360" alt="A cup of cinnamon rivets" loading="lazy" decoding="async" />
+        <figure class="frame small" style="--tilt:7deg">
+          <img class="pop side" src="/free-pretzels/art/cinnamon-rivet-cup-cut.webp" width="192" height="360" alt="A cup of cinnamon rivets" loading="lazy" decoding="async" />
           <figcaption class="frame-cap">Fresh</figcaption>
         </figure>
       </div>

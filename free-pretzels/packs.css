@@ -276,8 +276,7 @@ body.game-on .hero { display: none !important; }
 .bd-ticket picture, .bd-ticket img, .bd-ticket video { display: block; width: 100%; height: auto; }
 .bd-ticket .bt-lock {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-6deg);
-  padding: 8px 14px; border-radius: 12px; text-align: center; white-space: nowrap;
-  background: var(--gold-light); color: var(--black); box-shadow: var(--shadow-1);
+  text-align: center; white-space: nowrap; color: var(--black);
 }
 .bd-ticket .bt-lock p { margin: 0; }
 .bt-name { font-family: var(--display); font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; }
@@ -286,7 +285,6 @@ body.game-on .hero { display: none !important; }
 .bt-art { position: relative; }
 .bd-ticket.won .bt-face {
   position: absolute; left: 40%; top: 46%; transform: translate(-50%, -50%) rotate(-7deg);
-  padding: 6px 12px; border-radius: 12px; background: var(--gold-light);
   text-align: center; color: var(--black); pointer-events: none;
 }
 .bd-ticket.won .bt-face p { margin: 0; }
