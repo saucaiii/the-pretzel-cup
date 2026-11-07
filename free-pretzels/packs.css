@@ -526,3 +526,78 @@ body.game-on .hero { display: none !important; }
 .rd-badge[hidden], .rd-give[hidden], .rd-extra[hidden] { display: none; }
 
 html.stage-open, html.stage-open body { overflow: hidden; }
+
+/* ─── 2026-11-07: step popup + win card on the new theme ────────── */
+/* User-directed: green plate cards like the binder, one gold call to
+   action, a progress strip that nudges toward the Golden Ticket. The rip
+   beats (spin, tear, payoff) are unchanged; only the card they settle on. */
+#g-step-card, #stage .st-voucher {
+  position: relative; overflow: hidden;
+  background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(242, 231, 164, 0.14), transparent 70%), var(--green);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  border: 2px solid var(--gold-deep); border-radius: 26px;
+  box-shadow: var(--shadow-2), 0 0 40px rgba(212, 182, 98, 0.22);
+  color: var(--white);
+}
+#g-step-card::before, #stage .st-voucher::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 28px;
+  background: var(--diamond) 0 0 / 48px 24px; pointer-events: none;
+}
+#g-step-card { padding: 42px 20px 18px; }
+#stage .st-voucher { padding: 42px 20px 14px; }
+
+/* Progress: four pretzel stops and the Golden Ticket. */
+#g-step .trail-row { gap: 2px; }
+#g-step .trail-row li { flex-basis: 62px; }
+#g-step .tn-dot { width: 40px; height: 40px; background: transparent; color: var(--gold-light); border: 2px dashed var(--gold-light); font-size: 17px; }
+#g-step .trail-row .done .tn-dot { background: var(--gold); color: var(--black); border: 2px solid var(--gold); box-shadow: var(--glow); }
+#g-step .trail-row .ready .tn-dot, #g-step .trail-row .current .tn-dot { border: 3px solid var(--gold-light); }
+#g-step .trail-row .bonus .tn-dot {
+  width: 64px; height: 40px; border-radius: 8px; border: 0; font-size: 0;
+  background: url('/free-pretzels/art/golden-ticket-540.webp') center / 150% auto;
+  opacity: 0.55;
+}
+#g-step .trail-row .bonus.ready .tn-dot, #g-step .trail-row .bonus.done .tn-dot { opacity: 1; box-shadow: var(--glow); }
+#g-step .tn-lbl { color: var(--gold-light); }
+#g-step .trail-count { font-family: var(--marker); font-size: 17px; letter-spacing: 0; text-transform: none; color: var(--gold-light); }
+#g-step .trail-note { color: var(--white); opacity: 0.85; }
+
+#g-step .q-step { font-family: var(--marker); font-size: 16px; letter-spacing: 0; text-transform: none; color: var(--gold-light); }
+#g-step .q-title { color: var(--white); }
+#g-step .q-body p, #g-step .quest.deal p { color: var(--white); }
+#g-step .q-actions { flex-direction: column; }
+#g-step .btn, #stage #sv-done {
+  width: 100%; min-height: 52px; border-radius: 12px; font-size: 16px;
+}
+#g-step .btn-solid, #stage #sv-done { background: var(--gold); border-color: var(--gold); color: var(--black); box-shadow: var(--glow); }
+#g-step .btn-line { color: var(--gold-light); border-color: var(--gold-light); }
+#g-step .btn.has-badge { width: auto; box-shadow: none; }
+#g-step .g-input { border-radius: 12px; }
+#g-step .q-skip { margin: 10px auto 0; color: var(--gold-light); }
+#g-step .privacy, #g-step .b-status { color: var(--gold-light); }
+#g-step .q-confirm { border-top-color: rgba(242, 231, 164, 0.35); }
+#g-step .g-end-body { color: var(--white); }
+
+/* Win card (beat 6). */
+#stage .sv-label { font-family: var(--marker); font-size: 18px; letter-spacing: 0; text-transform: none; color: var(--gold-light); }
+#stage .sv-code { color: var(--white); text-shadow: 0 0 18px rgba(242, 231, 164, 0.35); }
+#stage .sv-exp { color: var(--white); }
+#stage .sv-how { color: var(--gold-light); font-size: 16px; }
+#stage .sv-actions { flex-direction: column; align-items: stretch; gap: 4px; }
+.sv-progress { margin: 0 0 14px; }
+.sv-progress[hidden] { display: none; }
+.sv-pips { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.sv-pips li { width: 30px; height: 10px; border-radius: 999px; border: 2px solid var(--gold-light); }
+.sv-pips li.on { background: var(--gold); border-color: var(--gold); box-shadow: var(--glow); }
+.sv-pips li.gt {
+  width: 46px; height: 22px; border: 0; border-radius: 5px; opacity: 0.5;
+  background: url('/free-pretzels/art/golden-ticket-540.webp') center / 150% auto;
+}
+.sv-pips li.gt.on { opacity: 1; box-shadow: var(--glow); }
+.sv-nudge { margin: 8px 0 0 !important; font-family: var(--marker); font-size: 18px; color: var(--gold-light); }
+.sv-staff {
+  appearance: none; min-height: 44px; padding: 6px 12px; background: transparent; border: 0;
+  color: var(--gold-light); font-family: var(--body); font-size: 14px; font-weight: 700;
+  text-decoration: underline; cursor: pointer;
+}
+.sv-staff:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }

@@ -669,9 +669,15 @@
     <p class="sv-code" id="sv-code"></p>
     <p class="sv-exp" id="sv-exp"></p>
     <p class="sv-how" id="sv-how">Show this at the counter.</p>
+    <!-- Progress toward the Golden Ticket, then one button to the next
+         pretzel (filled by packs.js). -->
+    <div class="sv-progress" id="sv-progress" hidden>
+      <ol class="sv-pips" id="sv-pips" aria-hidden="true"></ol>
+      <p class="sv-nudge" id="sv-nudge"></p>
+    </div>
     <div class="sv-actions">
       <button class="btn btn-solid" id="sv-done" type="button">Done</button>
-      <button class="btn btn-dark" id="sv-redeem" type="button">Staff: redeem</button>
+      <button class="sv-staff" id="sv-redeem" type="button">Staff: redeem</button>
     </div>
   </div>
   <p class="sr-only" id="st-live" aria-live="assertive"></p>

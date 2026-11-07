@@ -450,7 +450,9 @@
       li.setAttribute('aria-label', (node.key === 'bonus' ? 'Golden Ticket' : 'Pretzel ' + t.n) + ': ' + words[node.state]);
       row.appendChild(li);
     });
-    $('trail-count').textContent = st.traded ? 'All 4 traded for the Golden Ticket' : st.used + ' of 4 collected';
+    var ticketOn = (st.trail || []).some(function (t) { return t.key === 'bonus' && t.state !== 'off'; });
+    $('trail-count').textContent = st.traded ? 'All 4 traded for the Golden Ticket'
+      : st.used + ' of 4 collected' + (ticketOn && st.used < 4 ? '. ' + (4 - st.used) + ' more to the Golden Ticket' : '');
   }
 
   // ─── step popup: one step at a time, between pulls ──────────────
@@ -1006,6 +1008,35 @@
       $('sv-code').textContent = v.code;
       $('sv-exp').textContent = 'Good through ' + fmtDay(v.expires_at) + '.';
       $('sv-how').textContent = g ? (v.text || 'Show this at the counter.') : 'Show this at the counter.';
+      fillNext(v, S.state);
+    }
+
+    // One button to keep going: it names the next pretzel (or the Golden
+    // Ticket), and the pips show how close the set is. No odds, no timers.
+    function fillNext(v, st) {
+      var g = v.source === 'bonus';
+      var label = 'Done';
+      var n = st && { instagram: 2, email: 3, app: 4 }[st.next_quest];
+      if (!g && st) {
+        if (st.can_open && st.next_source !== 'bonus') label = 'Rip your next pack';
+        else if (n && !st.ended) label = 'Win pretzel ' + n;
+        else if (st.next_source === 'bonus') label = 'Go for the Golden Ticket';
+      }
+      $('sv-done').textContent = label;
+      var box = $('sv-progress');
+      box.hidden = g || !st;
+      if (box.hidden) return;
+      var used = st.used || 0;
+      var ticket = (st.trail || []).some(function (t) { return t.key === 'bonus' && t.state !== 'off'; });
+      var pips = $('sv-pips');
+      pips.textContent = '';
+      for (var i = 0; i < 4; i++) pips.appendChild(el('li', i < used ? 'on' : ''));
+      if (ticket) pips.appendChild(el('li', 'gt' + (used >= 4 ? ' on' : '')));
+      var nudge;
+      if (st.ended === 'stopped_at_3') nudge = 'You kept 3 pretzels.';
+      else if (ticket) nudge = used < 4 ? (4 - used) + ' more to the Golden Ticket' : 'Set complete. The Golden Ticket is next.';
+      else nudge = used + ' of 4 pretzels';
+      $('sv-nudge').textContent = nudge;
     }
 
     function close() {

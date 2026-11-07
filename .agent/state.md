@@ -24,7 +24,7 @@ Started: 2026-11-06
   quest, Golden Ticket card with ticket art, shimmer once on win).
 - Offer/claim/stores restyled (12px radius gold cards); rip stage buttons unchanged.
 
-## Not done on purpose (user: don't touch the ripping)
+## Not done on purpose (rip beats untouched)
 - Plan step 9 ticket art on the stage's .st-ticket face, and C6 foil photo on the
   no-WebGL fallback packs: both are inside the carousel/rip experience.
 
@@ -45,6 +45,9 @@ Started: 2026-11-06
   F8 logos sit on a 0.16-alpha glow (clear space kept). Code scanning not checked.
 
 ## User changes 2026-11-07 (done)
+- Win card + step popup on the new theme; win card has one CTA to the next pretzel
+  with pips and "N more to the Golden Ticket" (rip beats unchanged).
+- Dog + rivet cup are cutouts on plate frames; ticket text has no pill.
 - Map dropped; binder shows Collected (tick) vs Open (action, tap to unlock), no
   flavour words; food band side photos = pretzel dog + cinnamon rivets cup.
 
