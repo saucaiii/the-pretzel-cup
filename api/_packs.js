@@ -130,11 +130,12 @@ function pretzelCount(vouchers) {
   return (vouchers || []).filter((v) => PRETZELS.includes(v.source)).length;
 }
 
-// Golden Ticket is on only with an App Store link (it needs all 4
-// pretzels, and the 4th is the app). The staff item may be left unset
-// (user decision 2026-11-07): staff then see "Prize not set yet".
+// Golden Ticket is on only when all 4 pretzels can be earned: the
+// Instagram handle and the App Store link are both set. The staff item
+// may be left unset (user decision 2026-11-07): staff then see the
+// current setting at redeem time, or "Prize not set yet".
 function bonusOn(offer) {
-  return !!(offer && offer.bonus_on === true && offer.app_store_url);
+  return !!(offer && offer.bonus_on === true && offer.app_store_url && offer.instagram_handle);
 }
 
 function bonusTexts(offer) {
@@ -265,14 +266,17 @@ function trailOf(offer, player, vouchers, ended) {
   return nodes;
 }
 
-function playerState({ offer, status, player, vouchers, game, now }) {
+// gameOk false: the game record could not be read (table missing or
+// down). Pretzels still open; the stop button and the Golden Ticket,
+// which depend on the record, are held back until it works.
+function playerState({ offer, status, player, vouchers, game, gameOk = true, now }) {
   if (!gameLive(offer, status)) return { game: false, status };
   const ig = offer.instagram_handle || '';
   const app = offer.app_store_url || '';
   const ended = (game && game.ended) || null;
   const score = pretzelCount(vouchers);
   const allowed = Math.min(MAX_PACKS, unlockedSources(player).length);
-  const next = nextSource(player, vouchers, { bonus: bonusOn(offer), ended });
+  const next = nextSource(player, vouchers, { bonus: bonusOn(offer) && gameOk, ended });
   const trail = trailOf(offer, player, vouchers, ended);
   // The one quest to show: the first locked pretzel step, only when no
   // pack is waiting and the game has not ended.
@@ -295,7 +299,7 @@ function playerState({ offer, status, player, vouchers, game, now }) {
     can_open: !!next,
     next_source: next,
     next_quest: quest,
-    can_stop: canStop(offer, player, vouchers, game),
+    can_stop: gameOk && canStop(offer, player, vouchers, game),
     ended,
     completed_all: !!(game && game.completed_all),
     trail,
@@ -479,16 +483,25 @@ function supabaseStore(sb) {
       const v = () => sb.from('pack_vouchers').select('id', { count: 'exact', head: true }).eq('offer_key', key);
       const p = () => sb.from('pack_players').select('id', { count: 'exact', head: true });
       const g = () => sb.from('pack_games').select('player_id', { count: 'exact', head: true }).eq('offer_key', key);
+      let gamesFailed = false;
       const [first, email, instagram, app, bonus, redeemed, bonus_redeemed, emails_verified, instagram_taps, app_taps,
         completed, stopped, u1, u2, u3, u4] = await Promise.all([
         n(v().eq('source', 'first')), n(v().eq('source', 'email')), n(v().eq('source', 'instagram')), n(v().eq('source', 'app')),
-        n(v().eq('source', 'bonus')),
-        n(v().not('redeemed_at', 'is', null)), n(v().eq('source', 'bonus').not('redeemed_at', 'is', null)),
+        n(v().eq('source', 'bonus')).catch(() => 0),
+        n(v().not('redeemed_at', 'is', null)), n(v().eq('source', 'bonus').not('redeemed_at', 'is', null)).catch(() => 0),
         n(p().not('email_verified_at', 'is', null)), n(p().not('instagram_at', 'is', null)), n(p().not('app_at', 'is', null)),
-        n(g().eq('ended', 'completed')), n(g().eq('ended', 'stopped_at_3')),
-        n(g().is('ended', null).eq('score', 1)), n(g().is('ended', null).eq('score', 2)),
-        n(g().is('ended', null).eq('score', 3)), n(g().is('ended', null).eq('score', 4)),
+        // Game counts fail soft (0) so the voucher numbers still show.
+        ...[g().eq('ended', 'completed'), g().eq('ended', 'stopped_at_3'),
+          g().is('ended', null).eq('score', 1), g().is('ended', null).eq('score', 2),
+          g().is('ended', null).eq('score', 3), g().is('ended', null).eq('score', 4)]
+          .map((q) => n(q).catch(() => { gamesFailed = true; return 0; })),
       ]);
+      if (gamesFailed) {
+        return {
+          opened: { first, instagram, email, app, bonus, total: first + email + instagram + app },
+          redeemed, bonus_redeemed, emails_verified, instagram_taps, app_taps, games: null, completed_list: [],
+        };
+      }
       const games = await one(sb.from('pack_games').select('player_id,ended_at,completed_all')
         .eq('offer_key', key).eq('completed_all', true).order('ended_at', { ascending: false }).limit(200));
       const ids = (games || []).map((x) => x.player_id);
@@ -655,9 +668,11 @@ async function syncGame(ctx, vouchers, now) {
     if (score >= MAX_PACKS && !game.ended) {
       game = (await ctx.store.endGame(pid, ctx.key, 'completed', iso)) || await ctx.store.getGame(pid, ctx.key);
     }
+    ctx.gameOk = true;
     return game;
   } catch (e) {
     console.error('[packs] game record failed:', e.message || e);
+    ctx.gameOk = false;
     return null;
   }
 }
@@ -669,15 +684,18 @@ async function stateOf(ctx, deps) {
     vouchers = await ctx.store.listVouchers(ctx.player.id, ctx.key);
     game = await syncGame(ctx, vouchers, deps.now());
   }
-  return playerState({ offer: ctx.offer, status: ctx.status, player: ctx.player, vouchers, game, now: deps.now() });
+  return playerState({ offer: ctx.offer, status: ctx.status, player: ctx.player, vouchers, game, gameOk: ctx.gameOk !== false, now: deps.now() });
 }
 
 async function readGame(ctx) {
   if (!ctx.player) return null;
   try {
-    return await ctx.store.getGame(ctx.player.id, ctx.key);
+    const g = await ctx.store.getGame(ctx.player.id, ctx.key);
+    ctx.gameOk = true;
+    return g;
   } catch (e) {
     console.error('[packs] game read failed:', e.message || e);
+    ctx.gameOk = false;
     return null;
   }
 }
@@ -700,7 +718,7 @@ async function handleOpen(req, res, deps, ctx) {
   const player = await ensurePlayer(ctx, res);
   const expires_at = voucherExpiry(ctx.offer, deps.now()).toISOString();
   const game = await readGame(ctx);
-  const opts = { bonus: bonusOn(ctx.offer), ended: game && game.ended };
+  const opts = { bonus: bonusOn(ctx.offer) && ctx.gameOk !== false, ended: game && game.ended };
   for (let attempt = 0; attempt < 4; attempt++) {
     const vouchers = await ctx.store.listVouchers(player.id, ctx.key);
     const source = nextSource(player, vouchers, opts);
@@ -834,6 +852,15 @@ async function handleHonor(req, res, deps, ctx, kind) {
   if (await overLimit(deps, kind, clientIpHash(req, deps.env))) return res.status(429).json({ error: MSG.busy });
   const game = await readGame(ctx);
   if (game && game.ended === 'stopped_at_3') return res.status(409).json({ error: MSG.ended, state: await stateOf(ctx, deps) });
+  // Quest order: the app step comes after the free pack, Instagram (when
+  // it is on) and email.
+  if (kind === 'app' && ctx.player) {
+    const used = new Set((await ctx.store.listVouchers(ctx.player.id, ctx.key)).map((v) => v.source));
+    const ready = used.has('first') && used.has('email') && (used.has('instagram') || !ctx.offer.instagram_handle);
+    if (!ready) return res.status(409).json({ error: 'Finish the earlier steps first.', state: await stateOf(ctx, deps) });
+  } else if (kind === 'app') {
+    return res.status(409).json({ error: 'Open your first pack first.' });
+  }
   const player = await ensurePlayer(ctx, res);
   if (!player[h.field]) {
     const r = await ctx.store.updatePlayer(player.id, { [h.field]: deps.now().toISOString() });
@@ -849,7 +876,8 @@ async function handleStop(req, res, deps, ctx) {
   if (!ctx.player) return res.status(409).json({ error: 'Open your first pack first.' });
   if (await overLimit(deps, 'stop', clientIpHash(req, deps.env))) return res.status(429).json({ error: MSG.busy });
   const vouchers = await ctx.store.listVouchers(ctx.player.id, ctx.key);
-  const game = await ctx.store.getGame(ctx.player.id, ctx.key);
+  const game = await readGame(ctx);
+  if (ctx.gameOk === false) return res.status(503).json({ error: 'Ending the game is not available right now. Your codes are safe.' });
   if (!canStop(ctx.offer, ctx.player, vouchers, game)) {
     return res.status(409).json({ error: 'You can end your game after your 3rd pretzel.', state: await stateOf(ctx, deps) });
   }
@@ -894,7 +922,21 @@ async function handleRedeem(req, res, deps, body) {
   } catch (e) {
     console.error('[packs] redeem game read failed:', e.message || e);
   }
-  const staff = { give: burned.source === 'bonus' ? (burned.prize_staff || null) : null, completed_all };
+  // A ticket opened before the prize was set falls back to the current
+  // setting, so staff are not stuck with "not set" once it is filled in.
+  let give = null;
+  if (burned.source === 'bonus') {
+    give = burned.prize_staff || null;
+    if (!give) {
+      try {
+        const { offer } = await deps.readOffer();
+        give = (offer && offer.bonus_staff) || null;
+      } catch (e) {
+        console.error('[packs] redeem offer read failed:', e.message || e);
+      }
+    }
+  }
+  const staff = { give, completed_all };
   return res.status(200).json({ ok: true, voucher: publicVoucher(burned, now), staff });
 }
 

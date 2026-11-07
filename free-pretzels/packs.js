@@ -224,7 +224,9 @@
     var golden = !!(st && st.next_source === 'bonus');
     // First pull: pick 1 of 5. After that: one pack at a time.
     var single = !preview && canOpen && used > 0;
-    var dropIn = single && S.lastNext !== (st && st.next_source);
+    // Drop in only when a new pack arrives during this visit, not on load.
+    var dropIn = single && S.rendered && S.lastNext !== (st && st.next_source);
+    S.rendered = true;
     S.lastNext = st ? st.next_source : null;
     S.single = single;
     $('carousel').hidden = !canOpen;
@@ -1045,13 +1047,19 @@
         btn.disabled = false;
         $('stop-confirm').hidden = true;
         if (r.data && r.data.state && r.data.state.game) render(r.data.state);
-        if (!r.ok) { $('app-status').textContent = (r.data && r.data.error) || 'Could not end the game right now. Try again.'; return; }
+        if (!r.ok) {
+          $('app-status').textContent = (r.data && r.data.error) || 'Could not end the game right now. Try again.';
+          if (!$('stop-btn').hidden) $('stop-btn').focus();
+          return;
+        }
         var t = $('g-end-title');
         t.setAttribute('tabindex', '-1');
         t.focus();
       }, function () {
         btn.disabled = false;
+        $('stop-confirm').hidden = true;
         $('app-status').textContent = 'No connection. Try again.';
+        $('stop-btn').focus();
       });
     });
 

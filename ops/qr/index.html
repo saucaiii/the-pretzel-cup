@@ -289,7 +289,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
               <label for="o-bstaff">What staff give (internal, never shown to customers)</label>
               <input id="o-bstaff" maxlength="60" placeholder="e.g. Free dip with any pretzel" autocomplete="off">
             </div>
-            <p class="hint">One fixed item, the same for everyone who finishes all 4. Not a draw. The ticket does not name it; staff see "What staff give" after the store PIN. It needs the App Store link. "What staff give" can stay empty for now; staff then see "Prize not set yet. Ask a manager." Empty title or line uses the default shown.</p>
+            <p class="hint">One fixed item, the same for everyone who finishes all 4. Not a draw. The ticket does not name it; staff see "What staff give" after the store PIN. It needs the Instagram handle and the App Store link. "What staff give" can stay empty for now; staff then see "Prize not set yet. Ask a manager." Empty title or line uses the default shown.</p>
 
             <span class="lbl">Brand voice check</span>
             <ul class="lint" id="lint"></ul>
@@ -605,6 +605,7 @@ function lint(o) {
   if (o.accent && /\s/.test(o.accent)) out.push(['accent', 'One word only.']);
   if (o.starts_at && o.ends_at && o.ends_at < o.starts_at) out.push(['schedule', 'End date is before start date.']);
   if (o.bonus_on && !o.bonus_staff) out.push(['golden ticket', 'What staff give is empty. Staff will see "Prize not set yet. Ask a manager."']);
+  if (o.bonus_on && !o.instagram_handle) out.push(['golden ticket', 'Needs all 4 pretzels. Add the Instagram handle or nobody can earn it.']);
   if (o.bonus_on && !o.app_store_url) out.push(['golden ticket', 'Needs all 4 pretzels. Add the App Store link or nobody can earn it.']);
   ['bonus_title', 'bonus_text'].forEach(function (f) {
     if (/\b(chance|odds|could win|random|lucky)\b/i.test(o[f] || '')) out.push(['golden ticket', 'Everyone who finishes gets the same prize. Avoid chance words.']);

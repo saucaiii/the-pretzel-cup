@@ -386,12 +386,13 @@ test('full run: first + email + instagram + app = 4, then a 5th is impossible', 
 
 test('app tap counts once and is off without an App Store URL', async () => {
   const d = deps();
-  const c = cookieOf(await openPack(d));
+  const c = await playTo3(d);
   await call(d, post({ action: 'app' }, { cookie: c }));
-  const first = [...d.s.players.values()][0].app_at;
+  const me = () => [...d.s.players.values()].find((p) => p.app_at);
+  const first = me().app_at;
   assert.ok(first);
   await call(d, post({ action: 'app' }, { cookie: c }));
-  assert.equal([...d.s.players.values()][0].app_at, first);
+  assert.equal(me().app_at, first);
   assert.equal((await openPack(d, c)).body.voucher.source, 'app');
   assert.equal((await openPack(d, c)).statusCode, 409);
   const off = deps({ readOffer: async () => ({ offer: { ...OFFER, app_store_url: '' }, status: 'live' }) });
@@ -533,7 +534,7 @@ test('verify on a new device merges into the email player; limit follows the per
   // Phone B: fresh cookie, first pack (the accepted cookie-clearing gap).
   let b = cookieOf(await openPack(d));
   await call(d, post({ action: 'instagram' }, { cookie: b }));
-  await call(d, post({ action: 'app' }, { cookie: b }));
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: b }))).statusCode, 409, 'app step waits for email');
   // Phone B verifies the same email -> becomes the same person.
   b = (await verifyEmail(d, b)).cookie;
   const idA = packs.verifyPlayerCookie(a.split('=')[1], SECRET);
@@ -543,8 +544,9 @@ test('verify on a new device merges into the email player; limit follows the per
   const s = (await call(d, get('view=state', b))).body;
   assert.equal(s.bonuses.email, 'used');
   assert.equal(s.bonuses.instagram, 'unlocked');
-  assert.equal(s.bonuses.app, 'unlocked', 'app tap carried over on merge');
+  assert.equal(s.bonuses.app, 'locked');
   assert.equal((await openPack(d, b)).body.voucher.source, 'instagram');
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: b }))).statusCode, 200);
   assert.equal((await openPack(d, b)).body.voucher.source, 'app');
   assert.equal((await openPack(d, b)).statusCode, 409, 'no 5th pack on the merged player');
   const owned = d.s.vouchers.filter((v) => v.player_id === idA);
@@ -963,6 +965,43 @@ async function playTo3Email(d, email) {
   await openPack(d, c);
   return c;
 }
+
+test('app step refused before the free pack, Instagram and email', async () => {
+  const d = goldDeps();
+  assert.equal((await call(d, post({ action: 'app' }))).statusCode, 409, 'no player');
+  const c = cookieOf(await openPack(d));
+  assert.equal((await call(d, post({ action: 'app' }, { cookie: c }))).statusCode, 409, 'at 1');
+  assert.ok(![...d.s.players.values()].some((p) => p.app_at));
+});
+
+test('Golden Ticket needs the Instagram handle too (all 4 must be earnable)', () => {
+  assert.equal(packs.bonusOn({ ...GOLD, instagram_handle: '' }), false);
+  const lint = qr.lintCopy(qr.validateOffer({ headline: 'x', bonus_on: true, app_store_url: OFFER.app_store_url }).offer);
+  assert.ok(lint.some((l) => l.rule === 'golden' && /Instagram/.test(l.message)));
+});
+
+test('game record unreadable: no stop button, no Golden Ticket, pretzels still open', async () => {
+  const d = goldDeps();
+  const c = await playTo3(d);
+  const boom = async () => { throw new Error('relation "pack_games" does not exist'); };
+  Object.assign(d.s, { getGame: boom, touchGame: boom, endGame: boom });
+  const s = (await call(d, get('view=state', c))).body;
+  assert.equal(s.can_stop, false);
+  assert.equal((await call(d, post({ action: 'stop' }, { cookie: c }))).statusCode, 503);
+  await call(d, post({ action: 'app' }, { cookie: c }));
+  assert.equal((await openPack(d, c)).body.voucher.source, 'app');
+  const after = await openPack(d, c);
+  assert.equal(after.statusCode, 409, 'no Golden Ticket without the game record');
+});
+
+test('redeem: a ticket opened before the prize was set shows the current setting', async () => {
+  const d = deps({ readOffer: async () => ({ offer: { ...GOLD, bonus_staff: '' }, status: 'live' }) });
+  const { c } = await playTo4(d);
+  const t = await openPack(d, c);
+  d.readOffer = async () => ({ offer: GOLD, status: 'live' });
+  const ok = await call(d, post({ action: 'redeem', code: t.body.voucher.code, pin: '4821', store: 'lynbrook' }));
+  assert.equal(ok.body.staff.give, STAFF_ITEM);
+});
 
 test('maskEmail', () => {
   assert.equal(packs.maskEmail('jordan@example.com'), 'j***@example.com');

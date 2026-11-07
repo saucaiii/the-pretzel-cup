@@ -25,13 +25,29 @@ Started: 2026-11-06
 - "What staff give" optional: empty -> redeem sheet "Prize not set yet. Ask a manager.",
   /ops/qr warns instead of blocking. Golden Ticket needs only bonus_on + App Store link.
 
+## Review round (reviewer subagent @ 48476b9): not ready -> fixed
+- Root causes: reasoning error (fail-soft not applied to stop/stats; ticket missing the
+  Instagram precondition; no server-side quest order); governance (relayed approval).
+- Fixed: gameOk gate on stop + ticket, handleStop 503 when record unreadable, stats game
+  counts fail soft, bonusOn needs instagram_handle (+ lint), app tap needs first+IG+email,
+  redeem falls back to current staff item, no drop-in replay on load, stop error focus,
+  studio background exactly #083521. npm test 185/185.
+- Not fixed (noted in PR): stop racing a parallel app open can leave score 4 + stopped.
+- Migration: user confirmed directly here ("Yes, apply p11"). Deploy: ask the user here.
+
 ## Retries
 - 1: shell `wc -l *` in the mock folder failed (zsh glob no match on *.js).
   Root cause: tool misuse. Change: read the file with the Read tool instead.
 
+## Visual checks (local mock, real handlers, 375 px + desktop)
+- Full loop 1 > IG > email link > app > Golden Ticket, stop at 3, skip + resume after
+  reload, redeem sheet (badge + Give), reduced motion, game off, public offer has no
+  staff text. Beats 0/0.9/2.0/2.5/3.3/6.0 s; Golden Ticket settles at ~7.7 s.
+- Browser pane was hidden (rAF stalls): final states checked by DOM and stepped frames.
+  Not checked on a real phone. No-WebGL path not re-run in v3.
+
 ## Next
-- /ops/qr bonus settings + stats, visual checks on a local mock, guardrails,
-  eval-report, reviewer, draft PR.
+- Push, draft PR, user merges, deploy (ask the user), check live at phone size.
 
 ## Carried constraints
 - Deploy only from this worktree (gitignored brand fonts live here).

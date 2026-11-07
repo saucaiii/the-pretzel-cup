@@ -215,7 +215,7 @@ function tex(c, srgb) {
 // ─── environment: deep green studio with gold-light softboxes ───────
 function studio(renderer) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(C.deep_green).multiplyScalar(0.6);
+  scene.background = new THREE.Color(C.deep_green);
   const box = (w, h, x, y, z, color, k) => {
     const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(k), side: THREE.DoubleSide });
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
