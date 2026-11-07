@@ -12,7 +12,10 @@ Started: 2026-11-06
   .agent/plan.md at 460a2ec, checked by the agent). scope.txt matches the plan.
 
 ## Progress
-- Step 1 p11 migration written (a279064). NOT applied (human step).
+- Step 1 p11 migration written (a279064). APPLIED 2026-11-07 to Supabase
+  the-pretzel-cup (ivwjhfndltkngefjozrj, the only project; p10 already there) after
+  the user said "Yes, apply p11" in this session. Verified: source check has 'bonus',
+  prize_* columns added, pack_games exists with RLS on, existing 26 vouchers untouched.
 - Step 2+3 _packs.js / _qr.js + tests (ff5db4e): quest order, bonus source,
   pack_games record, stop action, staff text only after PIN, stats. npm test 180/180.
 - Steps 4 to 7 done (a4a7f90, ops commit): green theme, trail, quest cards, stop, end screen,
