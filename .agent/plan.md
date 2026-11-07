@@ -40,10 +40,13 @@ record how every game ended.
   can clock who stops at 3 and who pushes all 4." Choosing it ends the
   game and records a score of 3. "Acknowledge in our ledger who
   completes all 4."
+- **Confirmed by the user, 2026-11-06:** a player who stops at 3 keeps
+  their 3 pretzels and gets no Golden Ticket ("yes, a player who stops
+  at 3 keeps their 3 pretzels and gets no bonus").
 
 ## Assumptions (not stated by the user; confirm in review)
-- A player who stops at 3 keeps their 3 pretzels and gets no Golden
-  Ticket. Stopping is final for that offer (the app quest goes away).
+- Stopping is final for that offer (the app quest goes away). This is
+  the part of the stop-at-3 rule the user has not confirmed.
 - "Ledger" = the new per-player game record plus a "Completed all 4"
   list in `/ops/qr` and a badge on the staff redeem sheet. Not the
   Pretzel Cup leaderboard.
@@ -280,7 +283,7 @@ Function count stays 12 (still `?resource=packs`).
 ## Human steps (CRITICAL, prepare only)
 - Set the task scope to the Scope line above, then run
   `scripts/agent/approve-plan.sh`.
-- Confirm the four assumptions above.
+- Confirm the remaining assumptions above.
 - Decide what staff give for the Golden Ticket, enter it in `/ops/qr`
   and turn it on (needs `EDGE_CONFIG_WRITE_TOKEN`, still unset), or
   tell the agent. Brief counter staff that it is a fixed item.
