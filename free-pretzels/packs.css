@@ -66,7 +66,7 @@ body.game-on .hero { display: none !important; }
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 .ww-card .plate-strip { height: 36px; }
-.ww-card .ww { font-size: calc(100cqw / 188); max-width: none; padding: 10em 6em 8em; }
+.ww-card .ww { font-size: calc(100cqw / 188); max-width: none; padding: 10em 8em 8em 4em; }
 .g-pop-logo { width: min(30vw, 116px); height: auto; margin: 16px auto 0; }
 .g-pop-tag {
   margin: 15px 0 0; font-family: var(--display); font-size: 15px; line-height: 1;
