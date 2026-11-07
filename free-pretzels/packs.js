@@ -26,7 +26,6 @@
   var ASSETS = '/free-pretzels/packs/';
   var BEAT = { charge: 900, rip: 2000, land: 500, payoff: 1300, settle: 4000, autoRip: 8000 };
   var NY = 'America/New_York';
-  var SOURCE_LABEL = { first: 'Pretzel 1: free', instagram: 'Pretzel 2: Instagram', email: 'Pretzel 3: email', app: 'Pretzel 4: app' };
   var PACKS = 5;
   var GOLDEN_SETTLE = 1500; // the Golden Ticket's rain and stamp run longer
   var UI_KEY = 'ppf_packs_ui';
@@ -37,7 +36,7 @@
   var QUEST = {
     instagram: { step: 'Pretzel 2 of 4', title: 'Follow us on Instagram', resume: 'Get pretzel 2' },
     email: { step: 'Pretzel 3 of 4', title: 'Add your email', resume: 'Get pretzel 3' },
-    app: { step: 'Pretzel 4 of 4', title: 'Get the app', resume: 'Get pretzel 4' }
+    app: { step: 'Pretzel 4 of 4', title: 'Get the app', resume: 'Download the app' }
   };
   var EMAIL_MSG = {
     verified: 'Email verified. Your next pack is ready.',
@@ -291,35 +290,133 @@
     return { left: r.left - pk.offsetWidth / 2, top: r.top - pk.offsetHeight / 2, width: pk.offsetWidth, height: pk.offsetHeight };
   }
 
-  function voucherLabel(v) { return v.source === 'bonus' ? (v.title || 'Golden Ticket') : (SOURCE_LABEL[v.source] || 'Free pretzel'); }
+  // ─── collector's binder (mockup C) ───────────────────────────────
+  // Four slots in quest order, then the Golden Ticket. Labels and script
+  // words are the mockup's. Won slots keep the code and "Staff: redeem".
+  var SLOT = {
+    first: { tag: 'Free', word: 'Classic', r: '-2deg' }, instagram: { tag: 'Insta', word: 'Salted', r: '2deg' },
+    email: { tag: 'Email', word: 'Cinnamon', r: '1deg' }, app: { tag: 'App', word: 'Philly', r: '-1deg' }
+  };
+  var ART = '/free-pretzels/art/';
+  function voucherMeta(v) {
+    if (v.redeemed_at) return 'Redeemed' + (v.redeemed_store ? ' at ' + v.redeemed_store : '') + ', ' + fmtDay(v.redeemed_at) + '.';
+    if (v.expired) return 'Expired ' + fmtDay(v.expires_at) + '.';
+    return 'Good through ' + fmtDay(v.expires_at) + '.';
+  }
+  function redeemBtn(v) {
+    var b = el('button', 'btn btn-dark', 'Staff: redeem');
+    b.type = 'button';
+    b.addEventListener('click', function () { openRedeem(v.code, b); });
+    return b;
+  }
+  function slotCard(key, v) {
+    var t = SLOT[key];
+    var done = !!v.redeemed_at || v.expired;
+    var card = el('div', 'bd-card' + (v.traded ? ' traded' : (done ? ' done' : '')));
+    card.style.setProperty('--r', t.r);
+    card.appendChild(el('p', 'bd-tag', t.tag));
+    card.appendChild(el('p', 'bd-word', t.word));
+    if (v.traded) {
+      card.appendChild(el('p', 'vc-meta', 'Traded for the Golden Ticket.'));
+      return card;
+    }
+    card.appendChild(el('p', 'vc-code', v.code));
+    card.appendChild(el('p', 'vc-meta', voucherMeta(v)));
+    if (!done) card.appendChild(redeemBtn(v));
+    return card;
+  }
+  function emptySlot(key, node, st) {
+    var b = el('button', 'bd-empty');
+    b.type = 'button';
+    b.appendChild(document.createTextNode(SLOT[key].tag));
+    var ready = node && node.state === 'ready';
+    b.appendChild(el('span', null, ready ? 'ready to open' : 'tap to unlock'));
+    b.setAttribute('aria-label', SLOT[key].tag + ': ' + (ready ? 'pack ready to open' : 'tap to unlock'));
+    b.addEventListener('click', function () {
+      if (S.state && packShown(S.state)) {
+        window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
+        var c = slots()[S.center];
+        if (c) c.focus({ preventScroll: true });
+      } else resumeStep();
+    });
+    return b;
+  }
+  function ticketPicture() {
+    var pic = document.createElement('picture');
+    var img = el('img');
+    img.src = ART + 'golden-ticket-540.webp';
+    img.srcset = ART + 'golden-ticket-540.webp 540w, ' + ART + 'golden-ticket-900.webp 900w';
+    img.sizes = '(min-width: 600px) 520px, 90vw';
+    img.width = 900; img.height = 440; img.alt = ''; img.decoding = 'async'; img.loading = 'lazy';
+    pic.appendChild(img);
+    return pic;
+  }
+  // Won ticket: the shimmer plays once (muted, no loop) and holds its
+  // last frame; with reduced motion only the poster shows.
+  function ticketVideo(code) {
+    var vid = el('video');
+    vid.muted = true; vid.playsInline = true; vid.preload = 'none';
+    vid.setAttribute('muted', ''); vid.setAttribute('playsinline', '');
+    vid.poster = ART + 'ticket-shimmer-poster.webp';
+    vid.width = 640; vid.height = 360;
+    vid.setAttribute('aria-hidden', 'true');
+    if (!reduced() && S.shimmer !== code) {
+      vid.src = ART + 'ticket-shimmer.mp4';
+      S.shimmer = code;
+      var p = vid.play();
+      if (p && p.catch) p.catch(function () {});
+    }
+    return vid;
+  }
+  function ticketCard(st, v) {
+    var box = el('div', 'bd-ticket');
+    if (v) {
+      var done = !!v.redeemed_at || v.expired;
+      box.className = 'bd-ticket won' + (done ? ' done' : '');
+      box.appendChild(ticketVideo(v.code));
+      var face = el('div', 'bt-face');
+      face.appendChild(el('p', 'bt-name', v.title || 'Golden Ticket'));
+      face.appendChild(el('p', 'vc-code', v.code));
+      box.appendChild(face);
+      var below = el('div', 'bt-below');
+      below.appendChild(el('p', 'bt-text', v.text || 'Show this at the counter.'));
+      below.appendChild(el('p', 'vc-meta', voucherMeta(v) + (done ? '' : ' Show this at the counter.')));
+      if (!done) below.appendChild(redeemBtn(v));
+      box.appendChild(below);
+      return box;
+    }
+    box.appendChild(ticketPicture());
+    var lock = el('div', 'bt-lock');
+    lock.appendChild(el('p', 'bt-name', 'Golden Ticket'));
+    lock.appendChild(el('p', 'bt-hint', 'Complete the set to reveal'));
+    box.appendChild(lock);
+    return box;
+  }
 
-  // Codes on the page, newest first. Pretzel codes that went into a
-  // Golden Ticket are not shown.
   function renderVouchers(st) {
     var box = $('vouchers');
     box.textContent = '';
-    (st.vouchers || []).filter(function (v) { return !v.traded; }).reverse().forEach(function (v) {
-      var done = !!v.redeemed_at || v.expired;
-      var ticket = v.source === 'bonus';
-      var card = el('div', 'vcard' + (done ? ' done' : '') + (ticket ? ' ticket' : ''));
-      card.appendChild(el('p', 'vc-label', voucherLabel(v)));
-      if (ticket) card.appendChild(el('p', 'vc-text', v.text || ''));
-      var stub = ticket ? el('div', 'vc-stub') : card;
-      stub.appendChild(el('p', 'vc-code', v.code));
-      var meta;
-      if (v.redeemed_at) meta = 'Redeemed' + (v.redeemed_store ? ' at ' + v.redeemed_store : '') + ', ' + fmtDay(v.redeemed_at) + '.';
-      else if (v.expired) meta = 'Expired ' + fmtDay(v.expires_at) + '.';
-      else meta = 'Good through ' + fmtDay(v.expires_at) + '. Show this at the counter.';
-      stub.appendChild(el('p', 'vc-meta', meta));
-      if (!done) {
-        var b = el('button', 'btn btn-dark', 'Staff: redeem');
-        b.type = 'button';
-        b.addEventListener('click', function () { openRedeem(v.code, b); });
-        stub.appendChild(b);
-      }
-      if (ticket) card.appendChild(stub);
-      box.appendChild(card);
+    var by = {};
+    (st.vouchers || []).forEach(function (v) { by[v.source] = v; });
+    var nodes = {};
+    (st.trail || []).forEach(function (n) { nodes[n.key] = n; });
+    var count = ['first', 'instagram', 'email', 'app'].filter(function (k) { return by[k]; }).length;
+    $('binder').hidden = !(count || by.bonus);
+    $('bd-count').textContent = count + ' of 4';
+    var stopped = st.ended === 'stopped_at_3';
+    var grid = el('div', 'bd-grid');
+    ['first', 'instagram', 'email', 'app'].forEach(function (k) {
+      if (by[k]) grid.appendChild(slotCard(k, by[k]));
+      else if (!stopped && nodes[k] && nodes[k].state !== 'off') grid.appendChild(emptySlot(k, nodes[k], st));
     });
+    box.appendChild(grid);
+    if (count && !st.traded) box.appendChild(el('p', 'bd-note', 'Show a code at the counter.'));
+    // Golden Ticket slot: shown while it can still be earned or once won.
+    // Hidden after "Keep my 4" or stopping at 3 (no near-miss).
+    var ticketOpen = st.bonus && st.bonus.on && !stopped && !kept(st) && nodes.bonus && nodes.bonus.state !== 'off';
+    if (by.bonus) box.appendChild(ticketCard(st, by.bonus));
+    else if (ticketOpen) box.appendChild(ticketCard(st, null));
+    $('bd-stop').hidden = !(st.can_stop && !st.ended && st.next_quest === 'app');
   }
 
   function renderTrail(st) {
@@ -470,6 +567,13 @@
     if (!$('quest').hidden) { if (!$('q-skip').hidden) $('q-skip').click(); else { uiSet({ skip: skipKey(S.state) }); render(S.state); } }
     else if (!$('deal').hidden) $('deal-later').click();
     else if (!$('g-end').hidden) $('end-close').click();
+  }
+
+  // Reopen the step popup (after "Skip for now" or "Decide later").
+  function resumeStep() {
+    uiSet({ skip: '' });
+    S.dealLater = false;
+    if (S.state) render(S.state);
   }
 
   function render(st) {
@@ -1070,10 +1174,11 @@
       render(S.state);
       $('q-resume').focus();
     });
-    $('q-resume').addEventListener('click', function () {
-      uiSet({ skip: '' });
-      S.dealLater = false;
-      if (S.state) render(S.state);
+    $('q-resume').addEventListener('click', resumeStep);
+    // Binder "I don't need another app": the app step with its confirm.
+    $('bd-stop').addEventListener('click', function () {
+      resumeStep();
+      if (!$('stop-btn').hidden) $('stop-btn').click();
     });
     $('deal-later').addEventListener('click', function () {
       S.dealLater = true;
@@ -1247,7 +1352,7 @@
           showPopup({ headline: e.data.offer.headline, stamp: e.data.offer.stamp }, true);
           $('game-sub').textContent = 'Preview. Packs open on the live page.';
           $('vouchers').textContent = '';
-          ['g-step', 'q-resume', 'qmap'].forEach(function (id) { $(id).hidden = true; });
+          ['g-step', 'q-resume', 'qmap', 'binder'].forEach(function (id) { $(id).hidden = true; });
         }
       });
       // Ask the panel to resend now that this listener exists (the inline

@@ -487,9 +487,17 @@
       </div>
       <p class="g-hint" id="g-hint">Swipe to select &amp; tap pack to open</p>
       <p class="g-msg" id="game-msg" role="status"></p>
-      <!-- Reopens the step popup after "Skip for now". -->
-      <button class="btn btn-solid q-resume" id="q-resume" type="button" hidden></button>
-      <div class="vouchers" id="vouchers"></div>
+      <!-- Collector's binder (mockup C): won codes in a 2x2 set, empty
+           slots show their quest, the Golden Ticket below. Filled by
+           renderVouchers in packs.js. -->
+      <div class="binder" id="binder" hidden>
+        <div class="plate-strip" aria-hidden="true"></div>
+        <div class="bd-head"><h3 class="bd-title">Your set</h3><span class="bd-count" id="bd-count"></span></div>
+        <div class="vouchers" id="vouchers"></div>
+        <!-- Reopens the step popup after "Skip for now". -->
+        <button class="btn btn-solid q-resume" id="q-resume" type="button" hidden></button>
+        <button class="bd-stop" id="bd-stop" type="button" hidden>I don't need another app</button>
+      </div>
     </div>
 
     <!-- Step popup over the carousel, between pulls: the progress trail

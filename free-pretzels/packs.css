@@ -222,34 +222,80 @@ body.game-on .hero { display: none !important; }
 .btn.has-badge { padding: 0; border: 0; background: transparent; min-height: 40px; }
 .btn.has-badge span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .picker.leaving .pick { pointer-events: none; }
-/* ─── vouchers on the page ────────────────────────────────────── */
-.vouchers { display: grid; gap: 14px; margin: 22px 0 0; text-align: left; }
-.vouchers:empty { display: none; }
-.vcard {
-  background: var(--gold-light); color: var(--black);
-  border: 2px solid var(--gold-deep); border-radius: 0; padding: 16px 18px;
+/* ─── collector's binder (mockup C) ───────────────────────────── */
+.binder {
+  margin: 24px -4px 0; padding: 0 0 18px; overflow: hidden;
+  background: var(--green); color: var(--white); text-align: left;
+  border-radius: 26px; border: 2px solid var(--gold-deep);
+  box-shadow: var(--shadow-2);
 }
-.vcard p { margin: 0; }
-.vc-label { font-family: var(--display); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); }
-.vc-code { margin: 6px 0 4px !important; font-family: var(--display); font-size: clamp(26px, 9vw, 34px); line-height: 1; letter-spacing: 0.08em; white-space: nowrap; }
-.vc-meta { font-weight: 700; font-size: 15px; }
-.vcard .btn { margin-top: 12px; }
-.vcard.done { background: var(--white); border-color: var(--gray); }
-.vcard.done .vc-code { color: var(--gray); text-decoration: line-through; }
+.binder[hidden] { display: none; }
+.binder .plate-strip { height: 36px; }
+.bd-head { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 18px 0; }
+.bd-title { margin: 0; font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 0.95; letter-spacing: 0.01em; text-transform: uppercase; color: var(--white); }
+.bd-count { font-family: var(--marker); font-size: 22px; color: var(--gold-light); }
+.vouchers { display: block; margin: 0; }
+.bd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 18px; }
+.bd-card {
+  position: relative; min-height: 124px; padding: 10px 10px 12px; border-radius: 12px;
+  background: var(--gold); color: var(--black);
+  transform: rotate(var(--r, 0deg)); box-shadow: var(--shadow-1);
+  transition: transform 0.25s var(--ease);
+}
+.bd-card:hover { transform: rotate(0deg) translateY(-3px); }
+.bd-card p { margin: 0; }
+.bd-tag { font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
+.bd-word { font-family: var(--script); font-weight: 700; font-size: 32px; line-height: 1; }
+.bd-card .vc-code { margin: 8px 0 2px; font-family: var(--display); font-size: clamp(17px, 5.2vw, 22px); line-height: 1; letter-spacing: 0.05em; white-space: nowrap; }
+.bd-card .vc-meta { font-size: 13px; font-weight: 700; line-height: 1.3; }
+.bd-card .btn { margin-top: 8px; min-height: 40px; padding: 0 8px; font-size: 11px; white-space: nowrap; border-radius: 10px; }
+.bd-card.done { background: var(--gold-light); }
+.bd-card.done .vc-code { color: var(--gray); text-decoration: line-through; }
+.bd-card.traded { background: var(--gold-light); }
+/* Empty slot: dashed, shows its quest; tap reopens that step. */
+.bd-empty {
+  appearance: none; min-height: 124px; width: 100%; padding: 10px; border-radius: 12px;
+  border: 2px dashed var(--gold-light); background: transparent; color: var(--gold-light);
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px;
+  font-family: var(--body); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+}
+.bd-empty span { font-weight: 500; font-size: 14px; letter-spacing: 0; text-transform: none; }
+.bd-empty:focus-visible, .bd-stop:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+.bd-note { margin: 0 18px; font-size: 14px; font-weight: 700; color: var(--gold-light); }
+/* Golden Ticket card: the Higgsfield ticket art, text on flat pills. */
+.bd-ticket { position: relative; margin: 14px 18px 0; border-radius: 12px; overflow: hidden; background: var(--green-deep); box-shadow: var(--shadow-1); }
+.bd-ticket picture, .bd-ticket img, .bd-ticket video { display: block; width: 100%; height: auto; }
+.bd-ticket .bt-lock {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-6deg);
+  padding: 8px 14px; border-radius: 12px; text-align: center; white-space: nowrap;
+  background: var(--gold-light); color: var(--black); box-shadow: var(--shadow-1);
+}
+.bd-ticket .bt-lock p { margin: 0; }
+.bt-name { font-family: var(--display); font-size: 18px; letter-spacing: 0.02em; text-transform: uppercase; }
+.bt-hint { font-size: 13px; font-weight: 700; }
+/* Won: the code sits on the ticket face, tilted with the art. */
+.bd-ticket.won .bt-face {
+  position: absolute; left: 40%; top: 46%; transform: translate(-50%, -50%) rotate(-7deg);
+  text-align: center; color: var(--black); pointer-events: none;
+}
+.bd-ticket.won .bt-face p { margin: 0; }
+.bd-ticket.won .bt-face .vc-code { font-family: var(--display); font-size: clamp(20px, 6.4vw, 30px); letter-spacing: 0.06em; white-space: nowrap; }
+.bt-below { padding: 12px 14px 14px; background: var(--green-deep); color: var(--white); }
+.bt-below p { margin: 0; }
+.bt-below .bt-text { font-weight: 700; }
+.bt-below .vc-meta { margin-top: 4px !important; font-size: 14px; }
+.bt-below .btn { margin-top: 10px; }
+.bd-ticket.done .bt-face .vc-code { text-decoration: line-through; }
+.binder .q-resume {
+  display: flex; width: calc(100% - 36px); margin: 16px 18px 0; min-height: 50px; border-radius: 12px;
+}
+.bd-stop {
+  appearance: none; display: block; margin: 10px auto 0; padding: 8px 12px; min-height: 44px;
+  background: transparent; border: 0; color: var(--white); opacity: 0.85;
+  font-family: var(--body); font-size: 15px; font-weight: 500; cursor: pointer;
+}
+.bd-stop[hidden] { display: none; }
 .btn-dark { background: var(--black); color: var(--gold-light); border-color: var(--black); }
-
-/* Golden Ticket: a ticket in solid brand golds. Notched ends sit on the
-   perforation above the code stub. No gradients, no shadows. */
-.vcard.ticket { position: relative; border: 3px solid var(--gold); }
-.vcard.ticket .vc-label { color: var(--gold-deep); font-size: 15px; }
-.vcard.ticket .vc-text { margin: 4px 0 0 !important; font-weight: 700; }
-.vcard.ticket .vc-stub { position: relative; margin: 12px -18px 0 !important; padding: 12px 18px 0; border-top: 3px dashed var(--gold-deep); }
-.vcard.ticket .vc-stub::before, .vcard.ticket .vc-stub::after {
-  content: ''; position: absolute; top: -13px; width: 20px; height: 20px; border-radius: 50%;
-  background: var(--black); border: 3px solid var(--gold);
-}
-.vcard.ticket .vc-stub::before { left: -13px; clip-path: inset(0 0 0 50%); }
-.vcard.ticket .vc-stub::after { right: -13px; clip-path: inset(0 50% 0 0); }
 
 /* ─── step popup (between pulls) ──────────────────────────────── */
 /* Same grey card as the welcome popup; only the card is translucent. */
@@ -269,9 +315,8 @@ body.game-on .hero { display: none !important; }
   background: transparent; border: 0; border-radius: 0; color: var(--gold-light);
   font-family: var(--body); font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer;
 }
-.q-skip[hidden], .q-resume[hidden] { display: none; }
+.q-skip[hidden], .q-resume[hidden] { display: none !important; }
 .q-skip:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
-.q-resume { margin: 16px auto 0; }
 .field-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .g-input {
   flex: 1 1 200px; min-height: 48px; padding: 0 12px;
