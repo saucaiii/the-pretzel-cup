@@ -38,6 +38,7 @@
     --gold-deep: #B2872F;
     --gold-light: #F2E7A4;
     --black: #000000;
+    --green-deep: #083521;
     --white: #FFFFFF;
     --gray: #6D6E71;
 
@@ -310,6 +311,12 @@
        claim blocks while it shows. See free-pretzels/packs.js. -->
   <section class="game" id="game" hidden aria-labelledby="game-title">
     <div class="wrap">
+      <!-- Pretzel trail: 4 pretzels, then the Golden Ticket. -->
+      <div class="trail" id="trail" hidden>
+        <ol class="trail-row" id="trail-row" aria-label="Your pretzels"></ol>
+        <p class="trail-count" id="trail-count"></p>
+        <p class="trail-note">Every pack wins.</p>
+      </div>
       <h2 id="game-title">Pick a pack</h2>
       <p class="g-sub" id="game-sub">Pull a pretzel and WIN a pretzel!</p>
       <div class="carousel" id="carousel">
@@ -319,45 +326,63 @@
       </div>
       <p class="g-hint" id="g-hint">Swipe to select &amp; tap pack to open</p>
       <p class="g-msg" id="game-msg" role="status"></p>
-      <div class="vouchers" id="vouchers"></div>
 
-      <div class="bonus" id="bonus" hidden>
-        <h3>Want another?</h3>
-        <p class="b-count" id="b-count"></p>
+      <!-- One quest at a time. Filled by packs.js from the API state. -->
+      <div class="quest" id="quest" hidden>
+        <p class="q-step" id="q-step"></p>
+        <h3 class="q-title" id="q-title"></h3>
 
-        <div class="b-item" id="b-email">
-          <h4>Sign up with email (+1)</h4>
+        <div class="q-body" id="q-ig" hidden>
+          <p>Follow <span id="ig-handle"></span>, then come back here. Your next pack drops in.</p>
+          <button class="btn btn-solid" id="ig-btn" type="button"><img class="badge" id="ig-badge" alt="" hidden /><span>Follow on Instagram</span></button>
+          <p class="b-status" id="ig-status" role="status"></p>
+        </div>
+
+        <div class="q-body" id="q-email" hidden>
           <form id="email-form" novalidate>
-            <p>We email you a link. Tap it to unlock one more pack.</p>
+            <p>We email you a link. Tap it on this phone and your next pack drops in.</p>
             <div class="field-row">
               <label class="sr-only" for="email-input">Email</label>
               <input class="g-input" id="email-input" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="you@example.com" required />
               <button class="btn btn-solid" id="email-send" type="submit">Send link</button>
             </div>
             <label class="check"><input type="checkbox" id="email-optin" /> <span>Also send me Philly Pretzel Factory deals. Optional.</span></label>
-            <p class="privacy">We use your email to send this link and to keep bonus packs to one per person. Without the deals box ticked, we delete it 30 days after the offer ends.</p>
+            <p class="privacy">We use your email to send this link and to keep packs to one set per person. Without the deals box ticked, we delete it 30 days after the offer ends.</p>
             <p class="b-status" id="email-status" role="status"></p>
           </form>
-          <p class="b-done" id="b-email-done" hidden></p>
         </div>
 
-        <div class="b-item" id="b-ig">
-          <h4>Follow on Instagram (+1)</h4>
-          <p>Follow <span id="ig-handle"></span>, then come back here.</p>
-          <button class="btn btn-solid" id="ig-btn" type="button"><img class="badge" id="ig-badge" alt="" hidden /><span>Follow on Instagram</span></button>
-          <p class="b-done" id="b-ig-done" hidden></p>
-          <p class="b-status" id="ig-status" role="status"></p>
-        </div>
-
-        <div class="b-item" id="b-app">
-          <h4>Download the app (+1)</h4>
-          <p>Get the Philly Pretzel Factory app, then come back here.</p>
-          <button class="btn btn-solid" id="app-btn" type="button"><img class="badge" id="app-badge" alt="" hidden /><span>Download on the App Store</span></button>
-          <p class="b-done" id="b-app-done" hidden></p>
+        <div class="q-body" id="q-app" hidden>
+          <p>Get the Philly Pretzel Factory app, then come back here. Your next pack drops in.</p>
+          <p class="q-gold" id="q-gold" hidden>Finish all 4 to unlock the Golden Ticket.</p>
+          <div class="q-actions">
+            <button class="btn btn-solid" id="app-btn" type="button"><img class="badge" id="app-badge" alt="" hidden /><span>Download on the App Store</span></button>
+            <button class="btn btn-line" id="stop-btn" type="button" hidden>I don't need another app</button>
+          </div>
+          <div class="q-confirm" id="stop-confirm" hidden>
+            <p>End your game? You keep your 3 pretzels.</p>
+            <div class="q-actions">
+              <button class="btn btn-solid" id="stop-yes" type="button">End game</button>
+              <button class="btn btn-line" id="stop-no" type="button">Keep playing</button>
+            </div>
+          </div>
           <p class="b-status" id="app-status" role="status"></p>
         </div>
 
-        <p class="all-used" id="all-used" hidden>All packs used. See you at the counter.</p>
+        <button class="q-skip" id="q-skip" type="button">Skip for now</button>
+      </div>
+      <button class="btn btn-line q-resume" id="q-resume" type="button" hidden></button>
+
+      <!-- End of the game: stopped at 3, or set complete. -->
+      <div class="g-end" id="g-end" hidden>
+        <h3 class="g-end-title" id="g-end-title"></h3>
+        <p class="g-end-body" id="g-end-body"></p>
+      </div>
+
+      <!-- The set: every code won, newest first. -->
+      <div class="set" id="set" hidden>
+        <p class="set-head" id="set-head"></p>
+        <div class="vouchers" id="vouchers"></div>
       </div>
     </div>
     <!-- Welcome popup over the carousel. Logo, tagline, the offer
@@ -436,6 +461,7 @@
   <div class="st-prize" aria-hidden="true">
     <picture><source srcset="/free-pretzels/packs/pretzel.webp" type="image/webp" /><img src="/free-pretzels/packs/pretzel.png" width="646" height="1468" alt="" /></picture>
     <div class="st-shine"><i></i></div>
+    <div class="st-ticket"><span class="stt-top">Golden</span><span class="stt-mid">Ticket</span><span class="stt-perf"></span><span class="stt-stub">Bonus</span></div>
   </div>
   <div class="st-head" aria-hidden="true"><p class="st-won">You won</p><p class="st-what">Free pretzel</p></div>
   <div class="st-stamp" aria-hidden="true">FREE</div>
@@ -443,13 +469,13 @@
   <p class="st-hint" aria-hidden="true"></p>
   <button class="st-skip" type="button">Skip</button>
   <div class="st-voucher" hidden>
-    <p class="sv-label">Your free pretzel</p>
+    <p class="sv-label" id="sv-label">Your free pretzel</p>
     <p class="sv-code" id="sv-code"></p>
     <p class="sv-exp" id="sv-exp"></p>
-    <p class="sv-how">Show this at the counter.</p>
+    <p class="sv-how" id="sv-how">Show this at the counter.</p>
     <div class="sv-actions">
       <button class="btn btn-solid" id="sv-done" type="button">Done</button>
-      <button class="btn btn-dark" id="sv-redeem" type="button">Staff: redeem</button>
+      <button class="btn btn-green" id="sv-redeem" type="button">Staff: redeem</button>
     </div>
   </div>
   <p class="sr-only" id="st-live" aria-live="assertive"></p>
@@ -479,6 +505,8 @@
     </form>
     <div id="rd-ok" hidden>
       <p class="rd-ok" id="rd-ok-text"></p>
+      <p class="rd-badge" id="rd-badge" hidden>Completed all 4</p>
+      <p class="rd-give" id="rd-give" hidden></p>
       <div class="actions" style="margin-top:14px"><button class="btn btn-solid" id="rd-close" type="button">Done</button></div>
     </div>
   </div>
