@@ -1,34 +1,41 @@
 # Working memory (short-term). Keep under 60 lines. Prune when a task closes.
-Branch: agent/onboard-delivery-stop
-Task: Rebuild the one true "add a delivery stop" workflow
+Branch: claude/ops-qr-split-d81b8e
+Task: Split /ops/qr into two tabs (QR + Referral) with a shared status strip
 
 ## Progress
-- Branched off latest origin/main.
-- Plan at .agent/plan.md (Medium risk — ops pages + ops endpoint, no api/_lib/, no migrations, no vercel.json).
-- Rewrote ops/onboard/index.html as a single-page form:
-  - Required: route (tiles), store name/town/address, delivery days, owner contact (first/last/email).
-  - Standing order: segmented preset [5/5 standard · 10/10 · Custom] with a live total + wholesale sum; custom opens −/+ counters.
-  - Optional disclosures: Google Sheet column (open by default, Recommended badge), Portal access (PIN opt-in), Welcome delivery, Day-one kit.
-  - Primary button fills label live: "Add <name> to <route label>". Disabled until required set valid; hint explains what's missing.
-  - Success panel shows next-step cards tailored to whatever the operator skipped.
-- Delivery Stops page (ops/stops/index.html):
-  - Added primary `+ ADD NEW STOP` button to the header, right of the blurb. Links to /ops/onboard.
-  - Deleted the per-route Add-stop form + related CSS + onAddStop / updateAddFormLabel JS.
-  - Added a Route column with an inline `<select>` on each row. Change → confirm → PATCH route_key → reload.
-- api/schedule.js:
-  - handleOnboardCreate: no 10-unit minimum (≥1 unit total), optional portal_pin (blank pin → no store_pin_hash), manager_email required, Google Sheet column insert wired (same pattern as deprecated stops POST). Returns sheet_insert/sheet_insert_error alongside the new stop.
-  - handleStopsPatch: route_key added to whitelist. On route change, validates the target route, recomputes stop_order = max+1 on the new route, posts a "Stop moved" auto-update via auto.postUpdate.
-- Syntax checks clean (node --check on schedule.js; python-extracted inline JS blocks for both HTML files).
+- Rebuilt ops/qr/index.html as two tabs ("QR" + "Referral") with a shared
+  read-only status strip above them. Backend untouched.
+- Panels marked with data-tab; CSS on #tabs-root[data-active=…] hides the
+  other group. Order on-screen stays: p-redirect, p-qr, p-stats, p-history
+  for QR; p-offer, p-packs for Referral.
+- Tab state: localStorage['ops.qr.tab'], URL hash wins on load, keyboard
+  arrows / Home / End move between the two buttons.
+- Shared strip updates on config load, set_target, reset_target,
+  publish_offer, restore. undefined for either arg = leave alone.
+- Dropped the §1..§7 numbering from headings (would read oddly inside tabs).
 
 ## Failures and root causes
-- (none)
+- Reviewer (reasoning error): scalePhone() ran at init with
+  #phone-screen hidden (default tab = QR), so transform: scale(0) until a
+  window resize. Fixed by calling scalePhone() from setActive() — the
+  first time the Referral tab is shown, it recomputes.
+- Reviewer (reasoning error): plan promised "shared strip collapses to
+  one column under 720px"; CSS only flipped borders, grid stayed two-up.
+  Fixed by adding `.shared-strip { grid-template-columns: 1fr; }` inside
+  the 720px media query.
 
 ## Review notes
-- Nav label "New Store Setup" (assets/ops-nav.js) is outside this task's scope. Follow-up: rename to "Add a stop" for consistency with the rebuilt page.
-- Shorts flag isn't exposed in the new /ops/onboard form — it's a rare post-add toggle, lives on /ops/stops. Mention this if testing finds a case where it's needed at add-time.
-- Google Sheet section is open-by-default with a Recommended badge; the dropdown populates once a route is picked.
+- Two pre-existing test failures (tests/qr-config.test.mjs, tests/
+  scan-redirect.test.mjs) are ESM module-resolution errors; they fail
+  against clean origin/main too. Unrelated.
+- Every fetch(…) / api(…) call site matches origin/main 1-for-1. Actions
+  set_target, reset_target, publish_offer, restore unchanged.
 
 ## Handoff
-- Commit & push the branch. Open a draft PR against main.
-- Human preview via `npm run deploy` (local-only deploys per CLAUDE.md).
-- Manual test the Union Bagel flow: on /ops/stops, change Union Bagel's Route pill from FSQ to LYN, confirm, verify it shows under LYN tab with stop_order = max+1 and a "Stop moved" update appears in /ops/updates.
+- Commit + push the branch. Open a draft PR against main with the agent
+  template filled.
+- Human preview via `npm run deploy` (local-only per CLAUDE.md).
+- Smoke test: /ops/qr renders; "QR" tab shows sticker + studio + scans +
+  history; "Referral" tab shows offer editor (phone preview working) +
+  pack funnel; shared strip visible from both tabs; refresh keeps last
+  tab; URL #qr / #referral switches tabs on load.

@@ -1,113 +1,110 @@
-# Onboard a new delivery stop — one true workflow
+# Split /ops/qr into two tabs — QR and Referral
 
-Branch: `agent/onboard-delivery-stop` (off `main`)
-Risk: Medium — ops endpoint + two pages, no `api/_lib/`, no migrations, no `vercel.json`.
+Branch: `claude/ops-qr-split-d81b8e` (off `main`)
+Risk: Medium — a single frontend ops page. No `api/_lib/`, no `api/*`, no
+migrations, no `vercel.json`, no workflows, no auth/secrets, no money.
+Scope: ops/qr/index.html
 
 ## Goal
 
-A single, discoverable path to add a new store (= stop) to an existing delivery
-route (FSQ / LYN / FBW). Replace the 8-step franchise wizard and the per-route
-Add-stop form with one flat form that works for independent cafes and 7-Eleven
-franchises alike. When a stop is added it propagates to every downstream system
-in one shot: Supabase, the baker/driver apps (via DB read), the all-hands auto
-update, the Google Sheet column, and the optional portal + welcome delivery +
-day-one kit follow-ups.
+`ops/qr/index.html` is 965 lines of seven stacked panels covering two
+unrelated operator jobs: managing the window-sticker `/scan` destination and
+the QR studio, and configuring the `/free-pretzels` pack game. Split them
+into two tabs so each operator role sees only their own controls, keep a
+small shared status strip above the tabs for the two facts both roles want
+at a glance (current `/scan` destination; game on/off + start date), and
+remember the chosen tab in `localStorage`.
 
-## Scope (files touched)
+Pure UI reorganisation. No endpoint, no backend, no payload changes.
 
-- `ops/stops/index.html` — rename page to "Delivery stops", delete the
-  per-route Add-stop section, add a primary `+ ADD NEW STOP` button to the
-  header, make each row's Route pill an inline `<select>` that PATCHes
-  `route_key` so a mis-routed stop is a one-click fix.
-- `ops/onboard/index.html` — rewrite as a single scrollable form. See **Form
-  shape** below.
-- `api/schedule.js` —
-  - `handleOnboardCreate`: drop the `singles + doubles >= 10` gate (keep ≥ 1);
-    make `portal_pin` optional; keep `route_key`/`name`/`town`/`manager_email`
-    required; call `insertSheetColumn` from `_lib/sheet` when the operator opts
-    in; auto-publish stays wired.
-  - `handleStopsPatch`: extend the whitelist to accept `route_key`. When it
-    changes, recompute `stop_order = max + 1` on the target and fire an
-    `autoNewStop`-shaped update so drivers/bakers see the move.
-- `ops/index.html` — nav label + dashboard tile flip "Stops" → "Delivery
-  stops".
+## Layout after the rebuild
 
-No edits inside `api/_lib/`. The sheet helper is imported, not changed.
+Shared strip (always visible, above the tabs):
+- `/scan` destination now
+- Pack game on/off + start date
 
-## Form shape (ops/onboard)
+Tab 1 — QR (sticker + scan destination):
+- §1 Where the sticker goes (/scan destination picker)
+- §4 QR studio (placement name, colours, SVG/PNG download)
+- §5 Scans by placement
+- §7 History
 
-Section 1 — Where (required)
-- Route select (no default; FSQ / LYN / FBW)
-- Store name, Town, Street address
+Tab 2 — Referral (the /free-pretzels pack game):
+- §2 Free pretzel offer (headline, accent, stamp, details, steps, fine
+  print, hero colour, schedule, game toggle, Instagram handle, Golden
+  Ticket block) + phone preview + brand-voice lint
+- §6 Pack game funnel stats
 
-Section 2 — Standing order (required)
-- Segmented control: **[ 5 / 5 standard ]**  [ 10 / 10 ]  [ Custom ⤵ ]
-  - Default: 5 singles + 5 doubles
-  - Custom expands to −/+ counters (min 1 across both)
-- Delivery days (Mon–Sun chips, ≥ 1)
+The section numbers inside panel headings are dropped; numbering is a relic
+of the single-column stack.
 
-Section 3 — Contact (required)
-- First + Last name, Email (welcome email target), Phone optional
+## Segmented control
 
-Optional (collapsed disclosures, no gates):
-- Portal access — "Generate 4-digit PIN now" toggle. Off = portal setup
-  deferred to `/ops/invite`.
-- Welcome delivery — date + driver. Blank = scheduled later.
-- Day-one kit — short checklist; link to `/ops/print-kits` for physical
-  pieces. Non-blocking.
-- "Also add a column to the Google Sheet" — same opt-in dropdown the old
-  Add-stop form had.
+- Two buttons in `role="tablist"` row above the panels.
+- `aria-selected` reflects the active tab. Keyboard: left/right/up/down
+  arrows between the two buttons, Home/End for ends — mirrors the
+  wholesale-page pattern.
+- `localStorage['ops.qr.tab']` holds `'qr'` or `'referral'`. On load:
+  1. If `location.hash` is `#qr` or `#referral`, use it.
+  2. Else read localStorage.
+  3. Else default to `'qr'`.
+- Both `localStorage` and `location.hash` are updated on each change so a
+  link can land on a tab and a refresh keeps you where you were.
+- Under ~520px the two tabs become full-width stacked buttons.
 
-Primary button at the bottom: `Add <Name> to <Route>` (label fills live).
+## What stays identical
 
-After submit, success screen shows three link-cards for any skipped optional
-sections (portal, welcome, kit).
+- Every API call: `GET api/leads?resource=qr&view=config|stats|history`,
+  `POST api/leads?resource=qr` with `{action: set_target|reset_target|
+  publish_offer|restore, ...}`, `GET api/leads?resource=packs&view=stats`.
+- /free-pretzels phone preview (iframe `srcdoc` with injected `<base>` and
+  `window.__OFFER_PREVIEW__ = true`, postMessage handshake).
+- Edge Config readable/writable notice.
+- "Reset to /free-pretzels" confirm.
+- Disabled-when-not-writable states on Save / Reset / Publish / Restore.
+- Lint rules, counts, layout tagline note, bonus requires-Instagram warn.
+- QR SVG generation, contrast check, SVG/PNG download.
+- Brand palette, square corners, no shadows, no new dependencies.
 
-## Delivery Stops page (ops/stops)
-
-- Title "Stops" → "Delivery stops" (page `<h1>`, `<title>`, nav links,
-  dashboard tile).
-- Header right: primary `+ ADD NEW STOP` button → `/ops/onboard`.
-- Delete the entire `#add-stop` section (form + heading + add-note).
-- Each row's Route pill becomes an operator-only `<select>` PATCHing
-  `route_key`. On change, the row animates out and reappears under the new
-  route tab.
-- Keep every existing control: drops, shorts, basket, note, payment chip,
-  active toggle.
+The shared strip is read-only (no inputs). Its numbers come from the same
+`/config` fetch that fills the tab panels — no extra request.
 
 ## Success criteria
 
 Quantitative
-- Only edits the four files listed above (CI scope-check).
-- `handleOnboardCreate` with `{route_key, name, town, singles_drop:5,
-  doubles_drop:5, manager_first_name, manager_last_name, manager_email,
-  delivery_days:['mon']}` returns 200 and creates a stop (no PIN required).
-- `handleStopsPatch` with `{route_key:'LYN'}` on an FSQ stop moves the row to
-  LYN with `stop_order = max+1`.
-- Adding Union Bagel via the new form lands it on LYN, posts an auto-update,
-  and (if opted in) inserts the sheet column. Union Bagel's current FSQ row
-  can be moved to LYN from the Delivery Stops page in one click.
+- Only `ops/qr/index.html` changes (`scripts/agent/scope-check.sh` passes).
+- `node --check` on extracted inline JS passes.
+- Tabs render; segmented control switches which panel group is visible;
+  active tab is persisted in `localStorage['ops.qr.tab']` and restored on
+  reload.
+- Every existing control fires the same API call it fired before (grep
+  confirms no `fetch(...)` URL changed).
+- Edge Config readable/writable notice behaves the same.
 
 Qualitative
-- An operator can add a new stop without scrolling, without a wizard, without
-  a hidden gate. The form reads top-to-bottom and the primary button names the
-  exact action.
-- `/ops/stops` no longer has two ways to add a stop. There is one door.
+- An operator managing stickers sees sticker controls only. Someone tuning
+  the pack game sees the offer editor and funnel only.
+- Shared strip answers "what's live right now" without a scroll.
+- Mobile: both tabs reachable with a thumb, no zoom.
 
 ## Risks + mitigations
 
-- **Rename churn.** "Stops" → "Delivery stops" touches nav in two pages;
-  every link stays `/ops/stops` so no routing breaks.
-- **Route PATCH recompute.** `(route_key, stop_order)` is a unique index.
-  Recompute inside the same server-side update; return 409 on race.
-- **Sheet column insert failure doesn't fail the add.** Same pattern the
-  old form used. Error is surfaced in the response alongside the new stop.
-- **Optional PIN.** `store_pin_hash` nullable in the insert means the portal
-  sign-in is off for that stop until `/ops/invite` backfills it. Existing
-  stops are unaffected.
+- Preview iframe reconnects when hidden. The offer editor lives on tab 2;
+  switching to tab 1 hides the panel with `display:none`. `display:none`
+  does not tear down an iframe; the postMessage handshake survives.
+  Mitigation: toggle visibility at the panel level via a class on the
+  tabs-root container, not around the iframe itself.
+- `localStorage` read failure in private windows. Wrap read/write in
+  try/catch; fall back to the URL hash and then to the default.
+- Tab state out of sync with URL. Treat hash as truth on load; after that,
+  write both together on every change.
+- CI scope-check — the plan's `Scope:` line lists only `ops/qr/index.html`;
+  any accidental edit elsewhere trips the check.
 
 ## Rollback / escalation
 
-- Revert the single merge commit. No schema changes, no data migrations.
-- If the route-change PATCH behaves badly in prod, the whitelist addition
-  can be removed in a one-line follow-up without undoing the form rebuild.
+- Revert the single merge commit. No server-side state is persisted by this
+  change.
+- If a late-discovered bug surfaces in the offer preview, a one-line CSS
+  tweak can short-circuit the segmented control to show both panels until
+  a proper fix lands.
