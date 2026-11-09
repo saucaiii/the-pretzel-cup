@@ -302,7 +302,10 @@ async function handleStopsPatch(req, res, sess) {
     ? req.body
     : (() => { try { return JSON.parse(req.body || '{}'); } catch { return {}; } })();
 
-  // Only accept whitelisted keys so a malformed body can't corrupt route_key etc.
+  // Only accept whitelisted keys so a malformed body can't corrupt fields we
+  // don't own here. `route_key` IS patchable (reassigns the stop to another
+  // delivery route); the handler recomputes stop_order on the target so the
+  // (route_key, stop_order) unique index doesn't collide.
   const patch = {};
   const intOrNull = v => (v === null || v === '' || v === undefined) ? null
     : (Number.isFinite(Number(v)) ? Math.max(0, Math.round(Number(v))) : undefined);
@@ -316,6 +319,11 @@ async function handleStopsPatch(req, res, sess) {
   if ('note'               in body) patch.note   = typeof body.note   === 'string' ? body.note.trim().slice(0, 500) || null : null;
   if ('active'             in body) patch.active = !!body.active;
   if ('shorts'             in body) patch.shorts = !!body.shorts;
+  if ('route_key'          in body) {
+    const rk = typeof body.route_key === 'string' ? body.route_key.trim() : '';
+    if (!rk) return res.status(400).json({ error: 'route_key, if provided, must be a non-empty string' });
+    patch.route_key = rk;
+  }
 
   if (Object.keys(patch).length === 0) return res.status(400).json({ error: 'no patchable fields in body' });
 
@@ -324,10 +332,31 @@ async function handleStopsPatch(req, res, sess) {
     // Snapshot the row before the update so we can diff for auto-publish.
     const { data: before, error: be } = await sb.from('stops').select('*').eq('id', id).single();
     if (be || !before) return res.status(404).json({ error: 'stop not found' });
-    const { data, error } = await sb.from('stops').update(patch).eq('id', id).select().single();
-    if (error) throw error;
 
-    // Auto-publish: drop size changes (any), and active flips.
+    // Route move: validate the target route exists and recompute stop_order
+    // so the new row sits at the end of the target route (unique on
+    // (route_key, stop_order)).
+    if ('route_key' in patch && patch.route_key !== before.route_key) {
+      const { data: route, error: re } = await sb
+        .from('routes').select('key').eq('key', patch.route_key).single();
+      if (re || !route) return res.status(400).json({ error: `unknown route_key: ${patch.route_key}` });
+      const { data: last, error: le } = await sb
+        .from('stops').select('stop_order')
+        .eq('route_key', patch.route_key).order('stop_order', { ascending: false }).limit(1);
+      if (le) throw le;
+      patch.stop_order = ((last && last[0] && last[0].stop_order) || 0) + 1;
+    }
+
+    const { data, error } = await sb.from('stops').update(patch).eq('id', id).select().single();
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'another stop already holds that (route, stop_order)' });
+      }
+      throw error;
+    }
+
+    // Auto-publish: drop size changes (any), active flips, shorts flips,
+    // and route moves.
     const autos = [];
     const dropChanged =
       ('singles_drop' in patch       && patch.singles_drop       !== before.singles_drop) ||
@@ -351,6 +380,18 @@ async function handleStopsPatch(req, res, sess) {
         const u = await auto.autoShortsChanged({ stop: data, nowShorts: patch.shorts, postedBy: sess.sub });
         if (u) autos.push({ id: u.id, title: u.title, kind: 'shorts' });
       } catch (e) { console.error('auto autoShortsChanged:', e); }
+    }
+    if ('route_key' in patch && patch.route_key !== before.route_key) {
+      try {
+        const u = await auto.postUpdate({
+          title: `Stop moved: ${data.name} — ${before.route_key} → ${data.route_key}`,
+          body: `${data.name} (${data.town}) is now on the ${data.route_key} route. Deliveries continue on the new route starting next pickup.`,
+          audience: [],
+          requiresAck: true,
+          postedBy: sess.sub,
+        });
+        if (u) autos.push({ id: u.id, title: u.title, kind: 'route-move' });
+      } catch (e) { console.error('auto route-move:', e); }
     }
     return res.status(200).json({ ok: true, stop: data, auto_updates: autos });
   } catch (err) {
@@ -531,14 +572,18 @@ async function handleOnboardCreate(req, res, sess) {
     ? body.delivery_days.map(d => String(d || '').toLowerCase()).filter(d => DAY_SET.has(d))
     : [];
 
-  if (!routeKey) return res.status(400).json({ error: 'route_key required' });
-  if (!name)     return res.status(400).json({ error: 'name required' });
-  if (!town)     return res.status(400).json({ error: 'town required' });
-  if (singles + doubles < 10) return res.status(400).json({ error: 'standing order must total at least 10 units' });
-  if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'portal_pin must be exactly 4 digits' });
-  if (managerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(managerEmail)) {
+  if (!routeKey)     return res.status(400).json({ error: 'route_key required' });
+  if (!name)         return res.status(400).json({ error: 'name required' });
+  if (!town)         return res.status(400).json({ error: 'town required' });
+  if (!managerEmail) return res.status(400).json({ error: 'manager_email required' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(managerEmail)) {
     return res.status(400).json({ error: 'manager_email looks invalid' });
   }
+  if (singles + doubles < 1) return res.status(400).json({ error: 'standing order must total at least 1 unit (singles + doubles)' });
+  // Portal access is opt-in: a blank pin means the stop is created without
+  // sign-in credentials and can be invited later via /ops/invite. When a pin
+  // is sent it must be the standard 4 digits.
+  if (pin && !/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'portal_pin must be exactly 4 digits when provided' });
 
   try {
     const sb = supabase();
@@ -553,9 +598,14 @@ async function handleOnboardCreate(req, res, sess) {
     if (le) throw le;
     const stopOrder = ((last && last[0] && last[0].stop_order) || 0) + 1;
 
-    // Hash the PIN via the Postgres helper (bcrypt, pgcrypto).
-    const { data: hashed, error: he } = await sb.rpc('hash_pin', { p_pin: pin });
-    if (he) throw he;
+    // Hash the PIN only when the operator opted in. No pin → null store_pin_hash
+    // → portal sign-in is off for this stop until /ops/invite backfills it.
+    let hashed = null;
+    if (pin) {
+      const { data: h, error: he } = await sb.rpc('hash_pin', { p_pin: pin });
+      if (he) throw he;
+      hashed = h;
+    }
 
     const insert = {
       route_key: routeKey,
@@ -572,7 +622,7 @@ async function handleOnboardCreate(req, res, sess) {
       store_code: storeCode || null,
       manager_first_name: managerFirst || null,
       manager_last_name:  managerLast  || null,
-      manager_email:      managerEmail || null,
+      manager_email:      managerEmail,
       manager_phone:      managerPhone || null,
       delivery_days:      deliveryDays,
     };
@@ -601,7 +651,30 @@ async function handleOnboardCreate(req, res, sess) {
       console.error('onboard-create auto-publish:', e);
     }
 
-    return res.status(200).json({ ok: true, stop: data, auto_update, auto_update_error });
+    // Optional Google Sheet column insert. Same pattern the deprecated stops
+    // POST used: only accept a gid that belongs to the stop's own route tab
+    // map, so a bad input can't shove a column into an unrelated tab. Failure
+    // here does NOT fail the onboarding — the stop is in Supabase either way.
+    let sheet_insert = null, sheet_insert_error = null;
+    const requestedGid = Number(body.sheet_insert_gid);
+    if (requestedGid) {
+      try {
+        const { ROUTE_TABS, insertSheetColumn } = require('./_lib/sheet');
+        const allowed = (ROUTE_TABS[routeKey] || []).some(t => t.gid === requestedGid);
+        if (!allowed) throw new Error(`gid ${requestedGid} does not belong to route ${routeKey}`);
+        const header = address ? `${address} (${name})` : `(${name})`;
+        sheet_insert = await insertSheetColumn({ gid: requestedGid, header });
+      } catch (e) {
+        sheet_insert_error = (e && (e.message || String(e))) || 'sheet insert failed';
+        console.error('onboard-create sheet insert:', e);
+      }
+    }
+
+    return res.status(200).json({
+      ok: true, stop: data,
+      auto_update, auto_update_error,
+      sheet_insert, sheet_insert_error,
+    });
   } catch (err) {
     console.error('onboard-create POST:', err && (err.stack || err.message || err));
     return res.status(500).json({ error: 'server error' });
