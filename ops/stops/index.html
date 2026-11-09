@@ -81,20 +81,59 @@ table.stops-tbl tr.is-shorts .name::after {
 
 .empty { padding: 32px; text-align: center; color: var(--ink-3); font-size: 14px; }
 
-/* Add-stop form */
-.add-stop { background: rgba(212,182,98,0.04); border: 1px dashed rgba(212,182,98,0.3); border-radius: var(--radius-md); padding: 20px; }
-.add-stop .field-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; margin-bottom: 10px; }
-.add-stop .field-grid.narrow { grid-template-columns: repeat(4, 1fr); }
-.add-stop .field-grid.wide { grid-template-columns: 1fr 2fr; }
-.add-stop label { display: flex; flex-direction: column; gap: 4px; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
-.add-stop input { background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; color: var(--ink); font-family: var(--body); font-size: 14px; font-weight: 500; }
-.add-stop input:focus-visible { border-color: var(--accent); outline-offset: 1px; }
-.add-stop .add-actions { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
-.add-stop .add-note { font-size: 12px; color: var(--ink-3); margin-top: 14px; line-height: 1.6; }
-.add-stop .add-note code { background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; }
-@media (max-width: 720px) {
-  .add-stop .field-grid, .add-stop .field-grid.narrow, .add-stop .field-grid.wide { grid-template-columns: 1fr; }
+/* Page header with primary action on the right */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 20px;
 }
+.page-header-text { flex: 1 1 auto; min-width: 0; }
+.page-header-text .page-sub { margin-bottom: 0; }
+.add-new-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: var(--accent);
+  color: var(--ppf-black);
+  border-radius: 999px;
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 120ms ease, transform 80ms ease;
+  margin-top: 6px;
+}
+.add-new-btn:hover { background: var(--accent-2); }
+.add-new-btn:active { transform: translateY(1px); }
+.add-new-btn .plus { font-size: 18px; line-height: 1; margin-right: 2px; }
+@media (max-width: 720px) {
+  .page-header { flex-direction: column; gap: 14px; }
+  .add-new-btn { align-self: stretch; justify-content: center; }
+}
+
+/* Inline route selector for moving a mis-routed stop */
+.route-select {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 4px 6px;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 68px;
+}
+.route-select:focus-visible { border-color: var(--accent); outline-offset: 1px; }
+.route-select.saving { opacity: 0.55; cursor: wait; }
 </style>
 </head>
 <body>
@@ -128,61 +167,18 @@ table.stops-tbl tr.is-shorts .name::after {
   </div>
 
   <section class="page">
-    <div class="page-eyebrow">Operational</div>
-    <h1 class="page-title">Delivery Stops</h1>
-    <p class="page-sub">Edit drop sizes, basket type, and notes per stop. Drivers see the drop size as a cap on how much they can log as sold; bakers see the totals rolled up by route. Weekend values override weekday values on Saturdays and Sundays — leave them blank to use the weekday value. The <b style="color:#f4c25f">Shorts</b> flag means that stop gets the shorter-pretzel variant (baked only at Lynbrook; same price); flipping it posts an all-hands update automatically.</p>
+    <div class="page-header">
+      <div class="page-header-text">
+        <div class="page-eyebrow">Operational</div>
+        <h1 class="page-title">Delivery Stops</h1>
+        <p class="page-sub">Edit drop sizes, basket type, and notes per stop. Drivers see the drop size as a cap on how much they can log as sold; bakers see the totals rolled up by route. Weekend values override weekday values on Saturdays and Sundays — leave them blank to use the weekday value. The <b style="color:#f4c25f">Shorts</b> flag means that stop gets the shorter-pretzel variant (baked only at Lynbrook; same price); flipping it posts an all-hands update automatically. Use the <b>Route</b> column to move a mis-assigned stop to the correct route in one click.</p>
+      </div>
+      <a href="/ops/onboard" class="add-new-btn" aria-label="Add a new stop to a delivery route"><span class="plus">+</span> Add new stop</a>
+    </div>
 
     <div class="route-tabs" id="route-tabs"></div>
 
     <div id="route-sections"></div>
-
-    <!-- Add stop form, operator-only -->
-    <h2 class="sect" style="margin-top:36px;">Add a stop to the current route</h2>
-    <div class="add-stop">
-      <div class="field-grid">
-        <label>Name<input type="text" id="n-name" placeholder="e.g. 711 ABC" maxlength="80"></label>
-        <label>Town<input type="text" id="n-town" placeholder="e.g. Rockville Centre" maxlength="80"></label>
-        <label>Address<input type="text" id="n-addr" placeholder="123 Main St, Rockville Centre, NY 11570" maxlength="160"></label>
-      </div>
-      <div class="field-grid narrow">
-        <label>Singles drop<input type="number" id="n-s" min="0" step="1" value="5"></label>
-        <label>Doubles drop<input type="number" id="n-d" min="0" step="1" value="5"></label>
-        <label>Wknd singles (opt)<input type="number" id="n-sw" min="0" step="1" placeholder="="></label>
-        <label>Wknd doubles (opt)<input type="number" id="n-dw" min="0" step="1" placeholder="="></label>
-      </div>
-      <div class="field-grid wide">
-        <label>Basket (optional)<input type="text" id="n-basket" maxlength="200" placeholder="Standard mix"></label>
-        <label>Note (optional)<input type="text" id="n-note" maxlength="500" placeholder="Ask for Mark at the counter"></label>
-      </div>
-      <div class="field-grid wide">
-        <label>
-          Shorter pretzels at this stop?
-          <label class="shorts-toggle" style="padding:8px 0;"><input type="checkbox" id="n-shorts"> Shorts — bake short at Lynbrook</label>
-        </label>
-        <div style="font-size:12px;color:var(--ink-3);line-height:1.5;align-self:end;">
-          Check if this stop gets the shorter pretzel variant. Same price, same packaging, just a shorter twist. Baked only at the Lynbrook bakery.
-        </div>
-      </div>
-      <div class="field-grid wide">
-        <label>
-          Also add a column to the Google Sheet (recommended)
-          <select id="n-sheet-gid">
-            <option value="">— Skip sheet column (Supabase-only) —</option>
-          </select>
-        </label>
-        <div style="font-size:12px;color:var(--ink-3);line-height:1.5;align-self:end;">
-          For LYN the half picks which tab (VS/RVC or East Rock/Oceanside/LB).
-          The new column is inserted just before the Name column so the sheet writer picks it up on the next submit.
-        </div>
-      </div>
-      <div class="add-actions">
-        <button type="button" class="btn-sm" id="n-save">Add stop to <span id="n-route-label">—</span></button>
-        <span class="chip" id="n-status" hidden></span>
-      </div>
-      <div class="add-note">
-        <b>Where the new stop appears:</b> the driver and baker apps pick it up on their next page load from the live DB — no code change needed. The <b>Google Sheet</b> only receives sales if a column header in the matching tab contains <code>(name)</code>; opt in above and the server inserts the column for you (immediately before the Name column, inheriting the previous column's number format). If anything looks off, open the sheet and delete the new column — fully reversible.
-      </div>
-    </div>
 
     <div class="legend">
       <b>Singles</b> and <b>Doubles</b> are the weekday drop; <b>Wknd</b> columns are optional overrides for Saturday &amp; Sunday. <b>Inactive</b> stops disappear from the driver and baker views and are skipped by the sheet writer, but their past history is preserved.
@@ -219,55 +215,7 @@ function initApp() {
     try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
     location.replace('/signin');
   };
-  $('#n-save').onclick = onAddStop;
   loadStops();
-}
-
-async function onAddStop() {
-  const chip = $('#n-status');
-  const show = (msg, kind) => { chip.hidden = false; chip.className = 'chip ' + kind; chip.textContent = msg; };
-  const payload = {
-    route_key: _activeRoute,
-    name:    $('#n-name').value.trim(),
-    town:    $('#n-town').value.trim(),
-    address: $('#n-addr').value.trim(),
-    singles_drop: $('#n-s').value,
-    doubles_drop: $('#n-d').value,
-    singles_drop_wknd: $('#n-sw').value,
-    doubles_drop_wknd: $('#n-dw').value,
-    basket:  $('#n-basket').value.trim(),
-    note:    $('#n-note').value.trim(),
-    shorts:  $('#n-shorts').checked,
-    sheet_insert_gid: Number($('#n-sheet-gid').value) || null,
-  };
-  if (!payload.name) return show('Name required', 'fail');
-  if (!payload.town) return show('Town required', 'fail');
-  $('#n-save').disabled = true;
-  show('Adding…', '');
-  try {
-    const r = await fetch('/api/schedule?resource=stops', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-      body: JSON.stringify(payload),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error || r.status);
-    let msg = 'Added';
-    if (j.sheet_insert) msg += ` · sheet column ${j.sheet_insert.column_letter} added to ${j.sheet_insert.tab_name}`;
-    else if (j.sheet_insert_error) msg += ` · sheet column FAILED: ${j.sheet_insert_error}`;
-    else msg += ' · live on driver + baker apps immediately';
-    show(msg, j.sheet_insert_error ? 'fail' : 'ok');
-    // Reset the add form
-    ['#n-name','#n-town','#n-addr','#n-sw','#n-dw','#n-basket','#n-note'].forEach(id => $(id).value = '');
-    $('#n-s').value = '5'; $('#n-d').value = '5';
-    $('#n-shorts').checked = false;
-    // Re-render the active route to include the new stop
-    loadStops();
-    setTimeout(() => { chip.hidden = true; }, j.sheet_insert_error ? 8000 : 3500);
-  } catch (e) {
-    show((e.message || 'error').slice(0, 80), 'fail');
-  } finally {
-    $('#n-save').disabled = false;
-  }
 }
 
 async function loadStops() {
@@ -296,24 +244,7 @@ function renderTabs() {
     _activeRoute = b.dataset.r;
     renderTabs();
     renderRoute();
-    updateAddFormLabel();
   });
-  updateAddFormLabel();
-}
-
-function updateAddFormLabel() {
-  const route = _routes.find(r => r.key === _activeRoute);
-  const el = $('#n-route-label');
-  if (el) el.textContent = route ? route.label : '—';
-  // Rebuild the sheet-tab dropdown for this route.
-  const sel = $('#n-sheet-gid');
-  if (!sel) return;
-  const tabs = _routeTabs[_activeRoute] || [];
-  // Keep the "skip" option as default; append one option per sheet tab.
-  sel.innerHTML = '<option value="">— Skip sheet column (Supabase-only) —</option>'
-    + tabs.map(t => `<option value="${t.gid}">${esc(t.name)}</option>`).join('');
-  // If there's exactly one tab, pre-select it so the common case is one-click.
-  if (tabs.length === 1) sel.value = String(tabs[0].gid);
 }
 
 function renderRoute() {
@@ -326,6 +257,7 @@ function renderRoute() {
         <thead>
           <tr>
             <th style="width:40px;">#</th>
+            <th style="width:90px;">Route</th>
             <th>Stop</th>
             <th style="width:80px;">Singles</th>
             <th style="width:80px;">Doubles</th>
@@ -345,6 +277,7 @@ function renderRoute() {
     </div>
   `;
   container.querySelectorAll('tr[data-stop]').forEach(bindRow);
+  container.querySelectorAll('.route-select').forEach(sel => sel.addEventListener('change', onRouteChange));
 }
 
 function stopRow(s) {
@@ -352,8 +285,16 @@ function stopRow(s) {
   const trClasses = [];
   if (!s.active) trClasses.push('inactive');
   if (s.shorts)  trClasses.push('is-shorts');
+  const routeOpts = _routes.map(r =>
+    `<option value="${esc(r.key)}"${r.key === s.route_key ? ' selected' : ''}>${esc(r.key)}</option>`
+  ).join('');
   return `<tr data-stop="${esc(s.id)}" class="${trClasses.join(' ')}">
     <td class="num">${s.stop_order}</td>
+    <td>
+      <select class="route-select" data-stop="${esc(s.id)}" data-orig="${esc(s.route_key)}" title="Move this stop to another delivery route">
+        ${routeOpts}
+      </select>
+    </td>
     <td>
       <div class="name">${esc(s.name)}</div>
       <div class="town">${esc(s.town)}${s.address ? ' · ' + esc(s.address) : ''}</div>
@@ -451,6 +392,45 @@ document.addEventListener('click', async (e) => {
     btn.textContent = prevText;
   }
 });
+
+// ─── Inline route change (move a mis-routed stop) ───────────────
+// Fires when the operator picks a different route from the Route column
+// select. Confirms, PATCHes with route_key, and either re-renders the
+// current tab (the row disappears) or shows an error and reverts.
+async function onRouteChange(e) {
+  const sel = e.currentTarget;
+  const stopId  = sel.dataset.stop;
+  const origKey = sel.dataset.orig;
+  const newKey  = sel.value;
+  if (newKey === origKey) return;
+  const stop = _stops.find(s => s.id === stopId);
+  const origLabel = (_routes.find(r => r.key === origKey) || {}).label || origKey;
+  const newLabel  = (_routes.find(r => r.key === newKey)  || {}).label || newKey;
+  if (!confirm(`Move "${stop ? stop.name : stopId}" from ${origLabel} to ${newLabel}? The driver and baker apps will see it on their next load.`)) {
+    sel.value = origKey;
+    return;
+  }
+  sel.classList.add('saving');
+  sel.disabled = true;
+  try {
+    const r = await fetch(`/api/schedule?resource=stops&id=${encodeURIComponent(stopId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ route_key: newKey }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.status);
+    // Reload so the list regroups under the new route and stop_order shuffles.
+    loadStops();
+  } catch (err) {
+    alert('Could not move stop: ' + (err.message || err));
+    sel.value = origKey;
+  } finally {
+    sel.classList.remove('saving');
+    sel.disabled = false;
+  }
+}
 
 function bindRow(tr) {
   const id = tr.dataset.stop;

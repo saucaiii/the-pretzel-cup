@@ -1,72 +1,113 @@
-# Plan: pretzel 4 = "Share with your group chat" (task pretzel-share)
+# Onboard a new delivery stop — one true workflow
 
-Risk: **High** (`supabase/migrations/` is in HIGH_RISK_RE; server game rules change).
-Applying the migrations to production is **Critical**: prepared only, a human applies them
-(or confirms directly in the agent's session first).
-No fairness flag: no new automated decisions about people beyond the existing honor-system unlock.
+Branch: `agent/onboard-delivery-stop` (off `main`)
+Risk: Medium — ops endpoint + two pages, no `api/_lib/`, no migrations, no `vercel.json`.
 
 ## Goal
-Pretzel 4 on /free-pretzels changes from "Download the app" to "Share with your group chat".
-The button opens the phone's share sheet (`navigator.share`) with
-"I just won free pretzels from Philly Pretzel Factory 🥨 Rip a pack and win yours:" plus the page link.
-No Web Share (desktop): an `sms:` link with the same body prefilled, plus a "Copy link" button.
-Pack 4 unlocks on the honor system after the share. Completing the share opens the Golden Ticket
-(keep-or-spin) exactly as the app step does today.
 
-## User decisions (2026-11-07, directly in session pretzel-share)
-- Rename the source to `share` everywhere, DB included (not keep `app`).
-- "Completing the share opens the door to play for the Golden Ticket": the share step is always on
-  (no App Store link); the Golden Ticket needs `bonus_on` + the Instagram handle only.
-- Stop button text: "No thanks, I hate delicious and free pretzels." Same behaviour (ends at 3).
-- Message wording: "Won mine, your turn" (above).
+A single, discoverable path to add a new store (= stop) to an existing delivery
+route (FSQ / LYN / FBW). Replace the 8-step franchise wizard and the per-route
+Add-stop form with one flat form that works for independent cafes and 7-Eleven
+franchises alike. When a stop is added it propagates to every downstream system
+in one shot: Supabase, the baker/driver apps (via DB read), the all-hands auto
+update, the Google Sheet column, and the optional portal + welcome delivery +
+day-one kit follow-ups.
 
-## Scope (set by the human in the task's control folder)
-free-pretzels/  api/_packs.js  api/_qr.js  ops/qr/  tests/  supabase/migrations/  .agent/
-No new serverless function. `api/_lib/`, `vercel.json` untouched.
+## Scope (files touched)
 
-## Steps
-1. Migration `p21_pretzel_share.sql` (expand, safe with the live code): `pack_players` add
-   `share_at timestamptz`; `pack_vouchers_source_check` allows
-   ('first','email','instagram','app','share','bonus'). Commented rollback.
-2. Migration `p22_pretzel_share_backfill.sql` (contract, run only AFTER the new code is deployed):
-   vouchers 'app' -> 'share', `share_at = coalesce(share_at, app_at)`, check drops 'app'.
-   `app_at` column kept for rollback (drop in a later cleanup). Commented rollback.
-   Why two: renaming 'app' rows while the old code is live would let a mid-game player open a 2nd pretzel 4.
-3. `api/_packs.js`: PRETZELS `[first, instagram, email, share]`; one helper normalizes legacy
-   'app' vouchers / `app_at` to share until p22 runs; `avail.share` always true;
-   `bonusOn` = bonus_on && instagram_handle; `canStop` drops the App Store link check;
-   honor action `share` (same quest-order check, same per-IP limit); `action:'app'` kept as an alias
-   for one release so open tabs keep working; state drops `app_store_url`, has `bonuses.share`;
-   stats `opened.share` / `share_taps` (count legacy 'app' too until p22).
-4. `api/_qr.js` + `ops/qr/index.html`: remove the App Store link field, its hint text and the
-   "Golden Ticket needs the App Store link" warning (old stored value accepted, ignored);
-   stats rows "4. Share packs", "Share taps"; stopped-at-3 label uses the new button text.
-5. `free-pretzels/packs.js` + `index.html`: `#q-share` block with the share button;
-   Web Share -> unlock on success (cancel does nothing); fallback `sms:` link + "Copy link", each
-   unlocks on tap; QUEST/SLOT copy "Share with your group chat"; App Store badge code removed;
-   stop button text changed in the step and the binder.
-6. `tests/packs.test.mjs`: app -> share; new cases: share on without an App Store link; Golden Ticket
-   on without it; legacy 'app' voucher / `app_at` counts as pretzel 4; `action:'app'` alias;
-   stop works without the link.
-7. Validate: `npm test`, `tests/guardrails.sh`, `scripts/agent/eval-report.sh`, mock-server loop at
-   375 px (share button, fallback, unlock, keep-or-spin, stop text), reviewer subagent.
-8. Record state/decisions, push `agent/pretzel-share`, draft PR with the deploy order:
-   apply p21 -> merge -> `npm run deploy` -> apply p22.
+- `ops/stops/index.html` — rename page to "Delivery stops", delete the
+  per-route Add-stop section, add a primary `+ ADD NEW STOP` button to the
+  header, make each row's Route pill an inline `<select>` that PATCHes
+  `route_key` so a mis-routed stop is a one-click fix.
+- `ops/onboard/index.html` — rewrite as a single scrollable form. See **Form
+  shape** below.
+- `api/schedule.js` —
+  - `handleOnboardCreate`: drop the `singles + doubles >= 10` gate (keep ≥ 1);
+    make `portal_pin` optional; keep `route_key`/`name`/`town`/`manager_email`
+    required; call `insertSheetColumn` from `_lib/sheet` when the operator opts
+    in; auto-publish stays wired.
+  - `handleStopsPatch`: extend the whitelist to accept `route_key`. When it
+    changes, recompute `stop_order = max + 1` on the target and fire an
+    `autoNewStop`-shaped update so drivers/bakers see the move.
+- `ops/index.html` — nav label + dashboard tile flip "Stops" → "Delivery
+  stops".
+
+No edits inside `api/_lib/`. The sheet helper is imported, not changed.
+
+## Form shape (ops/onboard)
+
+Section 1 — Where (required)
+- Route select (no default; FSQ / LYN / FBW)
+- Store name, Town, Street address
+
+Section 2 — Standing order (required)
+- Segmented control: **[ 5 / 5 standard ]**  [ 10 / 10 ]  [ Custom ⤵ ]
+  - Default: 5 singles + 5 doubles
+  - Custom expands to −/+ counters (min 1 across both)
+- Delivery days (Mon–Sun chips, ≥ 1)
+
+Section 3 — Contact (required)
+- First + Last name, Email (welcome email target), Phone optional
+
+Optional (collapsed disclosures, no gates):
+- Portal access — "Generate 4-digit PIN now" toggle. Off = portal setup
+  deferred to `/ops/invite`.
+- Welcome delivery — date + driver. Blank = scheduled later.
+- Day-one kit — short checklist; link to `/ops/print-kits` for physical
+  pieces. Non-blocking.
+- "Also add a column to the Google Sheet" — same opt-in dropdown the old
+  Add-stop form had.
+
+Primary button at the bottom: `Add <Name> to <Route>` (label fills live).
+
+After submit, success screen shows three link-cards for any skipped optional
+sections (portal, welcome, kit).
+
+## Delivery Stops page (ops/stops)
+
+- Title "Stops" → "Delivery stops" (page `<h1>`, `<title>`, nav links,
+  dashboard tile).
+- Header right: primary `+ ADD NEW STOP` button → `/ops/onboard`.
+- Delete the entire `#add-stop` section (form + heading + add-note).
+- Each row's Route pill becomes an operator-only `<select>` PATCHing
+  `route_key`. On change, the row animates out and reappears under the new
+  route tab.
+- Keep every existing control: drops, shorts, basket, note, payment chip,
+  active toggle.
 
 ## Success criteria
-- Quantitative: npm test green; guardrails pass; only scope files change; no new file in api/ root.
-- Qualitative: at 375 px step 4 reads "Share with your group chat"; tapping it opens the share sheet
-  (or the sms/copy fallback); after it pack 4 opens and keep-or-spin appears with no App Store link set.
-  Players mid-game on the old app step lose nothing.
+
+Quantitative
+- Only edits the four files listed above (CI scope-check).
+- `handleOnboardCreate` with `{route_key, name, town, singles_drop:5,
+  doubles_drop:5, manager_first_name, manager_last_name, manager_email,
+  delivery_days:['mon']}` returns 200 and creates a stop (no PIN required).
+- `handleStopsPatch` with `{route_key:'LYN'}` on an FSQ stop moves the row to
+  LYN with `stop_order = max+1`.
+- Adding Union Bagel via the new form lands it on LYN, posts an auto-update,
+  and (if opted in) inserts the sheet column. Union Bagel's current FSQ row
+  can be moved to LYN from the Delivery Stops page in one click.
+
+Qualitative
+- An operator can add a new stop without scrolling, without a wizard, without
+  a hidden gate. The form reads top-to-bottom and the primary button names the
+  exact action.
+- `/ops/stops` no longer has two ways to add a stop. There is one door.
 
 ## Risks + mitigations
-- Rename while live: expand/contract migrations + legacy read fallback (steps 1-3).
-- Web Share: iOS resolves when sent and rejects on cancel; some browsers resolve on open. Honor
-  system either way, like Instagram.
-- `sms:` body syntax differs (iOS `&body=`, Android `?body=`): use `sms:?&body=`, which both accept.
-- Abuse: same honor-system risk as today; the per-IP rate limit covers `share`.
+
+- **Rename churn.** "Stops" → "Delivery stops" touches nav in two pages;
+  every link stays `/ops/stops` so no routing breaks.
+- **Route PATCH recompute.** `(route_key, stop_order)` is a unique index.
+  Recompute inside the same server-side update; return 409 on race.
+- **Sheet column insert failure doesn't fail the add.** Same pattern the
+  old form used. Error is surfaced in the response alongside the new stop.
+- **Optional PIN.** `store_pin_hash` nullable in the insert means the portal
+  sign-in is off for that stop until `/ops/invite` backfills it. Existing
+  stops are unaffected.
 
 ## Rollback / escalation
-Revert the PR and redeploy the previous commit. Before p22: nothing to undo (p21 is additive).
-After p22: run its commented rollback (share -> app) before redeploying old code.
-Escalate on a failing migration check, any scope need outside the list, or 2 failed retries.
+
+- Revert the single merge commit. No schema changes, no data migrations.
+- If the route-change PATCH behaves badly in prod, the whitelist addition
+  can be removed in a one-line follow-up without undoing the form rebuild.
