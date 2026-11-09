@@ -12,56 +12,97 @@
 <link rel="stylesheet" href="/brand.css">
 <link rel="stylesheet" href="/assets/ops-chrome.css">
 <style>
-.page { max-width: 880px; margin: 0 auto; padding: 48px 24px 80px; }
+.page { max-width: 1120px; margin: 0 auto; padding: 48px 24px 80px; }
 .page-title { font-family: var(--display); font-weight: 400; font-size: clamp(40px, 6vw, 60px); line-height: 0.92; letter-spacing: 0.01em; margin: 0 0 10px; text-transform: uppercase; }
 .page-sub { color: var(--ink-2); font-size: 15px; max-width: 60ch; margin: 0 0 32px; line-height: 1.55; }
 .page-eyebrow { font-family: var(--display); font-size: 12px; letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
 
-/* ─── Section cards ─────────────────────────────────────────── */
-.sect-card {
+/* ─── Wizard layout ─────────────────────────────────────────── */
+.wizard {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 820px) { .wizard { grid-template-columns: 1fr; } }
+
+.steplist {
   background: var(--bg-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 28px 28px 24px;
-  margin-bottom: 20px;
+  padding: 12px;
+  position: sticky;
+  top: 24px;
 }
-.sect-card.optional { padding: 0; }
-.sect-card.optional details { padding: 20px 28px; }
-.sect-card.optional details[open] { padding-bottom: 24px; }
-@media (max-width: 540px) {
-  .sect-card { padding: 22px 18px 20px; }
-  .sect-card.optional details { padding: 18px 20px; }
+.steplist-head {
+  padding: 10px 14px 14px;
+  font-family: var(--display); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+  display: flex; justify-content: space-between;
 }
-
-.sect-title { font-family: var(--display); font-weight: 400; font-size: 22px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.02em; }
-.sect-help { color: var(--ink-2); font-size: 14px; line-height: 1.55; margin: 0 0 20px; max-width: 58ch; }
-
-/* ─── Optional disclosure ───────────────────────────────────── */
-.sect-card.optional summary { cursor: pointer; list-style: none; outline: none; }
-.sect-card.optional summary::-webkit-details-marker { display: none; }
-.sect-card.optional summary::before {
-  content: '▸';
-  display: inline-block;
-  color: var(--accent);
-  margin-right: 10px;
-  transition: transform 160ms ease;
+.steplist-head .count { color: var(--accent); }
+.step-item {
+  display: flex; gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--ink-2);
+  font-size: 14px; line-height: 1.3;
+  transition: background 120ms ease;
+  align-items: flex-start;
 }
-.sect-card.optional details[open] summary::before { transform: rotate(90deg); }
-.opt-title { display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 400; font-size: 18px; margin: 0; text-transform: uppercase; letter-spacing: 0.04em; }
-.opt-sub { color: var(--ink-2); font-size: 13px; line-height: 1.5; margin: 6px 0 0 24px; max-width: 58ch; }
-.opt-body { margin-top: 18px; padding-left: 24px; }
-.opt-badge {
-  font-family: var(--display); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-  padding: 3px 8px; border-radius: 4px;
-  background: rgba(255,255,255,0.06); color: var(--ink-3);
+.step-item:hover { background: rgba(0,0,0,0.18); color: var(--ink); }
+.step-item.is-active { background: var(--accent); color: var(--ppf-black); }
+.step-item.is-active .step-num { background: var(--ppf-black); color: var(--accent); }
+.step-item.is-active .step-sub { color: rgba(0,0,0,0.65); }
+.step-num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--bg);
   border: 1px solid var(--line-2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-size: 11px; color: var(--ink-2);
 }
-.opt-badge.recommended { color: var(--accent); border-color: var(--accent); background: rgba(212,182,98,0.08); }
-.opt-check { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); cursor: pointer; margin-bottom: 16px; }
-.opt-check input { accent-color: var(--accent); transform: scale(1.1); }
-.opt-note { font-size: 12px; color: var(--ink-3); margin-top: 14px; }
-.opt-note a, .opt-sub a { color: var(--accent); text-decoration: none; }
-.opt-note a:hover, .opt-sub a:hover { text-decoration: underline; }
+.step-item.is-done .step-num { background: #5fd58c; color: var(--ppf-black); border-color: #5fd58c; }
+.step-item.is-done:not(.is-active) { color: var(--ink); }
+.step-label { font-weight: 600; }
+.step-sub { font-size: 11px; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--display); margin-top: 2px; }
+
+/* ─── Main pane ─────────────────────────────────────────────── */
+.pane {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 36px 36px 24px;
+  min-height: 520px;
+  display: flex; flex-direction: column;
+}
+@media (max-width: 540px) { .pane { padding: 24px 20px; } }
+
+.pane-progress {
+  height: 4px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: -12px 0 24px;
+}
+.pane-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 240ms ease;
+  width: 20%;
+}
+
+.step-pane { display: none; animation: fade-in 180ms ease; }
+.step-pane.is-active { display: block; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.step-eyebrow { font-family: var(--display); font-size: 11px; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+.step-title { font-family: var(--display); font-weight: 400; font-size: 28px; margin: 0 0 8px; line-height: 1; text-transform: uppercase; letter-spacing: 0.01em; }
+.step-help { color: var(--ink-2); font-size: 14px; line-height: 1.55; margin: 0 0 24px; max-width: 58ch; }
 
 /* ─── Form fields ───────────────────────────────────────────── */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
@@ -92,9 +133,8 @@
   outline-offset: 1px;
 }
 .field .hint { font-size: 11px; color: var(--ink-3); font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; line-height: 1.5; }
-.field .hint code { font-family: ui-monospace, monospace; background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 4px; }
 
-/* ─── Route tiles ───────────────────────────────────────────── */
+/* ─── Route + half tiles ────────────────────────────────────── */
 .routes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 4px; }
 .route-tile {
   padding: 16px 14px;
@@ -107,10 +147,7 @@
   transition: border-color 120ms ease, background 120ms ease;
 }
 .route-tile:hover { border-color: var(--line-2); background: rgba(212,182,98,0.03); }
-.route-tile.is-on {
-  border-color: var(--accent);
-  background: rgba(212,182,98,0.1);
-}
+.route-tile.is-on { border-color: var(--accent); background: rgba(212,182,98,0.1); }
 .route-tile .r-code {
   display: inline-block;
   font-family: var(--display); font-size: 20px; letter-spacing: 0.04em;
@@ -121,7 +158,7 @@
 .route-tile.is-on .r-code { color: var(--ppf-black); background: var(--accent); }
 .route-tile .r-name { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
 
-/* ─── Standing order ────────────────────────────────────────── */
+/* ─── Standing-order presets + counters ─────────────────────── */
 .order-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
 @media (max-width: 540px) { .order-presets { grid-template-columns: 1fr; } }
 .preset {
@@ -196,23 +233,65 @@
 }
 .day.is-on { background: var(--accent); color: var(--ppf-black); border-color: var(--accent); }
 
-/* ─── PIN box ───────────────────────────────────────────────── */
-.pin-box {
-  display: flex; align-items: center; gap: 20px;
+/* ─── Add-on cards (step 4) ─────────────────────────────────── */
+.addon-card {
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  padding: 20px 22px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.addon-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+}
+.addon-head:hover { background: rgba(212,182,98,0.03); }
+.addon-head::before {
+  content: '▸';
+  color: var(--accent);
+  margin-right: 12px;
+  transition: transform 160ms ease;
+  flex-shrink: 0;
+}
+.addon-card.is-open .addon-head::before { transform: rotate(90deg); }
+.addon-label { flex: 1; }
+.addon-label .t { font-family: var(--display); font-size: 16px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); }
+.addon-label .s { font-size: 12px; color: var(--ink-3); margin-top: 3px; line-height: 1.45; }
+.addon-label .s a { color: var(--accent); text-decoration: none; }
+.addon-label .s a:hover { text-decoration: underline; }
+.addon-status {
+  font-family: var(--display); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-left: 12px;
+  background: rgba(255,255,255,0.06); color: var(--ink-3);
+  border: 1px solid var(--line-2);
+}
+.addon-status.set { color: #5fd58c; border-color: rgba(95,213,140,0.5); background: rgba(95,213,140,0.08); }
+.addon-body {
+  padding: 0 20px 20px 42px;
+  display: none;
+}
+.addon-card.is-open .addon-body { display: block; }
+
+.opt-check { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); cursor: pointer; margin-bottom: 16px; }
+.opt-check input { accent-color: var(--accent); transform: scale(1.1); }
+
+.pin-box {
+  display: flex; align-items: center; gap: 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
 }
 .pin-display {
   font-family: var(--display);
-  font-size: 40px;
+  font-size: 36px;
   letter-spacing: 0.3em;
   color: var(--accent);
   padding-right: 20px;
   border-right: 1px solid var(--line);
 }
-.pin-actions { display: flex; flex-direction: column; gap: 6px; }
 .pin-actions .btn-regen {
   background: transparent;
   border: 1px solid var(--line-2);
@@ -225,12 +304,11 @@
 .pin-actions .btn-regen:hover { border-color: var(--accent); color: var(--accent); }
 .pin-note { font-size: 11px; color: var(--ink-3); margin-top: 6px; font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
 
-/* ─── Checklist ─────────────────────────────────────────────── */
 .checklist { display: flex; flex-direction: column; gap: 6px; }
 .check-item {
   display: flex; align-items: flex-start; gap: 12px;
-  padding: 12px 14px;
-  background: var(--bg);
+  padding: 10px 12px;
+  background: var(--bg-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -241,38 +319,58 @@
 .check-item .l-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
 .check-item.is-checked { border-color: #5fd58c; background: rgba(95,213,140,0.05); }
 .check-item.is-checked .l-title { color: #5fd58c; }
+.addon-note { font-size: 12px; color: var(--ink-3); margin-top: 14px; }
+.addon-note a { color: var(--accent); text-decoration: none; }
+.addon-note a:hover { text-decoration: underline; }
 
-/* ─── Submit bar ────────────────────────────────────────────── */
-.submit-bar {
-  background: var(--bg-2);
+/* ─── Review (step 5) ───────────────────────────────────────── */
+.review { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 540px) { .review { grid-template-columns: 1fr; } }
+.review-card {
+  background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  margin-top: 8px;
-  position: sticky;
-  bottom: 12px;
-  z-index: 5;
-  backdrop-filter: blur(6px);
+  border-radius: var(--radius-md);
+  padding: 18px;
 }
-.btn-primary {
-  width: 100%;
-  background: var(--accent);
-  color: var(--ppf-black);
-  border: 0;
-  padding: 16px 20px;
-  border-radius: 999px;
-  cursor: pointer;
-  font-family: var(--display);
-  font-size: 15px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.review-card h4 {
+  font-family: var(--display); font-size: 12px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 12px;
+  display: flex; justify-content: space-between; align-items: center;
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent-2); }
-.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
-.btn-primary #btn-name, .btn-primary #btn-route { color: var(--ppf-black); font-weight: 600; }
-.submit-hint { font-size: 12px; color: var(--ink-3); margin-top: 10px; text-align: center; font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+.review-card h4 a { color: var(--ink-3); font-size: 10px; text-decoration: none; }
+.review-card h4 a:hover { color: var(--accent); }
+.review-row { display: flex; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.review-row:last-child { border: 0; }
+.review-row .k { color: var(--ink-3); font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; }
+.review-row .v { color: var(--ink); font-weight: 500; text-align: right; }
+.review-row .v.missing { color: #f47572; font-style: italic; }
+.review-row .v.skipped { color: var(--ink-3); font-style: italic; }
+
+/* ─── Nav bar ───────────────────────────────────────────────── */
+.nav-bar {
+  display: flex; justify-content: space-between; gap: 14px;
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.btn {
+  background: var(--accent); color: var(--ppf-black); border: 0;
+  padding: 12px 22px; border-radius: 999px; cursor: pointer;
+  font-family: var(--display); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+  text-decoration: none; display: inline-block;
+}
+.btn:hover { background: var(--accent-2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.alt { background: transparent; color: var(--ink-2); border: 1px solid var(--line-2); }
+.btn.alt:hover { color: var(--ink); border-color: var(--accent); }
+.btn.go { background: #5fd58c; color: var(--ppf-black); }
+.btn.go:hover { background: #7ae4a2; }
+.btn.lg { padding: 14px 28px; font-size: 15px; }
+.step-hint { font-size: 12px; color: var(--ink-3); font-family: var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
 .submit-status {
-  margin-top: 10px; padding: 10px 14px;
+  margin-top: 14px; padding: 10px 14px;
   border-radius: var(--radius-sm);
   font-size: 13px; text-align: center;
 }
@@ -287,7 +385,7 @@
   padding: 44px 28px 32px;
   text-align: center;
 }
-.done-head .done-icon {
+.done-icon {
   width: 64px; height: 64px;
   margin: 0 auto 16px;
   border-radius: 50%;
@@ -314,15 +412,6 @@
 .nc-title { font-family: var(--display); font-size: 16px; text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 8px; color: var(--ink); }
 .next-card p { font-size: 12px; color: var(--ink-2); margin: 0; line-height: 1.5; }
 .done-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.btn {
-  background: var(--accent); color: var(--ppf-black); border: 0;
-  padding: 12px 20px; border-radius: 999px; cursor: pointer;
-  font-family: var(--display); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
-  text-decoration: none; display: inline-block;
-}
-.btn:hover { background: var(--accent-2); }
-.btn.alt { background: transparent; color: var(--ink-2); border: 1px solid var(--line-2); }
-.btn.alt:hover { color: var(--ink); border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -358,215 +447,265 @@
 <main class="page">
   <div class="page-eyebrow">Delivery Routes · New Stop</div>
   <h1 class="page-title">Add a new stop</h1>
-  <p class="page-sub">A new store joins a delivery route. Required fields up top; optional setup (portal, welcome delivery, kit) collapses below and can be filled in anytime.</p>
+  <p class="page-sub">One step at a time. Steps 1–3 are the essentials; step 4 is optional add-ons (portal, welcome delivery, kit) that you can also set up later; step 5 reviews everything and launches.</p>
 
-  <form id="stop-form" autocomplete="off">
-
-    <!-- ── Section 1: Where ────────────────────────────── -->
-    <section class="sect-card">
-      <h2 class="sect-title">Where</h2>
-      <p class="sect-help">Pick the delivery route and name the store.</p>
-
-      <div class="field full" style="margin-bottom: 18px;">
-        <label>Delivery route</label>
-        <div class="routes" id="routes">
-          <div style="color:var(--ink-3);font-size:13px;grid-column:1/-1;">Loading routes…</div>
-        </div>
+  <div class="wizard" id="wizard">
+    <aside class="steplist" aria-label="Onboarding steps">
+      <div class="steplist-head"><span>Progress</span><span><span class="count" id="done-count">0</span>/5</span></div>
+      <div class="step-item is-active" data-step="1">
+        <div class="step-num">1</div>
+        <div><div class="step-label">Where</div><div class="step-sub">Route · name · address</div></div>
       </div>
-
-      <div class="field full" id="lyn-half-field" hidden style="margin-bottom: 18px;">
-        <label>Which half of the Lynbrook route?</label>
-        <div class="routes" id="lyn-halves"></div>
-        <div class="hint">Lynbrook deliveries split across two sub-routes. Pick the one this stop sits on.</div>
+      <div class="step-item" data-step="2">
+        <div class="step-num">2</div>
+        <div><div class="step-label">Order &amp; schedule</div><div class="step-sub">Standing order · days</div></div>
       </div>
-
-      <div class="form-grid">
-        <div class="field">
-          <label for="store_name">Store name</label>
-          <input id="store_name" required type="text" placeholder="Union Bagel cafe" maxlength="80">
-        </div>
-        <div class="field">
-          <label for="store_town">Town</label>
-          <input id="store_town" required type="text" placeholder="Lynbrook" maxlength="80">
-        </div>
-        <div class="field full">
-          <label for="store_address">Street address</label>
-          <input id="store_address" required type="text" placeholder="123 Main St, Lynbrook, NY 11563" maxlength="160">
-        </div>
+      <div class="step-item" data-step="3">
+        <div class="step-num">3</div>
+        <div><div class="step-label">Owner contact</div><div class="step-sub">Welcome email target</div></div>
       </div>
-    </section>
-
-    <!-- ── Section 2: Standing order ───────────────────── -->
-    <section class="sect-card">
-      <h2 class="sect-title">Standing order</h2>
-      <p class="sect-help">Per-delivery baseline. Standard is 5 singles + 5 doubles — swap presets or open Custom for an exception.</p>
-
-      <div class="order-presets" role="radiogroup" aria-label="Standing order preset">
-        <button type="button" class="preset is-on" data-preset="5-5" aria-pressed="true">
-          <div class="p-name">5 / 5 standard</div>
-          <div class="p-sub">5 singles · 5 doubles</div>
-        </button>
-        <button type="button" class="preset" data-preset="10-10" aria-pressed="false">
-          <div class="p-name">10 / 10</div>
-          <div class="p-sub">10 singles · 10 doubles</div>
-        </button>
-        <button type="button" class="preset" data-preset="custom" aria-pressed="false">
-          <div class="p-name">Custom</div>
-          <div class="p-sub">Exception only</div>
-        </button>
+      <div class="step-item" data-step="4">
+        <div class="step-num">4</div>
+        <div><div class="step-label">Add-ons</div><div class="step-sub">Optional · skip any</div></div>
       </div>
+      <div class="step-item" data-step="5">
+        <div class="step-num">5</div>
+        <div><div class="step-label">Review &amp; add</div><div class="step-sub">Confirm · launch</div></div>
+      </div>
+    </aside>
 
-      <div class="order-pair" id="custom-counters" hidden>
-        <div class="order-item">
-          <h4>Single twists</h4>
-          <div class="counter">
-            <button type="button" data-step-order="-" data-which="single" aria-label="Decrement singles">−</button>
-            <div class="n" id="n-single">5</div>
-            <button type="button" data-step-order="+" data-which="single" aria-label="Increment singles">+</button>
+    <form class="pane" id="stop-form" autocomplete="off">
+      <div class="pane-progress"><div class="pane-progress-fill" id="progress-fill"></div></div>
+
+      <!-- ═════ STEP 1: Where ═════════════════════════════════ -->
+      <div class="step-pane is-active" data-pane="1">
+        <div class="step-eyebrow">Step 1 of 5</div>
+        <h2 class="step-title">Where</h2>
+        <p class="step-help">Pick the delivery route this stop goes on, then name the store.</p>
+
+        <div class="field full" style="margin-bottom: 18px;">
+          <label>Delivery route</label>
+          <div class="routes" id="routes">
+            <div style="color:var(--ink-3);font-size:13px;grid-column:1/-1;">Loading routes…</div>
           </div>
-          <div class="u">@ $2.15 wholesale</div>
         </div>
-        <div class="order-item">
-          <h4>Double twists</h4>
-          <div class="counter">
-            <button type="button" data-step-order="-" data-which="double" aria-label="Decrement doubles">−</button>
-            <div class="n" id="n-double">5</div>
-            <button type="button" data-step-order="+" data-which="double" aria-label="Increment doubles">+</button>
+
+        <div class="field full" id="lyn-half-field" hidden style="margin-bottom: 18px;">
+          <label>Which half of the Lynbrook route?</label>
+          <div class="routes" id="lyn-halves"></div>
+          <div class="hint">Lynbrook deliveries split across two sub-routes. Pick the one this stop sits on.</div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="store_name">Store name</label>
+            <input id="store_name" required type="text" placeholder="Union Bagel cafe" maxlength="80">
           </div>
-          <div class="u">@ $3.85 wholesale</div>
+          <div class="field">
+            <label for="store_town">Town</label>
+            <input id="store_town" required type="text" placeholder="Lynbrook" maxlength="80">
+          </div>
+          <div class="field full">
+            <label for="store_address">Street address</label>
+            <input id="store_address" required type="text" placeholder="123 Main St, Lynbrook, NY 11563" maxlength="160">
+          </div>
         </div>
       </div>
 
-      <div class="order-sum">Daily baseline: <b id="order-total-units">10 units</b> · wholesale <b id="order-total-cost">$30.00</b></div>
+      <!-- ═════ STEP 2: Order & schedule ══════════════════════ -->
+      <div class="step-pane" data-pane="2">
+        <div class="step-eyebrow">Step 2 of 5</div>
+        <h2 class="step-title">Order &amp; schedule</h2>
+        <p class="step-help">Per-delivery baseline. Standard is 5 singles + 5 doubles — swap presets or open Custom for an exception. Then pick which days of the week this stop gets a delivery.</p>
 
-      <div class="field full" style="margin-top: 22px;">
-        <label>Delivery days</label>
-        <div class="days" id="days">
-          <div class="day" data-day="mon" role="checkbox" aria-checked="false" tabindex="0">Mon</div>
-          <div class="day" data-day="tue" role="checkbox" aria-checked="false" tabindex="0">Tue</div>
-          <div class="day" data-day="wed" role="checkbox" aria-checked="false" tabindex="0">Wed</div>
-          <div class="day" data-day="thu" role="checkbox" aria-checked="false" tabindex="0">Thu</div>
-          <div class="day" data-day="fri" role="checkbox" aria-checked="false" tabindex="0">Fri</div>
-          <div class="day" data-day="sat" role="checkbox" aria-checked="false" tabindex="0">Sat</div>
-          <div class="day" data-day="sun" role="checkbox" aria-checked="false" tabindex="0">Sun</div>
+        <div class="order-presets" role="radiogroup" aria-label="Standing order preset">
+          <button type="button" class="preset is-on" data-preset="5-5" aria-pressed="true">
+            <div class="p-name">5 / 5 standard</div>
+            <div class="p-sub">5 singles · 5 doubles</div>
+          </button>
+          <button type="button" class="preset" data-preset="10-10" aria-pressed="false">
+            <div class="p-name">10 / 10</div>
+            <div class="p-sub">10 singles · 10 doubles</div>
+          </button>
+          <button type="button" class="preset" data-preset="custom" aria-pressed="false">
+            <div class="p-name">Custom</div>
+            <div class="p-sub">Exception only</div>
+          </button>
         </div>
-        <div class="hint">Order cutoff is noon the day prior. Pick at least one.</div>
+
+        <div class="order-pair" id="custom-counters" hidden>
+          <div class="order-item">
+            <h4>Single twists</h4>
+            <div class="counter">
+              <button type="button" data-step-order="-" data-which="single" aria-label="Decrement singles">−</button>
+              <div class="n" id="n-single">5</div>
+              <button type="button" data-step-order="+" data-which="single" aria-label="Increment singles">+</button>
+            </div>
+            <div class="u">@ $2.15 wholesale</div>
+          </div>
+          <div class="order-item">
+            <h4>Double twists</h4>
+            <div class="counter">
+              <button type="button" data-step-order="-" data-which="double" aria-label="Decrement doubles">−</button>
+              <div class="n" id="n-double">5</div>
+              <button type="button" data-step-order="+" data-which="double" aria-label="Increment doubles">+</button>
+            </div>
+            <div class="u">@ $3.85 wholesale</div>
+          </div>
+        </div>
+
+        <div class="order-sum">Daily baseline: <b id="order-total-units">10 units</b> · wholesale <b id="order-total-cost">$30.00</b></div>
+
+        <div class="field full" style="margin-top: 22px;">
+          <label>Delivery days</label>
+          <div class="days" id="days">
+            <div class="day" data-day="mon" role="checkbox" aria-checked="false" tabindex="0">Mon</div>
+            <div class="day" data-day="tue" role="checkbox" aria-checked="false" tabindex="0">Tue</div>
+            <div class="day" data-day="wed" role="checkbox" aria-checked="false" tabindex="0">Wed</div>
+            <div class="day" data-day="thu" role="checkbox" aria-checked="false" tabindex="0">Thu</div>
+            <div class="day" data-day="fri" role="checkbox" aria-checked="false" tabindex="0">Fri</div>
+            <div class="day" data-day="sat" role="checkbox" aria-checked="false" tabindex="0">Sat</div>
+            <div class="day" data-day="sun" role="checkbox" aria-checked="false" tabindex="0">Sun</div>
+          </div>
+          <div class="hint">Order cutoff is noon the day prior. Pick at least one.</div>
+        </div>
       </div>
-    </section>
 
-    <!-- ── Section 3: Contact ──────────────────────────── -->
-    <section class="sect-card">
-      <h2 class="sect-title">Owner / manager contact</h2>
-      <p class="sect-help">Who the welcome email is addressed to. Required so the store has somewhere to receive portal credentials and ongoing comms.</p>
-      <div class="form-grid">
-        <div class="field">
-          <label for="manager_first">First name</label>
-          <input id="manager_first" required type="text" maxlength="60" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="manager_last">Last name</label>
-          <input id="manager_last" required type="text" maxlength="60" autocomplete="off">
-        </div>
-        <div class="field full">
-          <label for="manager_email">Email</label>
-          <input id="manager_email" required type="email" placeholder="owner@store.com" autocomplete="off">
-        </div>
-        <div class="field full">
-          <label for="manager_phone">Phone <span class="opt">(optional)</span></label>
-          <input id="manager_phone" type="tel" placeholder="(516) 555-0199" autocomplete="off">
+      <!-- ═════ STEP 3: Owner contact ═════════════════════════ -->
+      <div class="step-pane" data-pane="3">
+        <div class="step-eyebrow">Step 3 of 5</div>
+        <h2 class="step-title">Owner contact</h2>
+        <p class="step-help">Who the welcome email is addressed to. Required so the store has somewhere to receive portal credentials and ongoing comms.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="manager_first">First name</label>
+            <input id="manager_first" required type="text" maxlength="60" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="manager_last">Last name</label>
+            <input id="manager_last" required type="text" maxlength="60" autocomplete="off">
+          </div>
+          <div class="field full">
+            <label for="manager_email">Email</label>
+            <input id="manager_email" required type="email" placeholder="owner@store.com" autocomplete="off">
+          </div>
+          <div class="field full">
+            <label for="manager_phone">Phone <span class="opt">(optional)</span></label>
+            <input id="manager_phone" type="tel" placeholder="(516) 555-0199" autocomplete="off">
+          </div>
         </div>
       </div>
-    </section>
 
-    <!-- ── Optional: Portal access ─────────────────────── -->
-    <section class="sect-card optional">
-      <details>
-        <summary>
-          <h3 class="opt-title">Portal access <span class="opt-badge">Optional</span></h3>
-          <p class="opt-sub">Generates a 4-digit PIN so the manager can sign in and manage their orders. Skip to backfill later from <a href="/ops/invite">/ops/invite</a>.</p>
-        </summary>
-        <div class="opt-body">
-          <label class="opt-check"><input type="checkbox" id="portal-enable"> Enable portal access for this stop</label>
-          <div id="portal-fields" hidden>
-            <div class="pin-box">
-              <div class="pin-display" id="pin-display">0000</div>
-              <div class="pin-actions">
-                <button type="button" class="btn-regen" id="pin-regen">Regenerate PIN</button>
-                <div class="pin-note">Store rotates on first sign-in.</div>
+      <!-- ═════ STEP 4: Optional add-ons ══════════════════════ -->
+      <div class="step-pane" data-pane="4">
+        <div class="step-eyebrow">Step 4 of 5 · All optional</div>
+        <h2 class="step-title">Add-ons</h2>
+        <p class="step-help">Skip any of these and set them up later. The stop goes live on the route regardless.</p>
+
+        <!-- Portal access -->
+        <div class="addon-card" data-addon="portal">
+          <div class="addon-head">
+            <div class="addon-label">
+              <div class="t">Portal access</div>
+              <div class="s">A 4-digit PIN so the manager can sign in and manage their orders. Skip to backfill later from <a href="/ops/invite">/ops/invite</a>.</div>
+            </div>
+            <div class="addon-status" id="status-portal">Skipped</div>
+          </div>
+          <div class="addon-body">
+            <label class="opt-check"><input type="checkbox" id="portal-enable"> Enable portal access for this stop</label>
+            <div id="portal-fields" hidden>
+              <div class="pin-box">
+                <div class="pin-display" id="pin-display">0000</div>
+                <div class="pin-actions">
+                  <button type="button" class="btn-regen" id="pin-regen">Regenerate PIN</button>
+                  <div class="pin-note">Store rotates on first sign-in.</div>
+                </div>
+              </div>
+              <div class="form-grid" style="margin-top: 16px;">
+                <div class="field">
+                  <label for="store_display_name">Display name <span class="opt">(optional)</span></label>
+                  <input id="store_display_name" type="text" maxlength="60" placeholder="Shown to driver &amp; baker">
+                </div>
+                <div class="field">
+                  <label for="store_code">Store code <span class="opt">(optional)</span></label>
+                  <input id="store_code" type="text" maxlength="40" placeholder="Portal URL slug · auto if blank">
+                </div>
               </div>
             </div>
-            <div class="form-grid" style="margin-top: 16px;">
+          </div>
+        </div>
+
+        <!-- Welcome delivery -->
+        <div class="addon-card" data-addon="welcome">
+          <div class="addon-head">
+            <div class="addon-label">
+              <div class="t">Welcome delivery</div>
+              <div class="s">Pick the first delivery date and the driver whose card goes in the welcome basket. Leave blank to schedule later.</div>
+            </div>
+            <div class="addon-status" id="status-welcome">Skipped</div>
+          </div>
+          <div class="addon-body">
+            <div class="form-grid">
               <div class="field">
-                <label for="store_display_name">Display name <span class="opt">(optional)</span></label>
-                <input id="store_display_name" type="text" maxlength="60" placeholder="Shown to driver &amp; baker">
+                <label for="delivery_date">First delivery date</label>
+                <input id="delivery_date" type="date">
               </div>
               <div class="field">
-                <label for="store_code">Store code <span class="opt">(optional)</span></label>
-                <input id="store_code" type="text" maxlength="40" placeholder="Portal URL slug · auto if blank">
+                <label for="driver_name">Driver</label>
+                <select id="driver_name"><option value="">Select a driver</option></select>
               </div>
             </div>
           </div>
         </div>
-      </details>
-    </section>
 
-    <!-- ── Optional: Welcome delivery ──────────────────── -->
-    <section class="sect-card optional">
-      <details>
-        <summary>
-          <h3 class="opt-title">Welcome delivery <span class="opt-badge">Optional</span></h3>
-          <p class="opt-sub">Pick the first delivery date and the driver whose card goes in the welcome basket. Leave blank to schedule later.</p>
-        </summary>
-        <div class="opt-body">
-          <div class="form-grid">
-            <div class="field">
-              <label for="delivery_date">First delivery date</label>
-              <input id="delivery_date" type="date">
+        <!-- Day-one kit -->
+        <div class="addon-card" data-addon="kit">
+          <div class="addon-head">
+            <div class="addon-label">
+              <div class="t">Day-one kit</div>
+              <div class="s">Physical pieces for the first delivery. Just a pack list — not a gate.</div>
             </div>
-            <div class="field">
-              <label for="driver_name">Driver</label>
-              <select id="driver_name"><option value="">Select a driver</option></select>
+            <div class="addon-status" id="status-kit">Skipped</div>
+          </div>
+          <div class="addon-body">
+            <div class="checklist" id="kit-check">
+              <label class="check-item"><input type="checkbox" data-kit="basket"><div><div class="l-title">Wicker basket</div><div class="l-sub">Backstock or new order. Washed.</div></div></label>
+              <label class="check-item"><input type="checkbox" data-kit="stand"><div><div class="l-title">Counter display stand + pairing card</div><div class="l-sub">Acrylic holder with pretzel + coffee graphic.</div></div></label>
+              <label class="check-item"><input type="checkbox" data-kit="counter_card"><div><div class="l-title">Retail pricing counter card</div><div class="l-sub">PPF single/double pricing.</div></div></label>
+              <label class="check-item"><input type="checkbox" data-kit="welcome_letter"><div><div class="l-title">Welcome letter (printed, signed)</div><div class="l-sub">From Chris.</div></div></label>
+              <label class="check-item"><input type="checkbox" data-kit="contact_card"><div><div class="l-title">Contact card (QR → portal)</div><div class="l-sub">Only if portal access is enabled above.</div></div></label>
+              <label class="check-item"><input type="checkbox" data-kit="bags"><div><div class="l-title">Branded bags for first batch</div><div class="l-sub">From current stock.</div></div></label>
             </div>
+            <p class="addon-note">Print-ready materials live at <a href="/ops/print-kits">/ops/print-kits</a>.</p>
           </div>
         </div>
-      </details>
-    </section>
+      </div>
 
-    <!-- ── Optional: Day-one kit ───────────────────────── -->
-    <section class="sect-card optional">
-      <details>
-        <summary>
-          <h3 class="opt-title">Day-one kit <span class="opt-badge">Optional</span></h3>
-          <p class="opt-sub">Physical pieces for the first delivery. Just a pack list — not a gate.</p>
-        </summary>
-        <div class="opt-body">
-          <div class="checklist" id="kit-check">
-            <label class="check-item"><input type="checkbox" data-kit="basket"><div><div class="l-title">Wicker basket</div><div class="l-sub">Backstock or new order. Washed.</div></div></label>
-            <label class="check-item"><input type="checkbox" data-kit="stand"><div><div class="l-title">Counter display stand + pairing card</div><div class="l-sub">Acrylic holder with pretzel + coffee graphic.</div></div></label>
-            <label class="check-item"><input type="checkbox" data-kit="counter_card"><div><div class="l-title">Retail pricing counter card</div><div class="l-sub">PPF single/double pricing.</div></div></label>
-            <label class="check-item"><input type="checkbox" data-kit="welcome_letter"><div><div class="l-title">Welcome letter (printed, signed)</div><div class="l-sub">From Chris.</div></div></label>
-            <label class="check-item"><input type="checkbox" data-kit="contact_card"><div><div class="l-title">Contact card (QR → portal)</div><div class="l-sub">Only if portal access is enabled above.</div></div></label>
-            <label class="check-item"><input type="checkbox" data-kit="bags"><div><div class="l-title">Branded bags for first batch</div><div class="l-sub">From current stock.</div></div></label>
-          </div>
-          <p class="opt-note">Print-ready materials live at <a href="/ops/print-kits">/ops/print-kits</a>.</p>
+      <!-- ═════ STEP 5: Review & add ══════════════════════════ -->
+      <div class="step-pane" data-pane="5">
+        <div class="step-eyebrow">Step 5 of 5</div>
+        <h2 class="step-title">Review &amp; add</h2>
+        <p class="step-help">Everything you captured. If anything's wrong, click the step link to jump back. Hit <b>Add stop</b> when it looks right.</p>
+        <div class="review" id="review"></div>
+        <div class="submit-status" id="submit-status" hidden></div>
+      </div>
+
+      <!-- Nav bar -->
+      <div class="nav-bar">
+        <button type="button" class="btn alt" id="btn-back" disabled>← Back</button>
+        <span class="step-hint" id="step-hint"></span>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn" id="btn-next">Next →</button>
+          <button type="submit" class="btn go lg" id="btn-add" style="display:none;">🚀 Add stop</button>
         </div>
-      </details>
-    </section>
-
-    <!-- ── Submit ──────────────────────────────────────── -->
-    <div class="submit-bar">
-      <button type="submit" class="btn-primary" id="btn-add" disabled>
-        Add <span id="btn-name">a store</span> to <span id="btn-route">a route</span>
-      </button>
-      <div class="submit-hint" id="submit-hint">Pick a route · fill store name, town, address · at least one delivery day · owner contact</div>
-      <div class="submit-status" id="submit-status" hidden></div>
-    </div>
-  </form>
+      </div>
+    </form>
+  </div>
 
   <!-- ── Success panel ─────────────────────────────────── -->
   <section class="done-panel" id="done-panel" hidden>
+    <div class="done-icon">✓</div>
     <div class="done-head">
-      <div class="done-icon">✓</div>
       <h2>Added to the route</h2>
       <p id="done-msg">—</p>
     </div>
@@ -580,16 +719,18 @@
 </div><!-- /#app -->
 
 <script>
-const $ = s => document.querySelector(s);
+const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+const TOTAL_STEPS = 5;
+
 const state = {
+  step: 1,
   route_key: '',
-  sheet_gid: null,   // which Google Sheet tab this stop lives in. Auto-set for
-                     // single-tab routes (FSQ, FBW); for LYN the operator picks
-                     // the half. Posted as sheet_insert_gid so the server adds
-                     // the column.
+  sheet_gid: null,   // which Google Sheet tab. Auto-set for single-tab routes.
+                     // For LYN the operator picks the half. Posted as
+                     // sheet_insert_gid so the server adds the column.
   singles: 5,
   doubles: 5,
   preset: '5-5',
@@ -599,7 +740,7 @@ const state = {
 };
 
 let _routes = [];
-let _routeTabs = {};  // { FSQ: [{gid,name}], ... }
+let _routeTabs = {};
 
 // ─── Boot & auth gate ─────────────────────────────────────────
 async function boot() {
@@ -628,9 +769,9 @@ boot();
 
 // ─── Initial wiring ───────────────────────────────────────────
 function initApp() {
-  // Required text inputs → validate on every change
+  // Required text inputs → revalidate on every change
   ['store_name','store_town','store_address','manager_first','manager_last','manager_email'].forEach(id => {
-    $('#' + id).addEventListener('input', validate);
+    $('#' + id).addEventListener('input', updateUI);
   });
 
   // Day chips
@@ -642,7 +783,7 @@ function initApp() {
       else state.days.splice(i, 1);
       d.classList.toggle('is-on');
       d.setAttribute('aria-checked', String(i === -1));
-      validate();
+      updateUI();
     };
     d.addEventListener('click', toggle);
     d.addEventListener('keydown', e => {
@@ -651,9 +792,7 @@ function initApp() {
   });
 
   // Standing-order preset buttons
-  $$('.preset').forEach(b => {
-    b.addEventListener('click', () => setPreset(b.dataset.preset));
-  });
+  $$('.preset').forEach(b => b.addEventListener('click', () => setPreset(b.dataset.preset)));
 
   // Custom counter buttons
   $$('[data-step-order]').forEach(b => {
@@ -664,7 +803,7 @@ function initApp() {
       const delta = op === '+' ? 1 : -1;
       state[key] = Math.max(0, state[key] + delta);
       renderOrder();
-      validate();
+      updateUI();
     });
   });
 
@@ -676,23 +815,49 @@ function initApp() {
       state.portal_pin = generatePin();
       $('#pin-display').textContent = state.portal_pin;
     }
+    updateUI();
   });
   $('#pin-regen').addEventListener('click', () => {
     state.portal_pin = generatePin();
     $('#pin-display').textContent = state.portal_pin;
   });
 
-  // Kit checklist toggles — purely visual
-  $$('#kit-check input[type=checkbox]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      cb.closest('.check-item').classList.toggle('is-checked', cb.checked);
+  // Add-on accordions (step 4) + status badges
+  $$('.addon-card').forEach(card => {
+    card.querySelector('.addon-head').addEventListener('click', () => {
+      card.classList.toggle('is-open');
     });
   });
 
-  // Submit
+  // Welcome delivery fields → update status badge
+  ['delivery_date','driver_name'].forEach(id => {
+    $('#' + id).addEventListener('change', updateAddonStatuses);
+  });
+  // Portal enabled → update status badge
+  $('#portal-enable').addEventListener('change', updateAddonStatuses);
+
+  // Kit checklist toggles — purely visual + status badge
+  $$('#kit-check input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      cb.closest('.check-item').classList.toggle('is-checked', cb.checked);
+      updateAddonStatuses();
+    });
+  });
+
+  // Step chips in the sidebar — click to jump
+  $$('.step-item').forEach(si => {
+    si.addEventListener('click', () => showStep(parseInt(si.dataset.step, 10)));
+  });
+
+  // Nav bar
+  $('#btn-back').addEventListener('click', () => showStep(Math.max(1, state.step - 1)));
+  $('#btn-next').addEventListener('click', () => {
+    if (state.step < TOTAL_STEPS) showStep(state.step + 1);
+  });
   $('#stop-form').addEventListener('submit', onSubmit);
 
   renderOrder();
+  showStep(1);
 }
 
 // ─── Standing-order presets ───────────────────────────────────
@@ -703,11 +868,11 @@ function setPreset(preset) {
     b.classList.toggle('is-on', on);
     b.setAttribute('aria-pressed', String(on));
   });
-  if (preset === '5-5')       { state.singles = 5;  state.doubles = 5;  $('#custom-counters').hidden = true; }
-  else if (preset === '10-10'){ state.singles = 10; state.doubles = 10; $('#custom-counters').hidden = true; }
-  else                        { $('#custom-counters').hidden = false; }
+  if (preset === '5-5')        { state.singles = 5;  state.doubles = 5;  $('#custom-counters').hidden = true; }
+  else if (preset === '10-10') { state.singles = 10; state.doubles = 10; $('#custom-counters').hidden = true; }
+  else                         { $('#custom-counters').hidden = false; }
   renderOrder();
-  validate();
+  updateUI();
 }
 
 function renderOrder() {
@@ -723,7 +888,7 @@ function generatePin() {
   return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
 }
 
-// ─── Routes + sheet-tab dropdown ──────────────────────────────
+// ─── Routes + Lynbrook half picker ────────────────────────────
 async function loadRoutes() {
   const container = $('#routes');
   try {
@@ -750,9 +915,8 @@ function pickRoute(key) {
   state.route_key = key;
   $$('#routes .route-tile').forEach(t => t.classList.toggle('is-on', t.dataset.route === key));
 
-  // Sheet column: auto-pick for single-tab routes (FSQ, FBW) so the operator
-  // never sees the mechanics. For multi-tab routes (LYN) surface a half-picker
-  // in the Where section — it's a real routing question, not a sheet detail.
+  // Sheet column: auto-pick for single-tab routes (FSQ/FBW); for LYN surface a
+  // Lynbrook-half picker because the choice is a real routing question.
   const tabs = _routeTabs[key] || [];
   const halfField = $('#lyn-half-field');
   const halves = $('#lyn-halves');
@@ -761,7 +925,7 @@ function pickRoute(key) {
     halfField.hidden = true;
     halves.innerHTML = '';
   } else {
-    state.sheet_gid = null;  // force a choice
+    state.sheet_gid = null;
     halfField.hidden = false;
     halves.innerHTML = tabs.map(t => `
       <button type="button" class="route-tile" data-half="${t.gid}">
@@ -773,7 +937,7 @@ function pickRoute(key) {
       t.addEventListener('click', () => pickHalf(Number(t.dataset.half)));
     });
   }
-  validate();
+  updateUI();
 }
 
 function pickHalf(gid) {
@@ -781,19 +945,16 @@ function pickHalf(gid) {
   $$('#lyn-halves .route-tile').forEach(t => {
     t.classList.toggle('is-on', Number(t.dataset.half) === gid);
   });
-  validate();
+  updateUI();
 }
 
-// Pull a short label out of a sheet-tab name — e.g. "LYN — VS/RVC" → "VS/RVC",
-// "Lynbrook — East Rock / Oceanside / LB" → "East Rock". Falls back to the
-// full name when there's no obvious delimiter.
 function shortHalfLabel(name) {
   const parts = String(name).split(/[—–:·|]/);
   const tail = (parts[parts.length - 1] || name).trim();
   return tail.split(/[\/]/)[0].trim() || name;
 }
 
-// ─── Driver dropdown for the Welcome delivery section ─────────
+// ─── Driver dropdown for the Welcome-delivery add-on ──────────
 async function loadDrivers() {
   try {
     const r = await fetch('/api/schedule?resource=people', { credentials: 'same-origin', cache: 'no-store' });
@@ -807,55 +968,191 @@ async function loadDrivers() {
   } catch (e) { /* silent — Welcome delivery is optional */ }
 }
 
-// ─── Validation + submit-button label ─────────────────────────
-function validate() {
-  const name    = $('#store_name').value.trim();
-  const town    = $('#store_town').value.trim();
-  const address = $('#store_address').value.trim();
-  const mf      = $('#manager_first').value.trim();
-  const ml      = $('#manager_last').value.trim();
-  const me      = $('#manager_email').value.trim();
-  const route   = state.route_key;
-  const days    = state.days.length;
-  const units   = state.singles + state.doubles;
+// ─── Step completeness ────────────────────────────────────────
+function emailValid(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
-  const nameValid    = name.length > 0;
-  const townValid    = town.length > 0;
-  const addressValid = address.length > 0;
-  const contactValid = mf.length > 0 && ml.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(me);
-  const routeValid   = !!route;
-  const daysValid    = days >= 1;
-  const unitsValid   = units >= 1;
-  // Multi-tab routes (LYN) need an explicit half choice before submit.
-  const tabs         = _routeTabs[route] || [];
-  const halfValid    = tabs.length <= 1 || !!state.sheet_gid;
+function stepComplete(n) {
+  switch (n) {
+    case 1: {
+      const nameValid    = $('#store_name').value.trim().length > 0;
+      const townValid    = $('#store_town').value.trim().length > 0;
+      const addressValid = $('#store_address').value.trim().length > 0;
+      const routeValid   = !!state.route_key;
+      const tabs         = _routeTabs[state.route_key] || [];
+      const halfValid    = tabs.length <= 1 || !!state.sheet_gid;
+      return routeValid && halfValid && nameValid && townValid && addressValid;
+    }
+    case 2:
+      return (state.singles + state.doubles) >= 1 && state.days.length >= 1;
+    case 3: {
+      const mf = $('#manager_first').value.trim();
+      const ml = $('#manager_last').value.trim();
+      const me = $('#manager_email').value.trim();
+      return mf.length > 0 && ml.length > 0 && emailValid(me);
+    }
+    case 4:
+      return true;  // every add-on is skippable
+    case 5:
+      return [1,2,3].every(stepComplete);
+  }
+  return false;
+}
 
-  const allValid = nameValid && townValid && addressValid && contactValid && routeValid && daysValid && unitsValid && halfValid;
+function missingReasons(n) {
+  const out = [];
+  switch (n) {
+    case 1: {
+      if (!state.route_key) out.push('route');
+      const tabs = _routeTabs[state.route_key] || [];
+      if (state.route_key && tabs.length > 1 && !state.sheet_gid) out.push('Lynbrook half');
+      if (!$('#store_name').value.trim())    out.push('store name');
+      if (!$('#store_town').value.trim())    out.push('town');
+      if (!$('#store_address').value.trim()) out.push('address');
+      break;
+    }
+    case 2:
+      if ((state.singles + state.doubles) < 1) out.push('a non-zero standing order');
+      if (state.days.length < 1) out.push('at least one delivery day');
+      break;
+    case 3: {
+      if (!$('#manager_first').value.trim()) out.push('first name');
+      if (!$('#manager_last').value.trim())  out.push('last name');
+      if (!emailValid($('#manager_email').value.trim())) out.push('a valid email');
+      break;
+    }
+  }
+  return out;
+}
 
-  // Button label: fills in with what the operator has so far.
-  const routeLabel = (_routes.find(r => r.key === route) || {}).label || 'a route';
-  $('#btn-name').textContent  = nameValid ? name : 'a store';
-  $('#btn-route').textContent = routeValid ? routeLabel : 'a route';
-  $('#btn-add').disabled = !allValid;
+// ─── Step navigation ──────────────────────────────────────────
+function showStep(n) {
+  state.step = n;
+  $$('.step-pane[data-pane]').forEach(p => p.classList.toggle('is-active', p.dataset.pane === String(n)));
+  if (n === 5) renderReview();
+  updateUI();
+  $('#stop-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
-  // Hint explains what's still missing.
-  const missing = [];
-  if (!routeValid)   missing.push('route');
-  if (!halfValid)    missing.push('Lynbrook half');
-  if (!nameValid)    missing.push('store name');
-  if (!townValid)    missing.push('town');
-  if (!addressValid) missing.push('address');
-  if (!daysValid)    missing.push('delivery days');
-  if (!contactValid) missing.push('owner contact');
-  if (!unitsValid)   missing.push('standing order');
-  $('#submit-hint').textContent = missing.length
-    ? 'Needs: ' + missing.join(' · ')
-    : 'Ready. Press to add.';
+function updateUI() {
+  // Sidebar: active + done chips, done count
+  let doneCount = 0;
+  $$('.step-item').forEach(si => {
+    const n = parseInt(si.dataset.step, 10);
+    const done = stepComplete(n);
+    si.classList.toggle('is-done', done);
+    si.classList.toggle('is-active', n === state.step);
+    if (done && n !== 5) doneCount++;
+  });
+  $('#done-count').textContent = doneCount;
+
+  // Progress fill
+  $('#progress-fill').style.width = (state.step / TOTAL_STEPS * 100) + '%';
+
+  // Nav buttons + hint
+  $('#btn-back').disabled = state.step === 1;
+  const btnNext = $('#btn-next');
+  const btnAdd  = $('#btn-add');
+  const hint    = $('#step-hint');
+  if (state.step === TOTAL_STEPS) {
+    btnNext.style.display = 'none';
+    btnAdd.style.display  = 'inline-block';
+    btnAdd.disabled = !stepComplete(5);
+    const missing = []
+      .concat(missingReasons(1).map(x => '1: ' + x))
+      .concat(missingReasons(2).map(x => '2: ' + x))
+      .concat(missingReasons(3).map(x => '3: ' + x));
+    hint.textContent = missing.length ? 'Missing — ' + missing.join(' · ') : 'Ready to add.';
+  } else {
+    btnNext.style.display = 'inline-block';
+    btnAdd.style.display  = 'none';
+    const canAdvance = stepComplete(state.step);
+    btnNext.disabled = !canAdvance;
+    const missing = missingReasons(state.step);
+    hint.textContent = missing.length ? 'Needs: ' + missing.join(' · ') : 'Ready for next step.';
+  }
+
+  // Step-4 add-on status badges stay in sync
+  if (state.step === 4) updateAddonStatuses();
+}
+
+// ─── Step-4 status badges ─────────────────────────────────────
+function updateAddonStatuses() {
+  const portalOn = state.portal_enabled;
+  $('#status-portal').textContent = portalOn ? `PIN ${state.portal_pin || '????'}` : 'Skipped';
+  $('#status-portal').classList.toggle('set', portalOn);
+
+  const date   = $('#delivery_date').value;
+  const driver = $('#driver_name').value;
+  const welcomeOn = !!(date || driver);
+  $('#status-welcome').textContent = welcomeOn
+    ? [date || 'no date', driver || 'no driver'].join(' · ')
+    : 'Skipped';
+  $('#status-welcome').classList.toggle('set', welcomeOn);
+
+  const checked = $$('#kit-check input[type=checkbox]').filter(cb => cb.checked).length;
+  const total   = $$('#kit-check input[type=checkbox]').length;
+  $('#status-kit').textContent = checked > 0 ? `${checked}/${total} ready` : 'Skipped';
+  $('#status-kit').classList.toggle('set', checked > 0);
+}
+
+// ─── Step-5 review ────────────────────────────────────────────
+function renderReview() {
+  const routeLabel = (_routes.find(r => r.key === state.route_key) || {}).label || '';
+  const halfName   = (_routeTabs[state.route_key] || []).find(t => t.gid === state.sheet_gid);
+  const name       = $('#store_name').value.trim();
+  const town       = $('#store_town').value.trim();
+  const address    = $('#store_address').value.trim();
+  const mf = $('#manager_first').value.trim();
+  const ml = $('#manager_last').value.trim();
+  const me = $('#manager_email').value.trim();
+  const mp = $('#manager_phone').value.trim();
+  const date   = $('#delivery_date').value;
+  const driver = $('#driver_name').value;
+  const kitChecked = $$('#kit-check input[type=checkbox]').filter(cb => cb.checked).length;
+  const kitTotal   = $$('#kit-check input[type=checkbox]').length;
+  const units = state.singles + state.doubles;
+
+  const miss = txt => `<span class="v missing">${esc(txt)}</span>`;
+  const skip = txt => `<span class="v skipped">${esc(txt)}</span>`;
+  const ok   = txt => `<span class="v">${esc(txt)}</span>`;
+  const row  = (k, html) => `<div class="review-row"><span class="k">${esc(k)}</span>${html}</div>`;
+
+  $('#review').innerHTML = `
+    <div class="review-card">
+      <h4><span>Where</span><a href="#" data-jump="1">Edit ›</a></h4>
+      ${row('Route',   state.route_key ? ok(routeLabel) : miss('Not set'))}
+      ${halfName ? row('Half', ok(halfName.name)) : ''}
+      ${row('Store',   name ? ok(name)  : miss('Not set'))}
+      ${row('Town',    town ? ok(town)  : miss('Not set'))}
+      ${row('Address', address ? ok(address) : miss('Not set'))}
+    </div>
+    <div class="review-card">
+      <h4><span>Order &amp; schedule</span><a href="#" data-jump="2">Edit ›</a></h4>
+      ${row('Standing order', ok(`${state.singles} single · ${state.doubles} double  (${units} units/day)`))}
+      ${row('Days', state.days.length ? ok(state.days.join(', ').toUpperCase()) : miss('None picked'))}
+    </div>
+    <div class="review-card">
+      <h4><span>Owner contact</span><a href="#" data-jump="3">Edit ›</a></h4>
+      ${row('Name',  (mf || ml) ? ok(`${mf} ${ml}`.trim()) : miss('Not set'))}
+      ${row('Email', emailValid(me) ? ok(me) : miss('Missing or invalid'))}
+      ${row('Phone', mp ? ok(mp) : skip('—'))}
+    </div>
+    <div class="review-card">
+      <h4><span>Add-ons</span><a href="#" data-jump="4">Edit ›</a></h4>
+      ${row('Portal access',   state.portal_enabled ? ok(`PIN ${state.portal_pin}`) : skip('Skipped — set up later'))}
+      ${row('Welcome delivery', (date || driver) ? ok([date || 'no date', driver || 'no driver'].join(' · ')) : skip('Skipped — schedule later'))}
+      ${row('Day-one kit',     kitChecked ? ok(`${kitChecked}/${kitTotal} items ready`) : skip('Skipped — pack later'))}
+    </div>
+  `;
+  $$('#review [data-jump]').forEach(a => {
+    a.addEventListener('click', e => { e.preventDefault(); showStep(Number(a.dataset.jump)); });
+  });
 }
 
 // ─── Submit ───────────────────────────────────────────────────
 async function onSubmit(ev) {
   ev.preventDefault();
+  if (!stepComplete(5)) return;
   const btn = $('#btn-add');
   const status = $('#submit-status');
   const showStatus = (msg, kind) => { status.hidden = false; status.className = 'submit-status ' + kind; status.textContent = msg; };
@@ -872,13 +1169,9 @@ async function onSubmit(ev) {
     manager_last_name:  $('#manager_last').value.trim(),
     manager_email:      $('#manager_email').value.trim(),
     manager_phone:      $('#manager_phone').value.trim(),
-    // Portal access is opt-in; the server treats a blank PIN as "no portal yet".
     portal_pin:         state.portal_enabled ? state.portal_pin : '',
     store_display_name: state.portal_enabled ? $('#store_display_name').value.trim() : '',
     store_code:         state.portal_enabled ? $('#store_code').value.trim() : '',
-    // Google Sheet column — always on when the route has a sheet tab we know.
-    // Auto-set from the route for FSQ/FBW; picked as a "Lynbrook half" tile
-    // for LYN. Server adds the column; failure surfaces in sheet_insert_error.
     sheet_insert_gid:   state.sheet_gid || null,
   };
 
@@ -903,7 +1196,7 @@ async function onSubmit(ev) {
 
 // ─── Success panel ────────────────────────────────────────────
 function showDone(payload, body) {
-  $('#stop-form').hidden = true;
+  $('#wizard').hidden = true;
   const routeLabel = (_routes.find(r => r.key === payload.route_key) || {}).label || payload.route_key;
   const sheetNote = body.sheet_insert
     ? ` Google Sheet column ${body.sheet_insert.column_letter} added to ${body.sheet_insert.tab_name}.`
@@ -912,7 +1205,6 @@ function showDone(payload, body) {
       : '';
   $('#done-msg').textContent = `${payload.name} is on the ${routeLabel} route. The driver and baker apps pick it up on their next load.` + sheetNote;
 
-  // Next-step cards: only show the sections the operator skipped.
   const cards = [];
   if (!state.portal_enabled) {
     cards.push(`
