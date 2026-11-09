@@ -110,6 +110,7 @@
 @media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field.full { grid-column: 1 / -1; }
+.field[hidden], [hidden] { display: none !important; }
 .field label {
   font-family: var(--display);
   font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
