@@ -115,6 +115,35 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 .hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--qr-gold-deep); }
 .hist .what { color: var(--qr-white); font-weight: 700; overflow-wrap: anywhere; }
 .hist .meta { color: var(--qr-gold-light); font-size: 12px; }
+
+/* Shared status strip (both tabs want these two facts at a glance) */
+.shared-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0; border: 2px solid var(--qr-gold-deep); background: var(--qr-black); margin: 0 0 16px; }
+.shared-strip .cell { padding: 12px 16px; border-right: 2px solid var(--qr-gold-deep); min-width: 0; }
+.shared-strip .cell:last-child { border-right: 0; }
+@media (max-width: 720px) {
+  .shared-strip { grid-template-columns: 1fr; }
+  .shared-strip .cell { border-right: 0; border-bottom: 2px solid var(--qr-gold-deep); }
+  .shared-strip .cell:last-child { border-bottom: 0; }
+}
+.shared-strip .lbl { display: block; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--qr-gold-light); text-transform: uppercase; margin-bottom: 4px; }
+.shared-strip .val { color: var(--qr-white); font-family: var(--body); font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
+.shared-strip .val small { display: block; font-weight: 500; color: var(--qr-gold-light); font-size: 12px; margin-top: 2px; }
+
+/* Segmented tab control */
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 0 0 24px; border: 2px solid var(--qr-gold-deep); background: var(--qr-black); }
+.tab-btn { background: transparent; color: var(--qr-gold-light); border: 0; border-right: 2px solid var(--qr-gold-deep); padding: 14px 16px; font-family: var(--display); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; min-height: 48px; }
+.tab-btn:last-child { border-right: 0; }
+.tab-btn[aria-selected="true"] { background: var(--qr-gold); color: var(--qr-black); }
+.tab-btn:focus-visible { outline: 2px solid var(--qr-gold-light); outline-offset: -2px; }
+@media (max-width: 520px) {
+  .tabs { grid-template-columns: 1fr; }
+  .tab-btn { border-right: 0; border-bottom: 2px solid var(--qr-gold-deep); }
+  .tab-btn:last-child { border-bottom: 0; }
+}
+
+/* Tab visibility: the active data-tab stays, the other hides */
+.tabs-root[data-active="qr"]       .panel[data-tab="referral"] { display: none; }
+.tabs-root[data-active="referral"] .panel[data-tab="qr"]       { display: none; }
 </style>
 </head>
 <body>
@@ -154,11 +183,27 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
     <div class="notice" id="config-notice" hidden></div>
 
-    <div class="layout">
+    <div class="shared-strip" aria-label="Live status">
+      <div class="cell">
+        <span class="lbl">Sticker destination</span>
+        <div class="val" id="strip-target">Loading<small></small></div>
+      </div>
+      <div class="cell">
+        <span class="lbl">Pack game</span>
+        <div class="val" id="strip-game">Loading<small></small></div>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="QR and Referral">
+      <button class="tab-btn" type="button" role="tab" id="tab-qr-btn"       aria-selected="true"  aria-controls="p-redirect p-qr p-stats p-history" data-tab="qr">QR</button>
+      <button class="tab-btn" type="button" role="tab" id="tab-referral-btn" aria-selected="false" aria-controls="p-offer p-packs" data-tab="referral">Referral</button>
+    </div>
+
+    <div class="layout tabs-root" id="tabs-root" data-active="qr">
 
       <!-- 1. Redirect -->
-      <div class="panel" id="p-redirect">
-        <h2><span class="num">1</span>Where the sticker goes</h2>
+      <div class="panel" id="p-redirect" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
+        <h2>Where the sticker goes</h2>
         <p class="hint">Every QR code points at <b>/scan</b>. This picks where /scan sends people.</p>
         <p class="current" id="cur-target">Loading<small></small></p>
         <div class="two">
@@ -191,8 +236,8 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
       </div>
 
       <!-- 2 + 3. Offer editor, creative tools, preview -->
-      <div class="panel" id="p-offer">
-        <h2><span class="num">2</span>Free pretzel offer</h2>
+      <div class="panel" id="p-offer" data-tab="referral" role="tabpanel" aria-labelledby="tab-referral-btn">
+        <h2>Free pretzel offer</h2>
         <p class="hint">Edits show in the phone on the right. Nothing is public until you press Publish.</p>
         <div class="editor-grid">
           <form id="offer-form" autocomplete="off">
@@ -231,7 +276,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
               <span class="count" data-for="o-fine"></span>
             </div>
 
-            <h2 style="margin-top:8px"><span class="num">3</span>Look and schedule</h2>
+            <h2 style="margin-top:8px">Look and schedule</h2>
             <div class="field">
               <span class="lbl">Hero colour (solid brand colours only)</span>
               <div class="choices" id="layout-group">
@@ -315,8 +360,8 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
       </div>
 
       <!-- 4. QR studio -->
-      <div class="panel" id="p-qr">
-        <h2><span class="num">4</span>QR studio</h2>
+      <div class="panel" id="p-qr" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
+        <h2>QR studio</h2>
         <p class="hint">One code per spot so scans are counted separately. Every code goes through /scan, so it follows the destination above.</p>
         <div class="qr-grid">
           <div>
@@ -357,15 +402,15 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
       </div>
 
       <!-- 5. Stats -->
-      <div class="panel" id="p-stats">
-        <h2><span class="num">5</span>Scans by placement</h2>
+      <div class="panel" id="p-stats" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
+        <h2>Scans by placement</h2>
         <p class="hint">Counted at /scan. Days are New York time.</p>
         <div class="table-wrap"><table id="stats"><thead><tr><th>Placement</th><th class="n">Today</th><th class="n">7 days</th><th class="n">30 days</th></tr></thead><tbody></tbody></table></div>
       </div>
 
       <!-- 6. Pack game -->
-      <div class="panel" id="p-packs">
-        <h2><span class="num">6</span>Pack game</h2>
+      <div class="panel" id="p-packs" data-tab="referral" role="tabpanel" aria-labelledby="tab-referral-btn">
+        <h2>Pack game</h2>
         <p class="hint" id="pk-hint">For the current offer. Emails verified and Instagram taps are all time.</p>
         <div class="table-wrap"><table id="pack-stats"><thead><tr><th>Packs</th><th class="n">Count</th></tr></thead><tbody></tbody></table></div>
         <div class="table-wrap"><table id="pack-ends"><thead><tr><th>How games ended</th><th class="n">Players</th></tr></thead><tbody></tbody></table></div>
@@ -373,8 +418,8 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
       </div>
 
       <!-- 7. History -->
-      <div class="panel" id="p-history">
-        <h2><span class="num">7</span>History</h2>
+      <div class="panel" id="p-history" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
+        <h2>History</h2>
         <p class="hint">Last 20 changes. Restore puts that version back live.</p>
         <ul class="hist" id="history"></ul>
       </div>
@@ -415,6 +460,7 @@ function init() {
     try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
     location.replace('/signin');
   };
+  initTabs();
   initRedirect();
   initOffer();
   initQr();
@@ -437,6 +483,83 @@ async function api(method, view, body) {
 
 function setStatus(el, cls, text) { el.className = 'status' + (cls ? ' ' + cls : ''); el.textContent = text || ''; }
 
+
+// ─── shared status strip + tabs ───────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '';
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  try {
+    var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  } catch (e) { return iso; }
+}
+function renderSharedStrip(target, offer) {
+  var tEl = $('#strip-target');
+  if (target || target === null) {
+    var t = target || '/free-pretzels';
+    tEl.textContent = t;
+    var s = document.createElement('small');
+    s.textContent = target ? 'Set in Edge Config.' : 'Default fallback (nothing set yet).';
+    tEl.appendChild(s);
+  }
+  var gEl = $('#strip-game');
+  if (offer !== undefined) {
+    var on = offer && offer.game === true;
+    gEl.textContent = on ? 'On' : 'Off';
+    var s2 = document.createElement('small');
+    if (on) s2.textContent = offer && offer.starts_at ? 'Starts ' + fmtDate(offer.starts_at) : 'No start date set.';
+    else s2.textContent = 'Page shows the offer above.';
+    gEl.appendChild(s2);
+  }
+}
+var TAB_KEY = 'ops.qr.tab';
+function readTab(v) { return v === 'referral' ? 'referral' : 'qr'; }
+function initTabs() {
+  var root = $('#tabs-root');
+  var btns = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
+  function setActive(t, opts) {
+    t = readTab(t);
+    root.setAttribute('data-active', t);
+    btns.forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === t)); });
+    // Re-scale the offer preview phone: the iframe's parent is display:none
+    // until the Referral tab is active, so clientWidth is 0 at first init
+    // and the one-shot scalePhone() produces scale(0). Re-running it here
+    // (after the class flip applies) computes the right scale the first
+    // time the user looks at the preview.
+    try { if (typeof scalePhone === 'function') scalePhone(); } catch (e) {}
+    if (!opts || !opts.silent) {
+      try { localStorage.setItem(TAB_KEY, t); } catch (e) {}
+      if (location.hash.slice(1) !== t) {
+        try { history.replaceState(null, '', '#' + t); } catch (e) { location.hash = t; }
+      }
+    }
+  }
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () { setActive(b.dataset.tab); });
+    b.addEventListener('keydown', function (ev) {
+      var i = btns.indexOf(b), j = i;
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') j = (i + 1) % btns.length;
+      else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') j = (i - 1 + btns.length) % btns.length;
+      else if (ev.key === 'Home') j = 0;
+      else if (ev.key === 'End') j = btns.length - 1;
+      else return;
+      ev.preventDefault();
+      btns[j].focus();
+      setActive(btns[j].dataset.tab);
+    });
+  });
+  window.addEventListener('hashchange', function () {
+    var h = location.hash.slice(1);
+    if (h === 'qr' || h === 'referral') setActive(h, { silent: true });
+  });
+  var initial = 'qr';
+  var hash = location.hash.slice(1);
+  if (hash === 'qr' || hash === 'referral') initial = hash;
+  else { try { var v = localStorage.getItem(TAB_KEY); if (v === 'referral' || v === 'qr') initial = v; } catch (e) {} }
+  setActive(initial, { silent: true });
+}
+
 // ─── config ───────────────────────────────────────────────────────
 async function loadConfig() {
   try {
@@ -450,10 +573,12 @@ async function loadConfig() {
     n.hidden = notes.length === 0;
     renderCurrentTarget(c.scan_target);
     if (c.offer) fillOffer(c.offer);
+    renderSharedStrip(c.scan_target || null, c.offer || { game: false });
     $('#preview-state').textContent = 'Preview' + (c.offer ? ' (live offer is ' + c.offer_status + ')' : '');
     ['#t-save', '#t-reset', '#o-publish'].forEach(function (s) { $(s).disabled = !c.writable; });
   } catch (e) {
     renderCurrentTarget(null);
+    renderSharedStrip(null, { game: false });
   }
 }
 
@@ -496,6 +621,7 @@ function initRedirect() {
       var r = await api('POST', null, { action: 'set_target', scan_target: chosenTarget() });
       setStatus(st, 'ok', '/scan now goes to ' + r.scan_target + '.');
       renderCurrentTarget(r.scan_target);
+      renderSharedStrip(r.scan_target);
       loadHistory();
     } catch (e) { setStatus(st, 'fail', e.message); }
   };
@@ -506,6 +632,7 @@ function initRedirect() {
       var r = await api('POST', null, { action: 'reset_target' });
       setStatus(st, 'ok', '/scan now goes to ' + r.scan_target + '.');
       renderCurrentTarget(r.scan_target);
+      renderSharedStrip(r.scan_target);
       $('#t-page').value = '/free-pretzels';
       refresh();
       loadHistory();
@@ -704,6 +831,7 @@ function initOffer() {
       var r = await api('POST', null, { action: 'publish_offer', offer: o });
       setStatus(st, 'ok', 'Offer published. Live within about a minute.');
       fillOffer(r.offer);
+      renderSharedStrip(undefined, r.offer);
       loadHistory();
     } catch (e) { setStatus(st, 'fail', e.message); }
   });
@@ -943,6 +1071,7 @@ async function loadHistory() {
           var r = await api('POST', null, { action: 'restore', ts: e.ts });
           if (r.offer) fillOffer(r.offer);
           if (r.scan_target) renderCurrentTarget(r.scan_target);
+          renderSharedStrip(r.scan_target, r.offer);
           loadHistory();
         } catch (err) { alert('Not restored. ' + err.message); }
       };
