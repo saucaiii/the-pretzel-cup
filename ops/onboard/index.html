@@ -374,6 +374,12 @@
         </div>
       </div>
 
+      <div class="field full" id="lyn-half-field" hidden style="margin-bottom: 18px;">
+        <label>Which half of the Lynbrook route?</label>
+        <div class="routes" id="lyn-halves"></div>
+        <div class="hint">Lynbrook deliveries split across two sub-routes. Pick the one this stop sits on.</div>
+      </div>
+
       <div class="form-grid">
         <div class="field">
           <label for="store_name">Store name</label>
@@ -470,25 +476,6 @@
           <input id="manager_phone" type="tel" placeholder="(516) 555-0199" autocomplete="off">
         </div>
       </div>
-    </section>
-
-    <!-- ── Optional: Sales sheet ───────────────────────── -->
-    <section class="sect-card optional">
-      <details open>
-        <summary>
-          <h3 class="opt-title">Sales sheet <span class="opt-badge recommended">Recommended</span></h3>
-          <p class="opt-sub">Daily sales for each stop are tracked in a Google Sheet. Every stop needs its own column in that sheet — pick which tab it belongs in and we'll add the column for you. Skip and the stop lives in Supabase but won't appear in the sales sheet until you add the column by hand.</p>
-        </summary>
-        <div class="opt-body">
-          <div class="field full">
-            <label for="sheet_gid">Add this stop to</label>
-            <select id="sheet_gid">
-              <option value="">— Skip for now (Supabase only) —</option>
-            </select>
-            <div class="hint" id="sheet-hint">Pick a delivery route above first. Franklin Square and Freeport/Baldwin each use one tab. Lynbrook is split across two tabs (VS/RVC and East Rock/Oceanside/LB) — pick the one this stop belongs in.</div>
-          </div>
-        </div>
-      </details>
     </section>
 
     <!-- ── Optional: Portal access ─────────────────────── -->
@@ -599,6 +586,10 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 
 const state = {
   route_key: '',
+  sheet_gid: null,   // which Google Sheet tab this stop lives in. Auto-set for
+                     // single-tab routes (FSQ, FBW); for LYN the operator picks
+                     // the half. Posted as sheet_insert_gid so the server adds
+                     // the column.
   singles: 5,
   doubles: 5,
   preset: '5-5',
@@ -757,14 +748,49 @@ async function loadRoutes() {
 
 function pickRoute(key) {
   state.route_key = key;
-  $$('.route-tile').forEach(t => t.classList.toggle('is-on', t.dataset.route === key));
-  // Repopulate sheet-tab dropdown for this route
-  const sel = $('#sheet_gid');
+  $$('#routes .route-tile').forEach(t => t.classList.toggle('is-on', t.dataset.route === key));
+
+  // Sheet column: auto-pick for single-tab routes (FSQ, FBW) so the operator
+  // never sees the mechanics. For multi-tab routes (LYN) surface a half-picker
+  // in the Where section — it's a real routing question, not a sheet detail.
   const tabs = _routeTabs[key] || [];
-  sel.innerHTML = '<option value="">— Skip sheet column (Supabase-only) —</option>'
-    + tabs.map(t => `<option value="${t.gid}">${esc(t.name)}</option>`).join('');
-  if (tabs.length === 1) sel.value = String(tabs[0].gid);
+  const halfField = $('#lyn-half-field');
+  const halves = $('#lyn-halves');
+  if (tabs.length <= 1) {
+    state.sheet_gid = tabs.length === 1 ? tabs[0].gid : null;
+    halfField.hidden = true;
+    halves.innerHTML = '';
+  } else {
+    state.sheet_gid = null;  // force a choice
+    halfField.hidden = false;
+    halves.innerHTML = tabs.map(t => `
+      <button type="button" class="route-tile" data-half="${t.gid}">
+        <span class="r-code">${esc(shortHalfLabel(t.name))}</span>
+        <div class="r-name">${esc(t.name)}</div>
+      </button>
+    `).join('');
+    halves.querySelectorAll('.route-tile').forEach(t => {
+      t.addEventListener('click', () => pickHalf(Number(t.dataset.half)));
+    });
+  }
   validate();
+}
+
+function pickHalf(gid) {
+  state.sheet_gid = gid;
+  $$('#lyn-halves .route-tile').forEach(t => {
+    t.classList.toggle('is-on', Number(t.dataset.half) === gid);
+  });
+  validate();
+}
+
+// Pull a short label out of a sheet-tab name — e.g. "LYN — VS/RVC" → "VS/RVC",
+// "Lynbrook — East Rock / Oceanside / LB" → "East Rock". Falls back to the
+// full name when there's no obvious delimiter.
+function shortHalfLabel(name) {
+  const parts = String(name).split(/[—–:·|]/);
+  const tail = (parts[parts.length - 1] || name).trim();
+  return tail.split(/[\/]/)[0].trim() || name;
 }
 
 // ─── Driver dropdown for the Welcome delivery section ─────────
@@ -800,8 +826,11 @@ function validate() {
   const routeValid   = !!route;
   const daysValid    = days >= 1;
   const unitsValid   = units >= 1;
+  // Multi-tab routes (LYN) need an explicit half choice before submit.
+  const tabs         = _routeTabs[route] || [];
+  const halfValid    = tabs.length <= 1 || !!state.sheet_gid;
 
-  const allValid = nameValid && townValid && addressValid && contactValid && routeValid && daysValid && unitsValid;
+  const allValid = nameValid && townValid && addressValid && contactValid && routeValid && daysValid && unitsValid && halfValid;
 
   // Button label: fills in with what the operator has so far.
   const routeLabel = (_routes.find(r => r.key === route) || {}).label || 'a route';
@@ -812,6 +841,7 @@ function validate() {
   // Hint explains what's still missing.
   const missing = [];
   if (!routeValid)   missing.push('route');
+  if (!halfValid)    missing.push('Lynbrook half');
   if (!nameValid)    missing.push('store name');
   if (!townValid)    missing.push('town');
   if (!addressValid) missing.push('address');
@@ -846,8 +876,10 @@ async function onSubmit(ev) {
     portal_pin:         state.portal_enabled ? state.portal_pin : '',
     store_display_name: state.portal_enabled ? $('#store_display_name').value.trim() : '',
     store_code:         state.portal_enabled ? $('#store_code').value.trim() : '',
-    // Google Sheet column — opt-in via the dropdown.
-    sheet_insert_gid:   Number($('#sheet_gid').value) || null,
+    // Google Sheet column — always on when the route has a sheet tab we know.
+    // Auto-set from the route for FSQ/FBW; picked as a "Lynbrook half" tile
+    // for LYN. Server adds the column; failure surfaces in sheet_insert_error.
+    sheet_insert_gid:   state.sheet_gid || null,
   };
 
   btn.disabled = true;
