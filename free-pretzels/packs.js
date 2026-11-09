@@ -1748,5 +1748,35 @@
   }
 
   window.__ppfPacks = { stage: Stage, fx: FX, state: S };
+  // "Share with friends" buttons on the page (hero and footer): the same
+  // message and link as the group chat quest, but they unlock nothing.
+  // Share sheet where there is one; otherwise copy, or show the text.
+  function wirePageShare() {
+    var btns = document.querySelectorAll('.js-page-share');
+    Array.prototype.forEach.call(btns, function (btn) {
+      var status = document.getElementById(btn.getAttribute('aria-describedby'));
+      var say = function (t) { if (status) status.textContent = t; };
+      btn.addEventListener('click', function () {
+        var text = SHARE_TEXT + ' ' + shareUrl();
+        say('');
+        if (canShare()) {
+          navigator.share({ text: SHARE_TEXT, url: shareUrl() }).catch(function (e) {
+            if (e && e.name === 'AbortError') return;
+            shareBroken = true;
+            copy();
+          });
+        } else copy();
+        function copy() {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+              say('Copied. Paste it to your friends.');
+            }, function () { say('Copy this: ' + text); });
+          } else say('Copy this: ' + text);
+        }
+      });
+    });
+  }
+
+  wirePageShare();
   boot();
 })();
