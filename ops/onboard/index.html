@@ -472,20 +472,20 @@
       </div>
     </section>
 
-    <!-- ── Optional: Google Sheet column ───────────────── -->
+    <!-- ── Optional: Sales sheet ───────────────────────── -->
     <section class="sect-card optional">
       <details open>
         <summary>
-          <h3 class="opt-title">Google Sheet column <span class="opt-badge recommended">Recommended</span></h3>
-          <p class="opt-sub">The sheet writer only logs sales to tabs whose header contains <code>(name)</code>. Insert now and the next delivery is tracked automatically.</p>
+          <h3 class="opt-title">Sales sheet <span class="opt-badge recommended">Recommended</span></h3>
+          <p class="opt-sub">Daily sales for each stop are tracked in a Google Sheet. Every stop needs its own column in that sheet — pick which tab it belongs in and we'll add the column for you. Skip and the stop lives in Supabase but won't appear in the sales sheet until you add the column by hand.</p>
         </summary>
         <div class="opt-body">
           <div class="field full">
-            <label for="sheet_gid">Target sheet tab</label>
+            <label for="sheet_gid">Add this stop to</label>
             <select id="sheet_gid">
-              <option value="">— Skip sheet column (Supabase-only) —</option>
+              <option value="">— Skip for now (Supabase only) —</option>
             </select>
-            <div class="hint">Pick a route first. For LYN the half picks the tab (VS/RVC or East Rock/Oceanside/LB). Column goes just before the Name column, inheriting the previous column's number format.</div>
+            <div class="hint" id="sheet-hint">Pick a delivery route above first. Franklin Square and Freeport/Baldwin each use one tab. Lynbrook is split across two tabs (VS/RVC and East Rock/Oceanside/LB) — pick the one this stop belongs in.</div>
           </div>
         </div>
       </details>
