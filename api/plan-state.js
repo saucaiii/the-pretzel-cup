@@ -88,11 +88,11 @@ function unauthorized(res, msg) {
 
 async function checkGate(req) {
   const sess = await readSession(req).catch(() => null);
-  if (sess && sess.role === 'operator') return true;
+  if (sess && sess.role === 'operator') return sess;
   const expected = process.env.OPS_PASSWORD;
   if (expected) {
     const got = req.headers['x-ops-password'];
-    if (typeof got === 'string' && got === expected) return true;
+    if (typeof got === 'string' && got === expected) return { name: null, role: 'operator' };
   }
   return false;
 }
@@ -144,10 +144,11 @@ async function readJsonBody(req) {
   return {};
 }
 
-async function handleCorkboard(req, res) {
+async function handleCorkboard(req, res, sess) {
   const method = req.method;
   const id = typeof req.query?.id === 'string' ? req.query.id : null;
   const action = typeof req.query?.action === 'string' ? req.query.action : null;
+  const operatorName = (sess && typeof sess.name === 'string' && sess.name.trim()) ? sess.name.trim() : null;
 
   // Chat proxy to the mini bridge. 503 "offline" if unset/unreachable
   // so the UI can show the offline chip gracefully rather than a scary
@@ -163,6 +164,9 @@ async function handleCorkboard(req, res) {
       return res.status(503).json({ error: 'claude bridge offline', offline: true });
     }
     const body = await readJsonBody(req);
+    // Stamp the operator name so the bridge can attribute any card writes.
+    // Server-stamped (not client-sent) so it can't be spoofed by a stale page.
+    if (operatorName) body.addedBy = operatorName;
     try {
       const upstream = await fetch(`${url.replace(/\/$/, '')}/ask`, {
         method: 'POST',
@@ -200,6 +204,8 @@ async function handleCorkboard(req, res) {
     if (!patch || typeof patch.name !== 'string' || !patch.name.trim()) {
       return res.status(400).json({ error: 'name required' });
     }
+    // Server-stamped so the client can't spoof it.
+    if (operatorName) patch.addedBy = operatorName;
     const build = await notion.createBuild({ db, token, patch });
     return res.status(201).json({ build });
   }
@@ -226,12 +232,13 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  if (!(await checkGate(req))) return unauthorized(res);
+  const sess = await checkGate(req);
+  if (!sess) return unauthorized(res);
 
   const resource = typeof req.query?.resource === 'string' ? req.query.resource : null;
   if (resource === 'corkboard') {
     try {
-      return await handleCorkboard(req, res);
+      return await handleCorkboard(req, res, sess);
     } catch (err) {
       const status = err?.status || 500;
       if (status >= 500) console.error('corkboard error:', err && (err.stack || err.message || err));
