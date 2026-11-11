@@ -46,6 +46,7 @@
 // GOOGLE_SHEET_KEY_B64 (Gmail sender, optional), LEAD_IP_SALT.
 
 const crypto = require('crypto');
+const members = require('./_lib/members');
 
 const COOKIE = 'ppf_player';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 180;
@@ -436,6 +437,8 @@ function supabaseStore(sb) {
     return data || null;
   };
   return {
+    // Raw client exposed for api/_lib/members.js (ledger writes).
+    _sb: sb,
     getPlayer: (id) => one(sb.from('pack_players').select('*').eq('id', id).maybeSingle()),
     createPlayer: () => one(sb.from('pack_players').insert({ marketing_opt_in: false }).select('*').single()),
     findPlayerByEmail: (email) => one(sb.from('pack_players').select('*').eq('email', email).maybeSingle()),
@@ -803,6 +806,18 @@ async function handleOpen(req, res, deps, ctx) {
       } catch (e) {
         console.error('[packs] game touch failed:', e.message || e);
       }
+      try {
+        const sb = ctx.store._sb;
+        const memberId = await members.ensureMember(sb, { packPlayerId: player.id });
+        await members.writeLedgerEvent(sb, { memberId, slug: `pack_opened_${source}`, ref: r.voucher.id });
+        await members.writeLedgerEvent(sb, {
+          memberId,
+          slug: source === 'bonus' ? 'golden_ticket_granted' : 'pretzel_voucher_granted',
+          ref: r.voucher.id,
+        });
+      } catch (e) {
+        console.error('[packs] ledger write (open) failed:', e.message || e);
+      }
       return res.status(200).json({ voucher: publicVoucher(r.voucher, deps.now()), state: await stateOf(ctx, deps) });
     }
     // 'code' = random code collided, 'slot' = a parallel tap took this
@@ -872,6 +887,10 @@ async function handleVerify(req, res, deps, ctx, body) {
   }
 
   let finalId = null;
+  // firstVerify means this call set email_verified_at for the first time;
+  // the email was not already attached to another player. The ledger's
+  // `email_verified` earn fires only in that branch.
+  let firstVerify = false;
   for (let attempt = 0; attempt < 2 && !finalId; attempt++) {
     const owner = await store.findPlayerByEmail(link.email);
     if (!owner) {
@@ -880,6 +899,7 @@ async function handleVerify(req, res, deps, ctx, body) {
       });
       if (r.conflict) continue; // another link for this email won the race: merge instead
       finalId = link.player_id;
+      firstVerify = true;
       break;
     }
     if (owner.id !== link.player_id) {
@@ -900,6 +920,32 @@ async function handleVerify(req, res, deps, ctx, body) {
   if (!finalId) return res.status(409).json({ result: 'busy', error: MSG.busy });
   setPlayerCookie(res, finalId, ctx.secret);
   ctx.player = await store.getPlayer(finalId);
+  try {
+    const sb = ctx.store._sb;
+    const memberForPlayer = await members.ensureMember(sb, { packPlayerId: finalId });
+    const { memberId: finalMemberId } = await members.linkMemberEmail(sb, memberForPlayer, link.email);
+    if (firstVerify) {
+      await members.writeLedgerEvent(sb, {
+        memberId: finalMemberId,
+        slug: 'email_verified',
+        ref: `verify:${finalId}:${ctx.key}`,
+      });
+      // Referral attribution hasn't shipped yet, but the credit lands
+      // here so the day it does (member.referred_by set at first visit),
+      // the referrer earns on the referred member's first verify.
+      const me = await sb.from('member').select('referred_by').eq('id', finalMemberId).maybeSingle();
+      const referrer = me && me.data && me.data.referred_by;
+      if (referrer && referrer !== finalMemberId) {
+        await members.writeLedgerEvent(sb, {
+          memberId: referrer,
+          slug: 'referral_converted',
+          ref: `convert:${finalMemberId}`,
+        });
+      }
+    }
+  } catch (e) {
+    console.error('[packs] ledger write (verify) failed:', e.message || e);
+  }
   return res.status(200).json({ ok: true, result: 'verified', state: await stateOf(ctx, deps) });
 }
 
@@ -928,7 +974,20 @@ async function handleHonor(req, res, deps, ctx, kind) {
   const player = await ensurePlayer(ctx, res);
   if (!player[h.field]) {
     const r = await ctx.store.updatePlayer(player.id, { [h.field]: deps.now().toISOString() });
-    if (r.ok) ctx.player = r.player;
+    if (r.ok) {
+      ctx.player = r.player;
+      try {
+        const sb = ctx.store._sb;
+        const memberId = await members.ensureMember(sb, { packPlayerId: player.id });
+        await members.writeLedgerEvent(sb, {
+          memberId,
+          slug: kind === 'instagram' ? 'instagram_tap' : 'share_tap',
+          ref: `${player.id}:${ctx.key}`,
+        });
+      } catch (e) {
+        console.error('[packs] ledger write (honor) failed:', e.message || e);
+      }
+    }
   }
   return res.status(200).json({ ok: true, state: await stateOf(ctx, deps) });
 }
@@ -999,6 +1058,7 @@ async function handleRedeem(req, res, deps, body) {
   // setting, so staff are not stuck with "not set" once it is filled in.
   let give = null;
   let pretzels = 0;
+  let cascadeIds = [];
   if (burned.source === 'bonus') {
     give = burned.prize_staff || null;
     if (!give) {
@@ -1012,12 +1072,51 @@ async function handleRedeem(req, res, deps, body) {
     give = give || BONUS_STAFF;
     // The surprise: the pretzels they traded come back with the ticket.
     // Their unused, unexpired pretzel codes are used up here.
+    const nowIso = now.toISOString();
     try {
-      pretzels = await db.burnPretzels(burned.player_id, burned.offer_key, store, now.toISOString());
+      pretzels = await db.burnPretzels(burned.player_id, burned.offer_key, store, nowIso);
     } catch (e) {
       console.error('[packs] redeem pretzel burn failed:', e.message || e);
       pretzels = null;
     }
+    // Re-read the ids this call burned (redeemed_at = the exact iso we
+    // passed) so the ledger cascade writes a voucher_redemption row per
+    // pretzel without changing burnPretzels' return contract.
+    if (pretzels != null && pretzels > 0) {
+      try {
+        const { data: justBurned, error } = await db._sb.from('pack_vouchers')
+          .select('id')
+          .eq('player_id', burned.player_id)
+          .eq('offer_key', burned.offer_key)
+          .in('source', [...PRETZELS, LEGACY_SHARE])
+          .eq('redeemed_at', nowIso);
+        if (error) throw error;
+        cascadeIds = (justBurned || []).map((r) => r.id);
+      } catch (e) {
+        console.error('[packs] redeem cascade snapshot failed:', e.message || e);
+      }
+    }
+  }
+  try {
+    const sb = db._sb;
+    const memberId = await members.ensureMember(sb, { packPlayerId: burned.player_id });
+    await members.writeLedgerEvent(sb, {
+      memberId,
+      slug: burned.source === 'bonus' ? 'golden_ticket_redeemed' : 'voucher_redemption',
+      ref: burned.id,
+    });
+    // Cascade: a Golden Ticket also spends every pretzel voucher it
+    // consumed. Each one gets its own voucher_redemption row keyed by
+    // the pretzel's id, so a replay of the ticket burn dedupes.
+    for (const pretzelId of cascadeIds) {
+      await members.writeLedgerEvent(sb, {
+        memberId,
+        slug: 'voucher_redemption',
+        ref: pretzelId,
+      });
+    }
+  } catch (e) {
+    console.error('[packs] ledger write (redeem) failed:', e.message || e);
   }
   const staff = { give, pretzels, completed_all };
   return res.status(200).json({ ok: true, voucher: publicVoucher(burned, now), staff });
