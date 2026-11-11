@@ -3,7 +3,12 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/store/:slug([A-Za-z0-9]{2,32})", "destination": "/store/signin?slug=:slug" }
+    { "source": "/store/:slug([A-Za-z0-9]{2,32})", "destination": "/store/signin?slug=:slug" },
+    { "source": "/arcade/api/:path*", "destination": "https://pretzels-fun.sauciii-win.workers.dev/api/:path*" }
+  ],
+  "redirects": [
+    { "source": "/play", "destination": "/arcade", "permanent": false },
+    { "source": "/fun", "destination": "/arcade", "permanent": false }
   ],
   "crons": [
     {

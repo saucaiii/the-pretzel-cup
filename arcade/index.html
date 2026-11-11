@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>pretzels.fun — earn, play, win pretzels</title>
+<meta name="description" content="Earn Pretzel Bucks when you buy pretzels, play carnival games, win free pretzels and merch." />
+<meta name="theme-color" content="#0D5237" />
+<link rel="stylesheet" href="/arcade/app.css" />
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="/">
+    <span class="logo-pretzel" aria-hidden="true">🥨</span>
+    <span class="logo-word">pretzels<span class="logo-dot">.</span>fun</span>
+  </a>
+  <div class="balance" aria-live="polite">
+    <span class="chip"><span class="chip-k">Credits</span><span class="chip-v" data-bind="credits">0</span></span>
+    <span class="chip"><span class="chip-k">Tickets</span><span class="chip-v" data-bind="tickets">0</span></span>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <h1>The pretzel arcade.</h1>
+  <p class="tagline">Buy a pretzel. Redeem the code. Play the booth. Win free pretzels.</p>
+  <form class="redeem" id="redeem-form">
+    <label>
+      <span class="redeem-k">Got a code?</span>
+      <input type="text" name="code" id="redeem-code" placeholder="e.g. H7J2PQR4" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+    </label>
+    <button type="submit">Redeem</button>
+    <div class="redeem-msg" id="redeem-msg" aria-live="polite"></div>
+  </form>
+</section>
+
+<section class="row" aria-label="Arcade games">
+  <h2>Arcade</h2>
+  <div class="games">
+
+    <article class="game game--playable" data-game="claw">
+      <div class="game-hero">🪝</div>
+      <h3>The Pretzel Claw</h3>
+      <p>One grab. 250 credits. Could be a tee. Could be a slip.</p>
+      <button class="play" data-play="claw">Grab</button>
+    </article>
+
+    <article class="game game--playable" data-game="wheel">
+      <div class="game-hero">🎡</div>
+      <h3>Big Wheel of Mustard</h3>
+      <p>Place a chip, spin, see where it lands. Four bonus rounds.</p>
+      <button class="play" data-play="wheel">Open</button>
+    </article>
+
+    <article class="game game--playable" data-game="slap">
+      <div class="game-hero">👋</div>
+      <h3>Pretzel Slap</h3>
+      <p>Wind up and let it rip. 10 credits a swing. Best swing leaderboards.</p>
+      <button class="play" data-play="slap">Open</button>
+    </article>
+
+    <article class="game" data-game="dough">
+      <div class="game-hero">🍞</div>
+      <h3>Rising Dough</h3>
+      <p>Pull your loaf before it over-proofs. Multiplier grows live.</p>
+      <button class="play" disabled>Soon</button>
+    </article>
+
+    <article class="game" data-game="whack">
+      <div class="game-hero">🔨</div>
+      <h3>Whack-a-Baker</h3>
+      <p>Pick a hole each row. One wrong move resets the cash-out.</p>
+      <button class="play" disabled>Soon</button>
+    </article>
+
+    <article class="game" data-game="striker">
+      <div class="game-hero">🥖</div>
+      <h3>Hot Pretzel Striker</h3>
+      <p>Set a target, hit the oven, win the multiplier.</p>
+      <button class="play" disabled>Soon</button>
+    </article>
+
+    <article class="game" data-game="carousel">
+      <div class="game-hero">🥯</div>
+      <h3>Pretzel Carousel</h3>
+      <p>37 plates, one lands. Lightning-style pay bumps on single plates.</p>
+      <button class="play" disabled>Soon</button>
+    </article>
+
+    <article class="game" data-game="fortune">
+      <div class="game-hero">🔮</div>
+      <h3>Baker's Fortune</h3>
+      <p>Guest or House — which hand is sweeter today?</p>
+      <button class="play" disabled>Soon</button>
+    </article>
+
+  </div>
+</section>
+
+<section class="row" aria-label="Prize counter">
+  <h2>Prize counter</h2>
+  <p class="row-sub">Trade tickets for real pretzels, bites, trays, and PPF merch. Redeem single-pretzel prizes at the counter; party trays and merch ship or come with your delivery.</p>
+  <div class="prizes" id="prize-list"></div>
+</section>
+
+<section class="row" aria-label="Your shelf">
+  <h2>Your shelf</h2>
+  <p class="row-sub">Everything you've won. Request pickup to redeem at the store.</p>
+  <div class="shelf" id="shelf"></div>
+</section>
+
+<section class="row" aria-label="Weekly pot">
+  <h2>This week</h2>
+  <div class="boards" id="boards"></div>
+</section>
+
+<section class="row" aria-label="Your handle">
+  <h2>Your handle</h2>
+  <p class="row-sub">What shows up on the leaderboards.</p>
+  <form class="handle" id="handle-form">
+    <input type="text" name="handle" id="handle-input" minlength="3" maxlength="20" placeholder="guest-xxxxx" autocomplete="off" />
+    <button type="submit">Set</button>
+    <div class="handle-msg" id="handle-msg" aria-live="polite"></div>
+  </form>
+</section>
+
+<footer class="foot">
+  <p>pretzels.fun is a loyalty experiment by <a href="https://the-pretzel-cup.vercel.app">The Pretzel Cup</a>, built on the <a href="https://sauciii-house-of-scams.higgsfield.app" rel="external">House of Scams</a> provably-fair engine. Credits and tickets have no cash value.</p>
+  <p class="seed">seed hash: <code data-bind="seedHash">…</code> · nonce: <code data-bind="nonce">0</code> · <button type="button" id="rotate-seed">Rotate &amp; reveal</button></p>
+</footer>
+
+</main>
+
+<!-- Game modals -->
+<dialog id="claw-modal" class="modal">
+  <form method="dialog" class="modal-head"><h3>The Pretzel Claw</h3><button value="close" aria-label="Close">✕</button></form>
+  <div class="modal-body claw">
+    <p>One grab for 250 credits. The claw is honest: odds live below, and every outcome is derived from the published seed.</p>
+    <div class="claw-table" id="claw-table"></div>
+    <button class="big-play" id="claw-grab">Grab a prize</button>
+    <div class="claw-result" id="claw-result" aria-live="polite"></div>
+  </div>
+</dialog>
+
+<dialog id="wheel-modal" class="modal">
+  <form method="dialog" class="modal-head"><h3>Big Wheel of Mustard</h3><button value="close" aria-label="Close">✕</button></form>
+  <div class="modal-body wheel">
+    <p>Place one or more chips on a spot. When the wheel stops, every winning chip pays out.</p>
+    <div class="wheel-spots" id="wheel-spots"></div>
+    <label class="wheel-chip">Chip size
+      <select id="wheel-chip">
+        <option>10</option><option>25</option><option>50</option><option selected>100</option><option>250</option>
+      </select>
+    </label>
+    <div class="wheel-your" id="wheel-your"></div>
+    <button class="big-play" id="wheel-spin">Spin</button>
+    <div class="wheel-result" id="wheel-result" aria-live="polite"></div>
+  </div>
+</dialog>
+
+<dialog id="slap-modal" class="modal">
+  <form method="dialog" class="modal-head"><h3>Pretzel Slap</h3><button value="close" aria-label="Close">✕</button></form>
+  <div class="modal-body slap">
+    <p>Drag the pretzel back, then let go. The harder you swing, the farther it flies. 10 credits per swing.</p>
+    <div class="slap-field" id="slap-field">
+      <div class="slap-pretzel" id="slap-pretzel">🥨</div>
+    </div>
+    <div class="slap-result" id="slap-result" aria-live="polite"></div>
+    <p class="slap-best">Best swing: <b data-bind="bestMph">0</b> mph</p>
+  </div>
+</dialog>
+
+<script>window.__API_BASE__ = "/arcade";</script>
+<script src="/arcade/app.js" type="module"></script>
+</body>
+</html>
