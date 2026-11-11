@@ -4,10 +4,10 @@
 
    The arcade is served two ways: standalone at `/` on the worker's
    *.workers.dev URL, and sub-mounted at `/arcade` on the-pretzel-cup's
-   Vercel deploy (which proxies `/arcade/api/*` → the same worker).
-   API_BASE below strips the current file name and uses the directory as
-   the prefix so the same build works in both places. */
-const API_BASE = location.pathname.replace(/\/[^/]*$/, "").replace(/\/$/, "");
+   Vercel deploy (which proxies `/arcade/api/*` → the same worker). The
+   sub-mounted index.html sets `window.__API_BASE__ = "/arcade"` before
+   loading this file; the standalone build leaves it unset. */
+const API_BASE = (typeof window !== "undefined" && window.__API_BASE__) || "";
 
 const fmt = (n) => Math.round(n ?? 0).toLocaleString("en-US");
 
