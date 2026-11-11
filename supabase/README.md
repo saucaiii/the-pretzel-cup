@@ -48,3 +48,16 @@ Paste all three into chat. I'll handle `vercel env add` from there.
 - `/baker` and `/driver` pages → P2 and P3
 - Operator additions on `/ops` → P4
 - Telegram + Google Sheet → P5 and P6
+
+## 6. The ledger (p23)
+
+`ledger_event` is the append-only system of record for every
+economically significant action a member takes. Balances are always
+`SUM(amount)` via the `member_balance` view — there is no mutable
+balance column, no cache to go stale. Writes come from
+`api/_lib/members.js`, which is invoked as a side-effect at the end of
+`api/_packs.js` handlers (pack opens, verifies, honor taps, redeems)
+and swallows its own errors so a ledger outage never costs a customer
+their voucher. Economy amounts live in the declarative `earn_rule` and
+`spend_rule` tables; edit by SQL (`update earn_rule set amount = …
+where slug = …`) — no code change needed.
