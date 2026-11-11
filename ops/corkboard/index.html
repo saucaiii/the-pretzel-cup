@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D5237">
+<title>Builds cork board — PPF Operator</title>
+<meta name="description" content="Project cork board for Pretzel Cup builds, backed by Notion.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/assets/ops-chrome.css">
+<style>
+/* ─── BOOT GATE (same as /ops/plan) ──────────────────────── */
+#boot {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ppf-green);
+  color: #F7F8F4;
+  font-family: var(--display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* ─── CORK BOARD ─────────────────────────────────────────── */
+:root {
+  --cork: #c69a5c;
+  --cork-2: #a97c42;
+  --card-paper: #fffbee;
+  --card-paper-2: #fff5d6;
+  --card-ink: #1b1611;
+  --card-ink-2: #5a4d3a;
+  --pin: #a52a2a;
+  --strip-active: #3a7bd5;
+  --strip-in-pr: #8a5cf0;
+  --strip-blocked: #e14a4a;
+  --strip-paused: #d6a43a;
+  --strip-shipped: #3fa05a;
+  --strip-idea: #8a8578;
+}
+
+body {
+  margin: 0;
+  font-family: var(--body);
+  color: var(--ink);
+  background: var(--bg);
+}
+
+#app[hidden] { display: none !important; }
+
+main.board-wrap {
+  padding: 16px 20px 80px;
+  min-height: calc(100dvh - 120px);
+  background:
+    radial-gradient(1200px 400px at 15% 0%, rgba(255,255,255,0.05), transparent 60%),
+    radial-gradient(900px 600px at 90% 40%, rgba(0,0,0,0.08), transparent 70%),
+    repeating-radial-gradient(circle at 25% 30%, var(--cork) 0 2px, var(--cork-2) 2px 3px),
+    var(--cork);
+}
+
+.board-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 14px;
+  margin-bottom: 14px;
+  background: rgba(27, 22, 17, 0.6);
+  color: #F7F8F4;
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
+}
+.board-title {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+.board-sub {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #e8e1cf;
+  text-transform: uppercase;
+  margin-left: 10px;
+}
+.board-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn {
+  background: var(--accent);
+  color: var(--ppf-black);
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.btn.ghost {
+  background: transparent;
+  color: #F7F8F4;
+  border: 1px solid rgba(247, 248, 244, 0.4);
+}
+.btn.ghost:hover { background: rgba(247, 248, 244, 0.1); }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  background: rgba(27, 22, 17, 0.5);
+  border-radius: 10px;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e8e1cf;
+}
+.filters select, .filters input[type="search"] {
+  background: #fffbee;
+  border: 1px solid #a97c42;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font: 500 14px var(--body), system-ui, sans-serif;
+  color: var(--card-ink);
+}
+.filters .stuck-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-direction: row;
+  align-self: end;
+  color: #F7F8F4;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The board itself — a wrap grid of cards with slight random tilt. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px 18px;
+  align-items: start;
+}
+.card {
+  background: var(--card-paper);
+  color: var(--card-ink);
+  border-radius: 4px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 6px 14px rgba(0, 0, 0, 0.25),
+    0 20px 24px -18px rgba(0, 0, 0, 0.4);
+  padding: 14px 14px 12px 20px;
+  position: relative;
+  cursor: pointer;
+  transform: var(--tilt, rotate(0deg));
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  overflow: hidden;
+}
+.card:hover {
+  transform: var(--tilt, rotate(0deg)) translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 10px 22px rgba(0, 0, 0, 0.3),
+    0 24px 28px -20px rgba(0, 0, 0, 0.5);
+}
+/* Red pin at the top. */
+.card::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle at 35% 30%, #ff8e8e, var(--pin) 70%);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+/* Left status strip. */
+.card .strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--strip-idea);
+}
+.card[data-status="Active"] .strip { background: var(--strip-active); }
+.card[data-status="In PR"] .strip { background: var(--strip-in-pr); }
+.card[data-status="Blocked"] .strip { background: var(--strip-blocked); }
+.card[data-status="Paused"] .strip { background: var(--strip-paused); }
+.card[data-status="Shipped"] .strip { background: var(--strip-shipped); }
+
+.card h3 {
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  margin: 2px 0 6px;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.card .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.card .chip {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(27, 22, 17, 0.08);
+  color: var(--card-ink-2);
+}
+.card .chip.status { color: #fff; }
+.card[data-status="Active"] .chip.status { background: var(--strip-active); }
+.card[data-status="In PR"] .chip.status { background: var(--strip-in-pr); }
+.card[data-status="Blocked"] .chip.status { background: var(--strip-blocked); }
+.card[data-status="Paused"] .chip.status { background: var(--strip-paused); }
+.card[data-status="Shipped"] .chip.status { background: var(--strip-shipped); }
+.card[data-status="Idea"] .chip.status { background: var(--strip-idea); color: #fff; }
+.card .chip.prio.P0 { background: #e14a4a; color: #fff; }
+.card .chip.prio.P1 { background: #e0892a; color: #fff; }
+.card .chip.prio.P2 { background: #aba292; color: #fff; }
+
+.card .next {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--card-ink);
+  white-space: pre-wrap;
+}
+.card .blocker-strip {
+  margin: 10px -14px -12px -20px;
+  background: var(--strip-blocked);
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.card .pr-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(27, 22, 17, 0.08);
+  color: var(--card-ink-2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font: 600 10px var(--display), system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.card .pr-badge.MERGED { background: var(--strip-shipped); color: #fff; }
+.card .pr-badge.OPEN { background: var(--strip-in-pr); color: #fff; }
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: #F7F8F4;
+  font-family: var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+/* ─── MODALS ─────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+.modal {
+  background: var(--card-paper);
+  color: var(--card-ink);
+  border-radius: 8px;
+  padding: 20px;
+  width: min(100%, 540px);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+}
+.modal h2 {
+  font-family: var(--display);
+  margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 18px;
+}
+.modal form { display: flex; flex-direction: column; gap: 12px; }
+.modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-ink-2);
+}
+.modal input, .modal select, .modal textarea {
+  font: 500 14px var(--body), system-ui, sans-serif;
+  color: var(--card-ink);
+  background: #fff;
+  border: 1px solid #c3b89b;
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+.modal textarea { min-height: 70px; resize: vertical; font-family: var(--body); }
+.modal .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.modal .actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.modal .danger {
+  background: transparent;
+  color: var(--strip-blocked);
+  border: 1px solid var(--strip-blocked);
+}
+
+/* ─── CLAUDE SIDEBAR ─────────────────────────────────────── */
+.ask-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--accent);
+  color: var(--ppf-black);
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 13px;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ask-fab .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--strip-shipped);
+}
+.ask-fab[data-offline="1"] .dot { background: #a0a0a0; }
+
+.ask-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 100vw);
+  background: #1b1611;
+  color: #f0e7cf;
+  box-shadow: -20px 0 40px rgba(0, 0, 0, 0.35);
+  z-index: 60;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  transform: translateX(100%);
+  transition: transform 220ms ease;
+}
+.ask-panel[data-open="1"] { transform: translateX(0); }
+.ask-panel-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid #332b22;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ask-panel-head h3 {
+  margin: 0;
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.ask-close {
+  background: transparent;
+  border: 0;
+  color: #f0e7cf;
+  font-size: 22px;
+  cursor: pointer;
+}
+.ask-mode {
+  display: flex;
+  gap: 4px;
+  padding: 8px 14px;
+  background: #221b14;
+  border-bottom: 1px solid #332b22;
+}
+.ask-mode button {
+  background: transparent;
+  border: 1px solid #4a3d2e;
+  color: #cbbd98;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ask-mode button[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--ppf-black);
+  border-color: var(--accent);
+}
+.ask-messages {
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ask-msg { padding: 10px 12px; border-radius: 6px; max-width: 90%; }
+.ask-msg.user { background: #3a2f22; align-self: flex-end; }
+.ask-msg.claude { background: #292118; align-self: flex-start; }
+.ask-msg.system {
+  background: transparent;
+  color: #8e8268;
+  align-self: center;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+.ask-input {
+  padding: 12px 14px;
+  border-top: 1px solid #332b22;
+  display: flex;
+  gap: 8px;
+}
+.ask-input textarea {
+  flex: 1;
+  background: #221b14;
+  border: 1px solid #4a3d2e;
+  color: #f0e7cf;
+  padding: 8px 10px;
+  border-radius: 4px;
+  resize: none;
+  font: 500 14px var(--body), system-ui, sans-serif;
+  min-height: 42px;
+  max-height: 180px;
+}
+.ask-input textarea:focus-visible { outline: none; border-color: var(--accent); }
+.ask-input button {
+  background: var(--accent);
+  color: var(--ppf-black);
+  border: 0;
+  border-radius: 4px;
+  padding: 0 14px;
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ask-offline {
+  padding: 10px 14px;
+  background: #332b22;
+  color: #d5c89f;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  border-radius: 6px;
+  margin: 10px 18px 0;
+}
+.ask-offline code {
+  background: #4a3d2e;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     BOOT GATE — identical to /ops/plan. Real sign-in at /signin.
+     ═══════════════════════════════════════════════════════════ -->
+<div id="boot">Loading&hellip;</div>
+
+<div id="app" hidden>
+
+<!-- Shared ops chrome -->
+<div class="ops-banner">
+  PPF Operator &middot; Confidential
+  <span class="user-tag">Signed in as <span id="user-tag">&mdash;</span></span>
+</div>
+<div class="ops-chrome">
+  <a href="/ops" class="ops-brand" aria-label="Operator dashboard">
+    <img src="/ppf-logo.jpg" alt="" class="ops-brand-logo">
+    <span class="ops-brand-text">
+      <span class="t">Philly Pretzel Factory</span>
+      <span class="b">Operator</span>
+    </span>
+  </a>
+  <nav class="ops-site-nav" aria-label="Primary"></nav>
+</div>
+
+<main class="board-wrap">
+  <div class="board-head">
+    <div>
+      <h1 class="board-title">Builds cork board</h1>
+      <span class="board-sub">Notion-backed &middot; <span id="count">0</span> cards</span>
+    </div>
+    <div class="board-actions">
+      <button class="btn ghost" id="refresh-btn" type="button">Refresh</button>
+      <button class="btn" id="add-btn" type="button">+ Add card</button>
+    </div>
+  </div>
+
+  <div class="filters" role="group" aria-label="Filter cards">
+    <label>
+      Status
+      <select id="f-status">
+        <option value="">All</option>
+        <option>Idea</option>
+        <option>Active</option>
+        <option>In PR</option>
+        <option>Blocked</option>
+        <option>Paused</option>
+        <option>Shipped</option>
+      </select>
+    </label>
+    <label>
+      Area
+      <select id="f-area">
+        <option value="">All</option>
+        <option>Ops</option>
+        <option>Wholesale</option>
+        <option>Participant</option>
+        <option>Prospecting</option>
+        <option>People</option>
+        <option>Loyalty</option>
+        <option>Routes</option>
+        <option>Payments</option>
+        <option>Infra</option>
+      </select>
+    </label>
+    <label>
+      Priority
+      <select id="f-priority">
+        <option value="">All</option>
+        <option>P0</option>
+        <option>P1</option>
+        <option>P2</option>
+      </select>
+    </label>
+    <label>
+      Search
+      <input type="search" id="f-search" placeholder="Name or next action">
+    </label>
+    <label class="stuck-toggle">
+      <input type="checkbox" id="f-stuck">
+      <span>Stuck only</span>
+    </label>
+    <label class="stuck-toggle">
+      <input type="checkbox" id="f-hide-shipped" checked>
+      <span>Hide shipped</span>
+    </label>
+  </div>
+
+  <div class="cards" id="cards"></div>
+</main>
+
+<button class="ask-fab" id="ask-fab" type="button" data-offline="1" aria-label="Ask Claude">
+  <span class="dot"></span>
+  Ask Claude
+</button>
+
+<aside class="ask-panel" id="ask-panel" aria-hidden="true">
+  <div class="ask-panel-head">
+    <h3>Claude</h3>
+    <button class="ask-close" id="ask-close" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div>
+    <div class="ask-mode" role="tablist" aria-label="Claude mode">
+      <button role="tab" aria-selected="true" data-mode="chat">Chat</button>
+      <button role="tab" aria-selected="false" data-mode="add">Add card</button>
+      <button role="tab" aria-selected="false" data-mode="sweep">Auto-sweep</button>
+      <button role="tab" aria-selected="false" data-mode="card" disabled title="Click a card first">Per-card</button>
+    </div>
+    <div id="ask-offline" class="ask-offline" hidden>
+      Claude is offline. The cork board still works; set
+      <code>MINI_BRIDGE_URL</code> and <code>MINI_BRIDGE_TOKEN</code> on
+      Vercel and start the bridge on the mini to enable chat.
+    </div>
+  </div>
+  <div class="ask-messages" id="ask-messages"></div>
+  <form class="ask-input" id="ask-form">
+    <textarea id="ask-textarea" rows="2" placeholder="Ask about the board…"></textarea>
+    <button type="submit">Send</button>
+  </form>
+</aside>
+
+</div><!-- #app -->
+
+<template id="tpl-edit-modal">
+  <div class="modal-backdrop">
+    <div class="modal">
+      <h2 class="modal-title">Edit card</h2>
+      <form data-form>
+        <label>
+          Name
+          <input type="text" name="name" required>
+        </label>
+        <div class="row">
+          <label>
+            Status
+            <select name="status">
+              <option>Idea</option>
+              <option>Active</option>
+              <option>In PR</option>
+              <option>Blocked</option>
+              <option>Paused</option>
+              <option>Shipped</option>
+            </select>
+          </label>
+          <label>
+            Priority
+            <select name="priority">
+              <option value="">—</option>
+              <option>P0</option>
+              <option>P1</option>
+              <option>P2</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>
+            Area
+            <select name="area">
+              <option value="">—</option>
+              <option>Ops</option>
+              <option>Wholesale</option>
+              <option>Participant</option>
+              <option>Prospecting</option>
+              <option>People</option>
+              <option>Loyalty</option>
+              <option>Routes</option>
+              <option>Payments</option>
+              <option>Infra</option>
+            </select>
+          </label>
+          <label>
+            PR #
+            <input type="number" name="pr" min="0" step="1">
+          </label>
+        </div>
+        <label>
+          Next action
+          <textarea name="nextAction" rows="2"></textarea>
+        </label>
+        <label>
+          Blocker
+          <textarea name="blocker" rows="2" placeholder="Leave empty if not stuck"></textarea>
+        </label>
+        <div class="row">
+          <label>
+            Session link
+            <input type="url" name="sessionLink" placeholder="claude://…">
+          </label>
+          <label>
+            Repo link
+            <input type="url" name="repoLink" placeholder="https://github.com/…">
+          </label>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn danger" data-archive>Archive</button>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn ghost" data-cancel style="color:var(--card-ink-2);border-color:#c3b89b">Cancel</button>
+            <button type="submit" class="btn">Save</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script src="/assets/ops-nav.js" defer></script>
+<script>
+// ─── BOOT ──────────────────────────────────────────────────
+(async function boot() {
+  const next = encodeURIComponent(location.pathname);
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+    if (!r.ok) { location.replace('/signin?next=' + next); return; }
+    const me = await r.json();
+    if (!me || me.role !== 'operator') {
+      location.replace(me?.role === 'baker' ? '/baker' : me?.role === 'driver' ? '/driver' : '/signin');
+      return;
+    }
+    document.getElementById('user-tag').textContent = me.name || '—';
+    document.getElementById('boot').remove();
+    document.getElementById('app').hidden = false;
+    initApp();
+  } catch {
+    location.replace('/signin?next=' + next);
+  }
+})();
+
+// ─── APP ───────────────────────────────────────────────────
+function initApp() {
+  const state = { builds: [], filtered: [], selectedId: null, bridgeOnline: null };
+
+  const els = {
+    cards: document.getElementById('cards'),
+    count: document.getElementById('count'),
+    refresh: document.getElementById('refresh-btn'),
+    add: document.getElementById('add-btn'),
+    fStatus: document.getElementById('f-status'),
+    fArea: document.getElementById('f-area'),
+    fPriority: document.getElementById('f-priority'),
+    fSearch: document.getElementById('f-search'),
+    fStuck: document.getElementById('f-stuck'),
+    fHideShipped: document.getElementById('f-hide-shipped'),
+    askFab: document.getElementById('ask-fab'),
+    askPanel: document.getElementById('ask-panel'),
+    askClose: document.getElementById('ask-close'),
+    askMessages: document.getElementById('ask-messages'),
+    askForm: document.getElementById('ask-form'),
+    askTextarea: document.getElementById('ask-textarea'),
+    askOffline: document.getElementById('ask-offline'),
+    askMode: document.querySelectorAll('.ask-mode button'),
+  };
+
+  // Filters persist per-user in localStorage so a reload keeps the view.
+  const FILTER_KEY = 'ops.corkboard.filters.v1';
+  try {
+    const saved = JSON.parse(localStorage.getItem(FILTER_KEY) || '{}');
+    if (saved.status) els.fStatus.value = saved.status;
+    if (saved.area) els.fArea.value = saved.area;
+    if (saved.priority) els.fPriority.value = saved.priority;
+    if (saved.search) els.fSearch.value = saved.search;
+    if (typeof saved.stuck === 'boolean') els.fStuck.checked = saved.stuck;
+    if (typeof saved.hideShipped === 'boolean') els.fHideShipped.checked = saved.hideShipped;
+  } catch {}
+  function persistFilters() {
+    try {
+      localStorage.setItem(FILTER_KEY, JSON.stringify({
+        status: els.fStatus.value,
+        area: els.fArea.value,
+        priority: els.fPriority.value,
+        search: els.fSearch.value,
+        stuck: els.fStuck.checked,
+        hideShipped: els.fHideShipped.checked,
+      }));
+    } catch {}
+  }
+
+  // Deterministic tilt from id so cards don't jump on rerender.
+  function tiltFor(id) {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+    const deg = ((h % 60) - 30) / 15; // roughly -2 .. +2 degrees
+    return `rotate(${deg.toFixed(2)}deg)`;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function render() {
+    const q = els.fSearch.value.trim().toLowerCase();
+    const sv = els.fStatus.value;
+    const av = els.fArea.value;
+    const pv = els.fPriority.value;
+    const stuckOnly = els.fStuck.checked;
+    const hideShipped = els.fHideShipped.checked;
+
+    state.filtered = state.builds.filter(b => {
+      if (hideShipped && b.status === 'Shipped') return false;
+      if (sv && b.status !== sv) return false;
+      if (av && b.area !== av) return false;
+      if (pv && b.priority !== pv) return false;
+      if (stuckOnly && !(b.blocker && b.blocker.trim())) return false;
+      if (q) {
+        const hay = `${b.name || ''} ${b.nextAction || ''} ${b.blocker || ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    els.count.textContent = state.filtered.length;
+
+    if (state.filtered.length === 0) {
+      els.cards.innerHTML = '<div class="empty-state">No cards match. Try clearing filters or adding one.</div>';
+      return;
+    }
+
+    els.cards.innerHTML = state.filtered.map(b => `
+      <article class="card" data-id="${esc(b.id)}" data-status="${esc(b.status || 'Idea')}" style="--tilt:${tiltFor(b.id)}">
+        <div class="strip"></div>
+        ${b.pr ? `<span class="pr-badge ${esc(b.prState || '')}">PR #${b.pr}${b.prState ? ' · ' + esc(b.prState) : ''}</span>` : ''}
+        <h3>${esc(b.name)}</h3>
+        <div class="meta">
+          <span class="chip status">${esc(b.status || 'Idea')}</span>
+          ${b.area ? `<span class="chip">${esc(b.area)}</span>` : ''}
+          ${b.priority ? `<span class="chip prio ${esc(b.priority)}">${esc(b.priority)}</span>` : ''}
+        </div>
+        ${b.nextAction ? `<div class="next">${esc(b.nextAction)}</div>` : ''}
+        ${b.blocker ? `<div class="blocker-strip">${esc(b.blocker)}</div>` : ''}
+      </article>
+    `).join('');
+  }
+
+  els.cards.addEventListener('click', e => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const id = card.getAttribute('data-id');
+    const build = state.builds.find(b => b.id === id);
+    if (build) openEdit(build);
+  });
+
+  // ─── Load ─────────────────────────────────────────
+  async function load() {
+    els.refresh.disabled = true;
+    try {
+      const r = await fetch('/api/plan-state?resource=corkboard', {
+        credentials: 'same-origin',
+        cache: 'no-cache',
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      state.builds = Array.isArray(data.builds) ? data.builds : [];
+      render();
+    } catch (e) {
+      els.cards.innerHTML = `<div class="empty-state">Couldn't load cards: ${esc(e.message)}</div>`;
+    } finally {
+      els.refresh.disabled = false;
+    }
+  }
+
+  // ─── Edit / Add modal ────────────────────────────
+  function openEdit(build) {
+    state.selectedId = build?.id || null;
+    const tpl = document.getElementById('tpl-edit-modal');
+    const frag = tpl.content.cloneNode(true);
+    const root = frag.querySelector('.modal-backdrop');
+    const form = root.querySelector('[data-form]');
+    const title = root.querySelector('.modal-title');
+    const archive = root.querySelector('[data-archive]');
+    const cancel = root.querySelector('[data-cancel]');
+    const isNew = !build;
+    title.textContent = isNew ? 'Add card' : 'Edit card';
+    if (isNew) archive.remove();
+
+    // Prefill
+    const b = build || { status: 'Active', area: '', priority: '' };
+    form.name.value = b.name || '';
+    form.status.value = b.status || 'Active';
+    form.priority.value = b.priority || '';
+    form.area.value = b.area || '';
+    form.pr.value = b.pr || '';
+    form.nextAction.value = b.nextAction || '';
+    form.blocker.value = b.blocker || '';
+    form.sessionLink.value = b.sessionLink || '';
+    form.repoLink.value = b.repoLink || '';
+
+    function close() { root.remove(); state.selectedId = null; updatePerCardMode(); }
+    cancel.addEventListener('click', close);
+    root.addEventListener('click', e => { if (e.target === root) close(); });
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const patch = {
+        name: form.name.value.trim(),
+        status: form.status.value || null,
+        priority: form.priority.value || null,
+        area: form.area.value || null,
+        pr: form.pr.value ? Number(form.pr.value) : null,
+        nextAction: form.nextAction.value,
+        blocker: form.blocker.value,
+        sessionLink: form.sessionLink.value.trim() || null,
+        repoLink: form.repoLink.value.trim() || null,
+        lastTouched: new Date().toISOString().slice(0, 10),
+      };
+      try {
+        if (isNew) {
+          const r = await fetch('/api/plan-state?resource=corkboard', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch),
+          });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        } else {
+          const r = await fetch(`/api/plan-state?resource=corkboard&id=${encodeURIComponent(build.id)}`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch),
+          });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        }
+        close();
+        await load();
+      } catch (err) {
+        alert('Save failed: ' + err.message);
+      }
+    });
+
+    if (!isNew) {
+      archive.addEventListener('click', async () => {
+        if (!confirm(`Archive "${build.name}"?`)) return;
+        try {
+          const r = await fetch(`/api/plan-state?resource=corkboard&id=${encodeURIComponent(build.id)}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+          });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          close();
+          await load();
+        } catch (err) {
+          alert('Archive failed: ' + err.message);
+        }
+      });
+    }
+
+    document.body.appendChild(frag);
+    setTimeout(() => form.name.focus(), 0);
+    updatePerCardMode();
+  }
+
+  // ─── Filters ─────────────────────────────────────
+  [els.fStatus, els.fArea, els.fPriority, els.fSearch, els.fStuck, els.fHideShipped]
+    .forEach(el => el.addEventListener('input', () => { persistFilters(); render(); }));
+
+  els.refresh.addEventListener('click', load);
+  els.add.addEventListener('click', () => openEdit(null));
+
+  // ─── Claude sidebar ──────────────────────────────
+  function updatePerCardMode() {
+    const perCard = document.querySelector('.ask-mode [data-mode="card"]');
+    perCard.disabled = !state.selectedId;
+  }
+
+  els.askFab.addEventListener('click', () => {
+    els.askPanel.dataset.open = '1';
+    els.askPanel.setAttribute('aria-hidden', 'false');
+    els.askTextarea.focus();
+  });
+  els.askClose.addEventListener('click', () => {
+    els.askPanel.dataset.open = '0';
+    els.askPanel.setAttribute('aria-hidden', 'true');
+  });
+
+  let askMode = 'chat';
+  els.askMode.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      els.askMode.forEach(b => b.setAttribute('aria-selected', b === btn ? 'true' : 'false'));
+      askMode = btn.dataset.mode;
+    });
+  });
+
+  function appendMsg(role, text) {
+    const div = document.createElement('div');
+    div.className = `ask-msg ${role}`;
+    div.textContent = text;
+    els.askMessages.appendChild(div);
+    els.askMessages.scrollTop = els.askMessages.scrollHeight;
+  }
+
+  async function probeBridge() {
+    try {
+      const r = await fetch('/api/plan-state?resource=corkboard&action=ask', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ probe: true }),
+      });
+      state.bridgeOnline = r.status !== 503;
+    } catch {
+      state.bridgeOnline = false;
+    }
+    els.askFab.dataset.offline = state.bridgeOnline ? '0' : '1';
+    els.askOffline.hidden = !!state.bridgeOnline;
+  }
+
+  els.askForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const text = els.askTextarea.value.trim();
+    if (!text) return;
+    appendMsg('user', text);
+    els.askTextarea.value = '';
+    const body = { mode: askMode, prompt: text, selectedId: state.selectedId };
+    try {
+      const r = await fetch('/api/plan-state?resource=corkboard&action=ask', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r.status === 503) {
+        appendMsg('system', 'Claude is offline — start the mini bridge.');
+        state.bridgeOnline = false;
+        els.askFab.dataset.offline = '1';
+        els.askOffline.hidden = false;
+        return;
+      }
+      const data = await r.json().catch(() => ({}));
+      if (data.reply) appendMsg('claude', String(data.reply));
+      else appendMsg('system', 'No reply.');
+      // Claude may have changed cards; refresh on any ask that could write.
+      if (askMode === 'add' || askMode === 'sweep' || askMode === 'card') load();
+    } catch (err) {
+      appendMsg('system', 'Error: ' + err.message);
+    }
+  });
+
+  // Allow Enter to submit, Shift+Enter for newline.
+  els.askTextarea.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      els.askForm.requestSubmit();
+    }
+  });
+
+  load();
+  probeBridge();
+}
+</script>
+</body>
+</html>

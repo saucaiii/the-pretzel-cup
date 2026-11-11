@@ -1,41 +1,49 @@
 # Working memory (short-term). Keep under 60 lines. Prune when a task closes.
-Branch: claude/ops-qr-split-d81b8e
-Task: Split /ops/qr into two tabs (QR + Referral) with a shared status strip
+Branch: claude/ops-corkboard-notion
+Task: Build /ops/corkboard — a Notion-backed project cork board for Pretzel
+Cup dev work, with a Claude sidebar that proxies to a future mini bridge.
 
 ## Progress
-- Rebuilt ops/qr/index.html as two tabs ("QR" + "Referral") with a shared
-  read-only status strip above them. Backend untouched.
-- Panels marked with data-tab; CSS on #tabs-root[data-active=…] hides the
-  other group. Order on-screen stays: p-redirect, p-qr, p-stats, p-history
-  for QR; p-offer, p-packs for Referral.
-- Tab state: localStorage['ops.qr.tab'], URL hash wins on load, keyboard
-  arrows / Home / End move between the two buttons.
-- Shared strip updates on config load, set_target, reset_target,
-  publish_offer, restore. undefined for either arg = leave alone.
-- Dropped the §1..§7 numbering from headings (would read oddly inside tabs).
+- Notion DB "Pretzel Cup — Builds" created
+  (data_source_id e717957f-4722-4e3e-b669-02f466c1bcb4; page id
+  8f20306422db4775a110dbc4eddf1fa9). Schema: Name, Status, Area,
+  Priority, Next Action, Blocker, PR, PR State, Session Link, Repo Link,
+  Last Touched, Build ID (auto). Seeded 17 rows from the Pretzels
+  sidebar group (11 active/in-PR, 4 shipped, 1 paused, 1 self-ref).
+- `api/_notion.js` — fetch-based Notion wrapper (listBuilds, createBuild,
+  updateBuild, archiveBuild). Underscore-prefixed, not deployed as a
+  function. Moved out of `api/_lib/` since that path is HIGH-risk in
+  policy.sh.
+- `api/plan-state.js` — folded `?resource=corkboard` branch:
+  GET/POST/PATCH/DELETE for Notion + `?action=ask` proxy to
+  `MINI_BRIDGE_URL/ask` with 503 graceful offline. Default 90-Day Plan
+  behaviour untouched.
+- `ops/corkboard/index.html` — gated page (shares /ops/plan's boot
+  pattern), cork-texture board, deterministic tilt per card, status
+  strip + PR badge + blocker strip, filter row (status, area, priority,
+  search, stuck-only, hide-shipped), edit/add modal, archive button,
+  Claude FAB + right-dock sidebar with four mode tabs (chat, add,
+  sweep, card) and an offline banner probed at load.
+- `ops/index.html` — tool tile "Cork Board" added above Announcements.
+- `docs/corkboard.md` — setup recipe for NOTION_TOKEN,
+  NOTION_BUILDS_DB_ID, MINI_BRIDGE_URL, MINI_BRIDGE_TOKEN; the four env
+  vars are operator-added, not committed.
+
+## Open items this PR leaves behind
+- No mini bridge code yet (`~/pretzel-corkboard-bridge/` is a follow-up
+  PR outside this repo).
+- No tests yet. The repo has no test suite (CLAUDE.md: "No test suite
+  yet"). Manual smoke list is in the PR body.
+- The `tool-corkboard-stat` id on /ops renders as mdash until a
+  follow-up wires a stat (e.g. count of non-shipped builds).
 
 ## Failures and root causes
-- Reviewer (reasoning error): scalePhone() ran at init with
-  #phone-screen hidden (default tab = QR), so transform: scale(0) until a
-  window resize. Fixed by calling scalePhone() from setActive() — the
-  first time the Referral tab is shown, it recomputes.
-- Reviewer (reasoning error): plan promised "shared strip collapses to
-  one column under 720px"; CSS only flipped borders, grid stayed two-up.
-  Fixed by adding `.shared-strip { grid-template-columns: 1fr; }` inside
-  the 720px media query.
-
-## Review notes
-- Two pre-existing test failures (tests/qr-config.test.mjs, tests/
-  scan-redirect.test.mjs) are ESM module-resolution errors; they fail
-  against clean origin/main too. Unrelated.
-- Every fetch(…) / api(…) call site matches origin/main 1-for-1. Actions
-  set_target, reset_target, publish_offer, restore unchanged.
+- None this run.
 
 ## Handoff
-- Commit + push the branch. Open a draft PR against main with the agent
-  template filled.
-- Human preview via `npm run deploy` (local-only per CLAUDE.md).
-- Smoke test: /ops/qr renders; "QR" tab shows sticker + studio + scans +
-  history; "Referral" tab shows offer editor (phone preview working) +
-  pack funnel; shared strip visible from both tabs; refresh keeps last
-  tab; URL #qr / #referral switches tabs on load.
+- Open a draft PR against `main` with the agent template filled.
+- Operator adds the four env vars in Vercel, shares the Notion database
+  with the integration, then `npm run deploy`.
+- Smoke test after deploy: /ops/corkboard loads after Mike/pretzels
+  login, shows 17 cards, filters work, add/edit/archive round-trips to
+  Notion, Claude FAB shows grey dot + "offline" chip in the sidebar.
