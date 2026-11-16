@@ -4,28 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0D5237">
-<title>QR + Offer | Operator | Philly Pretzel Factory</title>
+<title>CRM | Operator | Philly Pretzel Factory</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Brand stand-ins: Archivo Black (FatFrank), Montserrat (Gotham). -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Montserrat:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="/brand.css">
 <link rel="stylesheet" href="/assets/ops-chrome.css">
 <style>
-/* Licensed brand fonts, served from /free-pretzels/fonts/ (files kept
-   out of git: the repo is public). Stand-ins follow in each stack in
-   case a deploy is missing them. Only Gotham Book is installed, so
-   Gotham bold weights are synthesized until Medium/Bold are added. */
 @font-face { font-family: 'FatFrank'; src: url('/free-pretzels/fonts/fat-frank-heavy.otf') format('opentype'); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: 'Gotham'; src: url('/free-pretzels/fonts/gotham-book.otf') format('opentype'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'SantElia Script'; src: url('/free-pretzels/fonts/santelia-script-bold.otf') format('opentype'); font-weight: 100 900; font-display: swap; }
 
-/* This page follows the brand guide strictly: solid palette colours,
-   square corners, no shadows, no hover animation. It reuses the ops
-   chrome (header, nav) and overrides type to the brand stand-ins. */
 :root {
-  /* Brand fonts first, stand-ins after. */
   --display: 'FatFrank', 'Archivo Black', 'Arial Black', Impact, sans-serif;
   --body: 'Gotham', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
   --qr-green: #0D5237;
@@ -79,7 +70,6 @@ body { background: var(--qr-green); font-family: var(--body); }
 .choice[aria-pressed="true"] { border-color: var(--qr-gold-light); background: var(--qr-green); }
 .sw { width: 18px; height: 18px; border: 1px solid var(--qr-gold-light); display: inline-block; }
 
-/* Offer editor + preview */
 .editor-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
 @media (min-width: 980px) { .editor-grid { grid-template-columns: minmax(0, 1fr) 360px; } }
 .phone { width: 340px; max-width: 100%; margin: 0 auto; border: 10px solid var(--qr-black); outline: 2px solid var(--qr-gold-deep); background: var(--qr-black); }
@@ -93,7 +83,6 @@ body { background: var(--qr-green); font-family: var(--body); }
 .lint .clean { color: var(--qr-gold-light); border-top: 0; }
 .rules { margin: 10px 0 0; padding: 0 0 0 18px; color: var(--qr-gold-light); font-size: 12px; }
 
-/* QR studio */
 .qr-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 @media (min-width: 780px) { .qr-grid { grid-template-columns: minmax(0, 1fr) 280px; } }
 .qr-out { width: 100%; max-width: 280px; margin: 0 auto; }
@@ -103,7 +92,6 @@ body { background: var(--qr-green); font-family: var(--body); }
 .contrast.fail { color: var(--qr-white); }
 .contrast.fail::before { content: "Blocked: "; color: var(--qr-gold); font-weight: 700; }
 
-/* Tables */
 table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--qr-white); }
 th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--qr-gold-deep); vertical-align: top; }
 th { font-family: var(--display); font-weight: 400; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--qr-gold-light); border-top: 0; }
@@ -116,8 +104,8 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 .hist .what { color: var(--qr-white); font-weight: 700; overflow-wrap: anywhere; }
 .hist .meta { color: var(--qr-gold-light); font-size: 12px; }
 
-/* Shared status strip (both tabs want these two facts at a glance) */
-.shared-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0; border: 2px solid var(--qr-gold-deep); background: var(--qr-black); margin: 0 0 16px; }
+/* Shared status strip (Settings-page detail, now sits above all tabs). */
+.shared-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0; border: 2px solid var(--qr-gold-deep); background: var(--qr-black); margin: 0 0 16px; }
 .shared-strip .cell { padding: 12px 16px; border-right: 2px solid var(--qr-gold-deep); min-width: 0; }
 .shared-strip .cell:last-child { border-right: 0; }
 @media (max-width: 720px) {
@@ -128,9 +116,11 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 .shared-strip .lbl { display: block; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; color: var(--qr-gold-light); text-transform: uppercase; margin-bottom: 4px; }
 .shared-strip .val { color: var(--qr-white); font-family: var(--body); font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
 .shared-strip .val small { display: block; font-weight: 500; color: var(--qr-gold-light); font-size: 12px; margin-top: 2px; }
+.pulse { display: inline-block; width: 8px; height: 8px; background: var(--qr-gold-light); vertical-align: middle; margin-right: 8px; animation: ppf-pulse 1.5s ease-in-out infinite; }
+@keyframes ppf-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 
-/* Segmented tab control */
-.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 0 0 24px; border: 2px solid var(--qr-gold-deep); background: var(--qr-black); }
+/* Tab control (3 tabs). */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0 0 24px; border: 2px solid var(--qr-gold-deep); background: var(--qr-black); }
 .tab-btn { background: transparent; color: var(--qr-gold-light); border: 0; border-right: 2px solid var(--qr-gold-deep); padding: 14px 16px; font-family: var(--display); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; min-height: 48px; }
 .tab-btn:last-child { border-right: 0; }
 .tab-btn[aria-selected="true"] { background: var(--qr-gold); color: var(--qr-black); }
@@ -141,9 +131,73 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
   .tab-btn:last-child { border-bottom: 0; }
 }
 
-/* Tab visibility: the active data-tab stays, the other hides */
-.tabs-root[data-active="qr"]       .panel[data-tab="referral"] { display: none; }
-.tabs-root[data-active="referral"] .panel[data-tab="qr"]       { display: none; }
+.tabs-root[data-active="today"]    .panel[data-tab="contacts"] { display: none; }
+.tabs-root[data-active="today"]    .panel[data-tab="settings"] { display: none; }
+.tabs-root[data-active="contacts"] .panel[data-tab="today"]    { display: none; }
+.tabs-root[data-active="contacts"] .panel[data-tab="settings"] { display: none; }
+.tabs-root[data-active="settings"] .panel[data-tab="today"]    { display: none; }
+.tabs-root[data-active="settings"] .panel[data-tab="contacts"] { display: none; }
+
+/* KPI tiles. */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 2px solid var(--qr-gold-deep); background: var(--qr-black); }
+.kpi { padding: 18px 16px; border-right: 2px solid var(--qr-gold-deep); min-width: 0; }
+.kpi:last-child { border-right: 0; }
+@media (max-width: 860px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .kpi { border-bottom: 2px solid var(--qr-gold-deep); } .kpi:nth-last-child(-n+2) { border-bottom: 0; } .kpi:nth-child(2n) { border-right: 0; } .kpi:nth-child(2n-1) { border-right: 2px solid var(--qr-gold-deep); } }
+@media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } .kpi { border-right: 0; border-bottom: 2px solid var(--qr-gold-deep); } .kpi:last-child { border-bottom: 0; } }
+.kpi .lbl { display: block; margin-bottom: 6px; }
+.kpi-value { font-family: var(--display); font-size: 36px; color: var(--qr-white); font-variant-numeric: tabular-nums; line-height: 1.05; }
+.kpi-delta { display: inline-block; margin-left: 10px; font-family: var(--body); font-weight: 700; font-size: 12px; padding: 2px 8px; vertical-align: middle; }
+.kpi-delta.up { background: var(--qr-gold-light); color: var(--qr-black); }
+.kpi-delta.flat { background: var(--qr-gold-deep); color: var(--qr-black); }
+.kpi-delta.down { background: var(--qr-white); color: var(--qr-black); }
+.kpi-sub { color: var(--qr-gold-light); font-size: 12px; margin-top: 6px; font-family: var(--body); }
+
+/* Funnel. */
+.funnel { display: flex; flex-direction: column; gap: 10px; }
+.funnel-step { display: grid; grid-template-columns: 140px minmax(0, 1fr) 80px; gap: 12px; align-items: center; }
+@media (max-width: 640px) { .funnel-step { grid-template-columns: 120px minmax(0, 1fr); } .funnel-conv { grid-column: 1 / -1; text-align: right; } }
+.funnel-name { color: var(--qr-gold-light); font-family: var(--display); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.funnel-track { height: 28px; background: var(--qr-green); border: 2px solid var(--qr-gold-deep); position: relative; overflow: hidden; }
+.funnel-fill { position: absolute; top: 0; left: 0; bottom: 0; background: var(--qr-gold); transition: width 0.25s ease; }
+.funnel-count { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); color: var(--qr-black); font-family: var(--body); font-weight: 700; font-size: 13px; mix-blend-mode: normal; }
+.funnel-conv { color: var(--qr-gold-light); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.funnel-conv.bad { color: var(--qr-white); font-weight: 700; }
+
+/* Live leads feed. */
+.feed { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; }
+.feed li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-top: 1px solid var(--qr-gold-deep); }
+.feed li:first-child { border-top: 0; }
+.feed .what { color: var(--qr-white); overflow-wrap: anywhere; }
+.feed .what b { color: var(--qr-gold-light); font-family: var(--display); font-weight: 400; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 8px; display: inline-block; }
+.feed .meta { color: var(--qr-gold-light); font-size: 12px; white-space: nowrap; align-self: center; }
+
+/* Contacts. */
+.contacts-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-bottom: 14px; }
+@media (max-width: 640px) { .contacts-top { grid-template-columns: 1fr; } }
+.contacts-search { display: flex; align-items: center; }
+.contacts-search input { background: var(--qr-green); border: 2px solid var(--qr-gold-deep); border-radius: 0; padding: 10px 12px; color: var(--qr-white); font-family: var(--body); font-size: 15px; font-weight: 500; width: 100%; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip { padding: 6px 12px; border: 2px solid var(--qr-gold-deep); background: transparent; color: var(--qr-gold-light); font-family: var(--display); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; border-radius: 0; }
+.chip[aria-pressed="true"] { border-color: var(--qr-gold-light); background: var(--qr-gold); color: var(--qr-black); }
+.contacts-table td { font-size: 13px; }
+.contacts-table .email { color: var(--qr-white); font-weight: 500; overflow-wrap: anywhere; }
+.contacts-table .code { font-family: var(--body); font-weight: 700; color: var(--qr-gold-light); letter-spacing: 0.06em; }
+.contacts-table .st { font-family: var(--display); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.contacts-table .st.verified { color: var(--qr-gold-light); }
+.contacts-table .st.completed { color: var(--qr-gold); }
+.contacts-table .st.redeemed { color: var(--qr-white); }
+.contacts-foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--qr-gold-light); font-size: 12px; flex-wrap: wrap; gap: 10px; }
+.contacts-foot .pager { display: flex; gap: 8px; }
+
+/* Collapsible settings sub-panels. */
+details.sub { background: transparent; border-top: 1px solid var(--qr-gold-deep); padding: 14px 0; }
+details.sub:first-of-type { border-top: 0; padding-top: 0; }
+details.sub > summary { list-style: none; cursor: pointer; color: var(--qr-gold); font-family: var(--display); font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+details.sub > summary::-webkit-details-marker { display: none; }
+details.sub > summary::after { content: '+'; font-family: var(--body); font-weight: 700; color: var(--qr-gold-light); font-size: 20px; margin-left: 12px; }
+details.sub[open] > summary::after { content: '\2212'; }
+details.sub > summary .sub-sub { color: var(--qr-gold-light); font-family: var(--body); font-size: 12px; letter-spacing: 0; text-transform: none; font-weight: 500; margin-left: 10px; }
+details.sub > .sub-body { padding: 16px 0 6px; }
 </style>
 </head>
 <body>
@@ -178,8 +232,8 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
   <section class="page">
     <div class="page-eyebrow">Growth</div>
-    <h1 class="page-title">QR + Offer</h1>
-    <p class="page-sub">Point the window sticker anywhere, run the free pretzel offer, make QR codes for new spots, and see what gets scanned. Changes go live within about a minute. No redeploy.</p>
+    <h1 class="page-title">CRM</h1>
+    <p class="page-sub">The window-sticker funnel from scan to voucher redemption. Capture, review, export. Settings for QR + offer sit under the Settings tab.</p>
 
     <div class="notice" id="config-notice" hidden></div>
 
@@ -192,236 +246,331 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
         <span class="lbl">Pack game</span>
         <div class="val" id="strip-game">Loading<small></small></div>
       </div>
+      <div class="cell">
+        <span class="lbl">Live today</span>
+        <div class="val" id="strip-live"><span class="pulse" aria-hidden="true"></span><span id="strip-live-text">&mdash;</span><small id="strip-live-sub"></small></div>
+      </div>
     </div>
 
-    <div class="tabs" role="tablist" aria-label="QR and Referral">
-      <button class="tab-btn" type="button" role="tab" id="tab-qr-btn"       aria-selected="true"  aria-controls="p-redirect p-qr p-stats p-history" data-tab="qr">QR</button>
-      <button class="tab-btn" type="button" role="tab" id="tab-referral-btn" aria-selected="false" aria-controls="p-offer p-packs" data-tab="referral">Referral</button>
+    <div class="tabs" role="tablist" aria-label="CRM views">
+      <button class="tab-btn" type="button" role="tab" id="tab-today-btn"    aria-selected="true"  aria-controls="p-today"    data-tab="today">Today</button>
+      <button class="tab-btn" type="button" role="tab" id="tab-contacts-btn" aria-selected="false" aria-controls="p-contacts" data-tab="contacts">Contacts</button>
+      <button class="tab-btn" type="button" role="tab" id="tab-settings-btn" aria-selected="false" aria-controls="p-settings" data-tab="settings">Settings</button>
     </div>
 
-    <div class="layout tabs-root" id="tabs-root" data-active="qr">
+    <div class="layout tabs-root" id="tabs-root" data-active="today">
 
-      <!-- 1. Redirect -->
-      <div class="panel" id="p-redirect" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
-        <h2>Where the sticker goes</h2>
-        <p class="hint">Every QR code points at <b>/scan</b>. This picks where /scan sends people.</p>
-        <p class="current" id="cur-target">Loading<small></small></p>
-        <div class="two">
-          <div class="field">
-            <label for="t-page">Site page</label>
-            <select id="t-page">
-              <option value="/free-pretzels">/free-pretzels (offer page)</option>
-              <option value="/">/ (home)</option>
-              <option value="/products">/products</option>
-              <option value="/order">/order</option>
-              <option value="/wholesale">/wholesale</option>
-              <option value="/partners">/partners</option>
-              <option value="/videos">/videos</option>
-              <option value="/cup">/cup</option>
-              <option value="">Custom URL</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="t-custom">Custom URL or /path</label>
-            <input type="text" id="t-custom" maxlength="2000" placeholder="https://example.com/promo" autocomplete="off" spellcheck="false">
-          </div>
+      <!-- ─────────── TODAY ─────────── -->
+      <div class="panel" id="p-today" data-tab="today" role="tabpanel" aria-labelledby="tab-today-btn">
+        <h2>Today</h2>
+        <p class="hint" id="today-hint">Scans, verified leads, completions, and voucher redemptions since midnight New York time. Deltas compare to the same hours yesterday.</p>
+
+        <div class="kpi-grid" aria-label="Key numbers">
+          <div class="kpi"><span class="lbl">Scans</span><div class="kpi-value" id="k-scans">&mdash;</div><div class="kpi-sub" id="k-scans-sub"></div></div>
+          <div class="kpi"><span class="lbl">Verified</span><div class="kpi-value" id="k-verified">&mdash;</div><div class="kpi-sub" id="k-verified-sub"></div></div>
+          <div class="kpi"><span class="lbl">Completed</span><div class="kpi-value" id="k-completed">&mdash;</div><div class="kpi-sub" id="k-completed-sub"></div></div>
+          <div class="kpi"><span class="lbl">Redeemed</span><div class="kpi-value" id="k-redeemed">&mdash;</div><div class="kpi-sub" id="k-redeemed-sub"></div></div>
         </div>
-        <p class="status" id="t-check"></p>
-        <div class="btn-row">
-          <button class="qbtn" id="t-save" type="button">Save destination</button>
-          <a class="qbtn line" id="t-test" href="/scan" target="_blank" rel="noopener">Test /scan</a>
-          <button class="qbtn line" id="t-reset" type="button">Reset to /free-pretzels</button>
+
+        <h2 style="margin:28px 0 4px">Funnel</h2>
+        <p class="hint">Step-to-step conversion. The number on the right is how many of the previous step made it through.</p>
+        <div class="funnel" id="funnel" aria-label="Pack game funnel">
+          <!-- Rendered by JS. -->
         </div>
-        <p class="status" id="t-status" role="status"></p>
+
+        <h2 style="margin:28px 0 4px">Live leads</h2>
+        <p class="hint">Last 20 captures. Newest first. Updates every 20 seconds.</p>
+        <ul class="feed" id="feed" aria-live="polite">
+          <li class="empty" id="feed-empty">Loading.</li>
+        </ul>
       </div>
 
-      <!-- 2 + 3. Offer editor, creative tools, preview -->
-      <div class="panel" id="p-offer" data-tab="referral" role="tabpanel" aria-labelledby="tab-referral-btn">
-        <h2>Free pretzel offer</h2>
-        <p class="hint">Edits show in the phone on the right. Nothing is public until you press Publish.</p>
-        <div class="editor-grid">
-          <form id="offer-form" autocomplete="off">
-            <div class="field">
-              <label for="o-headline">Headline</label>
-              <input id="o-headline" name="headline" maxlength="80" required placeholder="Free Pretzel. On Us.">
-              <span class="count" data-for="o-headline"></span>
-            </div>
-            <div class="two">
-              <div class="field">
-                <label for="o-accent">Accent word (script, optional)</label>
-                <input id="o-accent" name="accent" maxlength="24" placeholder="Fresh">
-              </div>
-              <div class="field">
-                <label for="o-stamp">Stamp line (optional)</label>
-                <input id="o-stamp" name="stamp" maxlength="40" placeholder="This week only">
-                <span class="count" data-for="o-stamp"></span>
-              </div>
-            </div>
-            <div class="field">
-              <label for="o-details">Details</label>
-              <textarea id="o-details" name="details" maxlength="600" placeholder="Crave it. Love it. Share it. One free soft pretzel with any purchase."></textarea>
-              <span class="count" data-for="o-details"></span>
-            </div>
-            <div class="field">
-              <span class="lbl">How to claim (up to 5 steps)</span>
-              <input id="o-step1" class="o-step" maxlength="140" placeholder="Show this screen at the counter">
-              <input id="o-step2" class="o-step" maxlength="140" placeholder="Pick your pretzel">
-              <input id="o-step3" class="o-step" maxlength="140">
-              <input id="o-step4" class="o-step" maxlength="140">
-              <input id="o-step5" class="o-step" maxlength="140">
-            </div>
-            <div class="field">
-              <label for="o-fine">Fine print</label>
-              <textarea id="o-fine" name="fine_print" maxlength="800" placeholder="Limit one per guest. Lynbrook and Franklin Square only."></textarea>
-              <span class="count" data-for="o-fine"></span>
-            </div>
+      <!-- ─────────── CONTACTS ─────────── -->
+      <div class="panel" id="p-contacts" data-tab="contacts" role="tabpanel" aria-labelledby="tab-contacts-btn">
+        <h2>Contacts</h2>
+        <p class="hint">Every verified or opted-in lead from the pack game. Search by email, narrow with the chips, download what matches.</p>
 
-            <h2 style="margin-top:8px">Look and schedule</h2>
-            <div class="field">
-              <span class="lbl">Hero colour (solid brand colours only)</span>
-              <div class="choices" id="layout-group">
-                <button type="button" class="choice" data-layout="green" aria-pressed="true"><span class="sw" style="background:#0D5237"></span>Green</button>
-                <button type="button" class="choice" data-layout="black" aria-pressed="false"><span class="sw" style="background:#000000"></span>Black</button>
-                <button type="button" class="choice" data-layout="gold-light" aria-pressed="false"><span class="sw" style="background:#F2E7A4"></span>Gold light</button>
-              </div>
-              <span class="count" id="tagline-note"></span>
-            </div>
-            <div class="two">
-              <div class="field">
-                <label for="o-start">Starts (optional)</label>
-                <input type="date" id="o-start">
-              </div>
-              <div class="field">
-                <label for="o-end">Ends (optional)</label>
-                <input type="date" id="o-end">
-              </div>
-            </div>
-            <p class="hint">After the end date the page says "This offer has ended" and still shows both locations.</p>
+        <div class="contacts-top">
+          <div class="contacts-search">
+            <input type="search" id="c-q" placeholder="Search email (partial match)" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="btn-row" style="margin:0">
+            <button class="qbtn" id="c-csv" type="button">Download CSV</button>
+          </div>
+        </div>
 
-            <div class="field">
-              <span class="lbl">Pack game on /free-pretzels</span>
-              <div class="choices" id="game-group">
-                <button type="button" class="choice" data-game="off" aria-pressed="true">Off</button>
-                <button type="button" class="choice" data-game="on" aria-pressed="false">On</button>
-              </div>
-            </div>
-            <div class="field">
-              <label for="o-ig">Instagram handle for the bonus pack (optional)</label>
-              <input id="o-ig" maxlength="31" placeholder="handle, without @" autocomplete="off" spellcheck="false">
-            </div>
-            <p class="hint">Game on: visitors pick 1 of 5 packs and every pack wins one free pretzel. Then one step at a time: Instagram follow (+1), email (+1), share with their group chat (+1). Max 4 per person; at 3 they can end with "No thanks, I hate delicious and free pretzels." Instagram and share are honour system; Instagram stays hidden until its handle is set, share is always on. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
+        <div class="chips" id="c-chips" role="group" aria-label="Filter contacts">
+          <button class="chip" type="button" data-filter="all"                aria-pressed="true">All</button>
+          <button class="chip" type="button" data-filter="today"              aria-pressed="false">Today</button>
+          <button class="chip" type="button" data-filter="completed"          aria-pressed="false">Completed</button>
+          <button class="chip" type="button" data-filter="ticket_outstanding" aria-pressed="false">Ticket outstanding</button>
+          <button class="chip" type="button" data-filter="redeemed"           aria-pressed="false">Redeemed</button>
+        </div>
 
-            <div class="field">
-              <span class="lbl">Golden Ticket after all 4</span>
-              <div class="choices" id="bonus-group">
-                <button type="button" class="choice" data-bonus="off" aria-pressed="true">Off</button>
-                <button type="button" class="choice" data-bonus="on" aria-pressed="false">On</button>
-              </div>
-            </div>
-            <div class="field">
-              <label for="o-btitle">Ticket title (customers see this)</label>
-              <input id="o-btitle" maxlength="40" placeholder="Golden Ticket" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="o-btext">Ticket line (customers see this)</label>
-              <input id="o-btext" maxlength="120" placeholder="Visit the Pretzel Factory to claim your prize." autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="o-bstaff">What staff give (internal, never shown to customers)</label>
-              <input id="o-bstaff" maxlength="60" placeholder="Any one product in store" autocomplete="off">
-            </div>
-            <p class="hint">After all 4, players choose: keep their 4 free pretzels, or trade all 4 for the Golden Ticket. Everyone who trades wins it (one fixed item, not a draw). The ticket does not name the prize. At the counter, after the store PIN, staff see what to give plus a surprise: hand back their unused pretzels too (the page never says so). Empty "What staff give" means any one product in store; empty title or line uses the default shown. Needs the Instagram handle.</p>
+        <div class="table-wrap">
+          <table class="contacts-table">
+            <thead><tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Voucher</th>
+              <th>Opt-in source</th>
+              <th>Created</th>
+            </tr></thead>
+            <tbody id="c-body"></tbody>
+          </table>
+        </div>
+        <p class="status" id="c-status"></p>
 
-            <span class="lbl">Brand voice check</span>
-            <ul class="lint" id="lint"></ul>
-            <ul class="rules">
-              <li>Bold. Confident. Flavorful. Simple.</li>
-              <li>Crave lines belong in the details, never next to the logo.</li>
-              <li>Tagline is locked: "Made to Crave®", white or black, under the logo.</li>
-              <li>Diamond plate sits at the top only. No gradients.</li>
-            </ul>
-
-            <div class="btn-row" style="margin-top:16px">
-              <button class="qbtn" id="o-publish" type="submit">Publish offer</button>
-              <a class="qbtn line" href="/free-pretzels" target="_blank" rel="noopener">Open live page</a>
-            </div>
-            <p class="status" id="o-status" role="status"></p>
-          </form>
-
-          <div>
-            <div class="phone" aria-label="Phone preview of /free-pretzels">
-              <div class="phone-screen" id="phone-screen">
-                <iframe id="preview" title="Offer preview"></iframe>
-              </div>
-            </div>
-            <p class="preview-label lbl" id="preview-state">Preview</p>
+        <div class="contacts-foot">
+          <div id="c-count">&mdash;</div>
+          <div class="pager">
+            <button class="qbtn line" id="c-prev" type="button" disabled>Prev</button>
+            <button class="qbtn line" id="c-next" type="button" disabled>Next</button>
           </div>
         </div>
       </div>
 
-      <!-- 4. QR studio -->
-      <div class="panel" id="p-qr" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
-        <h2>QR studio</h2>
-        <p class="hint">One code per spot so scans are counted separately. Every code goes through /scan, so it follows the destination above.</p>
-        <div class="qr-grid">
-          <div>
-            <div class="field">
-              <label for="q-place">Placement name</label>
-              <input id="q-place" maxlength="32" value="window_sticker" spellcheck="false" autocomplete="off">
-              <span class="count">Lowercase letters, numbers, - and _ only.</span>
-            </div>
+      <!-- ─────────── SETTINGS ─────────── -->
+      <div class="panel" id="p-settings" data-tab="settings" role="tabpanel" aria-labelledby="tab-settings-btn">
+        <h2>Settings</h2>
+        <p class="hint">What the sticker points at, the offer on <b>/free-pretzels</b>, QR code generation, and historic data. Everything is collapsed; expand what you need.</p>
+
+        <!-- Sticker destination -->
+        <details class="sub" id="sub-redirect" open>
+          <summary>Where the sticker goes <span class="sub-sub">/scan destination</span></summary>
+          <div class="sub-body">
+            <p class="hint">Every QR code points at <b>/scan</b>. This picks where /scan sends people.</p>
+            <p class="current" id="cur-target">Loading<small></small></p>
             <div class="two">
               <div class="field">
-                <label for="q-dark">Code colour</label>
-                <select id="q-dark">
-                  <option value="#0D5237">Green #0D5237</option>
-                  <option value="#000000">Black #000000</option>
-                  <option value="#B2872F">Gold deep #B2872F</option>
+                <label for="t-page">Site page</label>
+                <select id="t-page">
+                  <option value="/free-pretzels">/free-pretzels (offer page)</option>
+                  <option value="/">/ (home)</option>
+                  <option value="/products">/products</option>
+                  <option value="/order">/order</option>
+                  <option value="/wholesale">/wholesale</option>
+                  <option value="/partners">/partners</option>
+                  <option value="/videos">/videos</option>
+                  <option value="/cup">/cup</option>
+                  <option value="">Custom URL</option>
                 </select>
               </div>
               <div class="field">
-                <label for="q-light">Background</label>
-                <select id="q-light">
-                  <option value="#F2E7A4">Gold light #F2E7A4</option>
-                  <option value="#FFFFFF">White #FFFFFF (print stock)</option>
-                  <option value="#D4B662">Gold #D4B662</option>
-                </select>
+                <label for="t-custom">Custom URL or /path</label>
+                <input type="text" id="t-custom" maxlength="2000" placeholder="https://example.com/promo" autocomplete="off" spellcheck="false">
               </div>
             </div>
+            <p class="status" id="t-check"></p>
             <div class="btn-row">
-              <button class="qbtn" id="q-svg" type="button">Download SVG</button>
-              <button class="qbtn line" id="q-png" type="button">Download PNG</button>
+              <button class="qbtn" id="t-save" type="button">Save destination</button>
+              <a class="qbtn line" id="t-test" href="/scan" target="_blank" rel="noopener">Test /scan</a>
+              <button class="qbtn line" id="t-reset" type="button">Reset to /free-pretzels</button>
+            </div>
+            <p class="status" id="t-status" role="status"></p>
+          </div>
+        </details>
+
+        <!-- Offer editor -->
+        <details class="sub" id="sub-offer">
+          <summary>Free pretzel offer <span class="sub-sub">headline, dates, pack game, Golden Ticket</span></summary>
+          <div class="sub-body">
+            <p class="hint">Edits show in the phone on the right. Nothing is public until you press Publish.</p>
+            <div class="editor-grid">
+              <form id="offer-form" autocomplete="off">
+                <div class="field">
+                  <label for="o-headline">Headline</label>
+                  <input id="o-headline" name="headline" maxlength="80" required placeholder="Free Pretzel. On Us.">
+                  <span class="count" data-for="o-headline"></span>
+                </div>
+                <div class="two">
+                  <div class="field">
+                    <label for="o-accent">Accent word (script, optional)</label>
+                    <input id="o-accent" name="accent" maxlength="24" placeholder="Fresh">
+                  </div>
+                  <div class="field">
+                    <label for="o-stamp">Stamp line (optional)</label>
+                    <input id="o-stamp" name="stamp" maxlength="40" placeholder="This week only">
+                    <span class="count" data-for="o-stamp"></span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="o-details">Details</label>
+                  <textarea id="o-details" name="details" maxlength="600" placeholder="Crave it. Love it. Share it. One free soft pretzel with any purchase."></textarea>
+                  <span class="count" data-for="o-details"></span>
+                </div>
+                <div class="field">
+                  <span class="lbl">How to claim (up to 5 steps)</span>
+                  <input id="o-step1" class="o-step" maxlength="140" placeholder="Show this screen at the counter">
+                  <input id="o-step2" class="o-step" maxlength="140" placeholder="Pick your pretzel">
+                  <input id="o-step3" class="o-step" maxlength="140">
+                  <input id="o-step4" class="o-step" maxlength="140">
+                  <input id="o-step5" class="o-step" maxlength="140">
+                </div>
+                <div class="field">
+                  <label for="o-fine">Fine print</label>
+                  <textarea id="o-fine" name="fine_print" maxlength="800" placeholder="Limit one per guest. Lynbrook and Franklin Square only."></textarea>
+                  <span class="count" data-for="o-fine"></span>
+                </div>
+
+                <h2 style="margin-top:8px">Look and schedule</h2>
+                <div class="field">
+                  <span class="lbl">Hero colour (solid brand colours only)</span>
+                  <div class="choices" id="layout-group">
+                    <button type="button" class="choice" data-layout="green" aria-pressed="true"><span class="sw" style="background:#0D5237"></span>Green</button>
+                    <button type="button" class="choice" data-layout="black" aria-pressed="false"><span class="sw" style="background:#000000"></span>Black</button>
+                    <button type="button" class="choice" data-layout="gold-light" aria-pressed="false"><span class="sw" style="background:#F2E7A4"></span>Gold light</button>
+                  </div>
+                  <span class="count" id="tagline-note"></span>
+                </div>
+                <div class="two">
+                  <div class="field">
+                    <label for="o-start">Starts (optional)</label>
+                    <input type="date" id="o-start">
+                  </div>
+                  <div class="field">
+                    <label for="o-end">Ends (optional)</label>
+                    <input type="date" id="o-end">
+                  </div>
+                </div>
+                <p class="hint">After the end date the page says "This offer has ended" and still shows both locations.</p>
+
+                <div class="field">
+                  <span class="lbl">Pack game on /free-pretzels</span>
+                  <div class="choices" id="game-group">
+                    <button type="button" class="choice" data-game="off" aria-pressed="true">Off</button>
+                    <button type="button" class="choice" data-game="on" aria-pressed="false">On</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="o-ig">Instagram handle for the bonus pack (optional)</label>
+                  <input id="o-ig" maxlength="31" placeholder="handle, without @" autocomplete="off" spellcheck="false">
+                </div>
+                <p class="hint">Game on: visitors pick 1 of 5 packs and every pack wins one free pretzel. Then one step at a time: Instagram follow (+1), email (+1), share with their group chat (+1). Max 4 per person; at 3 they can end with "No thanks, I hate delicious and free pretzels." Instagram and share are honour system; Instagram stays hidden until its handle is set, share is always on. A start date is required, and limits reset when it changes. Staff burn codes with the store PIN. Off: the page shows the offer above.</p>
+
+                <div class="field">
+                  <span class="lbl">Golden Ticket after all 4</span>
+                  <div class="choices" id="bonus-group">
+                    <button type="button" class="choice" data-bonus="off" aria-pressed="true">Off</button>
+                    <button type="button" class="choice" data-bonus="on" aria-pressed="false">On</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="o-btitle">Ticket title (customers see this)</label>
+                  <input id="o-btitle" maxlength="40" placeholder="Golden Ticket" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="o-btext">Ticket line (customers see this)</label>
+                  <input id="o-btext" maxlength="120" placeholder="Visit the Pretzel Factory to claim your prize." autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="o-bstaff">What staff give (internal, never shown to customers)</label>
+                  <input id="o-bstaff" maxlength="60" placeholder="Any one product in store" autocomplete="off">
+                </div>
+                <p class="hint">After all 4, players choose: keep their 4 free pretzels, or trade all 4 for the Golden Ticket. Everyone who trades wins it (one fixed item, not a draw). The ticket does not name the prize. At the counter, after the store PIN, staff see what to give plus a surprise: hand back their unused pretzels too (the page never says so). Empty "What staff give" means any one product in store; empty title or line uses the default shown. Needs the Instagram handle.</p>
+
+                <span class="lbl">Brand voice check</span>
+                <ul class="lint" id="lint"></ul>
+                <ul class="rules">
+                  <li>Bold. Confident. Flavorful. Simple.</li>
+                  <li>Crave lines belong in the details, never next to the logo.</li>
+                  <li>Tagline is locked: "Made to Crave&reg;", white or black, under the logo.</li>
+                  <li>Diamond plate sits at the top only. No gradients.</li>
+                </ul>
+
+                <div class="btn-row" style="margin-top:16px">
+                  <button class="qbtn" id="o-publish" type="submit">Publish offer</button>
+                  <a class="qbtn line" href="/free-pretzels" target="_blank" rel="noopener">Open live page</a>
+                </div>
+                <p class="status" id="o-status" role="status"></p>
+              </form>
+
+              <div>
+                <div class="phone" aria-label="Phone preview of /free-pretzels">
+                  <div class="phone-screen" id="phone-screen">
+                    <iframe id="preview" title="Offer preview"></iframe>
+                  </div>
+                </div>
+                <p class="preview-label lbl" id="preview-state">Preview</p>
+              </div>
             </div>
           </div>
-          <div>
-            <div class="qr-out" id="qr-out"></div>
-            <p class="qr-url" id="qr-url"></p>
-            <p class="contrast" id="qr-contrast"></p>
+        </details>
+
+        <!-- QR studio -->
+        <details class="sub" id="sub-qr">
+          <summary>QR studio <span class="sub-sub">make a code for a new placement</span></summary>
+          <div class="sub-body">
+            <p class="hint">One code per spot so scans are counted separately. Every code goes through /scan, so it follows the destination above.</p>
+            <div class="qr-grid">
+              <div>
+                <div class="field">
+                  <label for="q-place">Placement name</label>
+                  <input id="q-place" maxlength="32" value="window_sticker" spellcheck="false" autocomplete="off">
+                  <span class="count">Lowercase letters, numbers, - and _ only.</span>
+                </div>
+                <div class="two">
+                  <div class="field">
+                    <label for="q-dark">Code colour</label>
+                    <select id="q-dark">
+                      <option value="#0D5237">Green #0D5237</option>
+                      <option value="#000000">Black #000000</option>
+                      <option value="#B2872F">Gold deep #B2872F</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="q-light">Background</label>
+                    <select id="q-light">
+                      <option value="#F2E7A4">Gold light #F2E7A4</option>
+                      <option value="#FFFFFF">White #FFFFFF (print stock)</option>
+                      <option value="#D4B662">Gold #D4B662</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="btn-row">
+                  <button class="qbtn" id="q-svg" type="button">Download SVG</button>
+                  <button class="qbtn line" id="q-png" type="button">Download PNG</button>
+                </div>
+              </div>
+              <div>
+                <div class="qr-out" id="qr-out"></div>
+                <p class="qr-url" id="qr-url"></p>
+                <p class="contrast" id="qr-contrast"></p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </details>
 
-      <!-- 5. Stats -->
-      <div class="panel" id="p-stats" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
-        <h2>Scans by placement</h2>
-        <p class="hint">Counted at /scan. Days are New York time.</p>
-        <div class="table-wrap"><table id="stats"><thead><tr><th>Placement</th><th class="n">Today</th><th class="n">7 days</th><th class="n">30 days</th></tr></thead><tbody></tbody></table></div>
-      </div>
+        <!-- Scans by placement -->
+        <details class="sub" id="sub-stats">
+          <summary>Scans by placement <span class="sub-sub">today, last 7 days, last 30 days</span></summary>
+          <div class="sub-body">
+            <p class="hint">Counted at /scan. Days are New York time.</p>
+            <div class="table-wrap"><table id="stats"><thead><tr><th>Placement</th><th class="n">Today</th><th class="n">7 days</th><th class="n">30 days</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </details>
 
-      <!-- 6. Pack game -->
-      <div class="panel" id="p-packs" data-tab="referral" role="tabpanel" aria-labelledby="tab-referral-btn">
-        <h2>Pack game</h2>
-        <p class="hint" id="pk-hint">For the current offer. Emails verified and Instagram taps are all time.</p>
-        <div class="table-wrap"><table id="pack-stats"><thead><tr><th>Packs</th><th class="n">Count</th></tr></thead><tbody></tbody></table></div>
-        <div class="table-wrap"><table id="pack-ends"><thead><tr><th>How games ended</th><th class="n">Players</th></tr></thead><tbody></tbody></table></div>
-        <div class="table-wrap"><table id="pack-done"><thead><tr><th>Completed all 4</th><th>Golden Ticket</th><th>Redeemed</th></tr></thead><tbody></tbody></table></div>
-      </div>
+        <!-- Pack game detail -->
+        <details class="sub" id="sub-packs">
+          <summary>Pack game detail <span class="sub-sub">breakdown by source + how games ended</span></summary>
+          <div class="sub-body">
+            <p class="hint" id="pk-hint">For the current offer. Emails verified and Instagram taps are all time.</p>
+            <div class="table-wrap"><table id="pack-stats"><thead><tr><th>Packs</th><th class="n">Count</th></tr></thead><tbody></tbody></table></div>
+            <div class="table-wrap"><table id="pack-ends"><thead><tr><th>How games ended</th><th class="n">Players</th></tr></thead><tbody></tbody></table></div>
+            <div class="table-wrap"><table id="pack-done"><thead><tr><th>Completed all 4</th><th>Golden Ticket</th><th>Redeemed</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </details>
 
-      <!-- 7. History -->
-      <div class="panel" id="p-history" data-tab="qr" role="tabpanel" aria-labelledby="tab-qr-btn">
-        <h2>History</h2>
-        <p class="hint">Last 20 changes. Restore puts that version back live.</p>
-        <ul class="hist" id="history"></ul>
+        <!-- History -->
+        <details class="sub" id="sub-history">
+          <summary>History <span class="sub-sub">last 20 config changes, with restore</span></summary>
+          <div class="sub-body">
+            <p class="hint">Restore puts that version back live.</p>
+            <ul class="hist" id="history"></ul>
+          </div>
+        </details>
+
       </div>
     </div>
   </section>
@@ -435,7 +584,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; }
 var $ = function (s) { return document.querySelector(s); };
 var API = '/api/leads';
 var LAYOUT_TAGLINE = { green: 'white', black: 'white', 'gold-light': 'black' };
-var state = { config: null, layout: 'green', game: false, bonus: false };
+var state = { config: null, layout: 'green', game: false, bonus: false, filter: 'all', q: '', page: 0, pageSize: 50, total: 0, funnelTimer: null, feedTimer: null };
 
 // ─── boot / auth ──────────────────────────────────────────────────
 async function boot() {
@@ -464,13 +613,19 @@ function init() {
   initRedirect();
   initOffer();
   initQr();
+  initContacts();
   loadConfig();
+  loadFunnel();
+  loadFeed();
   loadStats();
   loadPackStats();
   loadHistory();
+  // Poll today's numbers every 20s; stop when page is hidden.
+  state.funnelTimer = setInterval(function () { if (!document.hidden) loadFunnel(); }, 20000);
+  state.feedTimer = setInterval(function () { if (!document.hidden) loadFeed(); }, 20000);
 }
 
-async function api(method, view, body) {
+async function apiQr(method, view, body) {
   var url = API + '?resource=qr' + (view ? '&view=' + encodeURIComponent(view) : '');
   var opts = { method: method, credentials: 'same-origin', cache: 'no-store', headers: {} };
   if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
@@ -480,11 +635,21 @@ async function api(method, view, body) {
   if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
   return data;
 }
+async function apiPacks(view, params) {
+  var qs = ['resource=packs', 'view=' + encodeURIComponent(view)];
+  if (params) Object.keys(params).forEach(function (k) {
+    if (params[k] != null && params[k] !== '') qs.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
+  });
+  var r = await fetch(API + '?' + qs.join('&'), { credentials: 'same-origin', cache: 'no-store' });
+  var data = null;
+  try { data = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
+  return data;
+}
 
 function setStatus(el, cls, text) { el.className = 'status' + (cls ? ' ' + cls : ''); el.textContent = text || ''; }
 
-
-// ─── shared status strip + tabs ───────────────────────────────────────
+// ─── shared status strip + tabs ───────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return '';
   var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -493,6 +658,14 @@ function fmtDate(iso) {
     var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   } catch (e) { return iso; }
+}
+function fmtWhen(iso) {
+  try { return new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+  catch (e) { return iso; }
+}
+function fmtTime(iso) {
+  try { return new Date(iso).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }); }
+  catch (e) { return iso; }
 }
 function renderSharedStrip(target, offer) {
   var tEl = $('#strip-target');
@@ -513,8 +686,8 @@ function renderSharedStrip(target, offer) {
     gEl.appendChild(s2);
   }
 }
-var TAB_KEY = 'ops.qr.tab';
-function readTab(v) { return v === 'referral' ? 'referral' : 'qr'; }
+var TAB_KEY = 'ops.qr.tab.v2';
+function readTab(v) { return (v === 'contacts' || v === 'settings' || v === 'today') ? v : 'today'; }
 function initTabs() {
   var root = $('#tabs-root');
   var btns = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
@@ -522,11 +695,8 @@ function initTabs() {
     t = readTab(t);
     root.setAttribute('data-active', t);
     btns.forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === t)); });
-    // Re-scale the offer preview phone: the iframe's parent is display:none
-    // until the Referral tab is active, so clientWidth is 0 at first init
-    // and the one-shot scalePhone() produces scale(0). Re-running it here
-    // (after the class flip applies) computes the right scale the first
-    // time the user looks at the preview.
+    // The offer preview iframe sits inside Settings and is 0-width until that
+    // tab is active, so re-scale on activation.
     try { if (typeof scalePhone === 'function') scalePhone(); } catch (e) {}
     if (!opts || !opts.silent) {
       try { localStorage.setItem(TAB_KEY, t); } catch (e) {}
@@ -551,19 +721,19 @@ function initTabs() {
   });
   window.addEventListener('hashchange', function () {
     var h = location.hash.slice(1);
-    if (h === 'qr' || h === 'referral') setActive(h, { silent: true });
+    if (h === 'today' || h === 'contacts' || h === 'settings') setActive(h, { silent: true });
   });
-  var initial = 'qr';
+  var initial = 'today';
   var hash = location.hash.slice(1);
-  if (hash === 'qr' || hash === 'referral') initial = hash;
-  else { try { var v = localStorage.getItem(TAB_KEY); if (v === 'referral' || v === 'qr') initial = v; } catch (e) {} }
+  if (hash === 'today' || hash === 'contacts' || hash === 'settings') initial = hash;
+  else { try { var v = localStorage.getItem(TAB_KEY); if (v) initial = readTab(v); } catch (e) {} }
   setActive(initial, { silent: true });
 }
 
 // ─── config ───────────────────────────────────────────────────────
 async function loadConfig() {
   try {
-    var c = await api('GET', 'config');
+    var c = await apiQr('GET', 'config');
     state.config = c;
     var notes = [];
     if (!c.readable) notes.push('Edge Config is not connected to this project yet, so /scan uses /free-pretzels and the page shows its built-in content.');
@@ -582,8 +752,256 @@ async function loadConfig() {
   }
 }
 
-// ─── 1. redirect ──────────────────────────────────────────────────
-// Same rules as parseTarget() in middleware.js and api/_qr.js.
+// ─── Today: KPIs + funnel ─────────────────────────────────────────
+function deltaPill(now, prev) {
+  var pill = document.createElement('span');
+  pill.className = 'kpi-delta';
+  if (prev == null && !now) { pill.textContent = ''; return pill; }
+  if (!prev) {
+    pill.classList.add(now ? 'up' : 'flat');
+    pill.textContent = now ? 'new' : 'flat';
+    return pill;
+  }
+  var pct = Math.round(((now - prev) / prev) * 100);
+  if (pct > 0) { pill.classList.add('up'); pill.textContent = '+' + pct + '% vs yd'; }
+  else if (pct < 0) { pill.classList.add('down'); pill.textContent = pct + '% vs yd'; }
+  else { pill.classList.add('flat'); pill.textContent = 'flat vs yd'; }
+  return pill;
+}
+function setKpi(valueId, subId, now, prev) {
+  var v = $(valueId);
+  v.textContent = '';
+  v.appendChild(document.createTextNode(String(now)));
+  v.appendChild(deltaPill(now, prev));
+  if (subId) $(subId).textContent = 'Yesterday: ' + prev;
+}
+function conv(n, d) {
+  if (!d) return { text: n ? '-' : '', bad: false };
+  var pct = Math.round((n / d) * 100);
+  return { text: pct + '%', bad: pct < 15 && d >= 10 };
+}
+function funnelStep(container, name, count, max, prevStepCount) {
+  var row = document.createElement('div');
+  row.className = 'funnel-step';
+  var nm = document.createElement('div');
+  nm.className = 'funnel-name';
+  nm.textContent = name;
+  var track = document.createElement('div');
+  track.className = 'funnel-track';
+  var fill = document.createElement('div');
+  fill.className = 'funnel-fill';
+  var pct = max > 0 ? Math.max(2, Math.round((count / max) * 100)) : 0;
+  if (!count) { fill.style.width = '0%'; } else { fill.style.width = pct + '%'; }
+  var countEl = document.createElement('div');
+  countEl.className = 'funnel-count';
+  countEl.textContent = String(count);
+  track.appendChild(fill);
+  track.appendChild(countEl);
+  var c = document.createElement('div');
+  c.className = 'funnel-conv';
+  if (prevStepCount != null) {
+    var r = conv(count, prevStepCount);
+    c.textContent = r.text;
+    if (r.bad) c.classList.add('bad');
+  } else {
+    c.textContent = '';
+  }
+  row.appendChild(nm);
+  row.appendChild(track);
+  row.appendChild(c);
+  container.appendChild(row);
+}
+async function loadFunnel() {
+  try {
+    var f = await apiPacks('funnel', null);
+    var t = f.today, y = f.yesterday;
+    var p1 = t.pack_openings.p1, p2 = t.pack_openings.p2, p3 = t.pack_openings.p3, p4 = t.pack_openings.p4;
+    var yp1 = y.pack_openings.p1, yp2 = y.pack_openings.p2, yp3 = y.pack_openings.p3, yp4 = y.pack_openings.p4;
+    setKpi('#k-scans',     '#k-scans-sub',     t.scan_count,     y.scan_count);
+    setKpi('#k-verified',  '#k-verified-sub',  t.verify_count,   y.verify_count);
+    setKpi('#k-completed', '#k-completed-sub', t.complete_count, y.complete_count);
+    setKpi('#k-redeemed',  '#k-redeemed-sub',  t.redeem_count,   y.redeem_count);
+
+    var container = $('#funnel');
+    container.textContent = '';
+    var max = Math.max(t.scan_count, p1, p2, p3, p4, t.verify_count, t.complete_count, t.redeem_count, 1);
+    funnelStep(container, 'Scan',       t.scan_count,     max, null);
+    funnelStep(container, 'Pack 1',     p1,               max, t.scan_count);
+    funnelStep(container, 'Pack 2 (IG)',p2,               max, p1);
+    funnelStep(container, 'Verify',     t.verify_count,   max, p2);
+    funnelStep(container, 'Pack 3',     p3,               max, t.verify_count);
+    funnelStep(container, 'Pack 4',     p4,               max, p3);
+    funnelStep(container, 'Complete',   t.complete_count, max, p4);
+    funnelStep(container, 'Redeem',     t.redeem_count,   max, t.complete_count);
+
+    $('#strip-live-text').textContent = String(t.scan_count) + ' scans today';
+    $('#strip-live-sub').textContent = 'As of ' + fmtTime(f.as_of);
+    $('#today-hint').textContent = 'Scans, verified leads, completions, and voucher redemptions in New York time. ' + y.date + ' ran ' + y.scan_count + ' scans; comparisons are same-metric year-over-day.';
+  } catch (e) {
+    $('#strip-live-text').textContent = 'Could not load';
+    $('#strip-live-sub').textContent = e && e.message ? e.message : '';
+    $('#funnel').innerHTML = '<p class="empty">Funnel failed to load. Try reloading; packs tables may need the p10/p11/p23 migrations.</p>';
+  }
+}
+async function loadFeed() {
+  try {
+    var data = await apiPacks('leads', { limit: 20, offset: 0, filter: 'all' });
+    var ul = $('#feed');
+    ul.textContent = '';
+    if (!data.rows.length) {
+      var empty = document.createElement('li');
+      empty.className = 'empty';
+      empty.textContent = 'No leads captured yet. Scans that reach pack 2 will show here.';
+      ul.appendChild(empty);
+      return;
+    }
+    data.rows.forEach(function (r) {
+      var li = document.createElement('li');
+      var left = document.createElement('div');
+      left.className = 'what';
+      var tag = document.createElement('b');
+      if (r.any_redeemed) tag.textContent = 'redeemed';
+      else if (r.completed_all) tag.textContent = 'completed';
+      else if (r.email_verified_at) tag.textContent = 'verified';
+      else tag.textContent = 'new';
+      left.appendChild(tag);
+      left.appendChild(document.createTextNode(r.email + (r.voucher ? ' - ' + r.voucher.code : '') + (r.redeemed_store ? ' @ ' + r.redeemed_store : '')));
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      var when = r.email_verified_at || r.created_at;
+      meta.textContent = fmtTime(when);
+      li.appendChild(left);
+      li.appendChild(meta);
+      ul.appendChild(li);
+    });
+  } catch (e) {
+    var ul = $('#feed');
+    ul.textContent = '';
+    var li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'Feed failed to load. ' + (e && e.message ? e.message : '');
+    ul.appendChild(li);
+  }
+}
+
+// ─── Contacts ─────────────────────────────────────────────────────
+function firstName(email) {
+  if (!email) return '';
+  var local = email.split('@')[0] || '';
+  var head = local.split(/[._+-]/)[0] || local;
+  if (!head) return '';
+  return head.charAt(0).toUpperCase() + head.slice(1);
+}
+function statusLabel(r) {
+  if (r.any_redeemed) return { text: 'Redeemed', cls: 'redeemed' };
+  if (r.completed_all) return { text: 'Completed', cls: 'completed' };
+  if (r.email_verified_at) return { text: 'Verified', cls: 'verified' };
+  return { text: 'New', cls: 'verified' };
+}
+function initContacts() {
+  var searchEl = $('#c-q');
+  var timer = null;
+  searchEl.addEventListener('input', function () {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { state.q = searchEl.value.trim(); state.page = 0; loadContacts(); }, 250);
+  });
+  document.querySelectorAll('#c-chips .chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.filter = b.dataset.filter;
+      state.page = 0;
+      document.querySelectorAll('#c-chips .chip').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      loadContacts();
+    });
+  });
+  $('#c-prev').onclick = function () { if (state.page > 0) { state.page--; loadContacts(); } };
+  $('#c-next').onclick = function () {
+    if ((state.page + 1) * state.pageSize < state.total) { state.page++; loadContacts(); }
+  };
+  $('#c-csv').onclick = function () {
+    var qs = ['resource=packs', 'view=export.csv', 'filter=' + encodeURIComponent(state.filter)];
+    if (state.q) qs.push('q=' + encodeURIComponent(state.q));
+    // Same-origin download; browser handles Content-Disposition.
+    window.location.href = API + '?' + qs.join('&');
+  };
+  loadContacts();
+}
+async function loadContacts() {
+  var tbody = $('#c-body');
+  var st = $('#c-status');
+  setStatus(st, '', 'Loading.');
+  try {
+    var data = await apiPacks('leads', {
+      q: state.q, filter: state.filter,
+      limit: state.pageSize, offset: state.page * state.pageSize,
+    });
+    state.total = data.total || 0;
+    tbody.textContent = '';
+    if (!data.rows.length) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 6; td.className = 'empty';
+      td.textContent = state.q ? 'No contacts match "' + state.q + '".' : 'No contacts yet for this filter.';
+      tr.appendChild(td); tbody.appendChild(tr);
+    } else {
+      data.rows.forEach(function (r) {
+        var tr = document.createElement('tr');
+        var cells = [];
+        var nmCell = document.createElement('td');
+        nmCell.textContent = firstName(r.email);
+        cells.push(nmCell);
+        var emCell = document.createElement('td');
+        emCell.className = 'email';
+        emCell.textContent = r.email;
+        cells.push(emCell);
+        var stCell = document.createElement('td');
+        var sLabel = statusLabel(r);
+        var sSpan = document.createElement('span');
+        sSpan.className = 'st ' + sLabel.cls;
+        sSpan.textContent = sLabel.text;
+        stCell.appendChild(sSpan);
+        cells.push(stCell);
+        var vcCell = document.createElement('td');
+        if (r.voucher) {
+          var code = document.createElement('span');
+          code.className = 'code';
+          code.textContent = r.voucher.code;
+          vcCell.appendChild(code);
+          if (r.voucher.redeemed_at) {
+            vcCell.appendChild(document.createElement('br'));
+            var sub = document.createElement('small');
+            sub.style.color = 'var(--qr-gold-light)';
+            sub.textContent = (r.voucher.redeemed_store ? r.voucher.redeemed_store + ' - ' : '') + fmtWhen(r.voucher.redeemed_at);
+            vcCell.appendChild(sub);
+          }
+        } else {
+          vcCell.textContent = r.email_verified_at ? '-' : '';
+        }
+        cells.push(vcCell);
+        var opt = document.createElement('td');
+        // Slice 1 placeholder: everyone who verified came through pack2's email step.
+        // Slice 2 lands the real pack_players.marketing_opt_in_source column.
+        opt.textContent = r.email_verified_at ? 'pack2_verify' : '-';
+        cells.push(opt);
+        var cr = document.createElement('td');
+        cr.textContent = fmtWhen(r.created_at);
+        cells.push(cr);
+        cells.forEach(function (c) { tr.appendChild(c); });
+        tbody.appendChild(tr);
+      });
+    }
+    var shown = data.rows.length;
+    var start = state.page * state.pageSize;
+    $('#c-count').textContent = shown ? (shown + ' of ' + state.total + ' shown (rows ' + (start + 1) + '-' + (start + shown) + ')') : '0 contacts';
+    $('#c-prev').disabled = state.page === 0;
+    $('#c-next').disabled = (start + shown) >= state.total;
+    setStatus(st, '', '');
+  } catch (e) {
+    tbody.textContent = '';
+    setStatus(st, 'fail', e && e.message ? e.message : 'Failed to load.');
+  }
+}
+
+// ─── Settings: redirect ───────────────────────────────────────────
 function checkTarget(v) {
   v = (v || '').trim();
   if (!v) return 'Pick a page or type a URL.';
@@ -618,7 +1036,7 @@ function initRedirect() {
     if (refresh()) return;
     var st = $('#t-status');
     try {
-      var r = await api('POST', null, { action: 'set_target', scan_target: chosenTarget() });
+      var r = await apiQr('POST', null, { action: 'set_target', scan_target: chosenTarget() });
       setStatus(st, 'ok', '/scan now goes to ' + r.scan_target + '.');
       renderCurrentTarget(r.scan_target);
       renderSharedStrip(r.scan_target);
@@ -629,7 +1047,7 @@ function initRedirect() {
     if (!confirm('Send /scan back to /free-pretzels?')) return;
     var st = $('#t-status');
     try {
-      var r = await api('POST', null, { action: 'reset_target' });
+      var r = await apiQr('POST', null, { action: 'reset_target' });
       setStatus(st, 'ok', '/scan now goes to ' + r.scan_target + '.');
       renderCurrentTarget(r.scan_target);
       renderSharedStrip(r.scan_target);
@@ -640,7 +1058,7 @@ function initRedirect() {
   };
 }
 
-// ─── 2 + 3. offer ─────────────────────────────────────────────────
+// ─── Settings: offer editor ───────────────────────────────────────
 function readOffer() {
   return {
     headline: $('#o-headline').value.trim(),
@@ -674,7 +1092,6 @@ function fillOffer(o) {
   setGame(o.game === true);
   $('#o-ig').value = o.instagram_handle || '';
   setBonus(o.bonus_on === true);
-  // Defaults show as placeholders; an untouched default is saved as empty.
   $('#o-btitle').value = o.bonus_title && o.bonus_title !== 'Golden Ticket' ? o.bonus_title : '';
   $('#o-btext').value = o.bonus_text && o.bonus_text !== 'Visit the Pretzel Factory to claim your prize.' ? o.bonus_text : '';
   $('#o-bstaff').value = o.bonus_staff || '';
@@ -694,17 +1111,15 @@ function setGame(on) {
   state.game = !!on;
   document.querySelectorAll('#game-group .choice').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.game === 'on') === state.game)); });
 }
-function today() {
+function todayKey() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
 function previewStatus(o) {
-  var t = today();
+  var t = todayKey();
   if (o.starts_at && t < o.starts_at) return 'scheduled';
   if (o.ends_at && t > o.ends_at) return 'ended';
   return 'live';
 }
-
-// Mirrors lintCopy() in api/_qr.js. Advisory only.
 var EMOJI_RE = /\p{Extended_Pictographic}/u;
 function lint(o) {
   var out = [];
@@ -713,7 +1128,7 @@ function lint(o) {
   Object.keys(fields).forEach(function (f) {
     var t = fields[f] || '';
     if (!t) return;
-    if (/[\u2014\u2013]/.test(t)) out.push([f, 'Em or en dash. Use a period or comma.']);
+    if (/[—–]/.test(t)) out.push([f, 'Em or en dash. Use a period or comma.']);
     if (EMOJI_RE.test(t)) out.push([f, 'Emoji. Brand copy uses words only.']);
     if (/[!?]{2,}/.test(t)) out.push([f, 'Stacked ! or ?. One is plenty.']);
   });
@@ -728,7 +1143,7 @@ function lint(o) {
   if (o.bonus_on && !o.instagram_handle) out.push(['golden ticket', 'Needs all 4 pretzels. Add the Instagram handle or nobody can earn it.']);
   ['bonus_title', 'bonus_text'].forEach(function (f) {
     if (/\b(chance|odds|could win|random|lucky)\b/i.test(o[f] || '')) out.push(['golden ticket', 'Everyone who finishes gets the same prize. Avoid chance words.']);
-    if (/[\u2014\u2013]/.test(o[f] || '')) out.push(['golden ticket', 'Em or en dash. Use a period or comma.']);
+    if (/[—–]/.test(o[f] || '')) out.push(['golden ticket', 'Em or en dash. Use a period or comma.']);
   });
   return out;
 }
@@ -767,7 +1182,7 @@ function sendPreview() {
   var o = readOffer();
   var st = previewStatus(o);
   var shown = Object.assign({}, o, o.headline ? {} : { headline: 'Your headline here' });
-  delete shown.bonus_staff; // internal: never sent into the page preview
+  delete shown.bonus_staff;
   f.contentWindow.postMessage({ type: 'offer-preview', offer: shown, status: st === 'scheduled' ? 'live' : st }, location.origin);
   $('#preview-state').textContent = 'Preview: ' + st + (st === 'scheduled' ? ' (shown as live)' : '');
 }
@@ -778,13 +1193,11 @@ function onOfferChange() {
 }
 function scalePhone() {
   var screen = $('#phone-screen');
+  if (!screen) return;
   var s = screen.clientWidth / 375;
-  $('#preview').style.transform = 'scale(' + s + ')';
+  var pv = $('#preview');
+  if (pv) pv.style.transform = 'scale(' + s + ')';
 }
-// vercel.json sends X-Frame-Options: DENY on every page, so the real
-// /free-pretzels HTML is loaded into a srcdoc iframe instead of by URL.
-// <base> fixes relative asset paths; the flag switches the page into
-// preview mode (renders postMessage data, skips the live fetch).
 async function loadPreview() {
   try {
     var r = await fetch('/free-pretzels', { credentials: 'same-origin', cache: 'no-store' });
@@ -828,7 +1241,7 @@ function initOffer() {
     var flagged = lint(o).length;
     if (flagged && !confirm(flagged + ' brand voice note(s). Publish anyway?')) return;
     try {
-      var r = await api('POST', null, { action: 'publish_offer', offer: o });
+      var r = await apiQr('POST', null, { action: 'publish_offer', offer: o });
       setStatus(st, 'ok', 'Offer published. Live within about a minute.');
       fillOffer(r.offer);
       renderSharedStrip(undefined, r.offer);
@@ -837,7 +1250,7 @@ function initOffer() {
   });
 }
 
-// ─── 4. QR studio ─────────────────────────────────────────────────
+// ─── Settings: QR studio ──────────────────────────────────────────
 function lum(hex) {
   var c = [1, 3, 5].map(function (i) {
     var v = parseInt(hex.slice(i, i + 2), 16) / 255;
@@ -857,8 +1270,6 @@ function qrUrl() {
   var p = placement();
   return location.origin + '/scan' + (p && p !== 'window_sticker' ? '?utm_source=' + p : '');
 }
-// Brand palette only. Colours are looked up here, never copied from the
-// DOM, so nothing from a form field can reach the SVG markup.
 var QR_DARK = { '#0D5237': '#0D5237', '#000000': '#000000', '#B2872F': '#B2872F' };
 var QR_LIGHT = { '#F2E7A4': '#F2E7A4', '#FFFFFF': '#FFFFFF', '#D4B662': '#D4B662' };
 function qrColors() {
@@ -883,7 +1294,6 @@ function qrModel() {
   var col = qrColors();
   return { size: n + quiet * 2, path: path, dark: col.dark, light: col.light };
 }
-// On-page preview: built with DOM calls, no HTML parsing.
 function svgNode(m) {
   var svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', '0 0 ' + m.size + ' ' + m.size);
@@ -899,7 +1309,6 @@ function svgNode(m) {
   svg.appendChild(p);
   return svg;
 }
-// Download file: serialise the same node, so markup is never hand-built.
 function buildSvg() {
   return new XMLSerializer().serializeToString(svgNode(qrModel()));
 }
@@ -956,11 +1365,11 @@ function initQr() {
   };
 }
 
-// ─── 5. stats ─────────────────────────────────────────────────────
+// ─── Settings: by-placement stats ─────────────────────────────────
 async function loadStats() {
   var tbody = $('#stats tbody');
   try {
-    var s = await api('GET', 'stats');
+    var s = await apiQr('GET', 'stats');
     tbody.textContent = '';
     var names = Object.keys(s.d30).sort(function (a, b) { return (s.d30[b] || 0) - (s.d30[a] || 0); });
     if (!names.length) {
@@ -995,7 +1404,7 @@ function statRow(cells, strong) {
   return tr;
 }
 
-// ─── 5b. pack game stats ──────────────────────────────────────────
+// ─── Settings: pack-game detail ───────────────────────────────────
 async function loadPackStats() {
   var tbody = $('#pack-stats tbody');
   tbody.textContent = '';
@@ -1035,15 +1444,11 @@ async function loadPackStats() {
   }
 }
 
-// ─── 6. history ───────────────────────────────────────────────────
-function fmtWhen(iso) {
-  try { return new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
-  catch (e) { return iso; }
-}
+// ─── Settings: history ────────────────────────────────────────────
 async function loadHistory() {
   var ul = $('#history');
   try {
-    var h = (await api('GET', 'history')).history || [];
+    var h = (await apiQr('GET', 'history')).history || [];
     ul.textContent = '';
     if (!h.length) {
       var li = document.createElement('li');
@@ -1068,7 +1473,7 @@ async function loadHistory() {
       btn.onclick = async function () {
         if (!confirm('Restore this version and make it live?')) return;
         try {
-          var r = await api('POST', null, { action: 'restore', ts: e.ts });
+          var r = await apiQr('POST', null, { action: 'restore', ts: e.ts });
           if (r.offer) fillOffer(r.offer);
           if (r.scan_target) renderCurrentTarget(r.scan_target);
           renderSharedStrip(r.scan_target, r.offer);

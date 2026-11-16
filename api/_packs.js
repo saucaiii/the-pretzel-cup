@@ -406,7 +406,9 @@ function mergeGame(target, from) {
   };
 }
 
-// "Completed all 4" list for /ops/qr. Operator only; emails masked.
+// "Completed all 4" list for /ops/qr. Operator only; emails unmasked
+// (operator session is already gated by auth). maskEmail remains
+// exported for any non-operator caller that wants the redacted form.
 function completedList(games, tickets, players) {
   const ticketOf = new Map((tickets || []).map((t) => [t.player_id, t]));
   const emailOf = new Map((players || []).map((p) => [p.id, p.email]));
@@ -419,7 +421,7 @@ function completedList(games, tickets, players) {
         completed_at: g.ended_at,
         ticket: t ? formatCode(t.code) : null,
         ticket_redeemed: !!(t && t.redeemed_at),
-        email: maskEmail(emailOf.get(g.player_id)),
+        email: emailOf.get(g.player_id) || null,
       };
     });
 }
@@ -626,6 +628,7 @@ function defaultDeps() {
       return store;
     },
     readOffer: () => qr.readLiveOffer(qrDeps),
+    readScanStats: () => qr.readStats(qrDeps),
     readSession: (req) => require('./_lib/auth').readSession(req),
     redis: qrDeps.redis,
     sendEmail: (msg) => require('./_lib/gmail').sendEmail(msg),
@@ -1132,6 +1135,246 @@ async function handleStats(req, res, deps) {
   return res.status(200).json({ offer_key: key, game: gameLive(offer, status), ...s });
 }
 
+// ─── CRM funnel / leads / CSV (operator-only) ───────────────────────
+// Slice 1 of the /ops/qr CRM redesign. Read-only; no schema change.
+// Funnel compares today vs yesterday in America/New_York so the
+// operator UI can draw vs-yesterday deltas without a second round trip.
+
+function nyDayKey(at, tz = TIME_ZONE) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(at);
+}
+
+// Start-of-day in `tz` for a YYYY-MM-DD. Mirrors endOfDayIn's two-pass
+// DST dance so spring-forward / fall-back days still align on midnight.
+function startOfDayIn(dateStr, tz = TIME_ZONE) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const wall = Date.UTC(y, m - 1, d);
+  let t = wall - tzOffsetMs(tz, new Date(wall));
+  t = wall - tzOffsetMs(tz, new Date(t));
+  return new Date(t);
+}
+
+function nyDayBounds(dateStr, tz = TIME_ZONE) {
+  return {
+    startISO: startOfDayIn(dateStr, tz).toISOString(),
+    endISO: endOfDayIn(dateStr, tz).toISOString(),
+  };
+}
+
+function prevDayKey(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const prior = new Date(Date.UTC(y, m - 1, d - 1));
+  return `${prior.getUTCFullYear()}-${String(prior.getUTCMonth() + 1).padStart(2, '0')}-${String(prior.getUTCDate()).padStart(2, '0')}`;
+}
+
+async function readFunnelWindow(sb, offerKeyStr, { startISO, endISO }) {
+  const n = async (p) => {
+    const { count, error } = await p;
+    if (error) throw error;
+    return Number(count || 0);
+  };
+  const vs = (col, source) => sb.from('pack_vouchers')
+    .select('id', { count: 'exact', head: true })
+    .gte(col, startISO).lte(col, endISO).eq('source', source).eq('offer_key', offerKeyStr);
+  const vshare = (col) => sb.from('pack_vouchers')
+    .select('id', { count: 'exact', head: true })
+    .gte(col, startISO).lte(col, endISO).in('source', ['share', LEGACY_SHARE]).eq('offer_key', offerKeyStr);
+  const vany = (col) => sb.from('pack_vouchers')
+    .select('id', { count: 'exact', head: true })
+    .gte(col, startISO).lte(col, endISO).eq('offer_key', offerKeyStr);
+  const p = (col) => sb.from('pack_players')
+    .select('id', { count: 'exact', head: true })
+    .gte(col, startISO).lte(col, endISO);
+  const g = () => sb.from('pack_games')
+    .select('player_id', { count: 'exact', head: true })
+    .eq('offer_key', offerKeyStr).eq('completed_all', true)
+    .gte('ended_at', startISO).lte('ended_at', endISO);
+
+  const [p1, p2, p3, p4, verify, complete, redeem] = await Promise.all([
+    n(vs('created_at', 'first')),
+    n(vs('created_at', 'instagram')),
+    n(vs('created_at', 'email')),
+    n(vshare('created_at')),
+    n(p('email_verified_at')),
+    n(g()),
+    n(vany('redeemed_at')),
+  ]);
+  return {
+    pack_openings: { p1, p2, p3, p4 },
+    verify_count: verify,
+    complete_count: complete,
+    redeem_count: redeem,
+  };
+}
+
+async function handleFunnel(req, res, deps) {
+  const sess = await deps.readSession(req).catch(() => null);
+  if (!sess) return res.status(401).json({ error: 'not signed in' });
+  if (sess.role !== 'operator') return res.status(403).json({ error: 'wrong role' });
+
+  const now = deps.now();
+  const today = nyDayKey(now);
+  const yesterday = prevDayKey(today);
+  const todayBounds = nyDayBounds(today);
+  const yesterdayBounds = nyDayBounds(yesterday);
+
+  let scansToday = 0;
+  let scansYesterday = 0;
+  try {
+    const s = await deps.readScanStats();
+    scansToday = Object.values(s.today || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    scansYesterday = Number((s.by_day || {})[yesterday]) || 0;
+  } catch (e) {
+    // Upstash unavailable — leave scan counts at 0 rather than failing the whole page.
+  }
+
+  const { offer } = await deps.readOffer();
+  const key = offerKey(offer);
+  const sb = deps.store()._sb;
+  const [tCounts, yCounts] = await Promise.all([
+    readFunnelWindow(sb, key, todayBounds),
+    readFunnelWindow(sb, key, yesterdayBounds),
+  ]);
+
+  return res.status(200).json({
+    offer_key: key,
+    today: { date: today, scan_count: scansToday, ...tCounts, window: todayBounds },
+    yesterday: { date: yesterday, scan_count: scansYesterday, ...yCounts, window: yesterdayBounds },
+    as_of: now.toISOString(),
+  });
+}
+
+// Shared by handleLeads and handleLeadsCsv. Returns {rows, total}.
+// `total` is the exact player count matching q + today filter; for
+// completed/ticket_outstanding/redeemed filters it's the number on the
+// returned page only (post-filter in JS).
+async function queryLeads(sb, { q, filter, limit, offset, offerKeyStr, todayBounds }) {
+  let playersQ = sb.from('pack_players')
+    .select('id,email,created_at,email_verified_at,instagram_at,share_at,app_at', { count: 'exact' })
+    .not('email', 'is', null);
+  if (q) playersQ = playersQ.ilike('email', '%' + q + '%');
+  if (filter === 'today') playersQ = playersQ.gte('created_at', todayBounds.startISO).lte('created_at', todayBounds.endISO);
+  playersQ = playersQ.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data: players, count, error } = await playersQ;
+  if (error) throw error;
+  const list = players || [];
+  const ids = list.map((pl) => pl.id);
+  if (!ids.length) return { rows: [], total: Number(count || 0) };
+
+  const gamesRes = await sb.from('pack_games').select('player_id,completed_all,ended_at')
+    .eq('offer_key', offerKeyStr).in('player_id', ids);
+  if (gamesRes.error) throw gamesRes.error;
+  const vouchersRes = await sb.from('pack_vouchers').select('player_id,source,code,created_at,redeemed_at,redeemed_store')
+    .eq('offer_key', offerKeyStr).in('player_id', ids);
+  if (vouchersRes.error) throw vouchersRes.error;
+
+  const gameOf = new Map((gamesRes.data || []).map((g) => [g.player_id, g]));
+  const vouchersOf = new Map();
+  for (const v of vouchersRes.data || []) {
+    if (!vouchersOf.has(v.player_id)) vouchersOf.set(v.player_id, []);
+    vouchersOf.get(v.player_id).push(v);
+  }
+
+  let rows = list.map((pl) => {
+    const vs = vouchersOf.get(pl.id) || [];
+    const bonus = vs.find((v) => v.source === 'bonus');
+    const anyRedeemed = vs.find((v) => v.redeemed_at);
+    const game = gameOf.get(pl.id);
+    return {
+      id: pl.id,
+      email: pl.email,
+      email_verified_at: pl.email_verified_at,
+      instagram_at: pl.instagram_at,
+      share_at: pl.share_at || pl.app_at || null,
+      created_at: pl.created_at,
+      completed_all: !!(game && game.completed_all),
+      voucher: bonus
+        ? { code: formatCode(bonus.code), redeemed_at: bonus.redeemed_at, redeemed_store: bonus.redeemed_store || null }
+        : null,
+      any_redeemed: !!anyRedeemed,
+      redeemed_store: anyRedeemed ? (anyRedeemed.redeemed_store || null) : null,
+    };
+  });
+
+  if (filter === 'completed') rows = rows.filter((r) => r.completed_all);
+  if (filter === 'ticket_outstanding') rows = rows.filter((r) => r.voucher && !r.voucher.redeemed_at);
+  if (filter === 'redeemed') rows = rows.filter((r) => r.any_redeemed);
+
+  const total = (filter === 'all' || filter === 'today') ? Number(count || 0) : rows.length;
+  return { rows, total };
+}
+
+async function handleLeads(req, res, deps) {
+  const sess = await deps.readSession(req).catch(() => null);
+  if (!sess) return res.status(401).json({ error: 'not signed in' });
+  if (sess.role !== 'operator') return res.status(403).json({ error: 'wrong role' });
+
+  const url = new URL(req.url || '/', 'http://x');
+  const q = (url.searchParams.get('q') || '').trim();
+  const filter = url.searchParams.get('filter') || 'all';
+  const limit = Math.min(200, Math.max(1, Number(url.searchParams.get('limit')) || 50));
+  const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
+
+  const { offer } = await deps.readOffer();
+  const key = offerKey(offer);
+  const now = deps.now();
+  const todayBounds = nyDayBounds(nyDayKey(now));
+
+  const { rows, total } = await queryLeads(deps.store()._sb, {
+    q, filter, limit, offset, offerKeyStr: key, todayBounds,
+  });
+  return res.status(200).json({ rows, total, as_of: now.toISOString() });
+}
+
+const CSV_MAX_ROWS = 10000;
+
+function csvEscape(v) {
+  if (v == null) return '';
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+async function handleLeadsCsv(req, res, deps) {
+  const sess = await deps.readSession(req).catch(() => null);
+  if (!sess) return res.status(401).json({ error: 'not signed in' });
+  if (sess.role !== 'operator') return res.status(403).json({ error: 'wrong role' });
+
+  const url = new URL(req.url || '/', 'http://x');
+  const q = (url.searchParams.get('q') || '').trim();
+  const filter = url.searchParams.get('filter') || 'all';
+
+  const { offer } = await deps.readOffer();
+  const key = offerKey(offer);
+  const now = deps.now();
+  const today = nyDayKey(now);
+  const todayBounds = nyDayBounds(today);
+
+  const { rows, total } = await queryLeads(deps.store()._sb, {
+    q, filter, limit: CSV_MAX_ROWS, offset: 0, offerKeyStr: key, todayBounds,
+  });
+
+  if (total > CSV_MAX_ROWS) {
+    return res.status(429).json({ error: `export cap of ${CSV_MAX_ROWS} rows exceeded; narrow the filter` });
+  }
+
+  const header = 'email,verified_at,instagram_at,share_at,completed_all,voucher_code,voucher_redeemed_at,voucher_store,redeemed_any,created_at';
+  const body = rows.map((r) => [
+    r.email, r.email_verified_at, r.instagram_at, r.share_at, r.completed_all,
+    r.voucher ? r.voucher.code : '', r.voucher ? r.voucher.redeemed_at : '', r.voucher ? r.voucher.redeemed_store : '',
+    r.any_redeemed, r.created_at,
+  ].map(csvEscape).join(',')).join('\n');
+
+  const safeFilter = /^[a-z_]{1,32}$/.test(filter) ? filter : 'all';
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="leads-${today}-${safeFilter}.csv"`);
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(200).send(header + '\n' + body + (body ? '\n' : ''));
+}
+
 async function handle(req, res, deps = defaultDeps()) {
   res.setHeader('Cache-Control', 'no-store');
   try {
@@ -1139,6 +1382,9 @@ async function handle(req, res, deps = defaultDeps()) {
     if (req.method === 'GET') {
       const view = url.searchParams.get('view') || 'state';
       if (view === 'stats') return await handleStats(req, res, deps);
+      if (view === 'funnel') return await handleFunnel(req, res, deps);
+      if (view === 'leads') return await handleLeads(req, res, deps);
+      if (view === 'export.csv') return await handleLeadsCsv(req, res, deps);
       if (!deps.env.APP_JWT_SECRET) return res.status(503).json({ error: MSG.setup });
       if (url.searchParams.has('verify')) return handleVerifyLink(res, url.searchParams.get('verify') || '');
       if (view === 'state') return await handleState(req, res, deps);

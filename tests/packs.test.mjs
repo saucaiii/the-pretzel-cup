@@ -1026,7 +1026,7 @@ test('redeem: staff see what to give and the completed badge only after the PIN'
   assert.deepEqual(r2.body.staff, { give: null, pretzels: 0, completed_all: false });
 });
 
-test('stats: end states, steps, Golden Ticket and Completed all 4 list (masked)', async () => {
+test('stats: end states, steps, Golden Ticket and Completed all 4 list (unmasked for operator)', async () => {
   const d = goldDeps();
   const { c } = await playTo4(d); // player@example.com completes
   await openPack(d, c);
@@ -1040,9 +1040,10 @@ test('stats: end states, steps, Golden Ticket and Completed all 4 list (masked)'
   assert.equal(r.body.opened.share, 1);
   assert.equal(r.body.opened.total, 3 + 4 + 1);
   assert.equal(r.body.completed_list.length, 1);
-  assert.equal(r.body.completed_list[0].email, 'p***@example.com');
+  // view=stats is operator-gated; operator sees full emails for the CRM.
+  // The maskEmail helper stays exported for any future non-operator caller.
+  assert.equal(r.body.completed_list[0].email, 'player@example.com');
   assert.match(r.body.completed_list[0].ticket, /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
-  assert.ok(!JSON.stringify(r.body).includes('player@example.com'), 'no full emails in stats');
 });
 async function playTo3Email(d, email) {
   let c = cookieOf(await openPack(d));
