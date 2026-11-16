@@ -259,6 +259,12 @@ main.board-wrap {
   font-size: 12px;
   font-weight: 600;
 }
+.card .added-by {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--card-ink-2);
+  font-style: italic;
+}
 .card .pr-badge {
   position: absolute;
   top: 10px;
@@ -525,7 +531,6 @@ main.board-wrap {
 </div>
 <div class="ops-chrome">
   <a href="/ops" class="ops-brand" aria-label="Operator dashboard">
-    <img src="/ppf-logo.jpg" alt="" class="ops-brand-logo">
     <span class="ops-brand-text">
       <span class="t">Philly Pretzel Factory</span>
       <span class="b">Operator</span>
@@ -838,6 +843,7 @@ function initApp() {
         </div>
         ${b.nextAction ? `<div class="next">${esc(b.nextAction)}</div>` : ''}
         ${b.blocker ? `<div class="blocker-strip">${esc(b.blocker)}</div>` : ''}
+        ${b.addedBy ? `<div class="added-by">Added by ${esc(b.addedBy)}</div>` : ''}
       </article>
     `).join('');
   }

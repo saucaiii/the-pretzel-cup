@@ -40,6 +40,12 @@ sidebar shows an "offline" chip and the FAB dot goes grey.
    `<database_id>` is a 32-char hex string (without the dashes). This is
    `NOTION_BUILDS_DB_ID`.
 
+4. **Add the `Added by` property.** On the database, `+ Add a property` →
+   type **Text** → name it exactly `Added by`. The server writes the
+   signed-in operator's name here on every create; it also shows at the
+   bottom of each card. If the property is missing, creates still succeed
+   but the attribution field is silently dropped.
+
 ## Vercel environment
 
 These go in `Settings → Environment Variables`. Apply to **Production**

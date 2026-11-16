@@ -32,6 +32,7 @@ const BASE = 'https://api.notion.com/v1';
 //   sessionLink    url | null
 //   repoLink       url | null
 //   lastTouched    ISO date | null
+//   addedBy        string (operator name who created the card) | ''
 //   buildId        auto-increment int | null
 //   url            notion.so page url
 
@@ -57,6 +58,7 @@ function pageToBuild(page) {
     sessionLink: p['Session Link']?.url || null,
     repoLink: p['Repo Link']?.url || null,
     lastTouched: p['Last Touched']?.date?.start || null,
+    addedBy: plainText(p['Added by']?.rich_text),
     buildId,
     url: page.url,
   };
@@ -99,6 +101,9 @@ function patchToProperties(patch) {
   }
   if ('lastTouched' in patch) {
     props['Last Touched'] = patch.lastTouched ? { date: { start: patch.lastTouched } } : { date: null };
+  }
+  if ('addedBy' in patch) {
+    props['Added by'] = { rich_text: patch.addedBy ? [{ type: 'text', text: { content: String(patch.addedBy) } }] : [] };
   }
   return props;
 }
@@ -143,24 +148,58 @@ async function listBuilds({ db, token }) {
   return out;
 }
 
+// Notion 400s when you write to a property that doesn't exist on the DB.
+// If "Added by" hasn't been added to the schema yet (new install, or the
+// operator deleted it), retry once with that property stripped so the
+// create still lands.
+function stripAddedByOn400(err, properties) {
+  if (err?.status !== 400) return null;
+  if (!/Added by/i.test(err.message || '')) return null;
+  if (!('Added by' in properties)) return null;
+  const { ['Added by']: _drop, ...rest } = properties;
+  return rest;
+}
+
 async function createBuild({ db, token, patch }) {
   const properties = patchToProperties(patch);
-  const data = await notion(`/pages`, {
-    token,
-    method: 'POST',
-    body: { parent: { database_id: db }, properties },
-  });
-  return pageToBuild(data);
+  try {
+    const data = await notion(`/pages`, {
+      token,
+      method: 'POST',
+      body: { parent: { database_id: db }, properties },
+    });
+    return pageToBuild(data);
+  } catch (err) {
+    const retryProps = stripAddedByOn400(err, properties);
+    if (!retryProps) throw err;
+    const data = await notion(`/pages`, {
+      token,
+      method: 'POST',
+      body: { parent: { database_id: db }, properties: retryProps },
+    });
+    return pageToBuild(data);
+  }
 }
 
 async function updateBuild({ token, id, patch }) {
   const properties = patchToProperties(patch);
-  const data = await notion(`/pages/${id}`, {
-    token,
-    method: 'PATCH',
-    body: { properties },
-  });
-  return pageToBuild(data);
+  try {
+    const data = await notion(`/pages/${id}`, {
+      token,
+      method: 'PATCH',
+      body: { properties },
+    });
+    return pageToBuild(data);
+  } catch (err) {
+    const retryProps = stripAddedByOn400(err, properties);
+    if (!retryProps) throw err;
+    const data = await notion(`/pages/${id}`, {
+      token,
+      method: 'PATCH',
+      body: { properties: retryProps },
+    });
+    return pageToBuild(data);
+  }
 }
 
 async function archiveBuild({ token, id }) {
