@@ -1223,14 +1223,32 @@ async function handleFunnel(req, res, deps) {
   const todayBounds = nyDayBounds(today);
   const yesterdayBounds = nyDayBounds(yesterday);
 
+  // scan_meta distinguishes "0 scans today, counting is working" from
+  // "counting is broken" so the Today tile can show something honest
+  // instead of a bare 0 either way.
   let scansToday = 0;
   let scansYesterday = 0;
+  const scan_meta = { configured: false, last_scan_date: null, last_scan_days_ago: null, available: false };
   try {
     const s = await deps.readScanStats();
     scansToday = Object.values(s.today || {}).reduce((a, b) => a + (Number(b) || 0), 0);
     scansYesterday = Number((s.by_day || {})[yesterday]) || 0;
+    scan_meta.configured = !!s.configured;
+    scan_meta.available = true;
+    const days = Object.keys(s.by_day || {}).sort(); // ascending YYYY-MM-DD
+    for (let i = days.length - 1; i >= 0; i--) {
+      if ((s.by_day[days[i]] || 0) > 0) {
+        scan_meta.last_scan_date = days[i];
+        const [ly, lm, ld] = days[i].split('-').map(Number);
+        const then = Date.UTC(ly, lm - 1, ld);
+        const [ny, nm, nd] = today.split('-').map(Number);
+        const nowNy = Date.UTC(ny, nm - 1, nd);
+        scan_meta.last_scan_days_ago = Math.max(0, Math.round((nowNy - then) / 86400000));
+        break;
+      }
+    }
   } catch (e) {
-    // Upstash unavailable — leave scan counts at 0 rather than failing the whole page.
+    // Upstash unreachable — leave counts at 0 and let the UI show the state.
   }
 
   const { offer } = await deps.readOffer();
@@ -1245,6 +1263,7 @@ async function handleFunnel(req, res, deps) {
     offer_key: key,
     today: { date: today, scan_count: scansToday, ...tCounts, window: todayBounds },
     yesterday: { date: yesterday, scan_count: scansYesterday, ...yCounts, window: yesterdayBounds },
+    scan_meta,
     as_of: now.toISOString(),
   });
 }

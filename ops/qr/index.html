@@ -263,7 +263,7 @@ details.sub > .sub-body { padding: 16px 0 6px; }
       <!-- ─────────── TODAY ─────────── -->
       <div class="panel" id="p-today" data-tab="today" role="tabpanel" aria-labelledby="tab-today-btn">
         <h2>Today</h2>
-        <p class="hint" id="today-hint">Scans, verified leads, completions, and voucher redemptions since midnight New York time. Deltas compare to the same hours yesterday.</p>
+        <p class="hint" id="today-hint">Scans, verified leads, completions, and voucher redemptions in New York time. Deltas compare day-over-day (today is partial until midnight ET).</p>
 
         <div class="kpi-grid" aria-label="Key numbers">
           <div class="kpi"><span class="lbl">Scans</span><div class="kpi-value" id="k-scans">&mdash;</div><div class="kpi-sub" id="k-scans-sub"></div></div>
@@ -775,6 +775,49 @@ function setKpi(valueId, subId, now, prev) {
   v.appendChild(deltaPill(now, prev));
   if (subId) $(subId).textContent = 'Yesterday: ' + prev;
 }
+function scansConfigured(sm) {
+  return !!(sm && sm.available && sm.configured);
+}
+function lastScanLine(sm) {
+  if (!sm || sm.last_scan_days_ago == null) return 'No scans in 30 days.';
+  if (sm.last_scan_days_ago === 0) return 'Last scan: earlier today.';
+  if (sm.last_scan_days_ago === 1) return 'Last scan: yesterday.';
+  return 'Last scan: ' + sm.last_scan_days_ago + ' days ago.';
+}
+function renderScansTile(now, prev, sm) {
+  var v = $('#k-scans');
+  var sub = $('#k-scans-sub');
+  v.textContent = '';
+  if (!sm.available) {
+    v.appendChild(document.createTextNode('N/A'));
+    sub.textContent = 'Scan counter unreachable (Upstash / network).';
+    return;
+  }
+  if (!sm.configured) {
+    v.appendChild(document.createTextNode('N/A'));
+    sub.textContent = 'Scan counter not configured (UPSTASH_REDIS_REST_URL / _TOKEN).';
+    return;
+  }
+  v.appendChild(document.createTextNode(String(now)));
+  v.appendChild(deltaPill(now, prev));
+  sub.textContent = now > 0 ? ('Yesterday: ' + prev) : lastScanLine(sm);
+}
+function renderLivePill(scansToday, sm, as_of) {
+  var text = $('#strip-live-text');
+  var sub = $('#strip-live-sub');
+  if (!sm || !sm.available) {
+    text.textContent = 'Counter unreachable';
+    sub.textContent = '';
+    return;
+  }
+  if (!sm.configured) {
+    text.textContent = 'Counter not configured';
+    sub.textContent = 'Set UPSTASH_REDIS_REST_URL / _TOKEN.';
+    return;
+  }
+  text.textContent = String(scansToday) + (scansToday === 1 ? ' scan today' : ' scans today');
+  sub.textContent = (scansToday > 0 ? ('As of ' + fmtTime(as_of)) : lastScanLine(sm));
+}
 function conv(n, d) {
   if (!d) return { text: n ? '-' : '', bad: false };
   var pct = Math.round((n / d) * 100);
@@ -815,9 +858,13 @@ async function loadFunnel() {
   try {
     var f = await apiPacks('funnel', null);
     var t = f.today, y = f.yesterday;
+    var sm = f.scan_meta || { available: true, configured: true, last_scan_days_ago: null, last_scan_date: null };
     var p1 = t.pack_openings.p1, p2 = t.pack_openings.p2, p3 = t.pack_openings.p3, p4 = t.pack_openings.p4;
-    var yp1 = y.pack_openings.p1, yp2 = y.pack_openings.p2, yp3 = y.pack_openings.p3, yp4 = y.pack_openings.p4;
-    setKpi('#k-scans',     '#k-scans-sub',     t.scan_count,     y.scan_count);
+
+    // Scans tile honest about counter state. The other three tiles still use
+    // the standard today/yesterday delta; verify/complete/redeem come from
+    // Supabase and are either live or the whole page already failed.
+    renderScansTile(t.scan_count, y.scan_count, sm);
     setKpi('#k-verified',  '#k-verified-sub',  t.verify_count,   y.verify_count);
     setKpi('#k-completed', '#k-completed-sub', t.complete_count, y.complete_count);
     setKpi('#k-redeemed',  '#k-redeemed-sub',  t.redeem_count,   y.redeem_count);
@@ -834,9 +881,10 @@ async function loadFunnel() {
     funnelStep(container, 'Complete',   t.complete_count, max, p4);
     funnelStep(container, 'Redeem',     t.redeem_count,   max, t.complete_count);
 
-    $('#strip-live-text').textContent = String(t.scan_count) + ' scans today';
-    $('#strip-live-sub').textContent = 'As of ' + fmtTime(f.as_of);
-    $('#today-hint').textContent = 'Scans, verified leads, completions, and voucher redemptions in New York time. ' + y.date + ' ran ' + y.scan_count + ' scans; comparisons are same-metric year-over-day.';
+    renderLivePill(t.scan_count, sm, f.as_of);
+    $('#today-hint').textContent = scansConfigured(sm)
+      ? 'Scans, verified leads, completions, and voucher redemptions in New York time. Deltas compare day-over-day (today is partial until midnight ET).'
+      : 'Scan counter is not reporting; the other tiles still read live from Supabase.';
   } catch (e) {
     $('#strip-live-text').textContent = 'Could not load';
     $('#strip-live-sub').textContent = e && e.message ? e.message : '';
