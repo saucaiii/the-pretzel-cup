@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
 
     const [routesR, stopsR, shiftsR] = await Promise.all([
       sb.from('routes').select('*').order('display_order'),
-      sb.from('stops').select('*').eq('active', true),
+      sb.from('stops').select('*').eq('active', true).order('stop_order'),
       sb.from('shifts').select('*, people(name)').contains('days', [dow]),
     ]);
     if (routesR.error) throw routesR.error;
@@ -46,6 +46,16 @@ module.exports = async function handler(req, res) {
       const bakery  = BAKERY_FOR_ROUTE[r.key];
       const bakers  = shiftsR.data.filter(sh => sh.location === bakery).map(sh => sh.people?.name).filter(Boolean);
       const drivers = shiftsR.data.filter(sh => sh.route_key === r.key).map(sh => sh.people?.name).filter(Boolean);
+      // Per-stop breakdown for today — baker uses this to match the paper
+      // route sheet (stop # · name · town · singles · doubles · shorts flag).
+      const stops = rstops.map(s => ({
+        order: s.stop_order,
+        name: s.name,
+        town: s.town,
+        shorts: !!s.shorts,
+        singles: singlesFor(s),
+        doubles: doublesFor(s),
+      }));
       return {
         route_key: r.key,
         route_label: r.label,
@@ -58,6 +68,7 @@ module.exports = async function handler(req, res) {
         shorts_doubles,
         shorts_stops: shortStops.map(s => s.name),
         stop_count: rstops.length,
+        stops,
       };
     });
 
