@@ -69,6 +69,12 @@ const NO_END_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const PIN_TRIES = 5;
 const STORES = { lynbrook: 'Lynbrook', franklin_square: 'Franklin Square' };
 const TIME_ZONE = 'America/New_York';
+// Implicit-consent model (see /privacy): opting in happens by
+// entering + verifying an email on pack 2. The version slug matches
+// the one rendered on /privacy.html; bump both together when the
+// policy copy changes.
+const CONSENT_SOURCE_PACK2 = 'pack2_verify';
+const PRIVACY_VERSION = 'privacy_v1_2026-11';
 // [max, window seconds] per hashed IP (or hashed email).
 const LIMITS = {
   open: [60, 600],
@@ -897,8 +903,14 @@ async function handleVerify(req, res, deps, ctx, body) {
   for (let attempt = 0; attempt < 2 && !finalId; attempt++) {
     const owner = await store.findPlayerByEmail(link.email);
     if (!owner) {
+      const nowIso = now.toISOString();
       const r = await store.updatePlayer(link.player_id, {
-        email: link.email, email_verified_at: now.toISOString(), marketing_opt_in: !!link.marketing_opt_in,
+        email: link.email,
+        email_verified_at: nowIso,
+        marketing_opt_in: !!link.marketing_opt_in,
+        marketing_opt_in_at: nowIso,
+        marketing_opt_in_source: CONSENT_SOURCE_PACK2,
+        marketing_opt_in_version: PRIVACY_VERSION,
       });
       if (r.conflict) continue; // another link for this email won the race: merge instead
       finalId = link.player_id;
@@ -916,6 +928,15 @@ async function handleVerify(req, res, deps, ctx, body) {
       if (!owner.instagram_at && ctx.player.instagram_at) patch.instagram_at = ctx.player.instagram_at;
       if (!owner.share_at && ctx.player.share_at) patch.share_at = ctx.player.share_at;
       if (link.marketing_opt_in && !owner.marketing_opt_in) patch.marketing_opt_in = true;
+      // Owner should already have consent metadata (backfilled by p24 or
+      // written on their own first verify). The fallback covers any row
+      // the backfill missed — e.g. verified and then deleted-and-recreated.
+      if (!owner.marketing_opt_in_at) {
+        const nowIso = now.toISOString();
+        patch.marketing_opt_in_at = nowIso;
+        patch.marketing_opt_in_source = CONSENT_SOURCE_PACK2;
+        patch.marketing_opt_in_version = PRIVACY_VERSION;
+      }
       if (Object.keys(patch).length) await store.updatePlayer(owner.id, patch);
     }
     finalId = owner.id;
@@ -1282,7 +1303,7 @@ async function queryLeads(sb, { q, filter, limit, offset, offerKeyStr, todayBoun
   // match the join, and count: 'exact' still counts parents (not join rows).
   // pack_games.PK is (player_id, offer_key); pack_vouchers has unique
   // (player_id, offer_key, source) — so no parent row is counted twice.
-  let select = 'id,email,created_at,email_verified_at,instagram_at,share_at,app_at';
+  let select = 'id,email,created_at,email_verified_at,instagram_at,share_at,app_at,marketing_opt_in_source';
   if (filter === 'completed') {
     select += ',pack_games!inner(completed_all,offer_key)';
   } else if (filter === 'ticket_outstanding') {
@@ -1342,6 +1363,7 @@ async function queryLeads(sb, { q, filter, limit, offset, offerKeyStr, todayBoun
       instagram_at: pl.instagram_at,
       share_at: pl.share_at || pl.app_at || null,
       created_at: pl.created_at,
+      opt_in_source: pl.marketing_opt_in_source || null,
       completed_all: !!(game && game.completed_all),
       voucher: bonus
         ? { code: formatCode(bonus.code), redeemed_at: bonus.redeemed_at, redeemed_store: bonus.redeemed_store || null }

@@ -1063,7 +1063,7 @@
       $('sv-label').textContent = g ? (v.title || 'Golden Ticket') : 'Your free pretzel';
       $('sv-code').textContent = v.code;
       $('sv-exp').textContent = 'Good through ' + fmtDay(v.expires_at) + '.';
-      $('sv-how').textContent = g ? (v.text || 'Show this at the counter.') : 'Show this at the counter.';
+      $('sv-how').textContent = (g && v.text) || 'Pick a store to redeem';
       fillNext(v, S.state);
     }
 
@@ -1204,7 +1204,9 @@
       var btn = $('email-send');
       btn.disabled = true;
       st.textContent = 'Sending...';
-      api('POST', { action: 'email', email: email, marketing_opt_in: $('email-optin').checked }).then(function (r) {
+      // Implicit-consent model (see /privacy): entering an email + verifying
+      // it opts in. The checkbox was removed from the page in slice 2.
+      api('POST', { action: 'email', email: email, marketing_opt_in: true }).then(function (r) {
         btn.disabled = false;
         st.textContent = r.ok ? 'Check your inbox. Tap the link on this phone. It works once and expires in 1 hour.' : (r.data.error || 'We could not send the email. Try again later.');
       }, function () {

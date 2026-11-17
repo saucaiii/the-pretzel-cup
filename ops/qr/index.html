@@ -1026,9 +1026,10 @@ async function loadContacts() {
         }
         cells.push(vcCell);
         var opt = document.createElement('td');
-        // Slice 1 placeholder: everyone who verified came through pack2's email step.
-        // Slice 2 lands the real pack_players.marketing_opt_in_source column.
-        opt.textContent = r.email_verified_at ? 'pack2_verify' : '-';
+        // Read the real consent source (pack_players.marketing_opt_in_source,
+        // written by handleVerify since slice 2). Fall back for any row the
+        // p24 backfill missed or that predates it.
+        opt.textContent = r.opt_in_source || (r.email_verified_at ? 'pack2_verify' : '-');
         cells.push(opt);
         var cr = document.createElement('td');
         cr.textContent = fmtWhen(r.created_at);
