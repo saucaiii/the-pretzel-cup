@@ -724,7 +724,7 @@
     <p class="sv-label" id="sv-label">Your free pretzel</p>
     <p class="sv-code" id="sv-code"></p>
     <p class="sv-exp" id="sv-exp"></p>
-    <p class="sv-how" id="sv-how">Show this at the counter.</p>
+    <button class="sv-how" id="sv-how" type="button" aria-haspopup="dialog" aria-controls="store-picker">Pick a store to redeem</button>
     <!-- Progress toward the Golden Ticket, then one button to the next
          pretzel (filled by packs.js). -->
     <div class="sv-progress" id="sv-progress" hidden>
@@ -737,6 +737,37 @@
     </div>
   </div>
   <p class="sr-only" id="st-live" aria-live="assertive"></p>
+</div>
+
+<!-- Store picker. Opens from the voucher's "Pick a store to redeem" pill.
+     Each row is a plain <a> to a Google Maps URL, which iOS routes to
+     Apple Maps or Google Maps per the user's default. Addresses mirror
+     the Come Get Yours section above. -->
+<div class="sheet store-picker" id="store-picker" hidden role="dialog" aria-modal="true" aria-labelledby="sp-title">
+  <div class="sheet-card sp-card">
+    <div class="sp-head">
+      <h3 id="sp-title">Which store?</h3>
+      <button class="sp-close" id="sp-close" type="button" aria-label="Close">&times;</button>
+    </div>
+    <p class="sp-sub">Show your code at the counter.</p>
+    <a class="sp-store" href="https://maps.google.com/?q=Philly+Pretzel+Factory+118+Broadway+Lynbrook+NY" target="_blank" rel="noopener">
+      <span class="sp-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <span class="sp-body">
+        <span class="sp-name">Lynbrook</span>
+        <span class="sp-addr">118 Broadway, Lynbrook, NY</span>
+      </span>
+      <span class="sp-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></span>
+    </a>
+    <a class="sp-store" href="https://maps.google.com/?q=Philly+Pretzel+Factory+197+Franklin+Ave+Franklin+Square+NY" target="_blank" rel="noopener">
+      <span class="sp-pin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <span class="sp-body">
+        <span class="sp-name">Franklin Square</span>
+        <span class="sp-addr">197 Franklin Ave, Franklin Square, NY</span>
+      </span>
+      <span class="sp-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg></span>
+    </a>
+    <p class="sp-fine">Opens your map app for directions.</p>
+  </div>
 </div>
 
 <!-- Staff redeem. The 4-digit store PIN burns the code once. -->
@@ -839,6 +870,44 @@
     })
     .catch(function () { /* keep static content */ })
     .then(function () { clearTimeout(timer); });
+})();
+</script>
+
+<script>
+// Store picker. Every "Pick a store to redeem" pill on the page opens
+// the same modal; each store row is a plain <a>, so the browser hands
+// the maps URL to the user's default map app.
+(function () {
+  var sheet = document.getElementById('store-picker');
+  if (!sheet) return;
+  var closeBtn = document.getElementById('sp-close');
+  var opener = null;
+  function open(btn) {
+    opener = btn || null;
+    sheet.hidden = false;
+    var first = sheet.querySelector('.sp-store');
+    if (first) try { first.focus({ preventScroll: true }); } catch (e) { first.focus(); }
+  }
+  function close() {
+    if (sheet.hidden) return;
+    sheet.hidden = true;
+    if (opener) try { opener.focus({ preventScroll: true }); } catch (e) { opener.focus(); }
+    opener = null;
+  }
+  document.addEventListener('click', function (e) {
+    var trigger = e.target.closest && e.target.closest('[aria-controls="store-picker"]');
+    if (trigger) { e.preventDefault(); open(trigger); return; }
+    if (e.target === sheet) close();
+  });
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !sheet.hidden) { e.preventDefault(); close(); }
+  });
+  // Close on any store-link click so returning from the map app lands
+  // on the voucher, not the still-open sheet.
+  Array.prototype.forEach.call(sheet.querySelectorAll('.sp-store'), function (a) {
+    a.addEventListener('click', function () { setTimeout(close, 0); });
+  });
 })();
 </script>
 

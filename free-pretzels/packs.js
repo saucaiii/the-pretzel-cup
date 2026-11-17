@@ -1063,7 +1063,7 @@
       $('sv-label').textContent = g ? (v.title || 'Golden Ticket') : 'Your free pretzel';
       $('sv-code').textContent = v.code;
       $('sv-exp').textContent = 'Good through ' + fmtDay(v.expires_at) + '.';
-      $('sv-how').textContent = g ? (v.text || 'Show this at the counter.') : 'Show this at the counter.';
+      $('sv-how').textContent = (g && v.text) || 'Pick a store to redeem';
       fillNext(v, S.state);
     }
 
