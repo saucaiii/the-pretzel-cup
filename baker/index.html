@@ -79,78 +79,34 @@ nav.tabs button:active { background: rgba(0,0,0,0.25); color: var(--gold); }
 section.view { display: none; }
 section.view.is-active { display: block; }
 
-/* Hero: today's date + totals */
-.hero-date { font: 400 11px var(--display); letter-spacing: 0.22em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
-.hero-h { font: 400 clamp(40px, 7vw, 60px) var(--display); line-height: 0.95; margin: 0 0 20px; letter-spacing: 0.01em; text-transform: uppercase; text-wrap: balance; }
-.totals-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
-.totals-card {
-  background: var(--panel); border: 1px solid var(--line);
-  border-radius: 12px; padding: 18px 20px;
-}
-.totals-card .lbl { font: 400 11px var(--display); letter-spacing: 0.18em; color: var(--ink-3); text-transform: uppercase; margin-bottom: 6px; }
-.totals-card .num { font: 400 clamp(44px, 8vw, 64px) var(--display); line-height: 1; font-variant-numeric: tabular-nums; color: var(--gold); }
-.totals-card .of-short { font: 600 11px var(--body); color: var(--warn); margin-top: 6px; letter-spacing: 0.04em; }
+/* "Hero" h1 reused on Updates / Schedule / Time Off tabs. */
+.hero-h { font: 700 clamp(28px, 5vw, 32px)/1.15 var(--body); letter-spacing: -0.01em; margin: 12px 0 20px; color: var(--ink); }
 
-/* Shorts batch callout — only visible when today has shorts stops */
-.shorts-batch {
-  background: linear-gradient(135deg, rgba(244,194,95,0.14), rgba(244,194,95,0.04));
-  border: 1px solid rgba(244,194,95,0.45);
-  border-radius: 12px; padding: 16px 18px 14px;
-  margin-bottom: 24px;
-}
-.shorts-batch .shorts-h {
-  font: 400 13px var(--display); letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--warn); margin: 0 0 10px; display: flex; align-items: center; gap: 10px;
-}
-.shorts-batch .shorts-nums {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
-}
-.shorts-batch .shorts-num {
-  background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px 12px;
-}
-.shorts-batch .shorts-num .lbl { font: 400 10px var(--display); letter-spacing: 0.16em; color: var(--ink-3); text-transform: uppercase; }
-.shorts-batch .shorts-num .num { font: 400 32px var(--display); line-height: 1.1; color: var(--warn); font-variant-numeric: tabular-nums; }
-.shorts-batch .shorts-stops { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
-.shorts-batch .shorts-stops b { color: var(--ink); font-weight: 700; }
-.shorts-batch .shorts-bakery { font: 600 11px var(--body); letter-spacing: 0.04em; color: var(--ink-3); text-transform: uppercase; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(244,194,95,0.25); }
-.shorts-batch .shorts-bakery b { color: var(--warn); font-weight: 700; }
+/* Per-route section — one route per tab, no scroll between routes. */
+.route-date { font-size: 13px; color: var(--ink-3); margin: 12px 0 6px; }
+.dest-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.dest-name { font: 700 clamp(28px, 6vw, 36px)/1.1 var(--body); color: var(--ink); letter-spacing: -0.01em; margin: 0; }
+.dest-key { font: 500 12px/1 var(--body); color: var(--ink-3); letter-spacing: 0.1em; }
+.dest-meta { font-size: 14px; color: var(--ink-3); line-height: 1.5; margin: 0 0 24px; }
+.dest-meta b { color: var(--ink-2); font-weight: 600; }
+.dest-count { display: flex; align-items: baseline; gap: 36px; margin-bottom: 4px; }
+.dest-count .n { font: 400 clamp(48px, 10vw, 64px)/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.dest-count .l { font-size: 13px; color: var(--ink-3); }
+.dest-short { font-size: 14px; color: var(--ink-3); margin: 10px 0 0; }
+.dest-short b { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* Shorts tag on per-route destination cards */
-.dest .shorts-tag {
-  display: inline-block; font: 400 10px var(--display); letter-spacing: 0.14em;
-  text-transform: uppercase; padding: 2px 8px; border-radius: 999px;
-  border: 1px solid rgba(244,194,95,0.45); color: var(--warn);
-  background: rgba(244,194,95,0.08); margin-left: 8px;
-}
-.dest-meta .shorts-line { color: var(--warn); margin-top: 2px; }
-
-/* Destination table */
-h2.sect { font: 400 13px var(--display); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 28px 0 10px; }
-.dest-grid { display: flex; flex-direction: column; gap: 10px; }
-.dest {
-  background: var(--panel); border: 1px solid var(--line);
-  border-radius: 12px; padding: 16px 18px;
-}
-.dest-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.dest-name { font: 400 20px var(--display); letter-spacing: 0.02em; text-transform: uppercase; }
-.dest-meta { font-size: 13px; color: var(--ink-2); margin-top: 4px; line-height: 1.4; }
-.dest-meta b { color: var(--ink); font-weight: 700; }
-/* 4-tile stats row matching the paper route sheet. Short tiles only render
-   when the route has shorts, so a route with none drops to a 2-tile row. */
-.dest-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
-.dest-stats.has-shorts { grid-template-columns: repeat(4, 1fr); }
-.dest-stat {
-  background: rgba(0,0,0,0.22); border: 1px solid var(--line);
-  border-radius: 10px; padding: 10px 12px; min-width: 0;
-}
-.dest-stat.is-short { border-color: rgba(244,194,95,0.45); background: rgba(244,194,95,0.08); }
-.dest-stat .lbl { font: 400 10px var(--display); letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; line-height: 1.1; }
-.dest-stat.is-short .lbl { color: var(--warn); }
-.dest-stat .num { font: 400 clamp(28px, 6vw, 40px) var(--display); line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; margin-top: 4px; }
-.dest-stat.is-short .num { color: var(--warn); }
-@media (max-width: 480px) {
-  .dest-stats.has-shorts { grid-template-columns: repeat(2, 1fr); }
-}
+/* Per-stop table — always visible, quiet, scannable. */
+.dest-stops-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-variant-numeric: tabular-nums; }
+.dest-stops-table th, .dest-stops-table td { padding: 10px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: baseline; }
+.dest-stops-table th { font: 500 11px var(--body); color: var(--ink-3); border-bottom-color: var(--line-2); letter-spacing: 0.04em; text-transform: uppercase; }
+.dest-stops-table th.num, .dest-stops-table td.num { text-align: right; font-family: var(--display); font-size: 20px; color: var(--ink); width: 1%; white-space: nowrap; letter-spacing: 0.01em; }
+.dest-stops-table th.num { font: 500 11px var(--body); color: var(--ink-3); letter-spacing: 0.04em; text-transform: uppercase; }
+.dest-stops-table th.idx, .dest-stops-table td.idx { width: 1%; color: var(--ink-3); text-align: right; padding-right: 14px; font-variant-numeric: tabular-nums; }
+.dest-stops-table .stop-name { font-size: 15px; color: var(--ink); font-weight: 500; }
+.dest-stops-table .stop-town { color: var(--ink-3); font-size: 12px; margin-top: 1px; }
+.dest-stops-table .short-mark { color: var(--gold); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; margin-left: 8px; text-transform: uppercase; }
+.dest-stops-table tr.total-row td { border-bottom: 0; padding-top: 14px; font-weight: 600; color: var(--ink-2); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+.dest-stops-table tr.total-row td.num { color: var(--ink); font-size: 22px; font-weight: 400; }
 
 /* Updates feed */
 .upd { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -248,34 +204,15 @@ footer { color: var(--ink-3); font-size: 11px; text-align: center; padding: 24px
     <button class="action" type="button" id="signout">Sign Out</button>
   </header>
 
-  <nav class="tabs" role="tablist">
-    <button role="tab" data-v="today"    aria-selected="true">Today</button>
-    <button role="tab" data-v="updates"  aria-selected="false">Updates</button>
-    <button role="tab" data-v="schedule" aria-selected="false">Schedule</button>
-    <button role="tab" data-v="off"      aria-selected="false">Time Off</button>
+  <nav class="tabs" role="tablist" id="tabs">
+    <!-- Route tabs (one per active route) are inserted before these fixed tabs on load. -->
+    <button role="tab" data-v="updates"  data-fixed aria-selected="false">Updates</button>
+    <button role="tab" data-v="schedule" data-fixed aria-selected="false">Schedule</button>
+    <button role="tab" data-v="off"      data-fixed aria-selected="false">Time Off</button>
   </nav>
 
-  <div class="wrap">
-    <!-- Today -->
-    <section class="view is-active" id="view-today">
-      <div class="hero-date" id="today-date">—</div>
-      <h1 class="hero-h">Today's bake</h1>
-      <div class="totals-row">
-        <div class="totals-card">
-          <div class="lbl">Singles</div>
-          <div class="num" id="t-singles">—</div>
-          <div class="of-short" id="t-singles-short" hidden></div>
-        </div>
-        <div class="totals-card">
-          <div class="lbl">Doubles</div>
-          <div class="num" id="t-doubles">—</div>
-          <div class="of-short" id="t-doubles-short" hidden></div>
-        </div>
-      </div>
-      <div id="shorts-batch-wrap"></div>
-      <h2 class="sect">By route</h2>
-      <div class="dest-grid" id="dest-grid"><div class="empty">Loading…</div></div>
-    </section>
+  <div class="wrap" id="wrap">
+    <!-- Route sections (one per route) are inserted here on load. -->
 
     <!-- Updates -->
     <section class="view" id="view-updates">
@@ -368,8 +305,7 @@ async function boot() {
   }
 }
 
-function initApp() {
-  // Tab switching
+function bindTabs() {
   document.querySelectorAll('nav.tabs button').forEach(b => {
     b.onclick = () => {
       document.querySelectorAll('nav.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
@@ -379,6 +315,9 @@ function initApp() {
       if (b.dataset.v === 'off')      loadTimeOff();
     };
   });
+}
+
+function initApp() {
   $('#signout').onclick = async () => {
     try { await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
     location.replace('/signin');
@@ -394,77 +333,103 @@ function initApp() {
    Today — bake totals + per-route breakdown
    ───────────────────────────────────────────────────────────── */
 async function loadToday() {
-  $('#today-date').textContent = fmtDayLong(todayIso());
   try {
     const r = await fetch('/api/baker/today', { credentials: 'same-origin', cache: 'no-store' });
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
-    $('#t-singles').textContent = j.totals.singles;
-    $('#t-doubles').textContent = j.totals.doubles;
-    const sShorts = j.totals.shorts_singles || 0;
-    const dShorts = j.totals.shorts_doubles || 0;
-    const ssEl = $('#t-singles-short');
-    const dsEl = $('#t-doubles-short');
-    if (sShorts) { ssEl.hidden = false; ssEl.textContent = `of which ${sShorts} short`; } else ssEl.hidden = true;
-    if (dShorts) { dsEl.hidden = false; dsEl.textContent = `of which ${dShorts} short`; } else dsEl.hidden = true;
-
-    // Shorts batch callout — grouped by bakery. Only renders if any
-    // of today's active stops are flagged shorts.
-    const bakeryShorts = j.bakery_shorts || {};
-    const wrap = $('#shorts-batch-wrap');
-    const bakeries = Object.keys(bakeryShorts);
-    if (!bakeries.length) {
-      wrap.innerHTML = '';
-    } else {
-      wrap.innerHTML = bakeries.map(bk => {
-        const bs = bakeryShorts[bk];
-        const routeNames = (bs.routes || []).join(' + ');
-        // All shorts stops across these routes, flattened for display
-        const stopNames = j.destinations
-          .filter(d => bs.routes.includes(d.route_key))
-          .flatMap(d => (d.shorts_stops || []).map(n => `${n} (${d.route_key})`))
-          .join(', ');
-        return `<div class="shorts-batch">
-          <h2 class="shorts-h">SHORTS batch — ${esc(bk)}</h2>
-          <div class="shorts-nums">
-            <div class="shorts-num"><div class="lbl">Shorts singles</div><div class="num">${bs.singles}</div></div>
-            <div class="shorts-num"><div class="lbl">Shorts doubles</div><div class="num">${bs.doubles}</div></div>
-          </div>
-          <div class="shorts-stops">Goes to: <b>${esc(stopNames) || '—'}</b></div>
-          <div class="shorts-bakery">Pull short at <b>${esc(bk)}</b> · covers route(s): <b>${esc(routeNames)}</b></div>
-        </div>`;
-      }).join('');
-    }
-
-    $('#dest-grid').innerHTML = j.destinations.map(d => {
-      const hasShorts = d.shorts_singles > 0 || d.shorts_doubles > 0;
-      const tag = hasShorts
-        ? `<span class="shorts-tag">${d.shorts_stops.length} shorts stop${d.shorts_stops.length === 1 ? '' : 's'}</span>`
-        : '';
-      const shortTiles = hasShorts
-        ? `<div class="dest-stat is-short"><div class="lbl">Short singles</div><div class="num">${d.shorts_singles}</div></div>
-           <div class="dest-stat is-short"><div class="lbl">Short doubles</div><div class="num">${d.shorts_doubles}</div></div>`
-        : '';
-      return `<div class="dest">
-        <div class="dest-head">
-          <div class="dest-name">${esc(d.route_label)} route (${esc(d.route_key)})</div>
-          ${tag}
-        </div>
-        <div class="dest-meta">
-          Bakery: <b>${esc(d.bakery)}</b><br>
-          Baker on: <b>${d.bakers.length ? d.bakers.map(esc).join(', ') : '—'}</b><br>
-          Driver on: <b>${d.drivers.length ? d.drivers.map(esc).join(', ') : '—'}</b>
-        </div>
-        <div class="dest-stats${hasShorts ? ' has-shorts' : ''}">
-          <div class="dest-stat"><div class="lbl">Total singles</div><div class="num">${d.singles}</div></div>
-          <div class="dest-stat"><div class="lbl">Total doubles</div><div class="num">${d.doubles}</div></div>
-          ${shortTiles}
-        </div>
-      </div>`;
-    }).join('');
+    renderRouteTabs(j);
   } catch (e) {
-    $('#dest-grid').innerHTML = '<div class="empty">Could not load bake plan.</div>';
+    renderRouteError();
   }
+}
+
+// Build one tab + section per route, insert them before the fixed tabs
+// (Updates / Schedule / Time Off), and activate the first route by default.
+// Re-callable; wipes any route tabs/sections from a previous render first.
+function renderRouteTabs(j) {
+  const dateLong = fmtDayLong(j.date || todayIso());
+  const nav = $('#tabs');
+  const wrap = $('#wrap');
+
+  nav.querySelectorAll('button[data-route]').forEach(b => b.remove());
+  wrap.querySelectorAll('section.view[data-route]').forEach(s => s.remove());
+
+  const firstFixedTab = nav.querySelector('button[data-fixed]');
+  const firstFixedSec = wrap.querySelector('section.view');
+
+  (j.destinations || []).forEach((d, i) => {
+    const key = d.route_key;
+    const tab = document.createElement('button');
+    tab.setAttribute('role', 'tab');
+    tab.dataset.v = 'route-' + key;
+    tab.dataset.route = key;
+    tab.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    tab.textContent = key;
+    nav.insertBefore(tab, firstFixedTab);
+
+    const sec = document.createElement('section');
+    sec.className = 'view' + (i === 0 ? ' is-active' : '');
+    sec.id = 'view-route-' + key;
+    sec.dataset.route = key;
+    sec.innerHTML = renderRouteSection(d, dateLong);
+    wrap.insertBefore(sec, firstFixedSec);
+  });
+
+  // Deactivate any fixed tab/section that was active from a prior render.
+  nav.querySelectorAll('button[data-fixed]').forEach(b => b.setAttribute('aria-selected', 'false'));
+  wrap.querySelectorAll('section.view:not([data-route])').forEach(s => s.classList.remove('is-active'));
+
+  bindTabs();
+}
+
+function renderRouteSection(d, dateLong) {
+  const stops = Array.isArray(d.stops) ? d.stops : [];
+  const stopRows = stops.map((s, i) => {
+    const mark = s.shorts ? `<span class="short-mark">Short</span>` : '';
+    const town = s.town ? `<div class="stop-town">${esc(s.town)}</div>` : '';
+    return `<tr>
+      <td class="idx">${s.order != null ? s.order : i + 1}</td>
+      <td><span class="stop-name">${esc(s.name)}</span>${mark}${town}</td>
+      <td class="num">${s.singles}</td>
+      <td class="num">${s.doubles}</td>
+    </tr>`;
+  }).join('');
+  const shortsLine = (d.shorts_singles > 0 || d.shorts_doubles > 0)
+    ? `<p class="dest-short">Shorts: <b>${d.shorts_singles}</b> singles · <b>${d.shorts_doubles}</b> doubles</p>`
+    : '';
+  const bakerLine = d.bakers.length ? d.bakers.map(esc).join(', ') : 'unassigned';
+  const driverLine = d.drivers.length ? d.drivers.map(esc).join(', ') : 'unassigned';
+  return `
+    <p class="route-date">${esc(dateLong)}</p>
+    <div class="dest-head">
+      <h1 class="dest-name">${esc(d.route_label)} Route</h1>
+      <span class="dest-key">${esc(d.route_key)}</span>
+    </div>
+    <p class="dest-meta">${esc(d.bakery)} · Baker <b>${bakerLine}</b> · Driver <b>${driverLine}</b></p>
+    <div class="dest-count">
+      <div><span class="n">${d.singles}</span> <span class="l">singles</span></div>
+      <div><span class="n">${d.doubles}</span> <span class="l">doubles</span></div>
+    </div>
+    ${shortsLine}
+    ${stops.length ? `<table class="dest-stops-table">
+      <thead><tr><th class="idx">#</th><th>Stop</th><th class="num">S</th><th class="num">D</th></tr></thead>
+      <tbody>${stopRows}
+        <tr class="total-row"><td class="idx"></td><td>Total</td><td class="num">${d.singles}</td><td class="num">${d.doubles}</td></tr>
+      </tbody>
+    </table>` : ''}
+  `;
+}
+
+function renderRouteError() {
+  const wrap = $('#wrap');
+  const firstFixedSec = wrap.querySelector('section.view');
+  const sec = document.createElement('section');
+  sec.className = 'view is-active';
+  sec.id = 'view-route-error';
+  sec.dataset.route = 'error';
+  sec.innerHTML = '<div class="empty">Could not load bake plan.</div>';
+  wrap.insertBefore(sec, firstFixedSec);
+  bindTabs();
 }
 
 /* ─────────────────────────────────────────────────────────────
