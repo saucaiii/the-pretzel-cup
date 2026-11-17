@@ -1169,7 +1169,10 @@ function prevDayKey(dateStr) {
   return `${prior.getUTCFullYear()}-${String(prior.getUTCMonth() + 1).padStart(2, '0')}-${String(prior.getUTCDate()).padStart(2, '0')}`;
 }
 
-async function readFunnelWindow(sb, offerKeyStr, { startISO, endISO }) {
+// The funnel is a day-of-activity view, not an offer-scoped view. Filtering
+// by offer_key would zero out yesterday every time an offer rolls over
+// overnight; the operator wants "what happened on this day" instead.
+async function readFunnelWindow(sb, { startISO, endISO }) {
   const n = async (p) => {
     const { count, error } = await p;
     if (error) throw error;
@@ -1177,19 +1180,19 @@ async function readFunnelWindow(sb, offerKeyStr, { startISO, endISO }) {
   };
   const vs = (col, source) => sb.from('pack_vouchers')
     .select('id', { count: 'exact', head: true })
-    .gte(col, startISO).lte(col, endISO).eq('source', source).eq('offer_key', offerKeyStr);
+    .gte(col, startISO).lte(col, endISO).eq('source', source);
   const vshare = (col) => sb.from('pack_vouchers')
     .select('id', { count: 'exact', head: true })
-    .gte(col, startISO).lte(col, endISO).in('source', ['share', LEGACY_SHARE]).eq('offer_key', offerKeyStr);
+    .gte(col, startISO).lte(col, endISO).in('source', ['share', LEGACY_SHARE]);
   const vany = (col) => sb.from('pack_vouchers')
     .select('id', { count: 'exact', head: true })
-    .gte(col, startISO).lte(col, endISO).eq('offer_key', offerKeyStr);
+    .gte(col, startISO).lte(col, endISO);
   const p = (col) => sb.from('pack_players')
     .select('id', { count: 'exact', head: true })
     .gte(col, startISO).lte(col, endISO);
   const g = () => sb.from('pack_games')
     .select('player_id', { count: 'exact', head: true })
-    .eq('offer_key', offerKeyStr).eq('completed_all', true)
+    .eq('completed_all', true)
     .gte('ended_at', startISO).lte('ended_at', endISO);
 
   const [p1, p2, p3, p4, verify, complete, redeem] = await Promise.all([
@@ -1234,8 +1237,8 @@ async function handleFunnel(req, res, deps) {
   const key = offerKey(offer);
   const sb = deps.store()._sb;
   const [tCounts, yCounts] = await Promise.all([
-    readFunnelWindow(sb, key, todayBounds),
-    readFunnelWindow(sb, key, yesterdayBounds),
+    readFunnelWindow(sb, todayBounds),
+    readFunnelWindow(sb, yesterdayBounds),
   ]);
 
   return res.status(200).json({
@@ -1247,23 +1250,53 @@ async function handleFunnel(req, res, deps) {
 }
 
 // Shared by handleLeads and handleLeadsCsv. Returns {rows, total}.
-// `total` is the exact player count matching q + today filter; for
-// completed/ticket_outstanding/redeemed filters it's the number on the
-// returned page only (post-filter in JS).
+// Filter is pushed into SQL via PostgREST embedded resources + !inner,
+// so `total` is the exact DB count for the filter (not just the page),
+// and pagination stays honest for every filter chip.
+function escapeIlike(s) {
+  // ilike treats %, _ and \ as wildcards. Keep the caller's string literal.
+  return s.replace(/([\\%_])/g, '\\$1');
+}
+
 async function queryLeads(sb, { q, filter, limit, offset, offerKeyStr, todayBounds }) {
+  // Embedded inner-join filters make PostgREST return only parent rows that
+  // match the join, and count: 'exact' still counts parents (not join rows).
+  // pack_games.PK is (player_id, offer_key); pack_vouchers has unique
+  // (player_id, offer_key, source) — so no parent row is counted twice.
+  let select = 'id,email,created_at,email_verified_at,instagram_at,share_at,app_at';
+  if (filter === 'completed') {
+    select += ',pack_games!inner(completed_all,offer_key)';
+  } else if (filter === 'ticket_outstanding') {
+    select += ',pack_vouchers!inner(source,offer_key,redeemed_at)';
+  } else if (filter === 'redeemed') {
+    select += ',pack_vouchers!inner(offer_key,redeemed_at)';
+  }
+
   let playersQ = sb.from('pack_players')
-    .select('id,email,created_at,email_verified_at,instagram_at,share_at,app_at', { count: 'exact' })
+    .select(select, { count: 'exact' })
     .not('email', 'is', null);
-  if (q) playersQ = playersQ.ilike('email', '%' + q + '%');
-  if (filter === 'today') playersQ = playersQ.gte('created_at', todayBounds.startISO).lte('created_at', todayBounds.endISO);
+  if (q) playersQ = playersQ.ilike('email', '%' + escapeIlike(q) + '%');
+  if (filter === 'today') {
+    playersQ = playersQ.gte('created_at', todayBounds.startISO).lte('created_at', todayBounds.endISO);
+  } else if (filter === 'completed') {
+    playersQ = playersQ.eq('pack_games.offer_key', offerKeyStr).eq('pack_games.completed_all', true);
+  } else if (filter === 'ticket_outstanding') {
+    playersQ = playersQ.eq('pack_vouchers.offer_key', offerKeyStr).eq('pack_vouchers.source', 'bonus').is('pack_vouchers.redeemed_at', null);
+  } else if (filter === 'redeemed') {
+    playersQ = playersQ.eq('pack_vouchers.offer_key', offerKeyStr).not('pack_vouchers.redeemed_at', 'is', null);
+  }
   playersQ = playersQ.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
   const { data: players, count, error } = await playersQ;
   if (error) throw error;
   const list = players || [];
+  const total = Number(count || 0);
   const ids = list.map((pl) => pl.id);
-  if (!ids.length) return { rows: [], total: Number(count || 0) };
+  if (!ids.length) return { rows: [], total };
 
+  // Enrichment reads (games + vouchers for the displayed page only) — keyed
+  // on the page's player ids, so size is bounded by `limit` (<=200 for the
+  // UI, <=CSV_MAX_ROWS for the export), well under PostgREST's URL limits.
   const gamesRes = await sb.from('pack_games').select('player_id,completed_all,ended_at')
     .eq('offer_key', offerKeyStr).in('player_id', ids);
   if (gamesRes.error) throw gamesRes.error;
@@ -1278,7 +1311,7 @@ async function queryLeads(sb, { q, filter, limit, offset, offerKeyStr, todayBoun
     vouchersOf.get(v.player_id).push(v);
   }
 
-  let rows = list.map((pl) => {
+  const rows = list.map((pl) => {
     const vs = vouchersOf.get(pl.id) || [];
     const bonus = vs.find((v) => v.source === 'bonus');
     const anyRedeemed = vs.find((v) => v.redeemed_at);
@@ -1299,11 +1332,6 @@ async function queryLeads(sb, { q, filter, limit, offset, offerKeyStr, todayBoun
     };
   });
 
-  if (filter === 'completed') rows = rows.filter((r) => r.completed_all);
-  if (filter === 'ticket_outstanding') rows = rows.filter((r) => r.voucher && !r.voucher.redeemed_at);
-  if (filter === 'redeemed') rows = rows.filter((r) => r.any_redeemed);
-
-  const total = (filter === 'all' || filter === 'today') ? Number(count || 0) : rows.length;
   return { rows, total };
 }
 
