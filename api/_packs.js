@@ -1269,7 +1269,12 @@ async function handleFunnel(req, res, deps) {
       }
     }
   } catch (e) {
-    // Upstash unreachable — leave counts at 0 and let the UI show the state.
+    // Upstash unreachable — leave counts at 0 and let the UI show the
+    // "Counter unreachable" state. Logged so a recurring symptom can be
+    // traced back to the actual throw (bad Upstash URL, bad token,
+    // @upstash/redis construction failure, etc.) instead of staying
+    // silent behind the tile.
+    console.error('[packs] readScanStats failed:', (e && e.message) || e);
   }
 
   const { offer } = await deps.readOffer();
