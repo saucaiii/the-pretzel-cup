@@ -468,6 +468,7 @@ async function handle(req, res, resource, deps = defaultDeps()) {
 module.exports = {
   handle,
   readLiveOffer,
+  readStats,
   defaultDeps,
   IG_HANDLE_RE,
   APP_STORE_RE,
