@@ -430,6 +430,36 @@ function initApp() {
   bindRouteDate();
   bindSubmitBtn();
   loadRoute();  // defaults: driver's own route, date = yesterday
+  bindLiveRefresh();
+}
+
+// Re-fetch the active tab when the page becomes visible or window regains
+// focus, so a driver who gets a "new stop" / "drop change" Telegram push
+// sees the update the moment they come back to the tab — no manual
+// refresh. Typed sold values survive via the localStorage draft that
+// renderRoute reapplies. Debounced so the visibilitychange + focus pair
+// doesn't double-fire.
+let _lastRefresh = 0;
+function refreshActiveView() {
+  const btn = document.querySelector('nav.tabs button[aria-selected="true"]');
+  const v = btn ? btn.dataset.v : 'route';
+  if (v === 'route')    loadRoute();
+  if (v === 'history')  renderHistory();
+  if (v === 'updates')  loadUpdates();
+  if (v === 'schedule') loadSchedule();
+  if (v === 'off')      loadTimeOff();
+}
+function bindLiveRefresh() {
+  const maybe = () => {
+    const now = Date.now();
+    if (now - _lastRefresh < 2000) return;
+    _lastRefresh = now;
+    refreshActiveView();
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') maybe();
+  });
+  window.addEventListener('focus', maybe);
 }
 
 /* ─────────────────────────────────────────────────────────────
