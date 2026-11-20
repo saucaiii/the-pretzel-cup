@@ -849,7 +849,7 @@
       pk.appendChild(el('span', 'st-tear'));
       var hit = el('button', 'st-hit');
       hit.type = 'button';
-      hit.setAttribute('aria-label', 'Tear open the pack. Swipe across the top, or press Enter.');
+      hit.setAttribute('aria-label', 'Open the free pretzel pack. Tap, swipe across the top, or press Enter.');
       pk.appendChild(hit);
       wrap.appendChild(pk);
       nodes.center.appendChild(wrap);
@@ -864,29 +864,37 @@
     }
 
     function wireSwipe(hit) {
-      var sx = null, sy = 0, moved = 0;
+      var sx = null, sy = 0, moved = 0, swiped = false;
       hit.addEventListener('pointerdown', function (e) {
-        sx = e.clientX; sy = e.clientY; moved = 0;
+        sx = e.clientX; sy = e.clientY; moved = 0; swiped = false;
         try { hit.setPointerCapture(e.pointerId); } catch (err) {}
       });
       hit.addEventListener('pointermove', function (e) {
         if (sx == null) return;
         moved = Math.max(moved, Math.abs(e.clientX - sx));
-        if (moved > Math.min(90, hit.clientWidth * 0.35) && Math.abs(e.clientY - sy) < hit.clientHeight * 0.4) { sx = null; tear(); }
+        if (moved > Math.min(90, hit.clientWidth * 0.35) && Math.abs(e.clientY - sy) < hit.clientHeight * 0.4) {
+          sx = null; swiped = true; tear();
+        }
       });
       hit.addEventListener('pointerup', function () { sx = null; });
-      // Only a swipe rips it. A tap or click just nudges toward the swipe;
-      // Enter and Space (a click with detail 0) still open it, so the pack
-      // works without a pointer.
+      // Tap opens the pack (mobile default). A swipe still rips it with the
+      // full gesture animation, but the tap is the conversion path: before
+      // this, a mobile tap did nothing visible (it nudged, which looked like
+      // a dead UI) and ~80% of scanned users bounced at this step.
+      // The swiped flag prevents the click that fires after pointerup from
+      // double-tearing.
       hit.addEventListener('click', function (e) {
-        if (e.detail === 0) return tear();
-        nudge();
+        if (swiped) { swiped = false; return; }
+        tear();
       });
     }
 
+    // nudge() stays defined because the stage still calls it for the
+    // "still waiting" beat, but tap now opens the pack (see wireSwipe),
+    // so it no longer fires from a plain tap.
     function nudge() {
       if (torn || phase !== 'charge') return;
-      nodes.hint.textContent = 'Swipe across the top to rip it!';
+      nodes.hint.textContent = 'Tap or swipe to open!';
       anim(nodes.hint, [{ opacity: 0.4 }, { opacity: 1 }], { duration: 160 });
       if (gl) gl.breathe(400);
       anim(nodes.pack, [{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' },
@@ -948,7 +956,7 @@
         anim(nodes.pack, [{ transform: 'scale(1)' }, { transform: 'scale(1.025)' }, { transform: 'scale(1)' }], { duration: 1100, easing: 'ease-in-out', fill: 'none' });
         anim(nodes.tear, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 600, easing: 'cubic-bezier(.3,.6,.3,1)' });
         anim(nodes.hint, [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 400 });
-        nodes.hint.textContent = 'Swipe to rip the pack!';
+        nodes.hint.textContent = 'Tap or swipe to open!';
         nodes.hit.focus({ preventScroll: true });
         if (gl) { gl.showLogo(200); gl.breathe(1100); gl.drawTear(600); }
       });
