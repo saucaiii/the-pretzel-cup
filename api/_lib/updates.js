@@ -49,7 +49,7 @@ async function postUpdate({ title, body, audience, requiresAck, postedBy, effect
       data.telegram_message_ids = { chat_id: sent.chat_id, message_id: sent.message_id };
     }
   } catch (e) {
-    console.error('postUpdate telegram push:', e && (e.message || e));
+    console.error('postUpdate telegram push:', e && (e.message || e), 'update_id=', data && data.id);
   }
   return data;
 }

@@ -59,9 +59,9 @@ async function tgCall(method, body) {
 function formatUpdate(update, mentionHandles = []) {
   const lines = [`*${esc(update.title)}*`];
   if (update.body) lines.push('', esc(update.body));
-  if (update.effective_date) lines.push('', `_Effective: ${update.effective_date}_`);
+  if (update.effective_date) lines.push('', `_Effective: ${esc(update.effective_date)}_`);
   if (mentionHandles.length) {
-    lines.push('', 'cc: ' + mentionHandles.map(h => `@${h}`).join(' '));
+    lines.push('', 'cc: ' + mentionHandles.map(h => `@${esc(h)}`).join(' '));
   }
   const text = lines.join('\n');
   let reply_markup;
