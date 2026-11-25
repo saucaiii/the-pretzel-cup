@@ -1448,11 +1448,10 @@ async function handleRevenueGet(req, res, sess) {
       return iso(d);
     })();
 
-    // Always compute a 30-day daily series for the sparkline, regardless of
-    // the selected window. Also widen the pull to cover the previous window
-    // so we can compute Δ chips without a second round-trip.
-    const sparkFrom = (() => { const d = new Date(now); d.setDate(d.getDate() - 29); return iso(d); })();
-    const minFrom = [fromIso, sparkFrom, prevFrom].sort()[0];
+    // Widen the pull to cover the previous window too, so we can compute Δ
+    // chips without a second round-trip. The daily/weekly/monthly series for
+    // the sparkline is bucketed over the CURRENT window below.
+    const minFrom = fromIso < prevFrom ? fromIso : prevFrom;
 
     // Supabase JS silently caps .select() at 1,000 rows. The Annual / YTD
     // windows (and the 30-day fetch widening for Δ chips) routinely exceed
@@ -1562,19 +1561,61 @@ async function handleRevenueGet(req, res, sess) {
     const byDriverDay = Object.values(driverDayMap)
       .sort((a, b) => a.for_date === b.for_date ? 0 : a.for_date < b.for_date ? 1 : -1);
 
-    // 30-day daily series (always, regardless of selected window).
+    // Window-aware series for the sparkline: one bar per day / week / month
+    // depending on window length. Keeps the bar count roughly in the
+    // 7–45 range for every window, so Annual isn't 365 bars.
+    const windowDays = Math.round(
+      (new Date(toIso + 'T12:00:00') - new Date(fromIso + 'T12:00:00')) / 86400000
+    ) + 1;
+    const dailyBucket = windowDays <= 45 ? 'day'
+                      : windowDays <= 200 ? 'week'
+                      : 'month';
+
+    // Monday of the ISO week containing the given date (as YYYY-MM-DD).
+    const mondayOf = dateIso => {
+      const d = new Date(dateIso + 'T12:00:00');
+      const dow = d.getDay();
+      const back = dow === 0 ? 6 : dow - 1;
+      d.setDate(d.getDate() - back);
+      return iso(d);
+    };
+    const bucketKeyFor = dateIso => {
+      if (dailyBucket === 'day')   return dateIso;
+      if (dailyBucket === 'month') return dateIso.slice(0, 7) + '-01';
+      return mondayOf(dateIso);
+    };
+
     const dailyMap = Object.create(null);
-    for (const r of returnsR.data) {
-      if (r.for_date < sparkFrom) continue;
-      if (!dailyMap[r.for_date]) dailyMap[r.for_date] = { for_date: r.for_date, revenue_cents: 0, units: 0 };
-      dailyMap[r.for_date].revenue_cents += r.sold_cents || 0;
-      dailyMap[r.for_date].units += (r.sold_singles || 0) + (r.sold_doubles || 0);
+    for (const r of inWindow) {
+      const key = bucketKeyFor(r.for_date);
+      if (!dailyMap[key]) dailyMap[key] = { for_date: key, revenue_cents: 0, units: 0 };
+      dailyMap[key].revenue_cents += r.sold_cents || 0;
+      dailyMap[key].units += (r.sold_singles || 0) + (r.sold_doubles || 0);
     }
+
+    // Fill in zero-value buckets so the sparkline has a continuous x-axis.
     const daily = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now); d.setDate(d.getDate() - i);
-      const k = iso(d);
-      daily.push(dailyMap[k] || { for_date: k, revenue_cents: 0, units: 0 });
+    if (dailyBucket === 'day') {
+      const start = new Date(fromIso + 'T12:00:00');
+      const end   = new Date(toIso   + 'T12:00:00');
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const k = iso(d);
+        daily.push(dailyMap[k] || { for_date: k, revenue_cents: 0, units: 0 });
+      }
+    } else if (dailyBucket === 'week') {
+      const start = new Date(mondayOf(fromIso) + 'T12:00:00');
+      const end   = new Date(toIso + 'T12:00:00');
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 7)) {
+        const k = iso(d);
+        daily.push(dailyMap[k] || { for_date: k, revenue_cents: 0, units: 0 });
+      }
+    } else { // month
+      const start = new Date(fromIso.slice(0, 7) + '-01T12:00:00');
+      const end   = new Date(toIso + 'T12:00:00');
+      for (let d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
+        const k = iso(d).slice(0, 7) + '-01';
+        daily.push(dailyMap[k] || { for_date: k, revenue_cents: 0, units: 0 });
+      }
     }
 
     // Finalize collections
@@ -1596,7 +1637,8 @@ async function handleRevenueGet(req, res, sess) {
       by_driver: byDriverArr,
       by_driver_day: byDriverDay,
       by_stop: byStopArr,
-      daily, // last 30 days for sparkline
+      daily,          // sparkline series for the CURRENT window
+      daily_bucket: dailyBucket, // 'day' | 'week' | 'month'
     });
   } catch (err) {
     console.error('revenue GET:', err && (err.stack || err.message || err));
