@@ -219,14 +219,17 @@ function renderSpark() {
   const d = _data.daily || [];
   if (!d.length) { $('#spark').innerHTML = ''; return; }
   const max = Math.max(1, ...d.map(x => x.revenue_cents));
-  const w = 600, h = 80, pad = 2;
-  const step = (w - pad * 2) / Math.max(1, d.length - 1);
-  const pts = d.map((x, i) => `${pad + i * step},${h - pad - (x.revenue_cents / max) * (h - pad * 2)}`).join(' ');
-  const areaPts = `${pad},${h} ${pts} ${w - pad},${h}`;
-  $('#spark').innerHTML = `
-    <polygon points="${areaPts}" fill="rgba(212,182,98,0.14)"></polygon>
-    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>
-  `;
+  const w = 600, h = 80, pad = 2, gap = 2;
+  const slot = (w - pad * 2) / d.length;
+  const barW = Math.max(1, slot - gap);
+  const bars = d.map((x, i) => {
+    const barH = max > 0 ? (x.revenue_cents / max) * (h - pad * 2) : 0;
+    const xPos = pad + i * slot + (slot - barW) / 2;
+    const yPos = h - pad - barH;
+    // SVG <title> is the native tooltip — no JS listener needed.
+    return `<rect x="${xPos.toFixed(2)}" y="${yPos.toFixed(2)}" width="${barW.toFixed(2)}" height="${Math.max(0, barH).toFixed(2)}" rx="1" ry="1" fill="var(--accent)" opacity="${x.revenue_cents > 0 ? 0.9 : 0.25}"><title>${esc(fmtDate(x.for_date))}: ${esc(money(x.revenue_cents))}</title></rect>`;
+  }).join('');
+  $('#spark').innerHTML = bars;
   const total30 = d.reduce((a, x) => a + x.revenue_cents, 0);
   $('#spark-sub').innerHTML = `30-day · <b style="color:var(--accent)">${esc(money(total30))}</b>`;
 }
