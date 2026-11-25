@@ -130,7 +130,7 @@
 
     <div class="spark-card">
       <div class="spark-head">
-        <span class="spark-title">Last 30 days · daily revenue</span>
+        <span class="spark-title" id="spark-title">&mdash;</span>
         <span class="spark-sub" id="spark-sub">&mdash;</span>
       </div>
       <svg class="spark" id="spark" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -224,9 +224,36 @@ function render() {
   renderStops();
 }
 
+// Labels for the hover tooltip, by bucket type.
+//   day:   'Nov 25'
+//   week:  'Nov 23 – Nov 29'  (Mon through Sun)
+//   month: 'Nov 2026'
+function bucketLabel(forDate, bucket) {
+  const d = new Date(forDate + 'T12:00:00');
+  if (bucket === 'month') {
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+  if (bucket === 'week') {
+    const end = new Date(d); end.setDate(end.getDate() + 6);
+    const fmt = x => x.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${fmt(d)} – ${fmt(end)}`;
+  }
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Spark card title + subtitle derived from the window + bucket.
+function sparkHeadingFor(bucket, winLabel) {
+  const noun = bucket === 'day' ? 'daily' : bucket === 'week' ? 'weekly' : 'monthly';
+  return `${winLabel} · ${noun} revenue`;
+}
+
 function renderSpark() {
   const d = _data.daily || [];
-  if (!d.length) { $('#spark').innerHTML = ''; return; }
+  const bucket = _data.daily_bucket || 'day';
+  const winLabel = (_data.window && _data.window.label) || '';
+  $('#spark-title').textContent = sparkHeadingFor(bucket, winLabel);
+
+  if (!d.length) { $('#spark').innerHTML = ''; $('#spark-sub').innerHTML = ''; return; }
   const max = Math.max(1, ...d.map(x => x.revenue_cents));
   const w = 600, h = 80, pad = 2, gap = 2;
   const slot = (w - pad * 2) / d.length;
@@ -238,8 +265,10 @@ function renderSpark() {
     return `<rect data-i="${i}" x="${xPos.toFixed(2)}" y="${yPos.toFixed(2)}" width="${barW.toFixed(2)}" height="${Math.max(0, barH).toFixed(2)}" rx="1" ry="1" fill="var(--accent)" opacity="${x.revenue_cents > 0 ? 0.9 : 0.25}"></rect>`;
   }).join('');
   $('#spark').innerHTML = bars;
-  const total30 = d.reduce((a, x) => a + x.revenue_cents, 0);
-  $('#spark-sub').innerHTML = `30-day · <b style="color:var(--accent)">${esc(money(total30))}</b>`;
+
+  const total = d.reduce((a, x) => a + x.revenue_cents, 0);
+  const totalLabel = bucket === 'month' ? `${d.length}-month` : bucket === 'week' ? `${d.length}-week` : `${d.length}-day`;
+  $('#spark-sub').innerHTML = `${esc(totalLabel)} · <b style="color:var(--accent)">${esc(money(total))}</b>`;
 
   // Custom hover preview. Anchors to each bar's horizontal centre and sits
   // just above its top edge, relative to the .spark-card. preserveAspectRatio
@@ -252,7 +281,7 @@ function renderSpark() {
     rect.addEventListener('mouseenter', () => {
       const idx = Number(rect.getAttribute('data-i'));
       const day = d[idx];
-      tip.innerHTML = `<div class="tip-date">${esc(fmtDate(day.for_date))}</div><div class="tip-value">${esc(money(day.revenue_cents))}</div>`;
+      tip.innerHTML = `<div class="tip-date">${esc(bucketLabel(day.for_date, bucket))}</div><div class="tip-value">${esc(money(day.revenue_cents))}</div>`;
       const cardBox = card.getBoundingClientRect();
       const barBox  = rect.getBoundingClientRect();
       const cx = barBox.left + barBox.width / 2 - cardBox.left;
