@@ -1,7 +1,7 @@
 # Working memory (short-term). Keep under 60 lines.
 Branch: agent/revenue-rebuild
 Task: revenue-rebuild
-Status: in-progress (Phases A, B done)
+Status: in-progress (Phases A, B, C done; awaiting UI verification + PR)
 Started: 2026-11-25
 
 ## Plan
@@ -29,7 +29,17 @@ Started: 2026-11-25
   - api/driver/submit.js updated so new submits write these columns.
   - Follow-up (next PR, not this one): add a CHECK constraint enforcing the
     invariant once a couple weeks of new submits have populated cleanly.
-- Next: Phase C (UI windows + Δ chips + label fixes + drilldowns).
+- Phase C: Revenue page info-depth + label fixes.
+  - api/schedule.js handleRevenueGet: added `month` + `annual` (rolling
+    12m) windows, previous-window summary for Δ chips, and a per-driver
+    daily series (by_driver_day) for the driver-row drilldown.
+  - ops/revenue/index.html: toolbar now has Weekly / 30d / Monthly /
+    Quarterly / YTD / Annual; summary tiles show Δ% chips vs the prior
+    equivalent window; eyebrow changed from "Gross retail sold" to
+    "Gross wholesale billed"; shorts card no longer says "Baked at
+    Lynbrook only"; route rows expand to their stops and driver rows
+    expand to their daily breakdown.
+- Next: UI verification against dev server; open PR.
 
 ## Handoffs
 - none (single-session)

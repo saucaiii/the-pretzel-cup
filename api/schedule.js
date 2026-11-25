@@ -1411,6 +1411,9 @@ async function handleRevenueGet(req, res, sess) {
     } else if (windowKey === '30d') {
       const d = new Date(now); d.setDate(d.getDate() - 29);
       fromIso = iso(d); label = 'Last 30 days';
+    } else if (windowKey === 'month') {
+      fromIso = iso(new Date(now.getFullYear(), now.getMonth(), 1));
+      label = 'Month-to-date';
     } else if (windowKey === 'quarter') {
       const qStartMonth = Math.floor(now.getMonth() / 3) * 3;
       fromIso = iso(new Date(now.getFullYear(), qStartMonth, 1));
@@ -1418,6 +1421,10 @@ async function handleRevenueGet(req, res, sess) {
     } else if (windowKey === 'ytd') {
       fromIso = iso(new Date(now.getFullYear(), 0, 1));
       label = 'Year-to-date';
+    } else if (windowKey === 'annual') {
+      // Rolling 12 months ending today.
+      const d = new Date(now); d.setDate(d.getDate() - 364);
+      fromIso = iso(d); label = 'Last 12 months';
     } else { // week — Monday through today
       const d = new Date(now); const dow = d.getDay();
       const back = dow === 0 ? 6 : dow - 1; // Monday = 0 back
@@ -1425,10 +1432,27 @@ async function handleRevenueGet(req, res, sess) {
       fromIso = iso(d); label = 'This week';
     }
 
+    // Previous window of equal length, immediately preceding the current one,
+    // for period-over-period Δ chips on the summary tiles.
+    const prevTo = (() => {
+      const d = new Date(fromIso + 'T12:00:00');
+      d.setDate(d.getDate() - 1);
+      return iso(d);
+    })();
+    const prevFrom = (() => {
+      const curFrom = new Date(fromIso + 'T12:00:00');
+      const curTo   = new Date(toIso   + 'T12:00:00');
+      const len = Math.round((curTo - curFrom) / 86400000) + 1;
+      const d = new Date(curFrom);
+      d.setDate(d.getDate() - len);
+      return iso(d);
+    })();
+
     // Always compute a 30-day daily series for the sparkline, regardless of
-    // the selected window.
+    // the selected window. Also widen the pull to cover the previous window
+    // so we can compute Δ chips without a second round-trip.
     const sparkFrom = (() => { const d = new Date(now); d.setDate(d.getDate() - 29); return iso(d); })();
-    const minFrom = fromIso < sparkFrom ? fromIso : sparkFrom;
+    const minFrom = [fromIso, sparkFrom, prevFrom].sort()[0];
 
     const [returnsR, stopsR, peopleR] = await Promise.all([
       sb.from('returns').select('for_date,route_key,stop_id,sold_singles,sold_doubles,sold_cents,submitted_by,submitted_at').gte('for_date', minFrom).lte('for_date', toIso),
@@ -1445,8 +1469,9 @@ async function handleRevenueGet(req, res, sess) {
     peopleR.data.forEach(p => { nameBySub[p.id] = p.name; });
 
     // Filter to the selected window (we fetched a superset to also feed the
-    // 30-day sparkline).
+    // 30-day sparkline and the previous-window Δ).
     const inWindow = returnsR.data.filter(r => r.for_date >= fromIso && r.for_date <= toIso);
+    const inPrev   = returnsR.data.filter(r => r.for_date >= prevFrom && r.for_date <= prevTo);
 
     const summary = { total_cents: 0, total_units: 0, total_singles: 0, total_doubles: 0, total_shorts_units: 0, submissions: 0, days_covered: 0 };
     const daySet = new Set();
@@ -1486,6 +1511,37 @@ async function handleRevenueGet(req, res, sess) {
     }
     summary.days_covered = daySet.size;
 
+    // Previous-window totals, same shape as the Revenue tile cares about.
+    // Enough to render Δ chips without re-aggregating by route/driver/stop.
+    const prevSummary = { total_cents: 0, total_units: 0, total_shorts_units: 0, submissions: 0, days_covered: 0 };
+    const prevDaySet = new Set();
+    for (const r of inPrev) {
+      const s = r.sold_singles || 0, d = r.sold_doubles || 0, c = r.sold_cents || 0;
+      prevSummary.total_cents += c;
+      prevSummary.total_units += s + d;
+      prevSummary.submissions++;
+      prevDaySet.add(r.for_date);
+      const stop = stopById[r.stop_id];
+      if (stop && stop.shorts) prevSummary.total_shorts_units += s + d;
+    }
+    prevSummary.days_covered = prevDaySet.size;
+
+    // Per-driver daily series for the UI's driver-row drilldown. Lightweight
+    // (one row per {submitted_by, for_date} within the window).
+    const driverDayMap = Object.create(null);
+    for (const r of inWindow) {
+      const sub = r.submitted_by || 'unknown';
+      const key = `${sub}|${r.for_date}`;
+      if (!driverDayMap[key]) driverDayMap[key] = {
+        submitted_by: sub, for_date: r.for_date, revenue_cents: 0, units: 0, submissions: 0,
+      };
+      driverDayMap[key].revenue_cents += r.sold_cents || 0;
+      driverDayMap[key].units         += (r.sold_singles || 0) + (r.sold_doubles || 0);
+      driverDayMap[key].submissions++;
+    }
+    const byDriverDay = Object.values(driverDayMap)
+      .sort((a, b) => a.for_date === b.for_date ? 0 : a.for_date < b.for_date ? 1 : -1);
+
     // 30-day daily series (always, regardless of selected window).
     const dailyMap = Object.create(null);
     for (const r of returnsR.data) {
@@ -1513,9 +1569,12 @@ async function handleRevenueGet(req, res, sess) {
 
     return res.status(200).json({
       window: { key: windowKey, label, from: fromIso, to: toIso },
+      prev_window: { from: prevFrom, to: prevTo },
       summary,
+      prev_summary: prevSummary,
       by_route: byRouteArr,
       by_driver: byDriverArr,
+      by_driver_day: byDriverDay,
       by_stop: byStopArr,
       daily, // last 30 days for sparkline
     });
