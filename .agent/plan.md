@@ -1,87 +1,165 @@
-# Plan: slice 2 — consent metadata + /privacy page
+# Plan — Revenue page rebuild
 
-Branch: `agent/consent-privacy`
-Risk: **High**. Adds a new `supabase/migrations/p24_pack_consent_metadata.sql` (migrations are in HIGH_RISK_RE). The rest of the change is medium or low — a new `/privacy.html`, one removed form field + microcopy swap on `/free-pretzels/index.html`, a two-column select/insert update in `api/_packs.js`, and a one-line display update on `ops/qr/index.html`. Needs human plan-approval before any edits can land.
-Scope: `supabase/migrations/` `privacy/` `free-pretzels/` `ops/qr/` `api/_packs.js`
+**Risk:** High (Supabase schema change + bulk UPDATE on `returns`).
+**Branch:** `agent/revenue-rebuild`.
+**Started:** 2026-11-25.
 
 ## Goal
-Lock down the user-chosen implicit-consent model ("by opening the packs you opt-in; disclosed in the privacy policy") with the audit trail CAN-SPAM wants: for every verified lead, record the moment of consent, the flow it came through, and the version of the privacy policy that was live at the time. Also surface a real `/privacy` page the operator can link from the pack and from the footer. US-only; no GDPR scope.
 
-## Why now
-- Slice 1 shipped an operator CRM that lists unmasked emails. Those addresses need a legal basis to send to. CAN-SPAM doesn't require prior opt-in but it does require honest sender identification and the ability to show, per address, what the user agreed to. The current free-pretzels page still has a "deals checkbox" and a 30-day-deletion microcopy that contradict the implicit-consent model the user locked in.
-- Slice 1's Contacts tab reads a placeholder `"pack2_verify"` for the Opt-in source column. This slice supplies the real column so that value is no longer a hardcoded string.
+Make the ops Revenue page audit-defensible and more informative, without
+over-engineering. Three things in scope:
 
-## Steps
+1. Reconstruct `returns.submitted_by` for 2025–2026 from the Google Sheet
+   (`Daily Delivery Sales Report - All Accounts`, 4 tabs).
+2. Freeze pricing on each `returns` row so historical revenue is
+   self-reproducible without relying on current `stops` prices.
+3. Add Monthly + rolling-Annual windows, period-over-period Δ tiles, drilldown
+   click-through, and fix two label bugs on the page.
 
-1. **Migration `supabase/migrations/p24_pack_consent_metadata.sql`** (transaction-wrapped, `if not exists`-guarded, rollback block at the bottom):
-   - Add three columns to `pack_players`:
-     - `marketing_opt_in_at timestamptz` — set to `email_verified_at` for existing verified rows via a one-shot UPDATE in the same transaction; nullable (unverified rows have no consent moment).
-     - `marketing_opt_in_source text` — check constraint `(marketing_opt_in_source in ('pack2_verify','pitch_kit','manual_backfill'))`; default `'pack2_verify'` for the backfill.
-     - `marketing_opt_in_version text` — check `char_length between 3 and 60`; default `'privacy_v1_2026-11'` for the backfill.
-   - Keep the existing `marketing_opt_in boolean` column for backwards compatibility with any caller still reading it; mark it deprecated in the migration comment. (I will NOT drop it this slice.)
-   - Add partial index `idx_pack_players_opt_in` on `(marketing_opt_in_at desc)` where `marketing_opt_in_at is not null` to keep the Contacts tab's upcoming "sort by consent date" query fast.
-   - Rollback block (commented) drops the three columns and the index, reversible as long as no downstream reader has started depending on them.
+Out of scope for this PR (named so we don't lose them):
 
-2. **New `/privacy.html`** at the repo root (served statically via Vercel's default `public/` routing — same as `/free-pretzels/index.html`). Content:
-   - Plain brand design, matches the style of `/free-pretzels` (green ground, gold accents, FatFrank display, Gotham body).
-   - Version slug visible on the page: `privacy_v1_2026-11` (so when the copy changes, we bump the slug and store the new value in `marketing_opt_in_version` for consents captured after the bump).
-   - Sections (no legalese for its own sake, written for the actual customer): What we collect (email on pack 2, Instagram tap flag, voucher redemptions), How we use it (send the magic link; keep one set of packs per person; send pretzel news and offers until you unsubscribe), When we delete it, How to opt out (reply to any email with "stop" or email a listed address), Who runs this (PPF Lynbrook + Franklin Square, with the mcaiazzoppffs@gmail.com sender identity already used by the magic-link flow), Last updated `2026-11-17` and `privacy_v1_2026-11`.
-   - Noindex meta (same as `/free-pretzels/index.html`'s operator-adjacent pages).
+- Append-only audit trigger on `returns`.
+- Period close + server-side cutoff enforcement.
+- Cash reconciliation view (recognized vs. invoiced vs. received vs. AR Δ).
+- COGS / inventory / waste tracking (bake_logs).
+- Wholesale consolidation into one unified revenue page.
 
-3. **`/free-pretzels/index.html` edits:**
-   - Delete the `<label class="check"><input type="checkbox" id="email-optin">…` block at line 529 and any JS reading `#email-optin`.
-   - Replace the microcopy at line 530 with implicit-consent language: `"We use your email to send this link and to keep packs to one set per person. By entering it you agree to our privacy policy; you can unsubscribe from any email."` — with "privacy policy" linking to `/privacy`.
-   - Add a small `/privacy` link to the page footer (same place the fine print lives).
+## Context (what I already verified)
 
-4. **`api/_packs.js` edits:**
-   - `handleVerify`: on the UPDATE that sets `email_verified_at`, also set `marketing_opt_in_at = email_verified_at`, `marketing_opt_in_source = 'pack2_verify'`, `marketing_opt_in_version = 'privacy_v1_2026-11'`. Leave `marketing_opt_in` writing as it is (true), so the deprecated column stays consistent.
-   - `queryLeads` select list: add `marketing_opt_in_source`. The mapping stage sets `opt_in_source: pl.marketing_opt_in_source || null` on the row.
-   - `createPlayer`: no change — the insert still creates an unverified row with no consent columns set.
-   - **Note on `api/_lib/members.js`:** no change needed for slice 2. That file writes ledger rows; it doesn't touch pack_players.marketing_*. Keeping it out keeps the diff off the high-risk `api/_lib/` path and shrinks the review surface.
+- Current page sums `returns.sold_cents` across a date window — grand total is
+  correct ($150,384.70 all-time, 7,783 rows).
+- 1,141 rows have `submitted_by = NULL` ($23,372.74). 0 are on FBW.
+- 23 rows have `sold_cents` that doesn't match current `stops` pricing because
+  the 711 double was dropped from $3.85 → $3.50 for 2 stores mid-2026. The
+  stored totals are correct (billed at the price in force at submit); current
+  stops pricing is just no longer the same, which breaks naive recomputation.
+- Shorts live on both LYN (6 stops) and FBW (8 stops, which is 100% shorts).
+  The "Baked at Lynbrook only" label on the Revenue summary card is wrong.
+- Sheet tabs: `Franklin Square` (FSQ), `Valley Stream/Rockville Centre` +
+  `East Rock/Oceanside/Long Beach` (both LYN), `Baldwin/Freeport` (FBW).
+- Sheet cells per stop are **dollar totals** (not singles/doubles). We don't
+  need those — we only need the driver name per (date, stop).
 
-5. **`ops/qr/index.html` edits:** one line. In the Contacts table rendering, replace the hardcoded `r.email_verified_at ? 'pack2_verify' : '-'` with `r.opt_in_source || (r.email_verified_at ? 'pack2_verify' : '-')`. The fallback keeps old rows (pre-migration) displaying correctly.
+## Phases & success criteria
 
-6. **Validate:**
-   - `npm test` — same baseline (my changes should not regress tests).
-   - Local Supabase (if available) or a staging/preview DB: `supabase db push` to apply p24, then verify `select count(*) from pack_players where email_verified_at is not null and marketing_opt_in_at is not null` equals the pre-migration count of verified rows (backfill correct).
-   - Boot `vercel dev`, walk pack 2's email step: confirm the checkbox is gone, submit, verify the link, hit `select marketing_opt_in_source, marketing_opt_in_version from pack_players where email = …` and confirm the write landed.
-   - Load `/ops/qr#contacts`, confirm the Opt-in source column reads from the new column for new verifies and still shows `pack2_verify` for backfilled rows.
-   - Load `/privacy`, confirm it renders and link from `/free-pretzels` works.
+### Phase A — Reconstruction of `submitted_by`
 
-7. **Propose:** push `agent/consent-privacy`, open draft PR with the template filled in.
+**Deliverable:** `supabase/migrations/NNNN_backfill_submitted_by_from_sheet.sql`
+that creates a `Legacy Import` system user (if missing), then updates
+`returns.submitted_by` for the 1,141 NULL rows using a mapping derived from
+Sheet data.
 
-## Success criteria
+**Steps:**
 
-Quantitative:
-- Files changed: `supabase/migrations/p24_pack_consent_metadata.sql` (new), `privacy.html` (new), `free-pretzels/index.html`, `ops/qr/index.html`, `api/_packs.js`. Nothing else.
-- No dependency change.
-- No touch to `api/_lib/`, `api/telegram-webhook.js`, `.github/`, `.claude/`, `.agent-policy/`, `.agent-control/`, `vercel.json`.
-- Post-migration: `select count(*) from pack_players where email_verified_at is not null and (marketing_opt_in_at is null or marketing_opt_in_source is null or marketing_opt_in_version is null)` returns `0`.
-- `npm test` same baseline (75 pass / 2 pre-existing fails).
-- `scope-check` CI passes; `plan-gate` CI passes (high-risk, with approval hash on this plan).
+1. Pull all four tabs' `(Timestamp, Date, stops…, Name)` via the Sheets MCP.
+2. Build a `(for_date, stop_id) → driver_id` map:
+   - FSQ tab → FSQ route, match by `for_date`.
+   - Baldwin/Freeport → FBW, match by `for_date`. (0 NULL rows here, so this
+     is defensive only.)
+   - VS/RVC + East Rock → LYN. For each sheet row, treat a non-blank per-stop
+     cell as "this driver served this stop this day." A LYN stop's driver is
+     the Name from whichever tab had a non-blank cell for that stop.
+3. Apply aliases: `Juliana` → `Julianna`. Unknown names → unassigned.
+4. Normalize year typos (`0026` → `2026`).
+5. Dry-run match: how many of the 1,141 NULL rows match? Report counts by
+   (year, route, matched/unmatched). Share with user before Phase A3.
+6. Create `Legacy Import` person (`role='system'` if the enum allows; else
+   `operator` with a flag).
+7. UPDATE: matched rows get the real driver; unmatched rows get Legacy Import.
+   Both are safe to re-run (idempotent on NULL).
 
-Qualitative:
-- An operator can click a verified email in Contacts and tell instantly that the consent was captured via `pack2_verify` under `privacy_v1_2026-11`.
-- The copy a customer sees at pack 2 matches the model we actually run: no deals checkbox, no "30-day delete without the box", one honest sentence that links to a real page.
-- If a lawyer or a mail-sending vendor ever asks "where's your consent record", the answer is: the three columns on `pack_players`, cross-referenced against the versioned privacy page in git.
+**Success criteria:**
 
-## Risks + mitigations
+- After Phase A, `SELECT COUNT(*) FROM returns WHERE submitted_by IS NULL` = 0.
+- By-driver revenue table on the Revenue page shows real drivers for ≥ 85%
+  of the previously-unknown $23K.
+- A spot-check of 10 random reconstructed rows against the Sheet confirms
+  the attribution.
 
-- *Migration backfills incorrect values.* Mitigation: the UPDATE is bounded by `email_verified_at is not null`; defaults on `marketing_opt_in_source` and `marketing_opt_in_version` are the right values for every backfilled row (there's only one flow and one policy version in effect today).
-- *Downstream code reads the deprecated `marketing_opt_in` boolean.* Mitigation: not dropping that column this slice; `handleVerify` still writes `marketing_opt_in: true`. Any caller still reading it keeps working.
-- *Privacy copy is legally insufficient.* Mitigation: this is a founder-run business and the user has already decided the model; the page codifies what's already agreed. Future legal review can bump `privacy_v2_*` and the three columns will faithfully record who agreed under which version.
-- *Pack 2 form JS still reads `#email-optin`.* Mitigation: step 3's JS sweep removes any such read; the submit handler will send the email without the opt-in flag, and the backend treats the implicit model as opt-in=true.
+### Phase B — Freeze pricing on the `returns` row
+
+**Deliverable:** `supabase/migrations/NNNN_returns_freeze_prices.sql` adding
+two columns + a backfill.
+
+**Steps:**
+
+1. Migration: add nullable columns
+   - `price_single_cents_at_submit INT`
+   - `price_double_cents_at_submit INT`
+2. Backfill:
+   - For every row where
+     `sold_cents = sold_singles * COALESCE(stops.price_single_cents, 215)
+                 + sold_doubles * COALESCE(stops.price_double_cents, 385)`,
+     write those current prices into the new columns.
+   - For the 23 pre-cut 711 rows that don't match current pricing, solve the
+     implied historical prices from `sold_cents` (we already identified them
+     as `ps=215, pd=385`).
+   - Any row whose `sold_cents` matches neither current nor the implied
+     historical pricing gets logged, not updated, and I come back to the user
+     with the list.
+3. Update [api/driver/submit.js:106](api/driver/submit.js:106) to also write
+   `price_single_cents_at_submit` and `price_double_cents_at_submit` on every
+   upsert.
+4. Follow-up (deferred to Phase D or next PR): once these columns are 100%
+   populated, add a Supabase CHECK that
+   `sold_cents = sold_singles * price_single_cents_at_submit
+               + sold_doubles * price_double_cents_at_submit`.
+
+**Success criteria:**
+
+- After Phase B, every `returns` row has both at-submit price columns
+  populated and the invariant `sold_cents = s*ps + d*pd` holds for 100% of
+  rows.
+- New driver submits write the at-submit prices automatically.
+- Nothing breaks on the existing Revenue page (it still sums `sold_cents`
+  the same way).
+
+### Phase C — UI/API info depth
+
+**Deliverable:** changes to `api/schedule.js` (`handleRevenueGet`) and
+`ops/revenue/index.html` only.
+
+**Steps:**
+
+1. Add `month` and `annual` (rolling 12 months) to the window set in
+   `handleRevenueGet` and to the toolbar.
+2. For each tile on the summary strip, also return a `prev_total_cents`
+   from the immediately-preceding window of equal length, and render a
+   signed % delta chip next to the value.
+3. Fix labels:
+   - `summary.total_shorts_units` detail: drop "Baked at Lynbrook only"
+     (replace with "Shorts-flagged stops").
+   - Page eyebrow: "Gross retail sold" → "Gross wholesale billed".
+4. Drilldown: clicking a route row expands to its stops within the current
+   window; clicking a driver row expands to their day-by-day. Implemented
+   with existing `by_stop` and a new endpoint for driver-day totals (or
+   client-side from already-fetched rows if scope is small enough).
+
+**Success criteria:**
+
+- All five windows (Weekly / 30d / Monthly / Quarterly / YTD / Annual)
+  load correctly.
+- Δ chips show vs. the prior equivalent period.
+- Shorts/wholesale labels are accurate.
+- Drilldowns reveal per-row detail without an extra page load for the common
+  case.
 
 ## Rollback
-- `git revert` the merge commit; UI stops reading the new columns. The columns themselves remain on the DB (harmless), and can be dropped via the migration's rollback block if truly needed.
-- If the migration itself needs rolling back after merge but before the UI deploys: the rollback block at the bottom of p24 drops the three columns + index in a reversible way.
 
-## Out of scope (next slices / later)
-- **Slice 3:** daily Telegram digest of yesterday's funnel numbers via the existing `api/schedule.js` cron and `api/_lib/telegram.js`. Also high-risk because it edits `vercel.json`'s cron list.
-- Unsubscribe mechanism (no sends yet — not needed until slice 4).
-- Dropping the deprecated `marketing_opt_in` boolean (one release after we're sure nothing reads it).
-- Sort/filter Contacts by consent date (fast-path index is here; UI wire is a follow-up).
-- Any CAN-SPAM header work on the magic-link email itself (cosmetic — the mcaiazzoppffs@gmail.com sender identity is already honest).
+- Phase A: `UPDATE returns SET submitted_by = NULL WHERE submitted_by = <legacy_import_id>` restores the unattributed set. For reconstructed rows, keep a sidecar table `returns_reconstruction_log` (for_date, stop_id, old_submitted_by, new_submitted_by, source_tab, source_row) so a full undo is possible.
+- Phase B: Columns are nullable and additive. Rollback is `ALTER TABLE returns DROP COLUMN …`. `api/driver/submit.js` reverts to just stop-price lookup if needed.
+- Phase C: Pure client/server render changes. Revert the two files.
 
-## Review-by
-2027-02-17 (3 months). Re-check whether the three columns match whatever consent-recording model we're on then (likely more sources once pitch-kit is folded in).
+## Order of operations
+
+1. Finish Phase A dry-run (counts + sample unmatched rows) **before writing any Phase A migration**.
+2. User approves Phase A, I write + apply the migration.
+3. Phase B migration + backfill + submit.js change, all in one PR.
+4. Phase C in a separate PR so the API/UI diff is reviewable on its own.
+
+## Evidence to include in each PR
+
+- Phase A: before/after counts, sample rows, match-rate per route/year.
+- Phase B: invariant check showing 100% of rows satisfy
+  `sold_cents = s*ps + d*pd` post-backfill.
+- Phase C: screenshots of the new windows + Δ chips (desktop + mobile).
