@@ -35,6 +35,13 @@
 .sum-value.money { color: var(--accent); }
 .sum-detail { font-size: 12px; color: var(--ink-3); margin-top: 8px; font-family: var(--display); letter-spacing: 0.08em; text-transform: uppercase; }
 
+/* Period-over-period Δ chip */
+.sum-delta { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+.sum-delta.up   { background: rgba(80,180,120,0.14);  color: #7bd49a; }
+.sum-delta.down { background: rgba(220,90,90,0.14);   color: #e58a8a; }
+.sum-delta.flat { background: rgba(255,255,255,0.08); color: var(--ink-3); }
+.sum-delta b { font-weight: 600; }
+
 /* Tables */
 .sect { font-family: var(--display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); margin: 28px 0 10px; display: flex; justify-content: space-between; align-items: baseline; }
 .sect .meta { font-size: 11px; color: var(--ink-3); letter-spacing: 0.14em; }
@@ -48,6 +55,18 @@
 .tbl td.route { font-family: var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-size: 13px; }
 .tbl tr.totals td { background: rgba(0,0,0,0.22); font-family: var(--display); letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
 .tbl tr.totals td.money { font-size: 14px; }
+
+/* Drilldown: expand a route/driver row to see nested detail. */
+.tbl tr.drill { cursor: pointer; }
+.tbl tr.drill:hover td { background: rgba(255,255,255,0.03); }
+.tbl tr.drill td:first-child::before { content: '▸ '; color: var(--ink-3); font-size: 10px; margin-right: 4px; display: inline-block; transition: transform 120ms; }
+.tbl tr.drill[aria-expanded="true"] td:first-child::before { transform: rotate(90deg); }
+.tbl tr.drill-detail > td { padding: 0 !important; background: rgba(0,0,0,0.12); }
+.tbl tr.drill-detail .nested { width: 100%; }
+.tbl tr.drill-detail .nested th,
+.tbl tr.drill-detail .nested td { padding: 7px 14px; font-size: 13px; border-bottom: 1px dashed rgba(255,255,255,0.05); }
+.tbl tr.drill-detail .nested tr:last-child td { border-bottom: 0; }
+.tbl tr.drill-detail .nested th { color: var(--ink-3); font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
 
 .stop-toggle { display: inline-flex; align-items: center; background: transparent; border: 1px solid var(--line-2); color: var(--ink-2); font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
 .stop-toggle:hover { color: var(--ink); border-color: var(--line); }
@@ -87,15 +106,17 @@
   </div>
 
   <section class="page">
-    <div class="page-eyebrow">Gross retail sold</div>
+    <div class="page-eyebrow">Gross wholesale billed</div>
     <h1 class="page-title">Revenue</h1>
-    <p class="page-sub">What drivers rang up at per-stop pricing. Totals, breakdown by route, by driver, and per-stop drill-down.</p>
+    <p class="page-sub">What the stops owe us at per-stop wholesale pricing. Totals, breakdown by route, by driver, and per-stop drill-down.</p>
 
     <div class="toolbar">
       <button type="button" class="filter" data-w="week"    aria-pressed="true">Weekly</button>
       <button type="button" class="filter" data-w="30d"     aria-pressed="false">30 days</button>
-      <button type="button" class="filter" data-w="quarter" aria-pressed="false">Quarter</button>
+      <button type="button" class="filter" data-w="month"   aria-pressed="false">Monthly</button>
+      <button type="button" class="filter" data-w="quarter" aria-pressed="false">Quarterly</button>
       <button type="button" class="filter" data-w="ytd"     aria-pressed="false">Year-to-date</button>
+      <button type="button" class="filter" data-w="annual"  aria-pressed="false">Annual</button>
       <span class="window-label">Range · <b id="win-label">&mdash;</b></span>
     </div>
 
@@ -212,18 +233,35 @@ function renderSpark() {
 
 function renderSummary() {
   const s = _data.summary || {};
-  const card = (label, value, detail, moneyClass) => `
+  const p = _data.prev_summary || {};
+  // Signed-percent Δ chip. Hidden when the previous window had no activity,
+  // because X÷0 isn't a useful signal — just means we have nothing to compare.
+  const deltaChip = (cur, prev) => {
+    if (!prev) return '';
+    const pct = ((cur - prev) / prev) * 100;
+    if (!isFinite(pct)) return '';
+    const cls = Math.abs(pct) < 0.5 ? 'flat' : (pct >= 0 ? 'up' : 'down');
+    const arrow = cls === 'flat' ? '•' : (pct >= 0 ? '↑' : '↓');
+    return `<span class="sum-delta ${cls}"><b>${arrow} ${Math.abs(pct).toFixed(0)}%</b> vs prev</span>`;
+  };
+  const card = (label, value, detail, delta, moneyClass) => `
     <div class="sum-card">
       <div class="sum-label">${esc(label)}</div>
       <div class="sum-value${moneyClass ? ' money' : ''}">${esc(value)}</div>
+      ${delta}
       <div class="sum-detail">${esc(detail || '')}</div>
     </div>`;
-  const avg = s.days_covered ? money(Math.round(s.total_cents / s.days_covered)) : money(0);
+  const avg = s.days_covered ? Math.round(s.total_cents / s.days_covered) : 0;
+  const prevAvg = p.days_covered ? Math.round(p.total_cents / p.days_covered) : 0;
   $('#summary').innerHTML = [
-    card('Revenue', money(s.total_cents), `${n(s.submissions)} submissions · ${n(s.days_covered)} days`, true),
-    card('Total units', n(s.total_units), `${n(s.total_singles)} singles · ${n(s.total_doubles)} doubles`),
-    card('Shorts units', n(s.total_shorts_units), 'Baked at Lynbrook only'),
-    card('Daily average', avg, s.days_covered ? `${n(Math.round(s.total_units / Math.max(1, s.days_covered)))} units / day` : '—', true),
+    card('Revenue',       money(s.total_cents),      `${n(s.submissions)} submissions · ${n(s.days_covered)} days`,
+         deltaChip(s.total_cents, p.total_cents), true),
+    card('Total units',   n(s.total_units),          `${n(s.total_singles)} singles · ${n(s.total_doubles)} doubles`,
+         deltaChip(s.total_units, p.total_units), false),
+    card('Shorts units',  n(s.total_shorts_units),   'Shorts-flagged stops',
+         deltaChip(s.total_shorts_units, p.total_shorts_units), false),
+    card('Daily average', money(avg),                s.days_covered ? `${n(Math.round(s.total_units / Math.max(1, s.days_covered)))} units / day` : '—',
+         deltaChip(avg, prevAvg), true),
   ].join('');
 }
 
@@ -231,16 +269,34 @@ function renderRoutes() {
   const rows = _data.by_route || [];
   $('#route-meta').textContent = rows.length ? `${rows.length} route${rows.length === 1 ? '' : 's'}` : '';
   const tot = rows.reduce((a, r) => ({ singles: a.singles + r.singles, doubles: a.doubles + r.doubles, units: a.units + r.units, shorts: a.shorts + r.shorts_units, subs: a.subs + r.submissions, cents: a.cents + r.revenue_cents }), { singles: 0, doubles: 0, units: 0, shorts: 0, subs: 0, cents: 0 });
-  const body = rows.map(r => `
-    <tr>
-      <td class="route">${esc(r.route_key)}</td>
-      <td class="num">${n(r.singles)}</td>
-      <td class="num">${n(r.doubles)}</td>
-      <td class="num">${n(r.units)}</td>
-      <td class="num">${n(r.shorts_units)}</td>
-      <td class="num">${n(r.submissions)}</td>
-      <td class="num money">${esc(money(r.revenue_cents))}</td>
-    </tr>`).join('');
+  const body = rows.map(r => {
+    // Nested detail: this route's stops, sorted by revenue.
+    const stops = (_data.by_stop || []).filter(s => s.route_key === r.route_key);
+    const nested = `
+      <table class="nested"><thead><tr>
+        <th>Stop</th><th class="num">Singles</th><th class="num">Doubles</th><th class="num">Units</th><th class="num">Revenue</th>
+      </tr></thead><tbody>
+        ${stops.map(s => `
+          <tr>
+            <td>${esc(s.name)}${s.shorts ? '<span class="shorts-chip">Shorts</span>' : ''}</td>
+            <td class="num">${n(s.singles)}</td>
+            <td class="num">${n(s.doubles)}</td>
+            <td class="num">${n(s.units)}</td>
+            <td class="num money">${esc(money(s.revenue_cents))}</td>
+          </tr>`).join('')}
+      </tbody></table>`;
+    return `
+      <tr class="drill" data-route="${esc(r.route_key)}" aria-expanded="false">
+        <td class="route">${esc(r.route_key)}</td>
+        <td class="num">${n(r.singles)}</td>
+        <td class="num">${n(r.doubles)}</td>
+        <td class="num">${n(r.units)}</td>
+        <td class="num">${n(r.shorts_units)}</td>
+        <td class="num">${n(r.submissions)}</td>
+        <td class="num money">${esc(money(r.revenue_cents))}</td>
+      </tr>
+      <tr class="drill-detail" data-route="${esc(r.route_key)}" hidden><td colspan="7">${nested}</td></tr>`;
+  }).join('');
   const totalRow = rows.length ? `
     <tr class="totals">
       <td>Total</td>
@@ -252,21 +308,53 @@ function renderRoutes() {
       <td class="num money">${esc(money(tot.cents))}</td>
     </tr>` : '';
   $('#route-tbl tbody').innerHTML = (body || `<tr><td colspan="7" style="padding:28px 10px;color:var(--ink-3);text-align:center;">No submissions in this window.</td></tr>`) + totalRow;
+  wireDrilldown('#route-tbl', 'route');
 }
 
 function renderDrivers() {
   const rows = _data.by_driver || [];
   $('#driver-meta').textContent = rows.length ? `${rows.length} driver${rows.length === 1 ? '' : 's'}` : '';
-  const body = rows.map(r => `
-    <tr>
-      <td><b>${esc(r.name)}</b></td>
-      <td class="num">${n(r.submissions)}</td>
-      <td class="num">${n(r.singles)}</td>
-      <td class="num">${n(r.doubles)}</td>
-      <td class="num">${n(r.units)}</td>
-      <td class="num money">${esc(money(r.revenue_cents))}</td>
-    </tr>`).join('');
+  const body = rows.map(r => {
+    // Nested detail: this driver's daily breakdown within the window.
+    const days = (_data.by_driver_day || []).filter(d => d.submitted_by === r.sub);
+    const nested = `
+      <table class="nested"><thead><tr>
+        <th>Date</th><th class="num">Submissions</th><th class="num">Units</th><th class="num">Revenue</th>
+      </tr></thead><tbody>
+        ${days.map(d => `
+          <tr>
+            <td>${esc(fmtDate(d.for_date))}</td>
+            <td class="num">${n(d.submissions)}</td>
+            <td class="num">${n(d.units)}</td>
+            <td class="num money">${esc(money(d.revenue_cents))}</td>
+          </tr>`).join('')}
+      </tbody></table>`;
+    return `
+      <tr class="drill" data-driver="${esc(r.sub)}" aria-expanded="false">
+        <td><b>${esc(r.name)}</b></td>
+        <td class="num">${n(r.submissions)}</td>
+        <td class="num">${n(r.singles)}</td>
+        <td class="num">${n(r.doubles)}</td>
+        <td class="num">${n(r.units)}</td>
+        <td class="num money">${esc(money(r.revenue_cents))}</td>
+      </tr>
+      <tr class="drill-detail" data-driver="${esc(r.sub)}" hidden><td colspan="6">${nested}</td></tr>`;
+  }).join('');
   $('#driver-tbl tbody').innerHTML = body || `<tr><td colspan="6" style="padding:28px 10px;color:var(--ink-3);text-align:center;">No submissions in this window.</td></tr>`;
+  wireDrilldown('#driver-tbl', 'driver');
+}
+
+// Expand/collapse the nested detail row beneath a clicked drill row.
+function wireDrilldown(tblSel, attr) {
+  const dataKey = `data-${attr}`;
+  document.querySelectorAll(`${tblSel} tr.drill`).forEach(tr => {
+    tr.onclick = () => {
+      const open = tr.getAttribute('aria-expanded') === 'true';
+      tr.setAttribute('aria-expanded', open ? 'false' : 'true');
+      const detail = tr.parentElement.querySelector(`tr.drill-detail[${dataKey}="${tr.getAttribute(dataKey)}"]`);
+      if (detail) { if (open) detail.setAttribute('hidden',''); else detail.removeAttribute('hidden'); }
+    };
+  });
 }
 
 function renderStops() {

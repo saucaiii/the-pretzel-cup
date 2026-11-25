@@ -97,13 +97,19 @@ module.exports = async function handler(req, res) {
       const maxS = singlesFor(s), maxD = doublesFor(s);
       if (r.soldSingles > maxS) return res.status(400).json({ error: `${s.name}: ${r.soldSingles} singles sold exceeds drop of ${maxS}` });
       if (r.soldDoubles > maxD) return res.status(400).json({ error: `${s.name}: ${r.soldDoubles} doubles sold exceeds drop of ${maxD}` });
+      const psAtSubmit = priceSingleFor(s);
+      const pdAtSubmit = priceDoubleFor(s);
       rows.push({
         for_date:     targetDate,
         route_key:    routeKey,
         stop_id:      r.stopId,
         sold_singles: r.soldSingles,
         sold_doubles: r.soldDoubles,
-        sold_cents:   r.soldSingles * priceSingleFor(s) + r.soldDoubles * priceDoubleFor(s),
+        sold_cents:   r.soldSingles * psAtSubmit + r.soldDoubles * pdAtSubmit,
+        // Freeze pricing on the row so a later change to stops.price_* can't
+        // retroactively rewrite historical revenue. See .agent/plan.md Phase B.
+        price_single_cents_at_submit: psAtSubmit,
+        price_double_cents_at_submit: pdAtSubmit,
         submitted_by: sess.sub,
         submitted_at: new Date().toISOString(),
       });
