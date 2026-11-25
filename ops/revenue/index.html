@@ -21,11 +21,19 @@
 .window-label b { color: var(--accent); font-weight: 400; }
 
 /* Sparkline card */
-.spark-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; margin: 14px 0 24px; }
+.spark-card { position: relative; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px 20px; margin: 14px 0 24px; }
 .spark-head { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; margin-bottom: 10px; }
 .spark-title { font-family: var(--display); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3); }
 .spark-sub { font-family: var(--display); font-size: 11px; letter-spacing: 0.14em; color: var(--ink-3); text-transform: uppercase; }
 .spark { width: 100%; height: 80px; display: block; }
+.spark rect { cursor: default; transition: opacity 120ms; }
+.spark rect:hover { opacity: 1 !important; }
+
+/* Hover preview for a day's bar. */
+.spark-tip { position: absolute; z-index: 10; pointer-events: none; display: none; transform: translate(-50%, -100%); margin-top: -8px; padding: 6px 10px; background: rgba(0,0,0,0.85); border: 1px solid var(--line); border-radius: 6px; font-family: var(--display); font-size: 11px; letter-spacing: 0.08em; color: var(--ink); white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+.spark-tip .tip-date { color: var(--ink-3); text-transform: uppercase; font-size: 10px; letter-spacing: 0.14em; margin-bottom: 2px; }
+.spark-tip .tip-value { color: var(--accent); font-size: 14px; letter-spacing: 0.02em; }
+.spark-tip::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: rgba(0,0,0,0.85); }
 
 /* Summary strip */
 .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px; }
@@ -126,6 +134,7 @@
         <span class="spark-sub" id="spark-sub">&mdash;</span>
       </div>
       <svg class="spark" id="spark" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="spark-tip" id="spark-tip" role="tooltip" aria-hidden="true"></div>
     </div>
 
     <div class="summary" id="summary"></div>
@@ -226,12 +235,38 @@ function renderSpark() {
     const barH = max > 0 ? (x.revenue_cents / max) * (h - pad * 2) : 0;
     const xPos = pad + i * slot + (slot - barW) / 2;
     const yPos = h - pad - barH;
-    // SVG <title> is the native tooltip — no JS listener needed.
-    return `<rect x="${xPos.toFixed(2)}" y="${yPos.toFixed(2)}" width="${barW.toFixed(2)}" height="${Math.max(0, barH).toFixed(2)}" rx="1" ry="1" fill="var(--accent)" opacity="${x.revenue_cents > 0 ? 0.9 : 0.25}"><title>${esc(fmtDate(x.for_date))}: ${esc(money(x.revenue_cents))}</title></rect>`;
+    return `<rect data-i="${i}" x="${xPos.toFixed(2)}" y="${yPos.toFixed(2)}" width="${barW.toFixed(2)}" height="${Math.max(0, barH).toFixed(2)}" rx="1" ry="1" fill="var(--accent)" opacity="${x.revenue_cents > 0 ? 0.9 : 0.25}"></rect>`;
   }).join('');
   $('#spark').innerHTML = bars;
   const total30 = d.reduce((a, x) => a + x.revenue_cents, 0);
   $('#spark-sub').innerHTML = `30-day · <b style="color:var(--accent)">${esc(money(total30))}</b>`;
+
+  // Custom hover preview. Anchors to each bar's horizontal centre and sits
+  // just above its top edge, relative to the .spark-card. preserveAspectRatio
+  // is "none", so viewBox coords don't map 1:1 to pixels — use
+  // getBoundingClientRect to position.
+  const tip = document.getElementById('spark-tip');
+  const card = document.querySelector('.spark-card');
+  const svg = document.getElementById('spark');
+  svg.querySelectorAll('rect').forEach(rect => {
+    rect.addEventListener('mouseenter', () => {
+      const idx = Number(rect.getAttribute('data-i'));
+      const day = d[idx];
+      tip.innerHTML = `<div class="tip-date">${esc(fmtDate(day.for_date))}</div><div class="tip-value">${esc(money(day.revenue_cents))}</div>`;
+      const cardBox = card.getBoundingClientRect();
+      const barBox  = rect.getBoundingClientRect();
+      const cx = barBox.left + barBox.width / 2 - cardBox.left;
+      const cy = barBox.top - cardBox.top;
+      tip.style.left = `${cx}px`;
+      tip.style.top  = `${cy}px`;
+      tip.style.display = 'block';
+      tip.setAttribute('aria-hidden', 'false');
+    });
+    rect.addEventListener('mouseleave', () => {
+      tip.style.display = 'none';
+      tip.setAttribute('aria-hidden', 'true');
+    });
+  });
 }
 
 function renderSummary() {
