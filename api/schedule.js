@@ -1454,8 +1454,28 @@ async function handleRevenueGet(req, res, sess) {
     const sparkFrom = (() => { const d = new Date(now); d.setDate(d.getDate() - 29); return iso(d); })();
     const minFrom = [fromIso, sparkFrom, prevFrom].sort()[0];
 
+    // Supabase JS silently caps .select() at 1,000 rows. The Annual / YTD
+    // windows (and the 30-day fetch widening for Δ chips) routinely exceed
+    // that, so we page explicitly. Order by for_date to make the paging
+    // boundary deterministic.
+    async function fetchReturnsPaged() {
+      const out = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await sb.from('returns')
+          .select('for_date,route_key,stop_id,sold_singles,sold_doubles,sold_cents,submitted_by,submitted_at')
+          .gte('for_date', minFrom).lte('for_date', toIso)
+          .order('for_date').order('stop_id')
+          .range(from, from + 999);
+        if (error) throw error;
+        if (!data || !data.length) break;
+        out.push(...data);
+        if (data.length < 1000) break;
+      }
+      return { data: out, error: null };
+    }
+
     const [returnsR, stopsR, peopleR] = await Promise.all([
-      sb.from('returns').select('for_date,route_key,stop_id,sold_singles,sold_doubles,sold_cents,submitted_by,submitted_at').gte('for_date', minFrom).lte('for_date', toIso),
+      fetchReturnsPaged(),
       sb.from('stops').select('id,name,route_key,shorts,price_single_cents,price_double_cents').order('route_key').order('stop_order'),
       sb.from('people').select('id,name,role'),
     ]);
