@@ -1,165 +1,126 @@
-# Plan — Revenue page rebuild
+# Driver bi-weekly box photos
 
-**Risk:** High (Supabase schema change + bulk UPDATE on `returns`).
-**Branch:** `agent/revenue-rebuild`.
-**Started:** 2026-11-25.
+## Risk
+**High.** Touches Telegram (`api/_lib/telegram.js` is a HIGH-risk path per CLAUDE.md), adds a new Supabase migration, introduces Google Drive write auth. Human reviews and merges; no CI deploy.
 
 ## Goal
+Every other Friday, drivers photograph each box on their route and submit the batch together with the normal daily route sales. Photos land in a dated Google Drive folder, and a single Telegram message tells the group the batch is ready, with a link to that folder. No photos in the group chat itself.
 
-Make the ops Revenue page audit-defensible and more informative, without
-over-engineering. Three things in scope:
+## Scope
+`api/driver/submit.js`, `api/_lib/drive.js`, `api/_lib/sheet.js`, `driver/index.html`, `supabase/migrations/p25_route_photo_submissions.sql`
 
-1. Reconstruct `returns.submitted_by` for 2025–2026 from the Google Sheet
-   (`Daily Delivery Sales Report - All Accounts`, 4 tabs).
-2. Freeze pricing on each `returns` row so historical revenue is
-   self-reproducible without relying on current `stops` prices.
-3. Add Monthly + rolling-Annual windows, period-over-period Δ tiles, drilldown
-   click-through, and fix two label bugs on the page.
+**New env var (agent can't edit `.env*` — user adds by hand):**
+`GOOGLE_DRIVE_PARENT_ID=1VSJJOlCsVds2LOyS_vwVUa1MvNzb4gQx`
 
-Out of scope for this PR (named so we don't lose them):
+## Design
 
-- Append-only audit trigger on `returns`.
-- Period close + server-side cutoff enforcement.
-- Cash reconciliation view (recognized vs. invoiced vs. received vs. AR Δ).
-- COGS / inventory / waste tracking (bake_logs).
-- Wholesale consolidation into one unified revenue page.
+### Bi-weekly anchor
+- Anchor: **Friday 2026-12-05**. A day is a photo day when `floor((date - 2026-12-05) / 14 days) >= 0` and `((date - 2026-12-05) % 14 days) === 0`.
+- Pure function in `api/driver/submit.js` and mirrored in the driver HTML (so the client can decide to show the popup without a round-trip). Both read the same constant `PHOTO_ANCHOR_ISO = '2026-12-05'`.
 
-## Context (what I already verified)
+### Drive layout
+Parent folder: `1VSJJOlCsVds2LOyS_vwVUa1MvNzb4gQx` (user supplies as `GOOGLE_DRIVE_PARENT_ID`).
+```
+<parent>/
+  FSQ/
+    20261205 - Chris/
+      01-StopName.jpg
+      02-OtherStop.jpg
+    20261205 - Mike/
+  LYN/
+  FBW/
+```
+Route folder and dated-driver folder are both **created on demand** by `api/_lib/drive.js` using `drive.files.list` (`q=` by name+parent+mimeType) then `drive.files.create` when missing. Idempotent: re-upload of the same stop overwrites via `drive.files.update` on the matching filename (no duplicate files).
 
-- Current page sums `returns.sold_cents` across a date window — grand total is
-  correct ($150,384.70 all-time, 7,783 rows).
-- 1,141 rows have `submitted_by = NULL` ($23,372.74). 0 are on FBW.
-- 23 rows have `sold_cents` that doesn't match current `stops` pricing because
-  the 711 double was dropped from $3.85 → $3.50 for 2 stores mid-2026. The
-  stored totals are correct (billed at the price in force at submit); current
-  stops pricing is just no longer the same, which breaks naive recomputation.
-- Shorts live on both LYN (6 stops) and FBW (8 stops, which is 100% shorts).
-  The "Baked at Lynbrook only" label on the Revenue summary card is wrong.
-- Sheet tabs: `Franklin Square` (FSQ), `Valley Stream/Rockville Centre` +
-  `East Rock/Oceanside/Long Beach` (both LYN), `Baldwin/Freeport` (FBW).
-- Sheet cells per stop are **dollar totals** (not singles/doubles). We don't
-  need those — we only need the driver name per (date, stop).
+Service account (reused from `GOOGLE_SHEET_KEY_B64`, extended to `https://www.googleapis.com/auth/drive` scope) must be invited to the parent folder as Editor — user is handling that separately. No new env var required.
 
-## Phases & success criteria
+### DB — `p25_route_photo_submissions.sql`
+```sql
+create table public.route_photo_submissions (
+  id uuid primary key default gen_random_uuid(),
+  for_date date not null,
+  route_key text not null references public.routes(key),
+  driver_id uuid not null references public.people(id),
+  drive_folder_id text not null,
+  drive_folder_link text not null,
+  photos_count int not null default 0,
+  telegram_message_id bigint,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (for_date, route_key, driver_id)
+);
+alter table public.route_photo_submissions enable row level security;
+-- RLS is deny-all; service role bypasses (same convention as returns/people).
+```
 
-### Phase A — Reconstruction of `submitted_by`
+### Sheet — mirror in the existing Daily Delivery Sales Report
+New tab **Box Photos** in `GOOGLE_SHEET_ID` (auto-created if missing). Columns:
+`Timestamp | Date | Weekday | Route | Driver | Photos | Folder Link | Submitted At`
+Upsert by `(Date, Route, Driver)` — re-submit updates the row, no duplicates. Best-effort: Sheet failure is logged as `sheet_error` in the submit response but never blocks the route save. Supabase stays the source of truth for enforcement; the Sheet is a human-readable log.
 
-**Deliverable:** `supabase/migrations/NNNN_backfill_submitted_by_from_sheet.sql`
-that creates a `Legacy Import` system user (if missing), then updates
-`returns.submitted_by` for the 1,141 NULL rows using a mapping derived from
-Sheet data.
+### API — fold into `api/driver/submit.js` with `?action=`
+`submit.js` becomes a dispatcher:
 
-**Steps:**
+- `POST /api/driver/submit` (default; `?action=route` for clarity) — existing behavior. **New final step:** if today is a photo day for `routeKey` and `driver_id`, look up `route_photo_submissions` for `(for_date, route_key, driver_id)`; require `photos_count === stops.length` before accepting the route submit (return `409 { error: 'box photos required', missing_count }`). After the normal submit success, if the matching photo row has no `telegram_message_id`, post one Telegram message with the folder link and persist the returned `message_id`.
+- `POST /api/driver/submit?action=photo` — multipart (field `file`, field `stopId`, field `forDate`, field `routeKey`). Validates the stop belongs to the route and the driver. Resizes/validates server-side only if client sent oversize (hard-cap request body at 4.5 MB; client resizes to ~1600px JPEG first). Uploads to Drive at `<parent>/<routeKey>/<YYYYMMDD> - <driverName>/<NN>-<stop.name>.jpg`. Upserts the `route_photo_submissions` row and increments `photos_count` only when a new file was created (not on overwrite). Returns `{ ok, folder_link, photos_count, stops_total }`.
+- `GET /api/driver/submit?action=photo-status&forDate=…&routeKey=…` — returns `{ required: boolean, photos_count, stops_total, folder_link? }` so the UI can refresh the enforcement state after a page reload.
 
-1. Pull all four tabs' `(Timestamp, Date, stops…, Name)` via the Sheets MCP.
-2. Build a `(for_date, stop_id) → driver_id` map:
-   - FSQ tab → FSQ route, match by `for_date`.
-   - Baldwin/Freeport → FBW, match by `for_date`. (0 NULL rows here, so this
-     is defensive only.)
-   - VS/RVC + East Rock → LYN. For each sheet row, treat a non-blank per-stop
-     cell as "this driver served this stop this day." A LYN stop's driver is
-     the Name from whichever tab had a non-blank cell for that stop.
-3. Apply aliases: `Juliana` → `Julianna`. Unknown names → unassigned.
-4. Normalize year typos (`0026` → `2026`).
-5. Dry-run match: how many of the 1,141 NULL rows match? Report counts by
-   (year, route, matched/unmatched). Share with user before Phase A3.
-6. Create `Legacy Import` person (`role='system'` if the enum allows; else
-   `operator` with a flag).
-7. UPDATE: matched rows get the real driver; unmatched rows get Legacy Import.
-   Both are safe to re-run (idempotent on NULL).
+Keep Hobby 12-fn cap: still one serverless function (`api/driver/submit.js`).
 
-**Success criteria:**
+### `api/_lib/drive.js` (new)
+- `getDrive()` — lazy, mirrors `getSheets()`, same `GOOGLE_SHEET_KEY_B64`, scope `drive`.
+- `ensureFolder(parentId, name)` — list-or-create; returns `{ id, webViewLink }`.
+- `ensureRouteDriverFolder({ routeKey, forDate, driverName })` → `<parent>/<routeKey>/<YYYYMMDD> - <driverName>/`.
+- `uploadPhoto({ folderId, filename, buffer, mimeType })` — list by name in folder; if match, `files.update(media)`; else `files.create`. Returns `{ id, webViewLink, created: boolean }`.
 
-- After Phase A, `SELECT COUNT(*) FROM returns WHERE submitted_by IS NULL` = 0.
-- By-driver revenue table on the Revenue page shows real drivers for ≥ 85%
-  of the previously-unknown $23K.
-- A spot-check of 10 random reconstructed rows against the Sheet confirms
-  the attribution.
+### Driver page — `driver/index.html`
+- **Popup**: on page load, if today is a photo day and the active route needs photos (via `?action=photo-status`), show a `<dialog>` with the reminder copy, one checkbox ("I understand I must photograph each box today"), one Close button that is disabled until the box is ticked. Ack flag stored in `localStorage['photo-ack:<YYYY-MM-DD>:<routeKey>']` so it does not re-appear on refresh.
+- **Per-stop photo button**: on photo days only, each stop row gets a camera button (`<input type="file" accept="image/*" capture="environment">`). After pick, resize to max 1600px (canvas), re-encode as JPEG q=0.8, POST as multipart to `?action=photo`. Row shows a green check after a successful upload; re-tapping overwrites.
+- **Submit button**: on photo days, disabled until `photos_count === stops.length` (driven by `/api/driver/submit?action=photo-status` response, refreshed after each upload). Tooltip on hover explains why.
 
-### Phase B — Freeze pricing on the `returns` row
+### Telegram message copy
+```
+📸 Bi-weekly box photos · <Route label> · <Driver name>
+<date, Weekday>
+<N> boxes documented.
 
-**Deliverable:** `supabase/migrations/NNNN_returns_freeze_prices.sql` adding
-two columns + a backfill.
+<Drive folder link>
+```
+Plain `sendMessage` (no Markdown escaping surprises); link is unformatted so Telegram renders a preview card.
 
-**Steps:**
+## Steps
+1. Migration `p25_route_photo_submissions.sql` — apply locally via Supabase; verify constraint names.
+2. `api/_lib/drive.js` — write + unit-smoke by stubbing `googleapis` in a node `--test`.
+3. `api/driver/submit.js` — refactor into a tiny dispatcher; add `handleRoute`, `handlePhoto`, `handlePhotoStatus`. Keep `handleRoute` byte-identical to today's behavior except for the new enforcement tail.
+4. Document new env var in the PR body (user adds to `.env.example` by hand; agent is blocked from `.env*`).
+5. `driver/index.html` — modal + per-stop photo row + submit gate. Isolate new JS in a `PhotoDay` object so the diff stays reviewable.
+6. Manual test on the local dev server (Vercel dev): simulate a photo day by temporarily anchoring to yesterday; upload a dummy photo; confirm Drive folder structure; confirm Telegram post hits the group once. Revert the anchor before committing.
 
-1. Migration: add nullable columns
-   - `price_single_cents_at_submit INT`
-   - `price_double_cents_at_submit INT`
-2. Backfill:
-   - For every row where
-     `sold_cents = sold_singles * COALESCE(stops.price_single_cents, 215)
-                 + sold_doubles * COALESCE(stops.price_double_cents, 385)`,
-     write those current prices into the new columns.
-   - For the 23 pre-cut 711 rows that don't match current pricing, solve the
-     implied historical prices from `sold_cents` (we already identified them
-     as `ps=215, pd=385`).
-   - Any row whose `sold_cents` matches neither current nor the implied
-     historical pricing gets logged, not updated, and I come back to the user
-     with the list.
-3. Update [api/driver/submit.js:106](api/driver/submit.js:106) to also write
-   `price_single_cents_at_submit` and `price_double_cents_at_submit` on every
-   upsert.
-4. Follow-up (deferred to Phase D or next PR): once these columns are 100%
-   populated, add a Supabase CHECK that
-   `sold_cents = sold_singles * price_single_cents_at_submit
-               + sold_doubles * price_double_cents_at_submit`.
+## Success criteria
+### Quantitative
+- CI `scope-check` passes — every changed file is inside Scope.
+- `node --test` passes (existing suite unchanged).
+- No new code-scanning alerts on the PR.
+- `grep -E 'TELEGRAM_BOT_TOKEN|GOOGLE_SHEET_KEY_B64' driver/index.html` returns nothing (no secrets in client).
+- Drive uploads land in `<parent>/<routeKey>/<YYYYMMDD> - <driverName>/`; re-upload overwrites in place (verified with a dev account).
+- Telegram posts **once** per `(for_date, route, driver)`; a re-submit does not duplicate (verified by `telegram_message_id not null` guard).
 
-**Success criteria:**
+### Qualitative
+- On a photo day, a driver cannot submit the route without a photo per stop. On a non-photo day the flow is byte-identical to today.
+- The Telegram group gets one preview-card message linking to a browsable Drive folder — no photo flood.
+- A new driver on a route gets their own dated folder, not someone else's.
 
-- After Phase B, every `returns` row has both at-submit price columns
-  populated and the invariant `sold_cents = s*ps + d*pd` holds for 100% of
-  rows.
-- New driver submits write the at-submit prices automatically.
-- Nothing breaks on the existing Revenue page (it still sums `sold_cents`
-  the same way).
+## Risks + mitigations
+- **4.5 MB Vercel request cap** — client resizes to ~1600px JPEG (≈300–500 KB typical) before upload. Hard-reject server-side at 4 MB with a clear message.
+- **Service-account permissions** — if the service account isn't an Editor of the parent folder, every upload fails with a 403 Drive error. Catch the first such error, surface `{ error: 'Drive not shared with service account — see .env.example' }` in the submit response, and do not block route submit (soft-degrade: route still saves, photo enforcement is skipped and the operator sees the error in the UI banner). This is the single most likely setup foot-gun.
+- **Idempotency** — re-upload for the same stop overwrites via `files.update`; the DB row's `photos_count` increments only on `created === true`. Re-submitting the route re-posts to Telegram only when `telegram_message_id IS NULL`.
+- **Anchor drift** — single `PHOTO_ANCHOR_ISO` constant, same in server and client; CI test asserts `isPhotoDay('2026-12-05') === true`, `'2026-12-12' === false`, `'2026-12-19' === true`, `'2027-01-02' === true`.
+- **Clock skew on client** — enforcement is driven by the server response, not the client's date. The client only uses its clock to decide whether to *show* the popup; the submit gate is server-enforced.
+- **PII** — photos are of pretzel boxes in public retail aisles. No new PII category; existing CLAUDE.md privacy rules unchanged. Drive folder is a private share.
+- **Hobby fn count** — zero net change (still `submit.js`).
 
-### Phase C — UI/API info depth
-
-**Deliverable:** changes to `api/schedule.js` (`handleRevenueGet`) and
-`ops/revenue/index.html` only.
-
-**Steps:**
-
-1. Add `month` and `annual` (rolling 12 months) to the window set in
-   `handleRevenueGet` and to the toolbar.
-2. For each tile on the summary strip, also return a `prev_total_cents`
-   from the immediately-preceding window of equal length, and render a
-   signed % delta chip next to the value.
-3. Fix labels:
-   - `summary.total_shorts_units` detail: drop "Baked at Lynbrook only"
-     (replace with "Shorts-flagged stops").
-   - Page eyebrow: "Gross retail sold" → "Gross wholesale billed".
-4. Drilldown: clicking a route row expands to its stops within the current
-   window; clicking a driver row expands to their day-by-day. Implemented
-   with existing `by_stop` and a new endpoint for driver-day totals (or
-   client-side from already-fetched rows if scope is small enough).
-
-**Success criteria:**
-
-- All five windows (Weekly / 30d / Monthly / Quarterly / YTD / Annual)
-  load correctly.
-- Δ chips show vs. the prior equivalent period.
-- Shorts/wholesale labels are accurate.
-- Drilldowns reveal per-row detail without an extra page load for the common
-  case.
-
-## Rollback
-
-- Phase A: `UPDATE returns SET submitted_by = NULL WHERE submitted_by = <legacy_import_id>` restores the unattributed set. For reconstructed rows, keep a sidecar table `returns_reconstruction_log` (for_date, stop_id, old_submitted_by, new_submitted_by, source_tab, source_row) so a full undo is possible.
-- Phase B: Columns are nullable and additive. Rollback is `ALTER TABLE returns DROP COLUMN …`. `api/driver/submit.js` reverts to just stop-price lookup if needed.
-- Phase C: Pure client/server render changes. Revert the two files.
-
-## Order of operations
-
-1. Finish Phase A dry-run (counts + sample unmatched rows) **before writing any Phase A migration**.
-2. User approves Phase A, I write + apply the migration.
-3. Phase B migration + backfill + submit.js change, all in one PR.
-4. Phase C in a separate PR so the API/UI diff is reviewable on its own.
-
-## Evidence to include in each PR
-
-- Phase A: before/after counts, sample rows, match-rate per route/year.
-- Phase B: invariant check showing 100% of rows satisfy
-  `sold_cents = s*ps + d*pd` post-backfill.
-- Phase C: screenshots of the new windows + Δ chips (desktop + mobile).
+## Rollback / escalation
+- Revert the single feature commit on `agent/driver-photos`.
+- Drop the table: `drop table public.route_photo_submissions;` (no FK dependents added).
+- No Drive data needs to be deleted to roll back code; existing folders stay harmless.
+- Escalate (per CLAUDE.md) on: Drive 403 after service-account invite is confirmed; Telegram post errors not covered by `tgCall`'s retry; any scope-check failure.

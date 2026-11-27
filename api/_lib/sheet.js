@@ -333,4 +333,79 @@ async function routeTabsMeta(routeKey) {
   return out;
 }
 
-module.exports = { appendRouteRow, insertSheetColumn, routeTabsMeta, ROUTE_TABS, readTabRows };
+// ─── Box Photos tab ─────────────────────────────────────────────────
+// Companion to route_photo_submissions: a human-readable log of
+// bi-weekly Friday photo batches in the same spreadsheet.
+// Columns: Timestamp | Date | Weekday | Route | Driver | Photos | Folder Link | Submitted At
+// Tab is auto-created on first use; upsert keyed by (Date, Route, Driver).
+const BOX_PHOTOS_TAB = 'Box Photos';
+const BOX_PHOTOS_HEADER = [
+  'Timestamp','Date','Weekday','Route','Driver','Photos','Folder Link','Submitted At',
+];
+
+async function ensureBoxPhotosTab(sheets) {
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: SHEET_ID,
+    fields: 'sheets.properties(sheetId,title)',
+  });
+  for (const s of meta.data.sheets) {
+    if (s.properties.title === BOX_PHOTOS_TAB) return s.properties.sheetId;
+  }
+  const r = await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    requestBody: {
+      requests: [{ addSheet: { properties: { title: BOX_PHOTOS_TAB } } }],
+    },
+  });
+  const newId = r.data.replies[0].addSheet.properties.sheetId;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${quoteTab(BOX_PHOTOS_TAB)}!A1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [BOX_PHOTOS_HEADER] },
+  });
+  _tabNamesByGid = null;  // bust tab-name cache
+  return newId;
+}
+
+async function appendBoxPhotoRow({ forDate, weekday, routeKey, routeLabel, driverName, photosCount, folderLink, submittedAt }) {
+  if (!SHEET_ID) return { error: 'GOOGLE_SHEET_ID not set' };
+  const sheets = await getSheets();
+  await ensureBoxPhotosTab(sheets);
+  const dateStr = fmtSheetDate(forDate);
+  const routeDisplay = routeLabel || routeKey;
+  const driverDisplay = driverName || '';
+  const row = [
+    fmtSheetTimestamp(),
+    dateStr,
+    weekday || '',
+    routeDisplay,
+    driverDisplay,
+    Number(photosCount) || 0,
+    folderLink || '',
+    submittedAt || '',
+  ];
+  // Upsert by (Date, Route, Driver) — walk newest-to-oldest to pick the
+  // most recent row if legacy duplicates exist.
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${quoteTab(BOX_PHOTOS_TAB)}!A:E`,
+  });
+  const rows = existing.data.values || [];
+  let targetRow = null;
+  for (let i = rows.length - 1; i >= 1; i--) {
+    const r = rows[i];
+    if (!r || r.length < 5) continue;
+    if (r[1] === dateStr && r[3] === routeDisplay && r[4] === driverDisplay) { targetRow = i + 1; break; }
+  }
+  const target = targetRow || rows.length + 1;
+  const resp = await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${quoteTab(BOX_PHOTOS_TAB)}!A${target}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [row] },
+  });
+  return { ok: true, row: target, replaced: !!targetRow, range: resp.data.updatedRange };
+}
+
+module.exports = { appendRouteRow, insertSheetColumn, routeTabsMeta, ROUTE_TABS, readTabRows, appendBoxPhotoRow };
