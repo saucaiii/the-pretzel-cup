@@ -268,6 +268,16 @@ dialog.hint::backdrop { background: rgba(0,0,0,0.45); }
     </div>
   </section>
 
+  <!-- Step 2.5: pick a role (shown when the user has >1 role, e.g. Vic bakes M/W/Th/F, drives Tue) -->
+  <section id="step-role" class="step" aria-labelledby="role-h">
+    <h2 id="role-h" style="font-family:var(--display);font-size:18px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);text-align:center;margin:0 0 10px;">Sign in as</h2>
+    <p style="text-align:center;font-size:13px;color:var(--ink-2);margin:0 0 18px;line-height:1.45;">
+      Welcome, <strong id="role-name">—</strong>. Pick your role for today.
+    </p>
+    <div class="names" id="role-choices"></div>
+    <p class="err" id="role-err" aria-live="polite">&nbsp;</p>
+  </section>
+
   <!-- Step 3: set a new PIN (shown after first-time 0000 login) -->
   <section id="step-set" class="step" aria-labelledby="set-h">
     <h2 id="set-h" style="font-family:var(--display);font-size:18px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);text-align:center;margin:0 0 10px;">Set your PIN</h2>
@@ -312,10 +322,15 @@ dialog.hint::backdrop { background: rgba(0,0,0,0.45); }
 </dialog>
 
 <script>
-/* The staff roster. Keep in sync with the people table — same seed we
-   loaded into Supabase in P0. Order controls the on-screen layout. */
-const PEOPLE = [
+/* Fallback staff roster. The real list is fetched from
+   GET /api/auth/signin on page load, which returns the DB's people
+   table (name + role only). This array only renders if that fetch
+   fails — so updates to Supabase show up on the next load, no code
+   change needed. Keep this list in rough sync as a safety net. */
+let PEOPLE = [
   { name: 'Mike',     role: 'operator' },
+  { name: 'Chris',    role: 'operator' },
+  { name: 'Jyoti',    role: 'operator' },
   { name: 'Vic',      role: 'baker' },
   { name: 'Marcos',   role: 'baker' },
   { name: 'Tony',     role: 'baker' },
@@ -324,6 +339,8 @@ const PEOPLE = [
   { name: 'Reetu',    role: 'driver' },
   { name: 'Julianna', role: 'driver' },
   { name: 'Brandon',  role: 'driver' },
+  { name: 'Nick',     role: 'driver' },
+  { name: 'Vikas',    role: 'driver' },
 ];
 
 const PIN_LEN = 4;
@@ -343,6 +360,25 @@ function renderNames() {
     <button class="name-btn" type="button" data-name="${p.name}" data-role="${p.role}">
       ${p.name}<span class="role-chip">${p.role}</span>
     </button>`).join('');
+}
+
+/* Load the live roster from the DB. Falls back to the hardcoded PEOPLE
+   array (already rendered below) if the fetch fails, so the picker
+   still works offline / during a Supabase outage. */
+async function loadRoster() {
+  try {
+    const r = await fetch('/api/auth/signin', { credentials: 'same-origin' });
+    if (!r.ok) return;
+    const j = await r.json().catch(() => null);
+    if (j && Array.isArray(j.people) && j.people.length) {
+      PEOPLE = j.people.filter(p =>
+        p && typeof p.name === 'string' && typeof p.role === 'string'
+      );
+      renderNames();
+    }
+  } catch {
+    // Keep the fallback render.
+  }
 }
 
 function showStep(id) {
@@ -374,6 +410,7 @@ names.addEventListener('click', e => {
 
 $('#change-user').addEventListener('click', () => {
   picked = null;
+  pinForChoose = '';
   resetPin();
   showStep('step-name');
 });
@@ -427,6 +464,10 @@ document.addEventListener('keydown', e => {
 // for the Set-PIN welcome line.
 let _me = null;
 
+// Cached PIN for the dual-role chooser's follow-up POST. Cleared after
+// the chooser call succeeds or when the user backs out of the flow.
+let pinForChoose = '';
+
 async function submit() {
   if (pin.length < PIN_LEN || !picked) return;
   goBtn.disabled = true;
@@ -442,6 +483,13 @@ async function submit() {
     if (!r.ok) {
       errEl.textContent = j.error || 'wrong PIN';
       pin = ''; renderPinDisplay();
+      return;
+    }
+    // Dual-role branch: no cookie yet; show the chooser.
+    if (j.choose && Array.isArray(j.roles) && j.roles.length > 1) {
+      pinForChoose = pin;
+      _me = { name: j.name, role: null };
+      enterRoleStep(j.name, j.roles);
       return;
     }
     _me = { name: j.name, role: j.role };
@@ -467,6 +515,52 @@ function routeHome(role) {
   const allowed = nxt && allowedFor(role, nxt);
   location.href = allowed || home;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Role chooser step. Shown when the server replies with
+   { choose: true, roles: [...] }. One tap re-POSTs with
+   chosen_role; the server signs the JWT with that role.
+   ───────────────────────────────────────────────────────────── */
+const roleChoices = document.getElementById('role-choices');
+const roleErr     = document.getElementById('role-err');
+
+function enterRoleStep(name, roles) {
+  document.getElementById('role-name').textContent = name;
+  roleErr.textContent = ' ';
+  roleChoices.innerHTML = roles.map(r => `
+    <button class="name-btn" type="button" data-role="${r}">
+      Sign in as<span class="role-chip">${r}</span>
+    </button>`).join('');
+  showStep('step-role');
+}
+
+roleChoices.addEventListener('click', async e => {
+  const b = e.target.closest('.name-btn');
+  if (!b || !picked || !pinForChoose) return;
+  const chosen = b.dataset.role;
+  roleChoices.querySelectorAll('button').forEach(x => (x.disabled = true));
+  roleErr.textContent = ' ';
+  try {
+    const r = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: picked.name, pin: pinForChoose, chosen_role: chosen }),
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      roleErr.textContent = j.error || 'could not sign in';
+      roleChoices.querySelectorAll('button').forEach(x => (x.disabled = false));
+      return;
+    }
+    pinForChoose = '';
+    _me = { name: j.name, role: j.role };
+    routeHome(j.role);
+  } catch (err) {
+    roleErr.textContent = 'network error, try again';
+    roleChoices.querySelectorAll('button').forEach(x => (x.disabled = false));
+  }
+});
 
 /* ─────────────────────────────────────────────────────────────
    Set-PIN step. Two-pass: enter new PIN, confirm, then save.
@@ -588,6 +682,7 @@ hintDlg.addEventListener('click', e => { if (e.target === hintDlg) hintDlg.close
 
 renderNames();
 renderPinDisplay();
+loadRoster();
 </script>
 </body>
 </html>

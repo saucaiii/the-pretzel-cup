@@ -24,13 +24,16 @@ do $$ begin create type req_status   as enum ('pending','approved','denied'); ex
 -- One row per employee. Mike is the only 'operator' seat for now.
 -- pin_hash stores crypt('<pin>', gen_salt('bf', 10)).
 -- Verify with: pin_hash = crypt('<input>', pin_hash).
+-- secondary_role lets one person hold two roles (e.g. Vic bakes M/W/Th/F
+-- and drives Tuesday). Set at sign-in via the role chooser; see p26.
 create table if not exists public.people (
-  id          uuid primary key default gen_random_uuid(),
-  name        text not null unique,
-  role        user_role not null,
-  pin_hash    text not null,
-  telegram_id bigint,
-  created_at  timestamptz not null default now()
+  id             uuid primary key default gen_random_uuid(),
+  name           text not null unique,
+  role           user_role not null,
+  secondary_role user_role,
+  pin_hash       text not null,
+  telegram_id    bigint,
+  created_at     timestamptz not null default now()
 );
 
 -- ─── routes ────────────────────────────────────────────────────────
@@ -140,20 +143,21 @@ create index if not exists returns_date_idx on public.returns(for_date, route_ke
 
 -- ─── RPC: verify_pin ───────────────────────────────────────────────
 -- Called by the Vercel sign-in handler via the service role key.
--- Returns the person's id/name/role on success, nothing on failure.
--- SECURITY DEFINER lets this bypass RLS; crypt() does the bcrypt check.
+-- Returns the person's id/name/role/secondary_role on success, nothing
+-- on failure. SECURITY DEFINER lets this bypass RLS; crypt() does the
+-- bcrypt check.
 -- NOTE: pgcrypto installs into the `extensions` schema on Supabase, not
 -- `public`. SECURITY DEFINER functions get a locked-down search_path, so
 -- we have to list `extensions` explicitly or crypt() is unresolvable.
 create or replace function public.verify_pin(p_name text, p_pin text)
-returns table(id uuid, name text, role user_role)
+returns table(id uuid, name text, role user_role, secondary_role user_role)
 language plpgsql
 security definer
 set search_path = public, extensions
 as $$
 begin
   return query
-    select p.id, p.name, p.role
+    select p.id, p.name, p.role, p.secondary_role
     from public.people p
     where p.name = p_name
       and p.pin_hash = crypt(p_pin, p.pin_hash)
