@@ -1,8 +1,23 @@
 # Working memory (short-term). Keep under 60 lines.
-Branch: agent/revenue-rebuild
-Task: revenue-rebuild
-Status: in-progress (Phases A, B, C done; awaiting UI verification + PR)
-Started: 2026-11-25
+Branch: agent/driver-photos
+Task: driver-photos
+Status: in-progress (plan approved; implementing)
+Started: 2026-11-27
+
+## Plan
+- Full plan at .agent/plan.md.
+- Bi-weekly Friday box photos on /driver, anchor 2026-12-05.
+- Supabase (route_photo_submissions, p25) is source of truth; Sheet tab "Box Photos" mirrors; Drive holds photos; Telegram posts the folder link.
+- Everything folds into api/driver/submit.js as ?action= dispatcher — Hobby fn count unchanged.
+
+## Progress
+- Branch created from main.
+- Plan written and approved interactively.
+
+## Handoffs
+- none (single-session)
+---
+PREVIOUS TASK (agent/revenue-rebuild) context moved off this file — see git history on that branch.
 
 ## Plan
 - Full plan at .agent/plan.md (3 phases: A reconstruct submitted_by, B freeze prices, C UI depth).

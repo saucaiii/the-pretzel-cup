@@ -269,6 +269,74 @@ dialog.pin-dlg::backdrop { background: rgba(0,0,0,0.45); }
 .pin-dlg .prim:active { background: var(--gold-2); }
 
 footer { color: var(--ink-3); font-size: 11px; text-align: center; padding: 24px 10px; letter-spacing: 0.1em; }
+
+/* ─── Bi-weekly box photos ────────────────────────────────────── */
+.photo-day-banner {
+  background: rgba(212,182,98,0.12); border: 1px solid var(--gold);
+  border-radius: 10px; padding: 12px 14px; margin: 0 0 14px;
+  color: var(--gold-2); font-size: 13px; line-height: 1.5;
+  display: flex; align-items: center; gap: 10px;
+}
+.photo-day-banner b { color: var(--gold); font-weight: 700; }
+.photo-day-banner .count {
+  font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  margin-left: auto; color: var(--ink-2); white-space: nowrap;
+}
+.photo-day-banner.is-complete { background: rgba(95,213,140,0.1); border-color: var(--ok); color: var(--ok); }
+.photo-day-banner.is-complete b { color: var(--ok); }
+
+.photo-row {
+  border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 2px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.photo-row .photo-lbl {
+  font: 400 10px var(--display); letter-spacing: 0.14em; color: var(--ink-3);
+  text-transform: uppercase;
+}
+.photo-row .photo-btn {
+  font: 400 11px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold);
+  background: transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  transition: transform 80ms ease, background 120ms ease, color 120ms ease;
+}
+.photo-row .photo-btn:hover { background: var(--gold); color: #000; }
+.photo-row .photo-btn:active:not(:disabled) { transform: scale(0.96); background: var(--gold-2); color: #000; }
+.photo-row .photo-btn:disabled { opacity: 0.6; cursor: wait; }
+.photo-row .photo-btn.has-photo { border-color: var(--ok); color: var(--ok); background: rgba(95,213,140,0.08); }
+.photo-row .photo-btn.has-photo:hover { background: var(--ok); color: #000; }
+.photo-row .photo-err { color: var(--bad); font-size: 12px; }
+.photo-row input[type="file"] { position: absolute; left: -9999px; }
+.stop.photo-missing { border-color: rgba(244,194,95,0.5); }
+.stop.photo-missing .photo-row .photo-lbl { color: var(--warn); }
+.stop.photo-done   { border-color: var(--ok); }
+
+/* Box-photos reminder dialog */
+dialog.photo-dlg {
+  background: var(--panel); color: var(--ink); border: 1px solid var(--gold);
+  border-radius: 14px; padding: 24px 24px 20px;
+  width: min(420px, calc(100vw - 32px));
+  box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6);
+  font-family: var(--body);
+}
+dialog.photo-dlg::backdrop { background: rgba(0,0,0,0.5); }
+.photo-dlg h3 { font: 400 15px var(--display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin: 0 0 12px; }
+.photo-dlg p  { margin: 0 0 12px; font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+.photo-dlg ul { margin: 0 0 14px; padding-left: 18px; font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+.photo-dlg label.ack {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px;
+  margin: 10px 0 14px; cursor: pointer; font-size: 13px; color: var(--ink);
+}
+.photo-dlg label.ack input { margin-top: 2px; width: 18px; height: 18px; accent-color: var(--gold); flex: none; }
+.photo-dlg .btns { display: flex; gap: 8px; margin-top: 4px; }
+.photo-dlg .btns button {
+  flex: 1; font: 400 13px var(--display); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 12px 10px; border-radius: 10px; cursor: pointer;
+  background: var(--gold); color: #000; border: 0;
+  transition: transform 80ms ease, filter 120ms ease;
+}
+.photo-dlg .btns button:disabled { background: var(--line-2); color: var(--ink-3); cursor: not-allowed; }
+.photo-dlg .btns button:active:not(:disabled) { transform: scale(0.97); filter: brightness(0.92); }
 </style>
 </head>
 <body>
@@ -367,6 +435,24 @@ footer { color: var(--ink-3); font-size: 11px; text-align: center; padding: 24px
   </div>
 </div>
 
+<dialog class="photo-dlg" id="photo-dlg" aria-labelledby="photo-dlg-h">
+  <h3 id="photo-dlg-h">📸 Bi-weekly box day</h3>
+  <p>It's a <b>photo Friday</b>. Before you can submit this route, you need one photo of every box on the route.</p>
+  <ul>
+    <li>Tap <b>Add photo</b> on each stop; your phone's camera opens.</li>
+    <li>Snap the box so cleanliness is visible — inside and out.</li>
+    <li>Re-tap to retake if you don't love the shot. The latest one wins.</li>
+    <li>Photos go to a private Google Drive folder; one link lands in the group chat after you submit.</li>
+  </ul>
+  <label class="ack">
+    <input type="checkbox" id="photo-dlg-ack">
+    <span>I understand — I'll photograph every box on this route today.</span>
+  </label>
+  <div class="btns">
+    <button type="button" id="photo-dlg-close" disabled>Got it</button>
+  </div>
+</dialog>
+
 <dialog class="pin-dlg" id="pin-dlg" aria-labelledby="pin-dlg-h">
   <h3 id="pin-dlg-h">Change PIN</h3>
   <p id="pin-dlg-sub">Enter a new 4-digit PIN.</p>
@@ -388,6 +474,228 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;
 const fmtDay = iso => { const d = new Date(iso + 'T12:00:00'); return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); };
 const fmtDayLong = iso => { const d = new Date(iso + 'T12:00:00'); return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); };
 const money = cents => '$' + (cents / 100).toFixed(2);
+
+/* ─────────────────────────────────────────────────────────────
+   PhotoDay — bi-weekly Friday box-photo flow.
+   Anchor + period MUST match api/driver/submit.js. Server is the
+   authoritative gate; this module drives the UI for it.
+   ───────────────────────────────────────────────────────────── */
+const PhotoDay = (() => {
+  const ANCHOR = '2026-12-05';
+  const PERIOD = 14;
+  function daysBetween(a, b) {
+    const [ya,ma,da] = a.split('-').map(Number);
+    const [yb,mb,db] = b.split('-').map(Number);
+    return Math.round((Date.UTC(yb,mb-1,db) - Date.UTC(ya,ma-1,da)) / 86400000);
+  }
+  function isPhotoDay(iso) {
+    if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+    const d = daysBetween(ANCHOR, iso);
+    return d >= 0 && d % PERIOD === 0;
+  }
+
+  // Per-stop state kept in a Map keyed by stopId. { done: boolean, folderLink?: string }
+  let state = { active: false, forDate: null, routeKey: null, stopsTotal: 0, photosCount: 0, folderLink: null, telegramPosted: false, byStop: Object.create(null), status: {} };
+
+  async function fetchStatus(forDate, routeKey) {
+    try {
+      const r = await fetch(`/api/driver/submit?action=photo-status&forDate=${encodeURIComponent(forDate)}&routeKey=${encodeURIComponent(routeKey)}`, {
+        credentials: 'same-origin', cache: 'no-store',
+      });
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  }
+
+  async function onRouteLoaded() {
+    const forDate = _plan && _plan.for_date;
+    const routeKey = _plan && _plan.route && _plan.route.key;
+    state.active = isPhotoDay(forDate);
+    state.forDate = forDate;
+    state.routeKey = routeKey;
+    state.stopsTotal = (_plan && _plan.stops || []).length;
+    state.byStop = Object.create(null);
+    state.photosCount = 0;
+    state.folderLink = null;
+    state.telegramPosted = false;
+    if (!state.active) {
+      removeBanner();
+      setSubmitEnabled();
+      return;
+    }
+    // Ask the server for the real count — survives refresh, phone swap, etc.
+    const st = await fetchStatus(forDate, routeKey);
+    if (st && st.ok) {
+      state.photosCount = st.photos_count || 0;
+      state.folderLink = st.folder_link || null;
+      state.telegramPosted = !!st.telegram_posted;
+    }
+    injectPhotoRows();
+    renderBanner();
+    maybeShowReminder();
+    setSubmitEnabled();
+  }
+
+  function removeBanner() {
+    const el = document.getElementById('photo-day-banner');
+    if (el) el.remove();
+  }
+
+  function renderBanner() {
+    removeBanner();
+    const total = state.stopsTotal;
+    const have = state.photosCount;
+    const complete = total > 0 && have >= total;
+    const linkHtml = state.folderLink ? ` · <a href="${esc(state.folderLink)}" target="_blank" rel="noopener" style="color:inherit;border-bottom:1px dashed currentColor;">open folder</a>` : '';
+    const html = `<div id="photo-day-banner" class="photo-day-banner${complete ? ' is-complete' : ''}">
+      <span>${complete ? '✓' : '📸'}</span>
+      <span>${complete
+        ? `<b>Box photos ready</b> — all ${total} boxes documented${linkHtml}`
+        : `<b>Bi-weekly box day</b> — photograph every box before submitting${linkHtml}`}</span>
+      <span class="count">${have} / ${total}</span>
+    </div>`;
+    const head = document.getElementById('route-head');
+    if (head) head.insertAdjacentHTML('afterend', html);
+  }
+
+  // Add a photo row to each stop card. Called after renderRoute() rebuilds the list.
+  function injectPhotoRows() {
+    document.querySelectorAll('.stop').forEach(card => {
+      if (card.querySelector('.photo-row')) return;  // already injected
+      const stopId = card.dataset.stop;
+      const nm = card.querySelector('.name') ? card.querySelector('.name').textContent : 'box';
+      const row = document.createElement('div');
+      row.className = 'photo-row';
+      row.innerHTML = `
+        <span class="photo-lbl">Box photo</span>
+        <button type="button" class="photo-btn" data-stop="${stopId}" aria-label="Add photo for ${esc(nm)}">+ Add photo</button>
+        <span class="photo-err" data-err-for="${stopId}"></span>
+        <input type="file" accept="image/*" capture="environment" data-file-for="${stopId}">
+      `;
+      card.querySelector('.body').appendChild(row);
+      // Visual gate: mark missing until a photo lands.
+      card.classList.add('photo-missing');
+      const btn = row.querySelector('.photo-btn');
+      const input = row.querySelector('input[type="file"]');
+      btn.addEventListener('click', () => input.click());
+      input.addEventListener('change', (e) => onFilePicked(e, stopId, row));
+    });
+  }
+
+  async function onFilePicked(ev, stopId, rowEl) {
+    const file = ev.target.files && ev.target.files[0];
+    ev.target.value = '';  // allow re-pick of same file
+    if (!file) return;
+    const btn  = rowEl.querySelector('.photo-btn');
+    const errE = rowEl.querySelector('.photo-err');
+    errE.textContent = '';
+    btn.disabled = true;
+    const originalLabel = btn.textContent;
+    btn.textContent = 'Resizing…';
+    try {
+      const blob = await resizeToJpeg(file, 1400, 0.82);
+      btn.textContent = 'Uploading…';
+      const b64 = await blobToBase64(blob);
+      const r = await fetch('/api/driver/submit?action=photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          forDate:  state.forDate,
+          routeKey: state.routeKey,
+          stopId,
+          file: b64,
+          mimeType: 'image/jpeg',
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = j && j.hint ? `${j.error || 'upload failed'}: ${j.hint}` : (j && j.error) || `upload failed (${r.status})`;
+        throw new Error(msg);
+      }
+      state.photosCount = j.photos_count;
+      state.stopsTotal  = j.stops_total;
+      state.folderLink  = j.folder_link || state.folderLink;
+      state.byStop[stopId] = { done: true };
+      btn.textContent = '✓ Photo saved';
+      btn.classList.add('has-photo');
+      const card = rowEl.closest('.stop');
+      if (card) { card.classList.remove('photo-missing'); card.classList.add('photo-done'); }
+      renderBanner();
+      setSubmitEnabled();
+    } catch (e) {
+      btn.textContent = originalLabel;
+      errE.textContent = (e && e.message) || 'upload failed — try again';
+      console.error('photo upload:', e);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Resize an image file to a max dimension and re-encode as JPEG.
+  // Returns a Blob. Keeps request payloads well under Vercel's 4.5 MB cap.
+  function resizeToJpeg(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('canvas encode failed')), 'image/jpeg', quality);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read image')); };
+      img.src = url;
+    });
+  }
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        const s = String(fr.result || '');
+        resolve(s.replace(/^data:[^;]+;base64,/, ''));
+      };
+      fr.onerror = () => reject(new Error('read failed'));
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  function maybeShowReminder() {
+    if (!state.active) return;
+    const key = `ppf_photo_ack:${state.forDate}:${state.routeKey}`;
+    try { if (localStorage.getItem(key) === '1') return; } catch (e) {}
+    const dlg = document.getElementById('photo-dlg');
+    const ack = document.getElementById('photo-dlg-ack');
+    const close = document.getElementById('photo-dlg-close');
+    if (!dlg || !ack || !close) return;
+    ack.checked = false;
+    close.disabled = true;
+    ack.onchange = () => { close.disabled = !ack.checked; };
+    close.onclick = () => {
+      if (!ack.checked) return;
+      try { localStorage.setItem(key, '1'); } catch (e) {}
+      dlg.close();
+    };
+    if (typeof dlg.showModal === 'function') dlg.showModal();
+  }
+
+  function gateOK() {
+    if (!state.active) return true;
+    return state.photosCount >= state.stopsTotal && state.stopsTotal > 0;
+  }
+  function missingCount() {
+    if (!state.active) return 0;
+    return Math.max(0, state.stopsTotal - state.photosCount);
+  }
+  function describe() { return `${state.photosCount} / ${state.stopsTotal} box photos`; }
+
+  return { onRouteLoaded, gateOK, missingCount, describe, isPhotoDay, state: () => state };
+})();
 
 async function boot() {
   const next = encodeURIComponent(location.pathname);
@@ -593,6 +901,10 @@ function renderRoute() {
   refreshTotalFromDOM();
   setStatus('');
 
+  // Bi-weekly box-photo day — inject photo rows + banner + reminder modal.
+  // Awaits only the status round-trip; renderers mutate DOM directly.
+  PhotoDay.onRouteLoaded();
+
   // "Already submitted" banner — surfaces when the date+route already has
   // one or more stops saved. Driver can edit values freely and re-submit;
   // the sheet row gets upserted in place rather than duplicated.
@@ -772,7 +1084,14 @@ function collectEntries() {
 function setSubmitEnabled() {
   const btn = $('#submit-btn');
   const hasEntries = collectEntries().length > 0;
-  btn.disabled = !hasEntries;
+  const photoBlocked = !PhotoDay.gateOK();
+  btn.disabled = !hasEntries || photoBlocked;
+  if (photoBlocked) {
+    const missing = PhotoDay.missingCount();
+    btn.title = `${missing} box photo${missing === 1 ? '' : 's'} still needed — tap Add photo on each stop.`;
+  } else {
+    btn.removeAttribute('title');
+  }
   if (btn.classList.contains('sent')) {
     btn.classList.remove('sent');
     btn.textContent = btn.dataset.mode === 'update' ? 'Update route' : 'Submit route';
@@ -800,7 +1119,17 @@ async function submitRoute() {
       body: JSON.stringify({ forDate: _date, routeKey: _plan.route.key, entries }),
     });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error || r.status);
+    if (!r.ok) {
+      // Photo-day gate: server refuses the route save until every box has
+      // a photo. Surface the exact count rather than a generic 409.
+      if (r.status === 409 && j && j.error === 'box photos required') {
+        const missing = j.missing_count || 0;
+        setStatus(`Need ${missing} more box photo${missing === 1 ? '' : 's'} before you can submit.`, 'fail');
+        btn.disabled = true;
+        return;
+      }
+      throw new Error(j.error || r.status);
+    }
     // Clear the local draft — the authoritative copy now lives in Supabase +
     // the Google Sheet, so a future refresh will re-populate from the server.
     clearDraft();
