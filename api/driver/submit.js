@@ -23,10 +23,10 @@ const priceSingleFor = s => (s && s.price_single_cents != null) ? s.price_single
 const priceDoubleFor = s => (s && s.price_double_cents != null) ? s.price_double_cents : PRICE_DOUBLE_CENTS;
 
 // ─── bi-weekly photo days ──────────────────────────────────────────
-// Anchor: Friday 2026-12-05. A day counts when it is ≥ anchor and the
+// Anchor: Friday 2026-12-04. A day counts when it is ≥ anchor and the
 // day-delta is a multiple of 14. Pure function; the driver HTML copies
 // the same constants so the popup can show without a round-trip.
-const PHOTO_ANCHOR_ISO = '2026-12-05';
+const PHOTO_ANCHOR_ISO = '2026-12-04';
 const PHOTO_PERIOD_DAYS = 14;
 function daysBetweenIso(a, b) {
   const [ya, ma, da] = a.split('-').map(Number);
